@@ -4,6 +4,7 @@ import { IconCalculator, IconTrash, IconHistory, IconDeviceFloppy } from '@table
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
 import { Badge } from '../../components/ui/Badge';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 // Helper component for animating numbers
 const AnimatedNumber = ({ value }: { value: number }) => {
@@ -180,30 +181,30 @@ export default function CalculatorModule() {
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm font-medium text-text-secondary">Unit</label>
-              <select
+              <CustomSelect
                 value={timeUnit}
-                onChange={(e) => setTimeUnit(e.target.value as any)}
-                className="w-full bg-surface-alt border border-border-alt rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
-              >
-                <option value="years">Years</option>
-                <option value="months">Months</option>
-              </select>
+                onChange={val => setTimeUnit(val as 'years' | 'months')}
+                options={[
+                  { value: 'years', label: 'Years' },
+                  { value: 'months', label: 'Months' },
+                ]}
+              />
             </div>
           </div>
 
           {type === 'CI' && (
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-text-secondary">Compound Frequency</label>
-              <select
+              <CustomSelect
                 value={compoundFrequency}
-                onChange={(e) => setCompoundFrequency(e.target.value as any)}
-                className="w-full bg-surface-alt border border-border-alt rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
-              >
-                <option value="annually">Annually</option>
-                <option value="semi-annually">Semi-Annually</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+                onChange={val => setCompoundFrequency(val as 'annually' | 'semi-annually' | 'quarterly' | 'monthly')}
+                options={[
+                  { value: 'annually', label: 'Annually' },
+                  { value: 'semi-annually', label: 'Semi-Annually' },
+                  { value: 'quarterly', label: 'Quarterly' },
+                  { value: 'monthly', label: 'Monthly' },
+                ]}
+              />
             </div>
           )}
 

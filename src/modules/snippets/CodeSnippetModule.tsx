@@ -11,12 +11,14 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { TagInput } from '../../components/ui/TagInput';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CustomSelect, type SelectOption } from '../../components/ui/CustomSelect';
 
 const LANGUAGES = [
-  'javascript', 'typescript', 'python', 'java', 'csharp', 
-  'cpp', 'go', 'rust', 'ruby', 'php', 'html', 'css', 
+  'javascript', 'typescript', 'python', 'java', 'csharp',
+  'cpp', 'go', 'rust', 'ruby', 'php', 'html', 'css',
   'sql', 'bash', 'json', 'yaml', 'markdown', 'other'
 ];
+const LANGUAGE_OPTIONS: SelectOption[] = LANGUAGES.map(l => ({ value: l, label: l.toUpperCase() }));
 
 export default function CodeSnippetModule() {
   const { snippets, addSnippet, updateSnippet, deleteSnippet, showConfirm } = useAppStore();
@@ -378,15 +380,11 @@ export default function CodeSnippetModule() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Language</label>
-            <select
+            <CustomSelect
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="select-field"
-            >
-              {LANGUAGES.map(lang => (
-                <option key={lang} value={lang}>{lang.toUpperCase()}</option>
-              ))}
-            </select>
+              onChange={val => setLanguage(val)}
+              options={LANGUAGE_OPTIONS}
+            />
           </div>
 
           <div className="flex flex-col gap-1">

@@ -9,6 +9,7 @@ import {
   IconEdit, IconSettings, IconShieldLock, IconTrash, IconLock, IconCamera
 } from '@tabler/icons-react';
 import { Modal } from '../../components/ui/Modal';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const cardStyle = {
   background: 'var(--bg-surface)',
@@ -20,17 +21,6 @@ const cardStyle = {
   gap: 16
 };
 
-const inputStyle = {
-  width: '100%',
-  padding: '10px 14px',
-  borderRadius: 10,
-  border: '1.5px solid var(--border-border)',
-  background: 'var(--bg-background)',
-  color: 'var(--text-primary)',
-  fontSize: 14,
-  outline: 'none',
-  appearance: 'none' as const,
-};
 
 export default function ProfileModule() {
   const { user } = useAuthStore();
@@ -333,11 +323,17 @@ export default function ProfileModule() {
                   <div style={{ fontSize: 13, fontWeight: 600 }}>Language</div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Choose your preferred language</div>
                 </div>
-                <select style={{ ...inputStyle, width: 140, cursor: 'pointer' }}>
-                  <option>English</option>
-                  <option>Spanish</option>
-                  <option>French</option>
-                </select>
+                <div style={{ width: 160 }}>
+                  <CustomSelect
+                    value="english"
+                    onChange={() => {}}
+                    options={[
+                      { value: 'english', label: 'English' },
+                      { value: 'spanish', label: 'Spanish' },
+                      { value: 'french', label: 'French' },
+                    ]}
+                  />
+                </div>
               </div>
               <div style={{ height: 1, background: 'var(--border-border)' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -345,11 +341,17 @@ export default function ProfileModule() {
                   <div style={{ fontSize: 13, fontWeight: 600 }}>Date Format</div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Choose how dates are displayed</div>
                 </div>
-                <select style={{ ...inputStyle, width: 140, cursor: 'pointer' }}>
-                  <option>DD MMM YYYY</option>
-                  <option>MM/DD/YYYY</option>
-                  <option>YYYY-MM-DD</option>
-                </select>
+                <div style={{ width: 160 }}>
+                  <CustomSelect
+                    value="dd-mmm-yyyy"
+                    onChange={() => {}}
+                    options={[
+                      { value: 'dd-mmm-yyyy', label: 'DD MMM YYYY' },
+                      { value: 'mm-dd-yyyy', label: 'MM/DD/YYYY' },
+                      { value: 'yyyy-mm-dd', label: 'YYYY-MM-DD' },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
           </div>

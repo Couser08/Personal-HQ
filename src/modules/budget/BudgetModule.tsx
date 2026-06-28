@@ -4,6 +4,7 @@ import { IconPlus, IconTrash, IconTrendingUp, IconTrendingDown } from '@tabler/i
 import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const colorClasses = {
   rose: 'bg-rose-500 text-rose-500 border-rose-200',
@@ -453,15 +454,11 @@ function TransactionForm({
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-text-secondary">Category</label>
-        <select
+        <CustomSelect
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-        >
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-          ))}
-        </select>
+          onChange={val => setCategoryId(val)}
+          options={categories.map(cat => ({ value: cat.id, label: `${cat.icon} ${cat.name}` }))}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-text-secondary">Amount</label>

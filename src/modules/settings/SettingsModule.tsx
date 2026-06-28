@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
 import { IconSun, IconMoon, IconPalette, IconBell, IconRefresh, IconHourglass } from '@tabler/icons-react';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const COUNTDOWN_TEMPLATES = [
   { value: 'default',  label: 'Default Cards' },
@@ -16,6 +18,15 @@ const COUNTDOWN_TEMPLATES = [
   { value: 'progress', label: 'Progress Ring' },
   { value: 'vertical', label: 'Vertical Stack' },
   { value: 'split',    label: 'Split Layout' },
+];
+
+const TOAST_POSITIONS = [
+  { value: 'top-right',     label: 'Top Right' },
+  { value: 'top-left',      label: 'Top Left' },
+  { value: 'top-center',    label: 'Top Center' },
+  { value: 'bottom-right',  label: 'Bottom Right' },
+  { value: 'bottom-left',   label: 'Bottom Left' },
+  { value: 'bottom-center', label: 'Bottom Center' },
 ];
 
 const SectionCard = ({ icon, iconColor, iconBg, title, children }: {
@@ -39,6 +50,14 @@ const SectionCard = ({ icon, iconColor, iconBg, title, children }: {
 export default function SettingsModule() {
   const { theme, setTheme, settings, updateSettings } = useAppStore();
   const addToast = useToastStore(s => s.addToast);
+
+  // Track toast position locally so CustomSelect is controlled
+  const [toastPos, setToastPos] = useState<string>(useToastStore.getState().position || 'top-right');
+
+  const handleToastPos = (val: string) => {
+    setToastPos(val);
+    useToastStore.getState().setPosition(val as 'top-right');
+  };
 
   return (
     <motion.div
@@ -68,16 +87,24 @@ export default function SettingsModule() {
           <div>
             <p className="text-sm font-semibold text-text-primary">Theme</p>
             <p className="text-xs text-text-secondary mt-0.5 mb-3">Choose between light and dark mode</p>
-            <div className="inline-flex gap-2 items-center p-1 rounded-2xl border bg-surface-alt border-border">
+            <div className="inline-flex gap-1 items-center p-1 rounded-2xl border bg-surface-alt border-border">
               <button
                 onClick={() => setTheme('light')}
-                className={`btn btn-sm ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  theme === 'light'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+                }`}
               >
                 <IconSun className="w-4 h-4" /> Light
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                className={`btn btn-sm ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  theme === 'dark'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+                }`}
               >
                 <IconMoon className="w-4 h-4" /> Dark
               </button>
@@ -93,33 +120,26 @@ export default function SettingsModule() {
           title="Notifications"
         >
           <div>
-            <p className="text-sm font-semibold text-text-primary">Toast Position</p>
-            <p className="text-xs text-text-secondary mt-0.5 mb-3">Where notifications appear on screen</p>
-            <select
-              defaultValue={useToastStore.getState().position}
-              onChange={e => useToastStore.getState().setPosition(e.target.value as 'top-right')}
-              className="select-field"
-            >
-              <option value="top-right">Top Right</option>
-              <option value="top-left">Top Left</option>
-              <option value="top-center">Top Center</option>
-              <option value="bottom-right">Bottom Right</option>
-              <option value="bottom-left">Bottom Left</option>
-              <option value="bottom-center">Bottom Center</option>
-            </select>
+            <p className="text-sm font-semibold text-text-primary mb-1">Toast Position</p>
+            <p className="text-xs text-text-secondary mb-3">Where notifications appear on screen</p>
+            <CustomSelect
+              value={toastPos}
+              onChange={handleToastPos}
+              options={TOAST_POSITIONS}
+            />
           </div>
           <div>
             <p className="mb-2 text-sm font-semibold text-text-primary">Test Notification</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => addToast('Success', 'Everything looks great!', 'success')}
-                className="btn btn-secondary btn-md text-green-600 border-green-500/30 hover:bg-green-500/10"
+                className="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border border-green-500/30 bg-green-500/5 text-green-600 hover:bg-green-500/15 transition-colors"
               >
                 ✓ Success
               </button>
               <button
                 onClick={() => addToast('Error', 'Something went wrong.', 'error')}
-                className="btn btn-danger btn-md"
+                className="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border border-rose-500/30 bg-rose-500/5 text-rose-600 hover:bg-rose-500/15 transition-colors"
               >
                 ✕ Error
               </button>
@@ -127,7 +147,7 @@ export default function SettingsModule() {
           </div>
         </SectionCard>
 
-        {/* ── Countdown Template ── (full width) */}
+        {/* ── Countdown Template ── full width */}
         <div className="md:col-span-2">
           <SectionCard
             icon={<IconHourglass className="w-5 h-5" />}
@@ -136,21 +156,21 @@ export default function SettingsModule() {
             title="Countdown Display Template"
           >
             <div>
-              <p className="mb-3 text-xs text-text-secondary">Select how countdown cards appear globally across your app</p>
-              <select
-                value={settings.countdownTemplate}
-                onChange={e => updateSettings({ countdownTemplate: e.target.value as never })}
-                className="select-field"
-              >
-                {COUNTDOWN_TEMPLATES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+              <p className="text-xs text-text-secondary mb-3">
+                Select how countdown cards appear globally across your app
+              </p>
+              <div className="max-w-sm">
+                <CustomSelect
+                  value={settings.countdownTemplate}
+                  onChange={val => updateSettings({ countdownTemplate: val as never })}
+                  options={COUNTDOWN_TEMPLATES}
+                />
+              </div>
             </div>
           </SectionCard>
         </div>
 
-        {/* ── App Tour ── (full width) */}
+        {/* ── App Tour ── full width */}
         <div className="md:col-span-2">
           <SectionCard
             icon={<IconRefresh className="w-5 h-5" />}
@@ -158,14 +178,16 @@ export default function SettingsModule() {
             iconBg="rgba(168,85,247,0.12)"
             title="App Onboarding"
           >
-            <div>
-              <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
-              <p className="mt-1 mb-4 text-xs leading-relaxed text-text-secondary">
-                Want a quick refresher on how to use Personal HQ? Trigger the interactive guided tour to explore all the main features.
-              </p>
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
+                <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                  Want a quick refresher on how to use Personal HQ? Trigger the interactive guided tour to explore all the main features.
+                </p>
+              </div>
               <button
                 onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
-                className="btn btn-primary btn-md"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-muted text-white text-sm font-bold rounded-xl transition-all shrink-0"
               >
                 Start Tour
               </button>

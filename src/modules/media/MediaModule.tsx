@@ -4,6 +4,7 @@ import { IconPlus, IconTrash, IconDeviceGamepad2, IconMovie, IconStarFilled, Ico
 import { useAppStore, type MediaLog } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 const STATUS_OPTIONS = {
@@ -302,15 +303,11 @@ export default function MediaModule() {
           <div className="flex gap-4">
             <div className="flex flex-col flex-1 gap-1">
               <label className="text-sm font-medium text-text-secondary">Status</label>
-              <select
+              <CustomSelect
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="px-3 py-2 w-full text-sm rounded-lg border transition-colors bg-surface-alt border-border-alt focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              >
-                {STATUS_OPTIONS[activeTab].map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+                onChange={val => setStatus(val)}
+                options={STATUS_OPTIONS[activeTab].map(s => ({ value: s, label: s }))}
+              />
             </div>
             {activeTab === 'ANIME' && (
               <div className="flex flex-col flex-1 gap-1">
