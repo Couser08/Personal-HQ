@@ -2,7 +2,7 @@ import {
   IconNotes, IconLink, IconTrendingUp, IconBook,
   IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
   IconCode, IconSettings, IconDownload, IconUpload,
-  IconLogout, IconSun, IconMoon, IconUser, IconCrown, IconRocket
+  IconLogout, IconSun, IconMoon, IconUser
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';

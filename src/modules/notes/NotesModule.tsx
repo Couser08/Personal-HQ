@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconPlus, IconSearch, IconPin, IconTrash, IconEdit, IconFileDescription, IconTags, IconCalendarEvent, IconDots, IconFilter } from '@tabler/icons-react';
+import { IconPlus, IconSearch, IconPin, IconEdit, IconFileDescription, IconTags, IconCalendarEvent, IconDots, IconFilter } from '@tabler/icons-react';
 import { useAppStore, type Note } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
-import { Badge } from '../../components/ui/Badge';
+
 import { TagInput } from '../../components/ui/TagInput';
 
 export default function NotesModule() {
   const { notes, addNote, updateNote, deleteNote , showConfirm} = useAppStore();
   
   const [search, setSearch] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTag] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pinned' | 'recent' | 'trash'>('all');
@@ -206,7 +206,7 @@ export default function NotesModule() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-max">
           <AnimatePresence>
-            {filteredNotes.map((note, i) => (
+            {filteredNotes.map((note) => (
               <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
                 key={note.id} onClick={() => handleOpenModal(note)}
                 style={{

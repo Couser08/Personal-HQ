@@ -50,7 +50,7 @@ function LoadingSplash() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const { user, initialized, initialize, loading: authLoading } = useAuthStore();
+  const { user, initialized, initialize } = useAuthStore();
   const { theme, loadAllData, clearAllData, dataLoaded } = useAppStore();
 
   // Boot: resolve Supabase session once
@@ -96,7 +96,7 @@ function App() {
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.3 }}
         >
-          <LoginPage onLoginSuccess={() => {}} />
+          <LoginPage />
           <ConfirmDialog />
         </motion.div>
       ) : (

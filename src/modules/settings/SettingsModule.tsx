@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
-import { IconSettings, IconSun, IconMoon, IconPalette, IconBell, IconRefresh, IconDeviceDesktop } from '@tabler/icons-react';
+import { IconSun, IconMoon, IconPalette, IconBell, IconRefresh, IconDeviceDesktop } from '@tabler/icons-react';
 
 export default function SettingsModule() {
-  const { theme, setTheme, showConfirm } = useAppStore();
+  const { theme, setTheme } = useAppStore();
   const { addToast } = useToastStore();
 
   const handleTestToast = (type: 'success' | 'error' | 'warning' | 'info' | 'update') => {

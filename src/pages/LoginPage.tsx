@@ -21,8 +21,8 @@ const GoogleIcon = () => (
 
 // ─── Spring configs ────────────────────────────────────────────────────────────
 
-const spring = { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 };
-const softSpring = { type: 'spring', stiffness: 200, damping: 28 };
+const spring = { type: 'spring' as const, stiffness: 350, damping: 30, mass: 0.8 };
+const softSpring = { type: 'spring' as const, stiffness: 200, damping: 28 };
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 

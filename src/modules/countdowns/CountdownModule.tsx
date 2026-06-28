@@ -293,7 +293,7 @@ const TemplateFlip = ({ c: _c, t }: { c: Countdown; t: ReturnType<typeof getTime
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
     <div className="flex items-end gap-3 mt-4 flex-wrap">
-      {units.map(({ v, l }, i) => {
+      {units.map(({ v, l }) => {
         const str = pad(v);
         return (
           <div key={l} className="flex flex-col items-center gap-1 shrink-0">

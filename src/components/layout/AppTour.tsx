@@ -30,9 +30,8 @@ export const AppTour = () => {
           {
             element: '#tour-profile',
             popover: {
-              title: 'Your Profile',
-              description: 'Manage your personal details, username, and secure your account here.',
-              side: 'right',
+              title: 'Profile & Auth',
+              description: 'Manage your account securely. You can update your profile or sign out from here.',
               align: 'start'
             }
           },
