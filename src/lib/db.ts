@@ -4,10 +4,6 @@ import type {
   MediaLog, Countdown, CodeSnippet
 } from '../store/useAppStore';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const toSnake = (obj: Record<string, unknown>) => obj; // pass-through; explicit per-table mapping below
-
 // ─── Notes ────────────────────────────────────────────────────────────────────
 
 export const noteService = {
@@ -353,6 +349,17 @@ export const snippetService = {
       tags: snippet.tags,
       created_at: snippet.createdAt,
     });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<CodeSnippet>) {
+    const { error } = await supabase.from('snippets').update({
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.language !== undefined && { language: data.language }),
+      ...(data.code !== undefined && { code: data.code }),
+      ...(data.tags !== undefined && { tags: data.tags }),
+      ...(data.description !== undefined && { description: data.description }),
+    }).eq('id', id);
     if (error) throw error;
   },
 

@@ -96,7 +96,7 @@ function App() {
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.3 }}
         >
-          <LoginPage />
+          <LoginPage onLoginSuccess={() => {}} />
           <ConfirmDialog />
         </motion.div>
       ) : (

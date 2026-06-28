@@ -48,7 +48,6 @@ export const AppTour = () => {
             popover: {
               title: 'You are all set!',
               description: 'Enjoy exploring Personal HQ. You can restart this tour anytime from the Settings page.',
-              side: 'over',
               align: 'center'
             }
           }
