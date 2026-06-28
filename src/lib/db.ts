@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type {
   Note, Link, StockEntry, Subject, InterestRecord,
-  MediaLog, Countdown, CodeSnippet
+  MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction
 } from '../store/useAppStore';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -321,6 +321,47 @@ export const countdownService = {
 
 // ─── Code Snippets ────────────────────────────────────────────────────────────
 
+const SNIPPET_OPTIONAL_COLUMNS = ['description', 'is_favorite', 'updated_at'];
+
+const isMissingSnippetColumnError = (error: unknown) => {
+  const text = [
+    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message ?? '') : '',
+    typeof error === 'object' && error !== null && 'details' in error ? String((error as { details?: unknown }).details ?? '') : '',
+    typeof error === 'object' && error !== null && 'hint' in error ? String((error as { hint?: unknown }).hint ?? '') : '',
+  ].join(' ').toLowerCase();
+
+  return SNIPPET_OPTIONAL_COLUMNS.some((column) => text.includes(column));
+};
+
+const buildSnippetBasePayload = (userId: string, snippet: CodeSnippet) => ({
+  id: snippet.id,
+  user_id: userId,
+  title: snippet.title,
+  language: snippet.language,
+  code: snippet.code,
+  tags: snippet.tags,
+  created_at: snippet.createdAt,
+});
+
+const buildSnippetOptionalPayload = (snippet: CodeSnippet) => ({
+  description: snippet.description ?? '',
+  is_favorite: snippet.isFavorite ?? false,
+  updated_at: snippet.updatedAt ?? snippet.createdAt,
+});
+
+const buildSnippetUpdateBasePayload = (data: Partial<CodeSnippet>) => ({
+  ...(data.title !== undefined && { title: data.title }),
+  ...(data.language !== undefined && { language: data.language }),
+  ...(data.code !== undefined && { code: data.code }),
+  ...(data.tags !== undefined && { tags: data.tags }),
+});
+
+const buildSnippetUpdateOptionalPayload = (data: Partial<CodeSnippet>) => ({
+  ...(data.description !== undefined && { description: data.description }),
+  ...(data.isFavorite !== undefined && { is_favorite: data.isFavorite }),
+  updated_at: data.updatedAt ?? new Date().toISOString(),
+});
+
 export const snippetService = {
   async fetchAll(userId: string): Promise<CodeSnippet[]> {
     const { data, error } = await supabase
@@ -332,39 +373,138 @@ export const snippetService = {
     return (data ?? []).map((r) => ({
       id: r.id,
       title: r.title,
+      description: r.description ?? '',
       language: r.language,
       code: r.code,
       tags: r.tags ?? [],
+      isFavorite: r.is_favorite ?? false,
       createdAt: r.created_at,
+      updatedAt: r.updated_at ?? r.created_at,
     }));
   },
 
   async create(userId: string, snippet: CodeSnippet) {
-    const { error } = await supabase.from('snippets').insert({
-      id: snippet.id,
-      user_id: userId,
-      title: snippet.title,
-      language: snippet.language,
-      code: snippet.code,
-      tags: snippet.tags,
-      created_at: snippet.createdAt,
-    });
+    const basePayload = buildSnippetBasePayload(userId, snippet);
+    const primaryPayload = { ...basePayload, ...buildSnippetOptionalPayload(snippet) };
+
+    let { error } = await supabase.from('snippets').insert(primaryPayload);
+
+    if (error && isMissingSnippetColumnError(error)) {
+      ({ error } = await supabase.from('snippets').insert(basePayload));
+    }
+
     if (error) throw error;
   },
 
   async update(id: string, data: Partial<CodeSnippet>) {
-    const { error } = await supabase.from('snippets').update({
-      ...(data.title !== undefined && { title: data.title }),
-      ...(data.language !== undefined && { language: data.language }),
-      ...(data.code !== undefined && { code: data.code }),
-      ...(data.tags !== undefined && { tags: data.tags }),
-      ...(data.description !== undefined && { description: data.description }),
-    }).eq('id', id);
+    const basePayload = buildSnippetUpdateBasePayload(data);
+    const primaryPayload = { ...basePayload, ...buildSnippetUpdateOptionalPayload(data) };
+
+    let { error } = await supabase.from('snippets').update(primaryPayload).eq('id', id);
+
+    if (error && isMissingSnippetColumnError(error)) {
+      if (Object.keys(basePayload).length === 0) {
+        return;
+      }
+      ({ error } = await supabase.from('snippets').update(basePayload).eq('id', id));
+    }
+
     if (error) throw error;
   },
 
   async delete(id: string) {
     const { error } = await supabase.from('snippets').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ─── Budget Categories ─────────────────────────────────────────────────────────
+
+export const budgetCategoryService = {
+  async fetchAll(userId: string): Promise<BudgetCategory[]> {
+    const { data, error } = await supabase
+      .from('budget_categories')
+      .select('*')
+      .eq('user_id', userId);
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      budget: r.budget,
+      color: r.color,
+      icon: r.icon,
+    }));
+  },
+
+  async create(userId: string, category: BudgetCategory) {
+    const { error } = await supabase.from('budget_categories').insert({
+      id: category.id,
+      user_id: userId,
+      name: category.name,
+      budget: category.budget,
+      color: category.color,
+      icon: category.icon,
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<BudgetCategory>) {
+    const { error } = await supabase.from('budget_categories').update({
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.budget !== undefined && { budget: data.budget }),
+      ...(data.color !== undefined && { color: data.color }),
+      ...(data.icon !== undefined && { icon: data.icon }),
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error: transactionError } = await supabase
+      .from('budget_transactions')
+      .delete()
+      .eq('category_id', id);
+    if (transactionError) throw transactionError;
+
+    const { error } = await supabase.from('budget_categories').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ─── Budget Transactions ───────────────────────────────────────────────────────
+
+export const budgetTransactionService = {
+  async fetchAll(userId: string): Promise<BudgetTransaction[]> {
+    const { data, error } = await supabase
+      .from('budget_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      categoryId: r.category_id,
+      amount: r.amount,
+      description: r.description,
+      date: r.date,
+      type: r.type,
+    }));
+  },
+
+  async create(userId: string, transaction: BudgetTransaction) {
+    const { error } = await supabase.from('budget_transactions').insert({
+      id: transaction.id,
+      user_id: userId,
+      category_id: transaction.categoryId,
+      amount: transaction.amount,
+      description: transaction.description,
+      date: transaction.date,
+      type: transaction.type,
+    });
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('budget_transactions').delete().eq('id', id);
     if (error) throw error;
   },
 };

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconTrash, IconHourglassEmpty } from '@tabler/icons-react';
 import { useAppStore, type Countdown, type CountdownTemplate } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const EMOJIS = ['🎯', '📅', '🎓', '💼', '✈️', '🎮', '📝', '🏆', '💰', '🔥', '⏰', '🎉', '📚', '💻', '🏋️', '🎬', '🚀', '❤️', '🌙', '⭐'];
 const COLORS = ['rose', 'amber', 'blue', 'green', 'purple'] as const;
@@ -442,7 +443,7 @@ const CountdownCard = ({ c, template, onDelete }: { c: Countdown; template: Coun
         </div>
         <button
           onClick={onDelete}
-          className="p-1 text-text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+          className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500 opacity-0 group-hover:opacity-100"
         >
           <IconTrash className="w-4 h-4" />
         </button>
@@ -521,22 +522,22 @@ export default function CountdownModule() {
           <p className="text-text-secondary text-sm">Track your upcoming events and deadlines</p>
         </div>
         <button onClick={handleOpenModal}
-          className="bg-primary hover:bg-primary-muted text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shrink-0">
+          className="btn btn-primary btn-md">
           <IconPlus className="w-4 h-4" /> Add Countdown
         </button>
       </div>
 
       {countdowns.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <div className="w-24 h-24 mb-6 rounded-full bg-surface-alt flex items-center justify-center">
-            <IconHourglassEmpty className="w-10 h-10 text-text-muted" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">No countdowns</h3>
-          <p className="text-text-secondary max-w-md mb-6">Create timers for exams, trips, goals, or any upcoming special events.</p>
-          <button onClick={handleOpenModal} className="text-primary hover:underline font-medium">
-            Create your first countdown
-          </button>
-        </div>
+        <EmptyState
+          icon={<IconHourglassEmpty className="w-9 h-9 text-text-muted" />}
+          title="No countdowns yet"
+          description="Create a countdown for exams, trips, launches, or any date you want to keep in view."
+          action={
+            <button onClick={handleOpenModal} className="btn btn-primary btn-md">
+              <IconPlus className="w-4 h-4" /> Create First Countdown
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <AnimatePresence>
@@ -577,7 +578,8 @@ export default function CountdownModule() {
             <div className="grid grid-cols-10 gap-1.5">
               {EMOJIS.map(e => (
                 <button key={e} onClick={() => setEmoji(e)}
-                  className={`text-xl p-1 rounded-md transition-all ${emoji === e ? 'bg-primary/20 scale-110 ring-1 ring-primary' : 'hover:bg-surface-hover hover:scale-110'}`}>
+                  className={`btn btn-ghost btn-sm btn-square text-xl ${emoji === e ? 'bg-primary/20 scale-110 ring-1 ring-primary' : 'hover:scale-110'}`}
+                  type="button">
                   {e}
                 </button>
               ))}
@@ -587,7 +589,7 @@ export default function CountdownModule() {
             <label className="text-sm font-medium text-text-secondary">Color Accent</label>
             <div className="flex gap-3">
               {COLORS.map(col => (
-                <button key={col} onClick={() => setColor(col)}
+                <button key={col} type="button" onClick={() => setColor(col)}
                   className={`w-8 h-8 rounded-full border-2 transition-all ${color === col ? 'border-text-primary scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                   style={{ backgroundColor: COLOR_HEX[col] }} />
               ))}
@@ -595,11 +597,11 @@ export default function CountdownModule() {
           </div>
           <div className="flex justify-end gap-2 mt-2">
             <button onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover rounded-lg transition-colors">
+              className="btn btn-secondary btn-md">
               Cancel
             </button>
             <button onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary-muted text-white rounded-lg transition-colors">
+              className="btn btn-primary btn-md">
               Save Countdown
             </button>
           </div>

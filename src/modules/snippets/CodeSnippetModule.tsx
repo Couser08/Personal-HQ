@@ -7,6 +7,7 @@ import {
 import { useAppStore, type CodeSnippet } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
 import { Modal } from '../../components/ui/Modal';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { TagInput } from '../../components/ui/TagInput';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -151,7 +152,7 @@ export default function CodeSnippetModule() {
         </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-primary hover:bg-primary-muted text-white px-4 py-2 rounded-[10px] flex items-center gap-2 transition-colors shrink-0 font-semibold text-sm"
+          className="btn btn-primary btn-md"
         >
           <IconPlus className="w-4 h-4" /> Add Snippet
         </button>
@@ -166,7 +167,7 @@ export default function CodeSnippetModule() {
             placeholder="Search snippets by title, language, or tag..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-alt border border-border-alt rounded-[12px] pl-10 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
+            className="input-field pl-10 pr-4 py-3"
           />
         </div>
         
@@ -178,11 +179,7 @@ export default function CodeSnippetModule() {
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border ${
-                  isActive 
-                  ? 'bg-primary/10 text-primary border-primary/20' 
-                  : 'bg-surface border-border-alt text-text-secondary hover:text-text-primary hover:border-border'
-                }`}
+                className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'}`}
               >
                 {filter === 'Favorites' && <IconStarFilled className="w-3.5 h-3.5 text-amber-500" />}
                 {filter === 'Recent' && <IconClock className="w-3.5 h-3.5" />}
@@ -190,23 +187,26 @@ export default function CodeSnippetModule() {
               </button>
             );
           })}
-          <button className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-surface border border-border-alt text-text-secondary hover:text-text-primary transition-colors">
+          <button className="btn btn-secondary btn-sm">
             More <IconFilter className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {snippets.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20 bg-surface border border-border rounded-[16px]">
-          <div className="w-16 h-16 mb-6 rounded-full bg-surface-alt flex items-center justify-center">
-            <IconCode className="w-8 h-8 text-text-muted" />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Your vault is empty</h3>
-          <p className="text-text-secondary max-w-md mb-6 text-sm">Store your frequently used code blocks, JSON configurations, and utility scripts.</p>
-          <button onClick={() => handleOpenModal()} className="text-primary hover:underline font-semibold text-sm">
-            Add your first snippet
-          </button>
-        </div>
+        <EmptyState
+          icon={<IconCode className="w-9 h-9 text-text-muted" />}
+          title="Your vault is empty"
+          description="Store your frequently used code blocks, JSON configurations, and utility scripts."
+          action={
+            <button
+              onClick={() => handleOpenModal()}
+              className="btn btn-primary btn-md"
+            >
+              Add your first snippet
+            </button>
+          }
+        />
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-[500px]">
           
@@ -234,7 +234,7 @@ export default function CodeSnippetModule() {
                           {snippet.language}
                         </span>
                       </div>
-                      <button onClick={(e) => toggleFavorite(e, snippet)} className="text-text-muted hover:text-amber-500 transition-colors">
+                      <button onClick={(e) => toggleFavorite(e, snippet)} className="btn btn-ghost btn-sm btn-square hover:text-amber-500">
                         {snippet.isFavorite ? <IconStarFilled className="w-4 h-4 text-amber-500" /> : <IconStar className="w-4 h-4" />}
                       </button>
                     </div>
@@ -248,11 +248,11 @@ export default function CodeSnippetModule() {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleCopy(snippet.code, snippet.id); }}
-                          className="p-1 text-text-muted hover:text-text-primary rounded transition-colors"
+                          className="btn btn-ghost btn-sm btn-square"
                         >
                           {copiedId === snippet.id ? <IconCheck className="w-4 h-4 text-green-500" /> : <IconCopy className="w-4 h-4" />}
                         </button>
-                        <button className="p-1 text-text-muted hover:text-text-primary rounded transition-colors">
+                        <button className="btn btn-ghost btn-sm btn-square">
                           <IconDots className="w-4 h-4" />
                         </button>
                       </div>
@@ -277,14 +277,14 @@ export default function CodeSnippetModule() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => handleCopy(selectedSnippet.code, selectedSnippet.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-hover border border-border-alt rounded-lg transition-colors"
+                      className="btn btn-secondary btn-sm"
                     >
                       {copiedId === selectedSnippet.id ? <IconCheck className="w-4 h-4 text-green-500" /> : <IconCopy className="w-4 h-4" />} 
                       Copy
                     </button>
                     <button 
                       onClick={() => handleOpenModal(selectedSnippet)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-hover border border-border-alt rounded-lg transition-colors"
+                      className="btn btn-secondary btn-sm"
                     >
                       <IconEdit className="w-4 h-4" /> Edit
                     </button>
@@ -295,7 +295,7 @@ export default function CodeSnippetModule() {
                           setSelectedSnippetId(null);
                         });
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-500/10 border border-border-alt hover:border-rose-500/30 rounded-lg transition-colors"
+                      className="btn btn-danger btn-sm"
                     >
                       <IconTrash className="w-4 h-4" /> Delete
                     </button>
@@ -361,7 +361,7 @@ export default function CodeSnippetModule() {
               placeholder="e.g. Express Server Setup"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-surface-alt border border-border-alt rounded-[10px] px-3 py-2.5 focus:outline-none focus:border-primary text-sm font-medium"
+              className="input-field"
             />
           </div>
 
@@ -372,7 +372,7 @@ export default function CodeSnippetModule() {
               placeholder="Brief description of what this does..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-surface-alt border border-border-alt rounded-[10px] px-3 py-2.5 focus:outline-none focus:border-primary text-sm font-medium"
+              className="input-field"
             />
           </div>
 
@@ -381,7 +381,7 @@ export default function CodeSnippetModule() {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-surface-alt border border-border-alt rounded-[10px] px-3 py-2.5 focus:outline-none focus:border-primary text-sm font-medium"
+              className="select-field"
             >
               {LANGUAGES.map(lang => (
                 <option key={lang} value={lang}>{lang.toUpperCase()}</option>
@@ -395,7 +395,7 @@ export default function CodeSnippetModule() {
               placeholder="// Your code here..."
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-[10px] px-4 py-4 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[250px]"
+              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-[12px] px-4 py-4 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[250px]"
             />
           </div>
 
@@ -407,13 +407,13 @@ export default function CodeSnippetModule() {
           <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border-alt">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-sm font-bold text-text-secondary hover:bg-surface-hover rounded-[10px] transition-colors"
+              className="btn btn-secondary btn-md"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2 text-sm font-bold bg-primary hover:bg-primary-muted text-white rounded-[10px] transition-colors"
+              className="btn btn-primary btn-md"
             >
               {editingId ? 'Save Changes' : 'Save Snippet'}
             </button>

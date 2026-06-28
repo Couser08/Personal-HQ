@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import { Layout } from './components/layout/Layout';
 import { useAppStore } from './store/useAppStore';
@@ -6,18 +6,17 @@ import { useAuthStore } from './store/useAuthStore';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import NotesModule from './modules/notes/NotesModule';
-import LinksModule from './modules/links/LinksModule';
-import StocksModule from './modules/stocks/StocksModule';
-import StudyModule from './modules/study/StudyModule';
-import CalculatorModule from './modules/calculator/CalculatorModule';
-import MediaModule from './modules/media/MediaModule';
-import CountdownModule from './modules/countdowns/CountdownModule';
-import CodeSnippetModule from './modules/snippets/CodeSnippetModule';
-import SettingsModule from './modules/settings/SettingsModule';
-import ProfileModule from './modules/profile/ProfileModule';
-
-// ─── Loading Splash ────────────────────────────────────────────────────────────
+const NotesModule = lazy(() => import('./modules/notes/NotesModule'));
+const LinksModule = lazy(() => import('./modules/links/LinksModule'));
+const BudgetModule = lazy(() => import('./modules/budget/BudgetModule'));
+const StudyModule = lazy(() => import('./modules/study/StudyModule'));
+const CalculatorModule = lazy(() => import('./modules/calculator/CalculatorModule'));
+const MediaModule = lazy(() => import('./modules/media/MediaModule'));
+const CountdownModule = lazy(() => import('./modules/countdowns/CountdownModule'));
+const CodeSnippetModule = lazy(() => import('./modules/snippets/CodeSnippetModule'));
+const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
+const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
+const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
 
 function LoadingSplash() {
   return (
@@ -41,72 +40,49 @@ function LoadingSplash() {
         className="text-sm font-medium"
         style={{ color: '#9ca3af' }}
       >
-        Loading Personal HQ…
+        Loading Personal HQ...
       </motion.div>
     </motion.div>
   );
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+function ModuleFallback() {
+  return <div className="min-h-[320px] flex items-center justify-center text-sm text-text-secondary">Loading module...</div>;
+}
 
 function App() {
   const { user, initialized, initialize } = useAuthStore();
   const { theme, loadAllData, clearAllData, dataLoaded } = useAppStore();
 
-  // Boot: resolve Supabase session once
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  // Sync theme to <html> class
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [theme]);
 
-  // Load all user data when user signs in
   useEffect(() => {
     if (user && !dataLoaded) {
-      loadAllData(user.id).catch(console.error);
+      loadAllData(user.id).catch((error) => console.error('Failed to load user data', error));
     }
-    if (!user) {
-      clearAllData();
-    }
+    if (!user) clearAllData();
   }, [user, dataLoaded, loadAllData, clearAllData]);
 
-  // Show splash while resolving session
   if (!initialized) {
-    return (
-      <AnimatePresence>
-        <LoadingSplash key="splash" />
-      </AnimatePresence>
-    );
+    return <AnimatePresence><LoadingSplash key="splash" /></AnimatePresence>;
   }
 
   return (
     <AnimatePresence mode="wait">
       {!user ? (
-        <motion.div
-          key="auth"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}>
           <LoginPage onLoginSuccess={() => {}} />
           <ConfirmDialog />
         </motion.div>
       ) : (
-        <motion.div
-          key="app"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-        >
+        <motion.div key="app" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
           <AppContent />
         </motion.div>
       )}
@@ -114,7 +90,6 @@ function App() {
   );
 }
 
-// Separate component so hooks run after user is confirmed
 function AppContent() {
   const activeModule = useAppStore((state) => state.activeModule);
 
@@ -122,12 +97,13 @@ function AppContent() {
     switch (activeModule) {
       case 'notes': return <NotesModule />;
       case 'links': return <LinksModule />;
-      case 'stocks': return <StocksModule />;
+      case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
       case 'calculator': return <CalculatorModule />;
       case 'media': return <MediaModule />;
       case 'countdown': return <CountdownModule />;
       case 'snippets': return <CodeSnippetModule />;
+      case 'pomodoro': return <PomodoroModule />;
       case 'settings': return <SettingsModule />;
       case 'profile': return <ProfileModule />;
       default: return <NotesModule />;
@@ -136,7 +112,9 @@ function AppContent() {
 
   return (
     <>
-      <Layout>{renderModule()}</Layout>
+      <Layout>
+        <Suspense fallback={<ModuleFallback />}>{renderModule()}</Suspense>
+      </Layout>
       <ConfirmDialog />
     </>
   );

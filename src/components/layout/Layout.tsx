@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Sidebar, MobileBottomNav } from './Sidebar';
 import { ToastContainer } from '../ui/Toast';
-
 import { AppTour } from './AppTour';
+import { UpdatePopup } from '../ui/UpdatePopup';
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,9 +26,8 @@ export const Layout = ({ children }: LayoutProps) => {
 
       {/* Toast notifications */}
       <ToastContainer />
-
-      {/* App Tour */}
       <AppTour />
+      <UpdatePopup />
     </div>
   );
 };

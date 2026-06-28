@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
 import { supabase } from '../../lib/supabase';
 import {
-  IconUser, IconNotes, IconLink, IconTrendingUp, IconCalendarEvent,
+  IconUser, IconNotes, IconLink, IconBook, IconCalendarEvent,
   IconEdit, IconSettings, IconShieldLock, IconTrash, IconLock, IconCamera
 } from '@tabler/icons-react';
 import { Modal } from '../../components/ui/Modal';
@@ -34,7 +34,7 @@ const inputStyle = {
 
 export default function ProfileModule() {
   const { user } = useAuthStore();
-  const { notes, links, stocks, showConfirm } = useAppStore();
+  const { notes, links, subjects, showConfirm } = useAppStore();
   const { addToast } = useToastStore();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -64,7 +64,7 @@ export default function ProfileModule() {
   // Simple stats
   const totalNotes = notes.length;
   const totalLinks = links.length;
-  const totalStocks = stocks.length;
+  const totalSubjects = subjects.length;
   const joinDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
 
   useEffect(() => {
@@ -121,15 +121,44 @@ export default function ProfileModule() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Simulate photo upload (Supabase Storage would go here)
-      addToast('Info', 'Photo upload simulated successfully!', 'info');
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Invalid File', 'Choose an image file for your avatar.', 'warning');
+      return;
     }
+
+    setIsUpdating(true);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const filePath = user.id + '/' + Date.now() + '-' + safeName;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+    if (uploadError) {
+      setIsUpdating(false);
+      addToast('Upload Failed', uploadError.message, 'error');
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const { error: profileError } = await supabase.auth.updateUser({
+      data: { avatar_url: publicUrl.publicUrl },
+    });
+
+    setIsUpdating(false);
+    if (profileError) {
+      addToast('Profile Update Failed', profileError.message, 'error');
+      return;
+    }
+
+    addToast('Success', 'Profile photo updated.', 'success');
   };
 
   const handleDeleteAccount = () => {
-    showConfirm('Delete Account', 'Are you completely sure? This action cannot be undone and will erase all your data.', () => {
-      addToast('Account Deletion', 'Account deletion simulated.', 'info');
+    showConfirm('Account Deletion Requires Server Setup', 'Account deletion must run from a secure backend function with Supabase service-role access. This browser app will not fake-delete your account.', () => {
+      addToast('Server Function Required', 'Create a Supabase Edge Function for permanent account deletion.', 'warning');
     });
   };
 
@@ -222,11 +251,11 @@ export default function ProfileModule() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 24 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,197,94,0.1)', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <IconTrendingUp size={20} />
+              <IconBook size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{totalStocks}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Stock Entries</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{totalSubjects}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Subjects</div>
             </div>
           </div>
         </div>

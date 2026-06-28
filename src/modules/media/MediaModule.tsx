@@ -4,6 +4,7 @@ import { IconPlus, IconTrash, IconDeviceGamepad2, IconMovie, IconStarFilled, Ico
 import { useAppStore, type MediaLog } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const STATUS_OPTIONS = {
   ANIME: ['WATCHING', 'COMPLETED', 'DROPPED', 'PLANNING'],
@@ -129,18 +130,18 @@ export default function MediaModule() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col h-full gap-6"
+      className="flex flex-col gap-6 h-full"
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col gap-4 justify-between items-start md:flex-row md:items-center">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            Media Log <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
+          <h2 className="flex gap-2 items-center text-2xl font-bold">
+            Media Log <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
           </h2>
-          <p className="text-text-secondary text-sm">Track your anime and games</p>
+          <p className="text-sm text-text-secondary">Track your anime and games</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-primary hover:bg-primary-muted text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shrink-0"
+          className="flex gap-2 items-center px-4 py-2 text-white rounded-lg transition-colors bg-primary hover:bg-primary-muted shrink-0"
         >
           <IconPlus className="w-4 h-4" /> Add Entry
         </button>
@@ -161,49 +162,49 @@ export default function MediaModule() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {activeTab === 'ANIME' ? (
           <>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Total Anime</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Total Anime</p>
               <p className="text-xl font-bold">{stats.anime.total}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Watching</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Watching</p>
               <p className="text-xl font-bold text-primary">{stats.anime.watching}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Completed</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Completed</p>
               <p className="text-xl font-bold text-green-500">{stats.anime.completed}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Dropped</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Dropped</p>
               <p className="text-xl font-bold text-rose-500">{stats.anime.dropped}</p>
             </div>
           </>
         ) : (
           <>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Total Games</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Total Games</p>
               <p className="text-xl font-bold">{stats.games.total}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Playing</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Playing</p>
               <p className="text-xl font-bold text-primary">{stats.games.playing}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Finished</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Finished</p>
               <p className="text-xl font-bold text-green-500">{stats.games.finished}</p>
             </div>
-            <div className="bg-surface border border-border p-4 rounded-xl">
-              <p className="text-xs text-text-secondary mb-1">Wishlist</p>
+            <div className="p-4 rounded-xl border bg-surface border-border">
+              <p className="mb-1 text-xs text-text-secondary">Wishlist</p>
               <p className="text-xl font-bold text-amber-500">{stats.games.wishlist}</p>
             </div>
           </>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Badge 
           variant={filterStatus === null ? 'primary' : 'default'} 
           onClick={() => setFilterStatus(null)}
@@ -222,21 +223,21 @@ export default function MediaModule() {
       </div>
 
       {filteredLogs.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <div className="w-24 h-24 mb-6 rounded-full bg-surface-alt flex items-center justify-center">
-            {activeTab === 'ANIME' ? <IconMovie className="w-10 h-10 text-text-muted" /> : <IconDeviceGamepad2 className="w-10 h-10 text-text-muted" />}
-          </div>
-          <h3 className="text-xl font-medium mb-2">No entries found</h3>
-          <p className="text-text-secondary max-w-md mb-6">Track what you're watching or playing, rate them, and keep notes.</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="text-primary hover:underline font-medium"
-          >
-            Add your first {activeTab.toLowerCase()}
-          </button>
-        </div>
+        <EmptyState
+          icon={activeTab === 'ANIME' ? <IconMovie className="w-9 h-9 text-text-muted" /> : <IconDeviceGamepad2 className="w-9 h-9 text-text-muted" />}
+          title="No entries found"
+          description="Track what you're watching or playing, rate them, and keep notes."
+          action={
+            <button
+              onClick={() => handleOpenModal()}
+              className="font-medium text-primary hover:underline"
+            >
+              Add your first {activeTab.toLowerCase()}
+            </button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+        <div className="grid grid-cols-1 auto-rows-max gap-4 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
             {filteredLogs.map(log => (
               <motion.div
@@ -245,32 +246,32 @@ export default function MediaModule() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 key={log.id}
-                className="bg-surface border border-border p-5 rounded-xl flex flex-col gap-3 group relative hover:border-border transition-colors cursor-pointer"
+                className="flex relative flex-col gap-3 p-5 rounded-xl border transition-colors cursor-pointer bg-surface border-border group hover:border-border"
                 onClick={() => handleOpenModal(log)}
               >
-                <div className="flex justify-between items-start gap-2">
-                  <h3 className="font-semibold text-lg leading-tight truncate">{log.title}</h3>
+                <div className="flex gap-2 justify-between items-start">
+                  <h3 className="text-lg font-semibold leading-tight truncate">{log.title}</h3>
                   <Badge variant={getStatusVariant(log.status) as any}>{log.status}</Badge>
                 </div>
                 
-                <div className="flex items-center justify-between mt-1">
+                <div className="flex justify-between items-center mt-1">
                   {renderStars(log.rating)}
                   {log.type === 'ANIME' && log.episodes !== undefined && log.episodes > 0 && (
                     <span className="text-xs text-text-muted">{log.episodes} eps</span>
                   )}
                 </div>
 
-                <p className="text-sm text-text-secondary whitespace-pre-wrap line-clamp-3 mt-2">
+                <p className="mt-2 text-sm whitespace-pre-wrap text-text-secondary line-clamp-3">
                   {log.notes || <span className="italic opacity-50">No notes</span>}
                 </p>
 
-                <div className="flex justify-end mt-auto pt-2">
+                <div className="flex justify-end pt-2 mt-auto">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       showConfirm('Confirm Delete', 'Delete this entry?', () => { deleteMediaLog(log.id); });
                     }}
-                    className="p-1 text-text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1 rounded opacity-0 transition-colors text-text-muted hover:text-rose-500 hover:bg-rose-500/10 group-hover:opacity-100"
                   >
                     <IconTrash className="w-4 h-4" />
                   </button>
@@ -294,17 +295,17 @@ export default function MediaModule() {
               placeholder={`e.g. ${activeTab === 'ANIME' ? 'Attack on Titan' : 'Elden Ring'}`}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-surface-alt border border-border-alt rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
+              className="px-3 py-2 w-full text-sm rounded-lg border transition-colors bg-surface-alt border-border-alt focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div className="flex gap-4">
-            <div className="flex flex-col gap-1 flex-1">
+            <div className="flex flex-col flex-1 gap-1">
               <label className="text-sm font-medium text-text-secondary">Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-surface-alt border border-border-alt rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
+                className="px-3 py-2 w-full text-sm rounded-lg border transition-colors bg-surface-alt border-border-alt focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
                 {STATUS_OPTIONS[activeTab].map(s => (
                   <option key={s} value={s}>{s}</option>
@@ -312,21 +313,21 @@ export default function MediaModule() {
               </select>
             </div>
             {activeTab === 'ANIME' && (
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col flex-1 gap-1">
                 <label className="text-sm font-medium text-text-secondary">Episodes</label>
                 <input
                   type="number"
                   placeholder="e.g. 24"
                   value={episodes}
                   onChange={(e) => setEpisodes(e.target.value)}
-                  className="w-full bg-surface-alt border border-border-alt rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
+                  className="px-3 py-2 w-full text-sm rounded-lg border transition-colors bg-surface-alt border-border-alt focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-secondary flex justify-between">
+            <label className="flex justify-between text-sm font-medium text-text-secondary">
               Rating (1-10) <span>{rating > 0 ? rating : '-'}</span>
             </label>
             <input
@@ -350,16 +351,16 @@ export default function MediaModule() {
             />
           </div>
 
-          <div className="flex justify-end gap-2 mt-2">
+          <div className="flex gap-2 justify-end mt-2">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-colors text-text-secondary hover:bg-surface-hover"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary-muted text-white rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors bg-primary hover:bg-primary-muted"
             >
               Save Entry
             </button>

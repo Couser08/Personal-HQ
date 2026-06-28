@@ -4,6 +4,7 @@ import { IconPlus, IconTrash, IconTrendingUp, IconFilter } from '@tabler/icons-r
 import { useAppStore } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function StocksModule() {
   const { stocks, addStock, deleteStock , showConfirm} = useAppStore();
@@ -147,19 +148,19 @@ export default function StocksModule() {
       </div>
 
       {stocks.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <div className="w-24 h-24 mb-6 rounded-full bg-surface-alt flex items-center justify-center">
-            <IconTrendingUp className="w-10 h-10 text-text-muted" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">No stock entries yet</h3>
-          <p className="text-text-secondary max-w-md mb-6">Log your trades, track investments, and manage your watchlist.</p>
-          <button
-            onClick={handleOpenModal}
-            className="text-primary hover:underline font-medium"
-          >
-            Add your first trade
-          </button>
-        </div>
+        <EmptyState
+          icon={<IconTrendingUp className="w-9 h-9 text-text-muted" />}
+          title="No trades logged yet"
+          description="Log your first trade to start tracking your portfolio, P&L, and watchlist."
+          action={
+            <button
+              onClick={handleOpenModal}
+              className="px-5 py-2.5 bg-primary hover:bg-primary-muted text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
+            >
+              <IconPlus className="w-4 h-4" /> Add First Trade
+            </button>
+          }
+        />
       ) : (
         <div className="bg-surface border border-border rounded-xl overflow-x-auto">
           <table className="w-full text-left text-sm">

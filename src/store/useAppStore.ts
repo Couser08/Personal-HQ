@@ -2,9 +2,35 @@ import { create } from 'zustand';
 import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
+  budgetCategoryService, budgetTransactionService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
+
+const DEFAULT_SETTINGS: AppSettings = {
+  countdownTemplate: 'default',
+  accentColor: 'rose',
+  animationSpeed: 'normal',
+  compactMode: false,
+  soundEnabled: true,
+};
+
+const sanitizeActiveModule = (module: string) => (module === 'stocks' ? 'notes' : module);
+
+const loadStoredSettings = (): AppSettings => {
+  const fallback = { ...DEFAULT_SETTINGS };
+  try {
+    const raw = localStorage.getItem('settings');
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<AppSettings>;
+    return { ...fallback, ...parsed };
+  } catch {
+    return fallback;
+  }
+};
+
+const getStoreErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 export type Theme = 'light' | 'dark';
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
@@ -84,6 +110,23 @@ export interface Countdown {
   createdAt: string;
 }
 
+export interface BudgetCategory {
+  id: string;
+  name: string;
+  budget: number;
+  color: 'rose' | 'blue' | 'green' | 'amber' | 'purple';
+  icon: string;
+}
+
+export interface BudgetTransaction {
+  id: string;
+  categoryId: string;
+  amount: number;
+  description: string;
+  date: string;
+  type: 'income' | 'expense';
+}
+
 export interface CodeSnippet {
   id: string;
   title: string;
@@ -103,8 +146,19 @@ export interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
+export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple';
+export type AnimationSpeed = 'fast' | 'normal' | 'slow';
 export interface AppSettings {
   countdownTemplate: CountdownTemplate;
+  accentColor: AccentColor;
+  animationSpeed: AnimationSpeed;
+  compactMode: boolean;
+  soundEnabled: boolean;
+}
+
+export interface PomodoroStats {
+  totalSessions: number;
+  totalMinutes: number;
 }
 
 export interface AppStore {
@@ -164,14 +218,27 @@ export interface AppStore {
   updateSnippet: (id: string, data: Partial<CodeSnippet>) => Promise<void>;
   deleteSnippet: (id: string) => Promise<void>;
 
+  pomodoroStats: PomodoroStats;
+  recordPomodoroSession: (minutes: number) => void;
+
+  // Budget Tracker
+  budgetCategories: BudgetCategory[];
+  budgetTransactions: BudgetTransaction[];
+  addBudgetCategory: (category: BudgetCategory) => Promise<void>;
+  updateBudgetCategory: (id: string, data: Partial<BudgetCategory>) => Promise<void>;
+  deleteBudgetCategory: (id: string) => Promise<void>;
+  addBudgetTransaction: (transaction: BudgetTransaction) => Promise<void>;
+  deleteBudgetTransaction: (id: string) => Promise<void>;
+  
   importData: (data: Partial<AppStore>) => void;
 }
 
 export const useAppStore = create<AppStore>()((set, get) => ({
-  activeModule: localStorage.getItem('activeModule') || 'notes',
+  activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'notes'),
   setActiveModule: (module) => {
-    localStorage.setItem('activeModule', module);
-    set({ activeModule: module });
+    const nextModule = sanitizeActiveModule(module);
+    localStorage.setItem('activeModule', nextModule);
+    set({ activeModule: nextModule });
   },
 
   theme: (localStorage.getItem('theme') as Theme) || 'dark',
@@ -180,9 +247,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set({ theme });
   },
 
-  settings: { countdownTemplate: 'default' },
+  settings: loadStoredSettings(),
   updateSettings: (newSettings) =>
-    set((state) => ({ settings: { ...state.settings, ...newSettings } })),
+    set((state) => {
+      const settings = { ...state.settings, ...newSettings };
+      localStorage.setItem('settings', JSON.stringify(settings));
+      return { settings };
+    }),
 
   confirmDialog: { isOpen: false, title: '', message: '', onConfirm: () => {} },
   showConfirm: (title, message, onConfirm) =>
@@ -198,26 +269,70 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   dataLoaded: false,
 
-  loadAllData: async (userId) => {
-    const [notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets] =
-      await Promise.all([
-        noteService.fetchAll(userId),
-        linkService.fetchAll(userId),
-        stockService.fetchAll(userId),
-        subjectService.fetchAll(userId),
-        interestService.fetchAll(userId),
-        mediaService.fetchAll(userId),
-        countdownService.fetchAll(userId),
-        snippetService.fetchAll(userId),
-      ]);
-    set({ notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets, dataLoaded: true });
+  loadAllData: async (userId: string) => {
+    const results = await Promise.allSettled([
+      noteService.fetchAll(userId),
+      linkService.fetchAll(userId),
+      stockService.fetchAll(userId),
+      subjectService.fetchAll(userId),
+      interestService.fetchAll(userId),
+      mediaService.fetchAll(userId),
+      countdownService.fetchAll(userId),
+      snippetService.fetchAll(userId),
+      budgetCategoryService.fetchAll(userId),
+      budgetTransactionService.fetchAll(userId),
+    ]);
+
+    const serviceNames = [
+      'notes',
+      'links',
+      'stocks',
+      'study tracker',
+      'calculator history',
+      'media logs',
+      'countdowns',
+      'code snippets',
+      'budget categories',
+      'budget transactions',
+    ];
+
+    const failedServices = results
+      .map((result, index) => (result.status === 'rejected' ? serviceNames[index] : null))
+      .filter((name): name is string => Boolean(name));
+
+    const notes = results[0].status === 'fulfilled' ? results[0].value : [];
+    const links = results[1].status === 'fulfilled' ? results[1].value : [];
+    const stocks = results[2].status === 'fulfilled' ? results[2].value : [];
+    const subjects = results[3].status === 'fulfilled' ? results[3].value : [];
+    const interestHistory = results[4].status === 'fulfilled' ? results[4].value : [];
+    const mediaLogs = results[5].status === 'fulfilled' ? results[5].value : [];
+    const countdowns = results[6].status === 'fulfilled' ? results[6].value : [];
+    const snippets = results[7].status === 'fulfilled' ? results[7].value : [];
+    const budgetCategories = results[8].status === 'fulfilled' ? results[8].value : [];
+    const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
+
+    if (failedServices.length > 0) {
+      console.warn('Supabase sync skipped some modules:', failedServices);
+      useToastStore.getState().addToast(
+        'Partial Sync',
+        `Some modules could not refresh: ${failedServices.join(', ')}`,
+        'warning'
+      );
+    }
+
+    set({
+      notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
+      budgetCategories, budgetTransactions,
+      dataLoaded: true
+    });
   },
 
   clearAllData: () =>
     set({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],
-      snippets: [], dataLoaded: false,
+      snippets: [], budgetCategories: [], budgetTransactions: [],
+      dataLoaded: false,
     }),
 
   // ── Notes ─────────────────────────────────────────────────────────────────
@@ -226,21 +341,42 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addNote: async (note) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().notes;
     set((state) => ({ notes: [note, ...state.notes] }));
-    await noteService.create(uid, note);
-    useToastStore.getState().addToast('Success', 'Note saved', 'success');
+    try {
+      await noteService.create(uid, note);
+      useToastStore.getState().addToast('Success', 'Note saved', 'success');
+    } catch (error) {
+      set({ notes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save note'), 'error');
+      throw error;
+    }
   },
   updateNote: async (id, data) => {
+    const previous = get().notes;
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
     }));
-    await noteService.update(id, data);
-    useToastStore.getState().addToast('Success', 'Note updated', 'success');
+    try {
+      await noteService.update(id, data);
+      useToastStore.getState().addToast('Success', 'Note updated', 'success');
+    } catch (error) {
+      set({ notes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update note'), 'error');
+      throw error;
+    }
   },
   deleteNote: async (id) => {
+    const previous = get().notes;
     set((state) => ({ notes: state.notes.filter((n) => n.id !== id) }));
-    await noteService.delete(id);
-    useToastStore.getState().addToast('Success', 'Note deleted', 'success');
+    try {
+      await noteService.delete(id);
+      useToastStore.getState().addToast('Success', 'Note deleted', 'success');
+    } catch (error) {
+      set({ notes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete note'), 'error');
+      throw error;
+    }
   },
 
   // ── Links ─────────────────────────────────────────────────────────────────
@@ -249,14 +385,28 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addLink: async (link) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().links;
     set((state) => ({ links: [link, ...state.links] }));
-    await linkService.create(uid, link);
-    useToastStore.getState().addToast('Success', 'Link saved', 'success');
+    try {
+      await linkService.create(uid, link);
+      useToastStore.getState().addToast('Success', 'Link saved', 'success');
+    } catch (error) {
+      set({ links: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save link'), 'error');
+      throw error;
+    }
   },
   deleteLink: async (id) => {
+    const previous = get().links;
     set((state) => ({ links: state.links.filter((l) => l.id !== id) }));
-    await linkService.delete(id);
-    useToastStore.getState().addToast('Success', 'Link deleted', 'success');
+    try {
+      await linkService.delete(id);
+      useToastStore.getState().addToast('Success', 'Link deleted', 'success');
+    } catch (error) {
+      set({ links: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete link'), 'error');
+      throw error;
+    }
   },
 
   // ── Stocks ────────────────────────────────────────────────────────────────
@@ -265,14 +415,28 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addStock: async (entry) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().stocks;
     set((state) => ({ stocks: [entry, ...state.stocks] }));
-    await stockService.create(uid, entry);
-    useToastStore.getState().addToast('Success', 'Stock entry saved', 'success');
+    try {
+      await stockService.create(uid, entry);
+      useToastStore.getState().addToast('Success', 'Stock entry saved', 'success');
+    } catch (error) {
+      set({ stocks: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save stock entry'), 'error');
+      throw error;
+    }
   },
   deleteStock: async (id) => {
+    const previous = get().stocks;
     set((state) => ({ stocks: state.stocks.filter((s) => s.id !== id) }));
-    await stockService.delete(id);
-    useToastStore.getState().addToast('Success', 'Stock entry deleted', 'success');
+    try {
+      await stockService.delete(id);
+      useToastStore.getState().addToast('Success', 'Stock entry deleted', 'success');
+    } catch (error) {
+      set({ stocks: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete stock entry'), 'error');
+      throw error;
+    }
   },
 
   // ── Subjects ──────────────────────────────────────────────────────────────
@@ -281,9 +445,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addSubject: async (subject) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().subjects;
     set((state) => ({ subjects: [subject, ...state.subjects] }));
-    await subjectService.create(uid, subject);
-    useToastStore.getState().addToast('Success', 'Subject added', 'success');
+    try {
+      await subjectService.create(uid, subject);
+      useToastStore.getState().addToast('Success', 'Subject added', 'success');
+    } catch (error) {
+      set({ subjects: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not add subject'), 'error');
+      throw error;
+    }
   },
   addTopic: async (subjectId, topic) => {
     set((state) => ({
@@ -348,9 +519,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addMediaLog: async (log) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().mediaLogs;
     set((state) => ({ mediaLogs: [log, ...state.mediaLogs] }));
-    await mediaService.create(uid, log);
-    useToastStore.getState().addToast('Success', 'Media log added', 'success');
+    try {
+      await mediaService.create(uid, log);
+      useToastStore.getState().addToast('Success', 'Media log added', 'success');
+    } catch (error) {
+      set({ mediaLogs: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save media log'), 'error');
+      throw error;
+    }
   },
   updateMediaLog: async (id, data) => {
     set((state) => ({
@@ -371,9 +549,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addCountdown: async (countdown) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().countdowns;
     set((state) => ({ countdowns: [countdown, ...state.countdowns] }));
-    await countdownService.create(uid, countdown);
-    useToastStore.getState().addToast('Success', 'Countdown created', 'success');
+    try {
+      await countdownService.create(uid, countdown);
+      useToastStore.getState().addToast('Success', 'Countdown created', 'success');
+    } catch (error) {
+      set({ countdowns: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not create countdown'), 'error');
+      throw error;
+    }
   },
   deleteCountdown: async (id) => {
     set((state) => ({ countdowns: state.countdowns.filter((c) => c.id !== id) }));
@@ -387,22 +572,122 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   addSnippet: async (snippet) => {
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
+    const previous = get().snippets;
     set((state) => ({ snippets: [snippet, ...state.snippets] }));
-    await snippetService.create(uid, snippet);
-    useToastStore.getState().addToast('Success', 'Snippet added', 'success');
+    try {
+      await snippetService.create(uid, snippet);
+      useToastStore.getState().addToast('Success', 'Snippet added', 'success');
+    } catch (error) {
+      set({ snippets: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save snippet'), 'error');
+      throw error;
+    }
   },
   updateSnippet: async (id, data) => {
+    const previous = get().snippets;
+    const nextData = { ...data, updatedAt: data.updatedAt ?? new Date().toISOString() };
     set((state) => ({
-      snippets: state.snippets.map((s) => (s.id === id ? { ...s, ...data } : s)),
+      snippets: state.snippets.map((s) => (s.id === id ? { ...s, ...nextData } : s)),
     }));
-    await snippetService.update(id, data);
-    useToastStore.getState().addToast('Success', 'Snippet updated', 'success');
+    try {
+      await snippetService.update(id, nextData);
+      useToastStore.getState().addToast('Success', 'Snippet updated', 'success');
+    } catch (error) {
+      set({ snippets: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update snippet'), 'error');
+      throw error;
+    }
   },
   deleteSnippet: async (id) => {
+    const previous = get().snippets;
     set((state) => ({ snippets: state.snippets.filter((s) => s.id !== id) }));
-    await snippetService.delete(id);
-    useToastStore.getState().addToast('Success', 'Snippet deleted', 'success');
+    try {
+      await snippetService.delete(id);
+      useToastStore.getState().addToast('Success', 'Snippet deleted', 'success');
+    } catch (error) {
+      set({ snippets: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete snippet'), 'error');
+      throw error;
+    }
   },
 
-  importData: (data) => set((state) => ({ ...state, ...data })),
+  // ── Pomodoro ──────────────────────────────────────────────────────────────
+
+  pomodoroStats: { totalSessions: 0, totalMinutes: 0 },
+  recordPomodoroSession: (minutes) =>
+    set((state) => ({
+      pomodoroStats: {
+        totalSessions: state.pomodoroStats.totalSessions + 1,
+        totalMinutes: state.pomodoroStats.totalMinutes + minutes,
+      },
+    })),
+
+  // Budget Tracker
+  budgetCategories: [],
+  budgetTransactions: [],
+  addBudgetCategory: async (category) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().budgetCategories;
+    set((state) => ({ budgetCategories: [...state.budgetCategories, category] }));
+    try {
+      await budgetCategoryService.create(uid, category);
+      useToastStore.getState().addToast('Success', 'Budget category added', 'success');
+    } catch (error) {
+      set({ budgetCategories: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not add budget category'), 'error');
+      throw error;
+    }
+  },
+  updateBudgetCategory: async (id, data) => {
+    set((state) => ({
+      budgetCategories: state.budgetCategories.map(c => c.id === id ? { ...c, ...data } : c),
+    }));
+    await budgetCategoryService.update(id, data);
+    useToastStore.getState().addToast('Success', 'Budget category updated', 'success');
+  },
+  deleteBudgetCategory: async (id) => {
+    const previousCategories = get().budgetCategories;
+    const previousTransactions = get().budgetTransactions;
+    set((state) => ({
+      budgetCategories: state.budgetCategories.filter(c => c.id !== id),
+      budgetTransactions: state.budgetTransactions.filter(t => t.categoryId !== id),
+    }));
+    try {
+      await budgetCategoryService.delete(id);
+      useToastStore.getState().addToast('Success', 'Budget category deleted', 'success');
+    } catch (error) {
+      set({ budgetCategories: previousCategories, budgetTransactions: previousTransactions });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete budget category'), 'error');
+      throw error;
+    }
+  },
+  addBudgetTransaction: async (transaction) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().budgetTransactions;
+    set((state) => ({ budgetTransactions: [transaction, ...state.budgetTransactions] }));
+    try {
+      await budgetTransactionService.create(uid, transaction);
+      useToastStore.getState().addToast('Success', 'Budget transaction added', 'success');
+    } catch (error) {
+      set({ budgetTransactions: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save transaction'), 'error');
+      throw error;
+    }
+  },
+  deleteBudgetTransaction: async (id) => {
+    set((state) => ({ budgetTransactions: state.budgetTransactions.filter(t => t.id !== id) }));
+    await budgetTransactionService.delete(id);
+    useToastStore.getState().addToast('Success', 'Budget transaction deleted', 'success');
+  },
+
+  importData: (data) =>
+    set((state) => {
+      const nextState = { ...state, ...data };
+      if (data.settings) {
+        localStorage.setItem('settings', JSON.stringify(nextState.settings));
+      }
+      return nextState;
+    }),
 }));

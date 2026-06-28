@@ -20,13 +20,13 @@ export const ConfirmDialog = () => {
         <div className="flex justify-end gap-2 mt-2">
           <button
             onClick={closeConfirm}
-            className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover rounded-lg transition-colors"
+            className="btn btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors"
+            className="btn btn-danger btn-md"
           >
             Confirm
           </button>

@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { TagInput } from '../../components/ui/TagInput';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function LinksModule() {
   const { links, addLink, deleteLink , showConfirm} = useAppStore();
@@ -87,59 +88,45 @@ export default function LinksModule() {
         </div>
         <button
           onClick={handleOpenModal}
-          className="bg-primary hover:bg-primary-muted text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shrink-0"
+          className="btn btn-primary btn-md"
         >
           <IconPlus className="w-4 h-4" /> Add Link
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-        <div className="relative w-full max-w-md">
+      {/* Search — full width, then tags below */}
+      <div className="flex flex-col gap-3">
+        <div className="relative w-full">
           <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
-            type="text"
-            placeholder="Search links..."
+            type="search"
+            placeholder="Search links…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-alt border border-border-alt rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
+            className="w-full bg-surface-alt border border-border-alt rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
           />
         </div>
-        
         {allTags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            <Badge 
-              variant={selectedTag === null ? 'primary' : 'default'}
-              onClick={() => setSelectedTag(null)}
-            >
-              All
-            </Badge>
+            <Badge variant={selectedTag === null ? 'primary' : 'default'} onClick={() => setSelectedTag(null)}>All</Badge>
             {allTags.map(tag => (
-              <Badge 
-                key={tag}
-                variant={selectedTag === tag ? 'primary' : 'default'}
-                onClick={() => setSelectedTag(tag)}
-              >
-                {tag}
-              </Badge>
+              <Badge key={tag} variant={selectedTag === tag ? 'primary' : 'default'} onClick={() => setSelectedTag(tag)}>{tag}</Badge>
             ))}
           </div>
         )}
       </div>
 
       {links.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <div className="w-24 h-24 mb-6 rounded-full bg-surface-alt flex items-center justify-center">
-            <IconLinkTabler className="w-10 h-10 text-text-muted" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">No links saved yet</h3>
-          <p className="text-text-secondary max-w-md mb-6">Create a centralized vault for all your important resources, articles, and tools.</p>
-          <button
-            onClick={handleOpenModal}
-            className="text-primary hover:underline font-medium"
-          >
-            Add your first link
-          </button>
-        </div>
+        <EmptyState
+          icon={<IconLinkTabler className="w-9 h-9 text-text-muted" />}
+          title="No links saved yet"
+          description="Create a centralized vault for all your important resources, articles, and tools."
+          action={
+            <button onClick={handleOpenModal} className="btn btn-primary btn-md">
+              <IconPlus className="w-4 h-4" /> Add First Link
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence>
@@ -183,7 +170,7 @@ export default function LinksModule() {
                       e.stopPropagation();
                       showConfirm('Confirm Delete', 'Delete this link?', () => { deleteLink(link.id); });
                     }}
-                    className="p-1 text-text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500 opacity-0 group-hover:opacity-100"
                   >
                     <IconTrash className="w-4 h-4" />
                   </button>
@@ -227,13 +214,13 @@ export default function LinksModule() {
           <div className="flex justify-end gap-2 mt-4">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover rounded-lg transition-colors"
+              className="btn btn-secondary btn-md"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary-muted text-white rounded-lg transition-colors"
+              className="btn btn-primary btn-md"
             >
               Save Link
             </button>
