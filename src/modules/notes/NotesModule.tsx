@@ -11,6 +11,9 @@ import { EmptyState } from '../../components/ui/EmptyState';
 function stripHtml(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
+  // Remove edit headers so they don't show "Edit Code javascript" in previews
+  const headers = div.querySelectorAll('.note-code-header');
+  headers.forEach(h => h.remove());
   return div.textContent ?? div.innerText ?? '';
 }
 

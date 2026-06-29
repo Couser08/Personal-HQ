@@ -33,8 +33,8 @@ export const EmptyState = ({ icon, title, description, action }: EmptyStateProps
 
     {description && (
       <p
-        className="text-sm text-text-secondary leading-relaxed mb-5"
-        style={{ maxWidth: 320 }}
+        className="text-sm text-text-secondary leading-relaxed mb-5 w-full"
+        style={{ maxWidth: 320, margin: '0 auto 20px auto' }}
       >
         {description}
       </p>

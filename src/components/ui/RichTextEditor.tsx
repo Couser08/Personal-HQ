@@ -2,14 +2,11 @@ import { useRef, useCallback, useState } from 'react';
 import {
   IconBold, IconItalic, IconUnderline, IconStrikethrough,
   IconList, IconListNumbers, IconH1,
-  IconCode, IconHighlight, IconClearFormatting, IconChevronDown, IconCheck
+  IconCode, IconHighlight, IconClearFormatting
 } from '@tabler/icons-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { CustomSelect } from './CustomSelect';
+import { Modal } from './Modal';
 
-/* ── Language list ─────────────────────────────────────────────────────── */
 const LANG_OPTIONS = [
   { value: 'javascript', label: 'JavaScript' },
   { value: 'typescript', label: 'TypeScript' },
@@ -29,195 +26,6 @@ const LANG_OPTIONS = [
   { value: 'other',      label: 'Other' },
 ];
 
-/* ── Small inline language picker (not portal, lives in the code block) ── */
-function LangPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
-
-  const openPanel = () => {
-    if (!btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    setPanelStyle({
-      position: 'fixed',
-      top:  r.bottom + 4,
-      left: r.left,
-      width: Math.max(r.width, 160),
-      zIndex: 9999,
-    });
-    setOpen(true);
-  };
-
-  const label = LANG_OPTIONS.find(l => l.value === value)?.label ?? value.toUpperCase();
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={() => open ? setOpen(false) : openPanel()}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-          padding: '2px 8px', borderRadius: 6,
-          background: 'rgba(244,63,94,0.15)', color: '#f43f5e',
-          border: 'none', cursor: 'pointer',
-        }}
-      >
-        {label}
-        <IconChevronDown style={{ width: 12, height: 12, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
-      </button>
-
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {open && (
-            <>
-              {/* Invisible backdrop */}
-              <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-              <motion.ul
-                initial={{ opacity: 0, scaleY: 0.92 }}
-                animate={{ opacity: 1, scaleY: 1 }}
-                exit={{ opacity: 0, scaleY: 0.92 }}
-                transition={{ type: 'spring', damping: 24, stiffness: 400 }}
-                style={{
-                  ...panelStyle,
-                  transformOrigin: 'top left',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-border)',
-                  borderRadius: 12,
-                  padding: '4px 0',
-                  maxHeight: 240,
-                  overflowY: 'auto',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                  listStyle: 'none', margin: 0,
-                }}
-              >
-                {LANG_OPTIONS.map(opt => (
-                  <li
-                    key={opt.value}
-                    onClick={() => { onChange(opt.value); setOpen(false); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 14px', fontSize: 13, cursor: 'pointer',
-                      fontWeight: opt.value === value ? 600 : 400,
-                      color: opt.value === value ? 'var(--primary)' : 'var(--text-secondary)',
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface-hover)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                  >
-                    {opt.label}
-                    {opt.value === value && <IconCheck style={{ width: 13, height: 13, color: 'var(--primary)' }} />}
-                  </li>
-                ))}
-              </motion.ul>
-            </>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-    </>
-  );
-}
-
-/* ── Standalone Code Block (used inside Rich Text Editor via insertHTML) ─ */
-export function NoteCodeBlock({
-  initialCode = '// Add code here',
-  initialLang = 'javascript',
-  onRemove,
-}: {
-  initialCode?: string;
-  initialLang?: string;
-  onRemove?: () => void;
-}) {
-  const [code, setCode]   = useState(initialCode);
-  const [lang, setLang]   = useState(initialLang);
-  const [editing, setEditing] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement>(null);
-
-  const startEdit = () => {
-    setEditing(true);
-    setTimeout(() => textRef.current?.focus(), 50);
-  };
-
-  return (
-    <div
-      contentEditable={false}
-      style={{
-        margin: '12px 0',
-        borderRadius: 12,
-        overflow: 'hidden',
-        border: '1px solid var(--border-border)',
-        background: '#1e1e1e',
-      }}
-    >
-      {/* Header bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 14px',
-        background: '#252526', borderBottom: '1px solid #333',
-      }}>
-        <LangPicker value={lang} onChange={setLang} />
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            type="button"
-            onClick={startEdit}
-            style={{
-              fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
-              background: 'transparent', color: '#8a8a8a', border: '1px solid #444',
-              cursor: 'pointer',
-            }}
-          >
-            Edit
-          </button>
-          {onRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              style={{
-                fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
-                background: 'rgba(244,63,94,0.12)', color: '#f43f5e', border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Editor vs Preview */}
-      {editing ? (
-        <textarea
-          ref={textRef}
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          onBlur={() => setEditing(false)}
-          spellCheck={false}
-          style={{
-            display: 'block', width: '100%', boxSizing: 'border-box',
-            padding: '16px', minHeight: 140,
-            background: '#1e1e1e', color: '#d4d4d4',
-            fontFamily: 'monospace', fontSize: 13, lineHeight: 1.6,
-            border: 'none', outline: 'none', resize: 'vertical',
-          }}
-        />
-      ) : (
-        <div onClick={startEdit} style={{ cursor: 'text' }}>
-          <SyntaxHighlighter
-            language={lang}
-            style={vscDarkPlus}
-            showLineNumbers
-            customStyle={{ margin: 0, padding: '16px', background: 'transparent', fontSize: 13 }}
-          >
-            {code || ' '}
-          </SyntaxHighlighter>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Toolbar ────────────────────────────────────────────────────────────── */
 interface ToolbarButton {
   label: string;
   icon: React.ReactNode;
@@ -243,7 +51,15 @@ const GROUPS: ToolbarButton[][] = [
   TOOLBAR.slice(0, 5), TOOLBAR.slice(5, 7), TOOLBAR.slice(7, 9), TOOLBAR.slice(9),
 ];
 
-/* ── Main editor ────────────────────────────────────────────────────────── */
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
@@ -253,6 +69,19 @@ interface RichTextEditorProps {
 export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thoughts...' }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const initRef   = useRef(false);
+
+  // Code modal state
+  const [codeModal, setCodeModal] = useState<{
+    open: boolean;
+    elementId: string | null;
+    code: string;
+    lang: string;
+  }>({
+    open: false,
+    elementId: null,
+    code: '',
+    lang: 'javascript',
+  });
 
   const syncContent = useCallback(() => {
     if (editorRef.current) onChange(editorRef.current.innerHTML);
@@ -264,14 +93,66 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
     syncContent();
   }, [syncContent]);
 
-  /** Insert a placeholder <div> that React replaces with NoteCodeBlock */
-  const insertCodeBlock = useCallback(() => {
-    const id = `cb-${Date.now()}`;
-    const placeholder = `<div id="${id}" data-code-block="true" contenteditable="false" style="margin:12px 0;padding:20px;background:#1e1e1e;border-radius:12px;border:1px solid #333;color:#8a8a8a;font-size:13px;font-family:monospace;cursor:pointer" onclick="this.querySelector('textarea')?.focus()">// Click Edit in the Code Vault to add code here…<br><br><span style="font-size:11px;opacity:0.6">[Code block — open note to edit with language picker]</span></div><p><br></p>`;
-    document.execCommand('insertHTML', false, placeholder);
-    editorRef.current?.focus();
+  // Click handler to catch edit clicks inside code blocks
+  const handleEditorClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('note-code-edit-trigger')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const block = target.closest('.note-code-block') as HTMLElement;
+      if (block) {
+        const id = block.id;
+        const lang = block.getAttribute('data-language') || 'javascript';
+        const code = decodeURIComponent(block.getAttribute('data-code') || '');
+        setCodeModal({
+          open: true,
+          elementId: id,
+          code,
+          lang,
+        });
+      }
+    }
+  }, []);
+
+  // Save changes from the Code Modal
+  const handleSaveCode = () => {
+    const { elementId, code, lang } = codeModal;
+    const cleanCode = code.trim() || '// write code here';
+    const escaped = escapeHtml(cleanCode);
+    const encoded = encodeURIComponent(cleanCode);
+
+    if (elementId && editorRef.current) {
+      // Edit existing
+      const block = editorRef.current.querySelector(`#${elementId}`);
+      if (block) {
+        block.setAttribute('data-language', lang);
+        block.setAttribute('data-code', encoded);
+        const badge = block.querySelector('.note-code-badge');
+        if (badge) badge.textContent = lang;
+        const codeElem = block.querySelector('.note-code-pre code');
+        if (codeElem) codeElem.innerHTML = escaped;
+      }
+    } else {
+      // Insert new
+      const newId = `cb-${Date.now()}`;
+      const html = [
+        `<div id="${newId}" class="note-code-block" data-language="${lang}" data-code="${encoded}" contenteditable="false">`,
+        `  <div class="note-code-header">`,
+        `    <span class="note-code-badge">${lang}</span>`,
+        `    <button class="note-code-edit-trigger" type="button">Edit Code</button>`,
+        `  </div>`,
+        `  <pre class="note-code-pre"><code>${escaped}</code></pre>`,
+        `</div>`,
+        `<p><br></p>`,
+      ].join('\n');
+
+      editorRef.current?.focus();
+      document.execCommand('insertHTML', false, html);
+    }
+
+    setCodeModal(prev => ({ ...prev, open: false }));
     syncContent();
-  }, [syncContent]);
+  };
 
   const editorCallbackRef = useCallback((node: HTMLDivElement | null) => {
     if (node && !initRef.current) {
@@ -302,7 +183,7 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
                 title={btn.label}
                 aria-label={btn.label}
                 onClick={() => btn.action === 'code-block'
-                  ? insertCodeBlock()
+                  ? setCodeModal({ open: true, elementId: null, code: '', lang: 'javascript' })
                   : exec(btn.command ?? '', btn.value)
                 }
                 className="btn btn-ghost btn-sm btn-square"
@@ -321,11 +202,54 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         suppressContentEditableWarning
         data-placeholder={placeholder}
         onInput={syncContent}
+        onClick={handleEditorClick}
         className="rich-editor p-4"
         role="textbox"
         aria-multiline="true"
         aria-label="Note content"
       />
+
+      {/* Modal for adding/editing code snippets inside the Note */}
+      <Modal
+        isOpen={codeModal.open}
+        onClose={() => setCodeModal(prev => ({ ...prev, open: false }))}
+        title={codeModal.elementId ? "Edit Code Block" : "Insert Code Block"}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Language</label>
+            <CustomSelect
+              value={codeModal.lang}
+              onChange={val => setCodeModal(prev => ({ ...prev, lang: val }))}
+              options={LANG_OPTIONS}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Code</label>
+            <textarea
+              value={codeModal.code}
+              onChange={e => setCodeModal(prev => ({ ...prev, code: e.target.value }))}
+              placeholder="// Paste or write your code here..."
+              spellCheck={false}
+              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[180px]"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-3 border-t border-border-alt">
+            <button
+              onClick={() => setCodeModal(prev => ({ ...prev, open: false }))}
+              className="btn btn-secondary btn-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveCode}
+              className="btn btn-primary btn-md"
+            >
+              {codeModal.elementId ? "Save Changes" : "Insert"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -61,9 +61,17 @@ export function CustomSelect({
     });
   }, [options.length]);
 
+  // Recompute position on open and layout updates
+  useEffect(() => {
+    if (open) {
+      computePosition();
+      const frame = requestAnimationFrame(computePosition);
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [open, computePosition]);
+
   /** Open / close */
   const openPanel = () => {
-    computePosition();
     const idx = options.findIndex(o => o.value === value);
     setHighlighted(idx >= 0 ? idx : 0);
     setOpen(true);
@@ -83,11 +91,9 @@ export function CustomSelect({
     };
     // Use capture so we catch it before any stopPropagation in the tree
     document.addEventListener('mousedown', handler, true);
-    window.addEventListener('scroll', closePanel, true);
-    window.addEventListener('resize', () => { computePosition(); }, true);
+    window.addEventListener('resize', computePosition, true);
     return () => {
       document.removeEventListener('mousedown', handler, true);
-      window.removeEventListener('scroll', closePanel, true);
       window.removeEventListener('resize', computePosition, true);
     };
   }, [open, computePosition]);
@@ -172,6 +178,8 @@ export function CustomSelect({
               transition={{ type: 'spring', damping: 24, stiffness: 380 }}
               style={{
                 ...panelStyle,
+                boxSizing: 'border-box',
+                minWidth: 160,
                 transformOrigin: 'top center',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-border)',
