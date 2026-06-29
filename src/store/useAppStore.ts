@@ -72,10 +72,81 @@ export interface StockEntry {
   date: string;
 }
 
+export interface TopicNote {
+  id: string;
+  title: string;
+  content: string;
+  pinned?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TopicSnippet {
+  id: string;
+  title: string;
+  language: string;
+  code: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface TopicResource {
+  id: string;
+  title: string;
+  type: 'link' | 'pdf' | 'doc' | 'image' | 'video' | 'youtube';
+  url: string;
+  fileSize?: string;
+  uploadDate: string;
+}
+
+export interface TopicQuestion {
+  id: string;
+  question: string;
+  answer?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  status: 'solved' | 'unsolved';
+  repeated?: boolean;
+}
+
+export interface TopicFlashcard {
+  id: string;
+  front: string;
+  back: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  lastReviewed?: string;
+  nextReview?: string;
+  revisionCount?: number;
+}
+
+export interface TopicTask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+export interface TopicAnalytics {
+  timeSpent?: number;
+  studySessions?: number;
+}
+
 export interface Topic {
   id: string;
   name: string;
   done: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  priority?: 'low' | 'medium' | 'high';
+  timeSpent?: number;
+  lastOpened?: string;
+  description?: string;
+  tags?: string[];
+  notes?: TopicNote[];
+  snippets?: TopicSnippet[];
+  resources?: TopicResource[];
+  questions?: TopicQuestion[];
+  flashcards?: TopicFlashcard[];
+  tasks?: TopicTask[];
+  analytics?: TopicAnalytics;
+  learningStreak?: number;
 }
 
 export interface Subject {
@@ -206,6 +277,7 @@ export interface AppStore {
   addSubject: (subject: Subject, userId?: string) => Promise<void>;
   addTopic: (subjectId: string, topic: Topic, userId?: string) => Promise<void>;
   toggleTopic: (subjectId: string, topicId: string, userId?: string) => Promise<void>;
+  updateTopic: (subjectId: string, topicId: string, data: Partial<Topic>) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
   deleteTopic: (subjectId: string, topicId: string, userId?: string) => Promise<void>;
 
@@ -485,6 +557,20 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       subjects: state.subjects.map((s) =>
         s.id === subjectId
           ? { ...s, topics: s.topics.map((t) => (t.id === topicId ? { ...t, done: !t.done } : t)) }
+          : s
+      ),
+    }));
+    const updated = get().subjects.find((s) => s.id === subjectId);
+    if (updated) await subjectService.update(subjectId, { topics: updated.topics });
+  },
+  updateTopic: async (subjectId, topicId, data) => {
+    set((state) => ({
+      subjects: state.subjects.map((s) =>
+        s.id === subjectId
+          ? {
+              ...s,
+              topics: s.topics.map((t) => (t.id === topicId ? { ...t, ...data } : t)),
+            }
           : s
       ),
     }));
