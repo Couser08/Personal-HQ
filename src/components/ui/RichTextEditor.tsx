@@ -70,6 +70,9 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
   const editorRef = useRef<HTMLDivElement>(null);
   const initRef   = useRef(false);
 
+  // Store selection to restore focus after modal edits
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
+
   // Code modal state
   const [codeModal, setCodeModal] = useState<{
     open: boolean;
@@ -93,6 +96,27 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
     syncContent();
   }, [syncContent]);
 
+  // Capture selection range
+  const saveRange = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode)) {
+      setSavedRange(sel.getRangeAt(0));
+    } else {
+      setSavedRange(null);
+    }
+  }, []);
+
+  // Trigger modal for inserting/editing
+  const openCodeModal = (elementId: string | null = null, code = '', lang = 'javascript') => {
+    saveRange();
+    setCodeModal({
+      open: true,
+      elementId,
+      code,
+      lang,
+    });
+  };
+
   // Click handler to catch edit clicks inside code blocks
   const handleEditorClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -104,15 +128,10 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         const id = block.id;
         const lang = block.getAttribute('data-language') || 'javascript';
         const code = decodeURIComponent(block.getAttribute('data-code') || '');
-        setCodeModal({
-          open: true,
-          elementId: id,
-          code,
-          lang,
-        });
+        openCodeModal(id, code, lang);
       }
     }
-  }, []);
+  }, [saveRange]);
 
   // Save changes from the Code Modal
   const handleSaveCode = () => {
@@ -141,13 +160,33 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         `    <span class="note-code-badge">${lang}</span>`,
         `    <button class="note-code-edit-trigger" type="button">Edit Code</button>`,
         `  </div>`,
-        `  <pre class="note-code-pre"><code>${escaped}</code></pre>`,
+        `  <pre class="note-code-pre"><code>${escaped}</code></pre> `,
         `</div>`,
         `<p><br></p>`,
       ].join('\n');
 
-      editorRef.current?.focus();
-      document.execCommand('insertHTML', false, html);
+      if (editorRef.current) {
+        editorRef.current.focus();
+
+        // Restore cursor selection if valid
+        const sel = window.getSelection();
+        if (savedRange && sel) {
+          sel.removeAllRanges();
+          sel.addRange(savedRange);
+        }
+
+        // Try to insert HTML at cursor
+        if (sel && sel.rangeCount > 0 && editorRef.current.contains(sel.anchorNode)) {
+          document.execCommand('insertHTML', false, html);
+        } else {
+          // Fallback: append at the very end
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = html;
+          while (wrapper.firstChild) {
+            editorRef.current.appendChild(wrapper.firstChild);
+          }
+        }
+      }
     }
 
     setCodeModal(prev => ({ ...prev, open: false }));
@@ -183,7 +222,7 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
                 title={btn.label}
                 aria-label={btn.label}
                 onClick={() => btn.action === 'code-block'
-                  ? setCodeModal({ open: true, elementId: null, code: '', lang: 'javascript' })
+                  ? openCodeModal(null, '', 'javascript')
                   : exec(btn.command ?? '', btn.value)
                 }
                 className="btn btn-ghost btn-sm btn-square"

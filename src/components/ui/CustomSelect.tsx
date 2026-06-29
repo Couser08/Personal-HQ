@@ -72,6 +72,7 @@ export function CustomSelect({
 
   /** Open / close */
   const openPanel = () => {
+    computePosition();
     const idx = options.findIndex(o => o.value === value);
     setHighlighted(idx >= 0 ? idx : 0);
     setOpen(true);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconLayoutDashboard, IconBolt, IconShieldCheck, IconSparkles } from '@tabler/icons-react';
 
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.7.2';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -30,14 +30,15 @@ const FEATURES = [
 ];
 
 const WHATS_NEW = [
+  'Interactive Code Blocks inside Notes',
+  'Custom animated Select dropdowns',
+  'Throttled actions to prevent duplicate clicks',
   'Pomodoro timer with Apple Watch design',
   'Rich text editor for Notes',
   'Code Snippet Vault module',
   '12 Countdown display templates',
   'Settings page rebuilt',
-  'Apple HIG accessibility pass',
-  'Focus rings & ARIA labels',
-  'Dark / Light mode improvements',
+  'Dark / Light mode responsiveness improvements',
 ];
 
 /* ── Crisp, Theme-Aware Vector Rocket SVG ──────────────────────────────── */

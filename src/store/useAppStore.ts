@@ -32,6 +32,15 @@ const loadStoredSettings = (): AppSettings => {
 const getStoreErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
+const throttleMap = new Map<string, number>();
+const shouldThrottle = (actionName: string, limit = 600) => {
+  const now = Date.now();
+  const last = throttleMap.get(actionName) || 0;
+  if (now - last < limit) return true;
+  throttleMap.set(actionName, now);
+  return false;
+};
+
 export type Theme = 'light' | 'dark';
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 
@@ -339,6 +348,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   notes: [],
   addNote: async (note) => {
+    if (shouldThrottle('addNote')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().notes;
@@ -383,6 +393,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   links: [],
   addLink: async (link) => {
+    if (shouldThrottle('addLink')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().links;
@@ -413,6 +424,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   stocks: [],
   addStock: async (entry) => {
+    if (shouldThrottle('addStock')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().stocks;
@@ -443,6 +455,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   subjects: [],
   addSubject: async (subject) => {
+    if (shouldThrottle('addSubject')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().subjects;
@@ -457,6 +470,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }
   },
   addTopic: async (subjectId, topic) => {
+    if (shouldThrottle(`addTopic-${subjectId}`)) return;
     set((state) => ({
       subjects: state.subjects.map((s) =>
         s.id === subjectId ? { ...s, topics: [...s.topics, topic] } : s
@@ -499,6 +513,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   interestHistory: [],
   addInterestRecord: async (record) => {
+    if (shouldThrottle('addInterest')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     set((state) => ({ interestHistory: [record, ...state.interestHistory] }));
@@ -517,6 +532,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   mediaLogs: [],
   addMediaLog: async (log) => {
+    if (shouldThrottle('addMediaLog')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().mediaLogs;
@@ -547,6 +563,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   countdowns: [],
   addCountdown: async (countdown) => {
+    if (shouldThrottle('addCountdown')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().countdowns;
@@ -570,6 +587,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   snippets: [],
   addSnippet: async (snippet) => {
+    if (shouldThrottle('addSnippet')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().snippets;
@@ -626,6 +644,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   budgetCategories: [],
   budgetTransactions: [],
   addBudgetCategory: async (category) => {
+    if (shouldThrottle('addBudgetCategory')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().budgetCategories;
@@ -663,6 +682,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }
   },
   addBudgetTransaction: async (transaction) => {
+    if (shouldThrottle('addBudgetTransaction')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().budgetTransactions;
