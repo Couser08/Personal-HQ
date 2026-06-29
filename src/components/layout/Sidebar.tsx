@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { exportData, importData } from '../../utils/exportImport';
 import { useToastStore } from '../../store/useToastStore';
 import { useRef } from 'react';
+import { AppLogo } from '../ui/AppLogo';
 import { motion } from 'framer-motion';
 
 const NAV_ITEMS = [
@@ -78,9 +79,7 @@ export const Sidebar = () => {
       }}
     >
       <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, flexShrink: 0 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, background: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>P</span>
-        </div>
+        <AppLogo className="w-8 h-8 flex-shrink-0" />
         <span className="sidebar-header-text" style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
           Personal HQ
           <span style={{ color: '#f43f5e', marginLeft: 4 }}>.</span>

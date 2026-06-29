@@ -23,31 +23,67 @@ function LoadingSplash() {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen flex flex-col items-center justify-center gap-4"
+      className="min-h-screen flex flex-col items-center justify-center gap-6"
       style={{ background: 'var(--bg-background)' }}
     >
-      <motion.div
-        animate={{ scale: [1, 1.12, 1], opacity: [0.8, 1, 0.8] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-        className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-extrabold text-white"
-        style={{ background: '#f43f5e', boxShadow: '0 8px 32px rgba(244,63,94,0.4)' }}
-      >
-        P
-      </motion.div>
-      <motion.div
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.2, repeat: Infinity }}
-        className="text-sm font-medium"
-        style={{ color: '#9ca3af' }}
-      >
-        Loading Personal HQ...
-      </motion.div>
+      {/* Premium Circular Dash Progress Loader */}
+      <div className="relative w-20 h-20">
+        <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.2s' }} viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" stroke="var(--border-border-alt)" strokeWidth="6" fill="none" opacity="0.3" />
+          <circle
+            cx="50"
+            cy="50"
+            r="42"
+            stroke="var(--text-primary)"
+            strokeWidth="6"
+            strokeDasharray="60 200"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </svg>
+      </div>
+
+      {/* Spaced "Loading" Text */}
+      <div className="text-xs uppercase tracking-[0.4em] font-semibold text-text-secondary select-none">
+        Loading
+      </div>
+
+      {/* 3 dots loading animation */}
+      <div className="flex justify-center items-center gap-1.5 mt-1">
+        {[0, 1, 2].map((idx) => (
+          <motion.span
+            key={idx}
+            animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.9, 1.1, 0.9] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: idx * 0.2 }}
+            className="w-1.5 h-1.5 rounded-full bg-text-secondary"
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }
 
 function ModuleFallback() {
-  return <div className="min-h-[320px] flex items-center justify-center text-sm text-text-secondary">Loading module...</div>;
+  return (
+    <div className="min-h-[320px] flex flex-col items-center justify-center gap-4">
+      <div className="relative w-12 h-12">
+        <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.2s' }} viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" stroke="var(--border-border-alt)" strokeWidth="6" fill="none" opacity="0.3" />
+          <circle
+            cx="50"
+            cy="50"
+            r="42"
+            stroke="var(--text-primary)"
+            strokeWidth="6"
+            strokeDasharray="60 200"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </svg>
+      </div>
+      <div className="text-[10px] uppercase tracking-[0.2em] font-medium text-text-muted">Loading module</div>
+    </div>
+  );
 }
 
 function App() {
