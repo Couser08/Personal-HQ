@@ -27,9 +27,9 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col"
+              className="bg-surface text-text-primary border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col"
             >
-              <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-surface z-10">
+              <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-surface z-10 text-text-primary">
                 <h2 className="text-xl font-bold">{title}</h2>
                 <button
                   onClick={onClose}

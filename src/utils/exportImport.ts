@@ -1,4 +1,4 @@
-﻿import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore, type AppSettings, type AppStore } from '../store/useAppStore';
 
 export const BACKUP_VERSION = '1.0.0';
@@ -26,6 +26,7 @@ type BackupPayload = {
   budgetCategories: AppStore['budgetCategories'];
   budgetTransactions: AppStore['budgetTransactions'];
   pomodoroStats: AppStore['pomodoroStats'];
+  journals: AppStore['journals'];
   settings: AppSettings;
 };
 
@@ -55,6 +56,7 @@ export const buildBackupData = (state: AppStore, owner: BackupOwner): BackupPayl
   budgetCategories: state.budgetCategories,
   budgetTransactions: state.budgetTransactions,
   pomodoroStats: state.pomodoroStats,
+  journals: state.journals,
   settings: state.settings,
 });
 
@@ -91,6 +93,7 @@ export const normalizeImportedState = (data: Partial<BackupPayload>): Partial<Ap
   budgetCategories: Array.isArray(data.budgetCategories) ? data.budgetCategories : [],
   budgetTransactions: Array.isArray(data.budgetTransactions) ? data.budgetTransactions : [],
   pomodoroStats: data.pomodoroStats ?? { totalSessions: 0, totalMinutes: 0 },
+  journals: Array.isArray(data.journals) ? data.journals : [],
   settings: { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) },
 });
 

@@ -17,6 +17,7 @@ const CodeSnippetModule = lazy(() => import('./modules/snippets/CodeSnippetModul
 const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
 const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
+const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 
 function LoadingSplash() {
   return (
@@ -95,8 +96,20 @@ function App() {
   }, [initialize]);
 
   useEffect(() => {
-    if (theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+    applyTheme();
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      media.addEventListener('change', applyTheme);
+      return () => media.removeEventListener('change', applyTheme);
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -135,6 +148,7 @@ function AppContent() {
       case 'links': return <LinksModule />;
       case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
+      case 'journal': return <JournalModule />;
       case 'calculator': return <CalculatorModule />;
       case 'media': return <MediaModule />;
       case 'countdown': return <CountdownModule />;

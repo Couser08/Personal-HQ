@@ -41,8 +41,25 @@ const shouldThrottle = (actionName: string, limit = 600) => {
   return false;
 };
 
-export type Theme = 'light' | 'dark';
-export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface JournalEntry {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  mood: 'great' | 'good' | 'meh' | 'bad' | 'terrible';
+  tags: string[];
+  images: string[];
+  pinned: boolean;
+  reflection: {
+    whatWentWell: string;
+    whatCanBeBetter: string;
+  };
+  focusList: { text: string; checked: boolean }[];
+  attachments: { name: string; size: string }[];
+  pageStyle: 'default' | 'lines' | 'dotted' | 'grid' | 'cornell';
+}
 
 export interface Note {
   id: string;
@@ -226,7 +243,8 @@ export interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
-export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple';
+export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
+export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
 export interface AppSettings {
   countdownTemplate: CountdownTemplate;
@@ -311,6 +329,12 @@ export interface AppStore {
   addBudgetTransaction: (transaction: BudgetTransaction) => Promise<void>;
   deleteBudgetTransaction: (id: string) => Promise<void>;
   
+  // Journal Tracker
+  journals: JournalEntry[];
+  addJournalEntry: (entry: JournalEntry) => void;
+  updateJournalEntry: (id: string, data: Partial<JournalEntry>) => void;
+  deleteJournalEntry: (id: string) => void;
+  
   importData: (data: Partial<AppStore>) => void;
 }
 
@@ -329,6 +353,14 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   },
 
   settings: loadStoredSettings(),
+  journals: (() => {
+    try {
+      const raw = localStorage.getItem('phq_journals');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
   updateSettings: (newSettings) =>
     set((state) => {
       const settings = { ...state.settings, ...newSettings };
@@ -788,11 +820,39 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     useToastStore.getState().addToast('Success', 'Budget transaction deleted', 'success');
   },
 
+  addJournalEntry: (entry) => {
+    set((state) => {
+      const next = [entry, ...state.journals];
+      localStorage.setItem('phq_journals', JSON.stringify(next));
+      return { journals: next };
+    });
+    useToastStore.getState().addToast('Success', 'Journal entry saved', 'success');
+  },
+  updateJournalEntry: (id, data) => {
+    set((state) => {
+      const next = state.journals.map((j) => (j.id === id ? { ...j, ...data } : j));
+      localStorage.setItem('phq_journals', JSON.stringify(next));
+      return { journals: next };
+    });
+    useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
+  },
+  deleteJournalEntry: (id) => {
+    set((state) => {
+      const next = state.journals.filter((j) => j.id !== id);
+      localStorage.setItem('phq_journals', JSON.stringify(next));
+      return { journals: next };
+    });
+    useToastStore.getState().addToast('Success', 'Journal entry deleted', 'success');
+  },
+
   importData: (data) =>
     set((state) => {
       const nextState = { ...state, ...data };
       if (data.settings) {
         localStorage.setItem('settings', JSON.stringify(nextState.settings));
+      }
+      if (data.journals) {
+        localStorage.setItem('phq_journals', JSON.stringify(nextState.journals));
       }
       return nextState;
     }),

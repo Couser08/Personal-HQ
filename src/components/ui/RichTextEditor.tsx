@@ -16,6 +16,7 @@ const LANG_OPTIONS = [
   { value: 'cpp',        label: 'C++' },
   { value: 'go',         label: 'Go' },
   { value: 'rust',       label: 'Rust' },
+  { value: 'php',        label: 'PHP' },
   { value: 'html',       label: 'HTML' },
   { value: 'css',        label: 'CSS' },
   { value: 'sql',        label: 'SQL' },
@@ -58,6 +59,46 @@ function escapeHtml(text: string) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function detectLanguage(code: string): string {
+  const trimmed = code.trim();
+  if (trimmed.startsWith('<?php') || trimmed.includes('<?php') || (trimmed.includes('namespace ') && trimmed.includes('$this->'))) {
+    return 'php';
+  }
+  if (trimmed.startsWith('import ') && (trimmed.includes("from 'react'") || trimmed.includes('from "react"'))) {
+    return 'typescript';
+  }
+  if (trimmed.startsWith('def ') && trimmed.includes(':')) {
+    return 'python';
+  }
+  if (trimmed.startsWith('public class ') || trimmed.includes('System.out.println')) {
+    return 'java';
+  }
+  if (trimmed.includes('using System;') || (trimmed.includes('namespace ') && trimmed.includes('class ') && trimmed.includes('void Main'))) {
+    return 'csharp';
+  }
+  if (trimmed.startsWith('package ') && (trimmed.includes('import "fmt"') || trimmed.includes('func main()'))) {
+    return 'go';
+  }
+  if (trimmed.includes('fn main()') || trimmed.includes('let mut ')) {
+    return 'rust';
+  }
+  if (trimmed.startsWith('select ') || trimmed.startsWith('SELECT ') || trimmed.includes('INSERT INTO ') || trimmed.includes('CREATE TABLE ')) {
+    return 'sql';
+  }
+  if (trimmed.startsWith('<html') || trimmed.startsWith('<!DOCTYPE html>')) {
+    return 'html';
+  }
+  if (trimmed.includes('{') && trimmed.includes(':') && (trimmed.includes('margin:') || trimmed.includes('padding:') || trimmed.includes('color:'))) {
+    if (trimmed.includes('body {') || trimmed.includes('.class {') || trimmed.includes('#id {')) {
+      return 'css';
+    }
+  }
+  if (trimmed.startsWith('{') && trimmed.endsWith('}') && (trimmed.includes('":') || trimmed.includes('": '))) {
+    return 'json';
+  }
+  return 'other';
 }
 
 interface RichTextEditorProps {
@@ -267,7 +308,19 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
             <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Code</label>
             <textarea
               value={codeModal.code}
-              onChange={e => setCodeModal(prev => ({ ...prev, code: e.target.value }))}
+              onChange={e => {
+                const val = e.target.value;
+                setCodeModal(prev => {
+                  let nextLang = prev.lang;
+                  if (!prev.elementId && (prev.lang === 'javascript' || prev.lang === 'other')) {
+                    const detected = detectLanguage(val);
+                    if (detected !== 'other') {
+                      nextLang = detected;
+                    }
+                  }
+                  return { ...prev, code: val, lang: nextLang };
+                });
+              }}
               placeholder="// Paste or write your code here..."
               spellCheck={false}
               className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[180px]"

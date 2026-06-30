@@ -475,7 +475,10 @@ export default function NotesModule() {
                 📝
               </div>
               <h3 className="text-lg font-bold text-text-primary">No note selected</h3>
-              <p className="text-text-secondary text-sm max-w-sm mt-2 leading-relaxed">
+              <p
+                className="text-text-secondary text-sm mt-2 leading-relaxed"
+                style={{ display: 'block', width: '100%', maxWidth: '24rem', whiteSpace: 'normal', margin: '8px auto 0' }}
+              >
                 Choose an existing note from the library list or click the **New Note** button to start cataloging references, thoughts, or code snippets.
               </p>
               <button

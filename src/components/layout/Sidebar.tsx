@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { id: 'links', label: 'Link Vault', icon: IconLink },
   { id: 'budget', label: 'Budget Tracker', icon: IconWallet },
   { id: 'study', label: 'Study Tracker', icon: IconBook },
+  { id: 'journal', label: 'Journal', icon: IconBook },
   { id: 'calculator', label: 'Interest Calc', icon: IconCalculator },
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty },

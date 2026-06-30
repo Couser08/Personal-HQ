@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, type AccentColor } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
-import { IconSun, IconMoon, IconPalette, IconBell, IconRefresh, IconHourglass } from '@tabler/icons-react';
+import {
+  IconSun, IconMoon, IconPalette, IconBell, IconHourglass,
+  IconCheck, IconX, IconCompass, IconPlayerPlay, IconDeviceDesktop
+} from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const COUNTDOWN_TEMPLATES = [
@@ -29,34 +32,47 @@ const TOAST_POSITIONS = [
   { value: 'bottom-center', label: 'Bottom Center' },
 ];
 
-const SectionCard = ({ icon, iconColor, iconBg, title, children }: {
-  icon: React.ReactNode;
-  iconColor: string;
-  iconBg: string;
-  title: string;
-  children: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-5 p-6 rounded-2xl border bg-surface border-border">
-    <div className="flex gap-3 items-center">
-      <div className="flex justify-center items-center w-9 h-9 rounded-xl shrink-0" style={{ background: iconBg, color: iconColor }}>
-        {icon}
-      </div>
-      <h3 className="text-base font-bold text-text-primary">{title}</h3>
-    </div>
-    {children}
-  </div>
-);
+const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
+  { name: 'rose',   hex: '#f43f5e' },
+  { name: 'purple', hex: '#a855f7' },
+  { name: 'blue',   hex: '#3b82f6' },
+  { name: 'green',  hex: '#22c55e' },
+  { name: 'amber',  hex: '#f59e0b' },
+  { name: 'teal',   hex: '#06b6d4' },
+  { name: 'gray',   hex: '#6b7280' },
+];
 
 export default function SettingsModule() {
   const { theme, setTheme, settings, updateSettings } = useAppStore();
   const addToast = useToastStore(s => s.addToast);
-
-  // Track toast position locally so CustomSelect is controlled
   const [toastPos, setToastPos] = useState<string>(useToastStore.getState().position || 'top-right');
 
   const handleToastPos = (val: string) => {
     setToastPos(val);
-    useToastStore.getState().setPosition(val as 'top-right');
+    useToastStore.getState().setPosition(val as any);
+    addToast('Position Updated', `Toast alerts will now appear at ${val.replace('-', ' ')}`, 'info');
+  };
+
+  // Render a mini preview countdown card based on currently selected template style
+  const renderCountdownPreview = () => {
+    return (
+      <div className={`p-4 rounded-xl border border-border bg-surface-alt flex flex-col gap-2 max-w-[200px] w-full shadow-sm`}>
+        <div className="flex justify-between items-center text-[10px] text-text-muted font-bold">
+          <span>Exam</span>
+          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">12 Oct</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-3xl font-extrabold tracking-tight text-text-primary">27</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-text-secondary">
+            Days Left
+          </span>
+          <span className="text-[9px] font-mono text-text-muted">08h 45m 12s left</span>
+        </div>
+        <div className="w-full bg-border-alt h-1 rounded-full overflow-hidden mt-1">
+          <div className="bg-primary h-full w-[70%]" />
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -67,132 +83,210 @@ export default function SettingsModule() {
       transition={{ type: 'spring', damping: 24, stiffness: 300 }}
       className="flex flex-col gap-6 max-w-4xl"
     >
-      {/* Header */}
-      <div>
-        <h1 className="flex gap-2 items-center text-2xl font-bold">
-          Settings <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-        </h1>
-        <p className="mt-1 text-sm text-text-secondary">Manage app preferences and appearance</p>
+      {/* Header Row (mockup style) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Settings <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary" />
+          </h1>
+          <p className="text-sm text-text-secondary">Manage your preferences and customize your experience</p>
+        </div>
+
+        {/* Shortcut system dropdown at top-right */}
+        <div className="w-48 shrink-0">
+          <CustomSelect
+            value={theme === 'system' ? 'system' : theme}
+            onChange={(val) => setTheme(val as any)}
+            options={[
+              { value: 'system', label: 'System Default' },
+              { value: 'light',  label: 'Light Mode' },
+              { value: 'dark',   label: 'Dark Mode' }
+            ]}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      {/* Main Settings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* ── Appearance ── */}
-        <SectionCard
-          icon={<IconPalette className="w-5 h-5" />}
-          iconColor="#f43f5e"
-          iconBg="rgba(244,63,94,0.12)"
-          title="Appearance"
-        >
-          <div>
-            <p className="text-sm font-semibold text-text-primary">Theme</p>
-            <p className="text-xs text-text-secondary mt-0.5 mb-3">Choose between light and dark mode</p>
-            <div className="inline-flex gap-1 items-center p-1 rounded-2xl border bg-surface-alt border-border">
+        {/* ── Appearance Card ── */}
+        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
+              <IconPalette className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">Appearance</h3>
+              <p className="text-xs text-text-muted">Customize how Personal HQ looks</p>
+            </div>
+          </div>
+
+          {/* Theme selection buttons */}
+          <div className="flex flex-col gap-2.5">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Theme</p>
+              <p className="text-xs text-text-secondary mt-0.5">Choose your preferred theme</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setTheme('light')}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   theme === 'light'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
                 }`}
               >
                 <IconSun className="w-4 h-4" /> Light
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   theme === 'dark'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
                 }`}
               >
                 <IconMoon className="w-4 h-4" /> Dark
               </button>
+              <button
+                onClick={() => setTheme('system')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  theme === 'system'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                <IconDeviceDesktop className="w-4 h-4" /> System
+              </button>
             </div>
           </div>
-        </SectionCard>
 
-        {/* ── Notifications ── */}
-        <SectionCard
-          icon={<IconBell className="w-5 h-5" />}
-          iconColor="#3b82f6"
-          iconBg="rgba(59,130,246,0.12)"
-          title="Notifications"
-        >
-          <div>
-            <p className="text-sm font-semibold text-text-primary mb-1">Toast Position</p>
-            <p className="text-xs text-text-secondary mb-3">Where notifications appear on screen</p>
+          {/* Accent color swatches */}
+          <div className="flex flex-col gap-2.5">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Accent Color</p>
+              <p className="text-xs text-text-secondary mt-0.5">Select your preferred accent color</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {ACCENT_COLORS.map((c) => {
+                const isActive = settings.accentColor === c.name;
+                return (
+                  <button
+                    key={c.name}
+                    onClick={() => updateSettings({ accentColor: c.name })}
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all relative hover:scale-105 active:scale-95 shadow-sm"
+                    style={{ background: c.hex }}
+                    title={`Accent ${c.name}`}
+                  >
+                    {isActive && (
+                      <IconCheck className="w-4 h-4 text-white font-bold" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Notifications Card ── */}
+        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+              <IconBell className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">Notifications</h3>
+              <p className="text-xs text-text-muted">Manage how you receive updates</p>
+            </div>
+          </div>
+
+          {/* Toast position selector */}
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-text-primary">Toast Position</p>
+            <p className="text-xs text-text-secondary mb-1">Choose where notifications appear</p>
             <CustomSelect
               value={toastPos}
               onChange={handleToastPos}
               options={TOAST_POSITIONS}
             />
           </div>
-          <div>
-            <p className="mb-2 text-sm font-semibold text-text-primary">Test Notification</p>
+
+          {/* Test notifications */}
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-text-primary">Test Notification</p>
+            <p className="text-xs text-text-secondary mb-1">Preview how notifications look on your screen</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => addToast('Success', 'Everything looks great!', 'success')}
-                className="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border border-green-500/30 bg-green-500/5 text-green-600 hover:bg-green-500/15 transition-colors"
+                className="py-2 px-4 rounded-xl border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
               >
-                ✓ Success
+                <IconCheck className="w-4 h-4" /> Success
               </button>
               <button
                 onClick={() => addToast('Error', 'Something went wrong.', 'error')}
-                className="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold border border-rose-500/30 bg-rose-500/5 text-rose-600 hover:bg-rose-500/15 transition-colors"
+                className="py-2 px-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
               >
-                ✕ Error
+                <IconX className="w-4 h-4" /> Error
               </button>
             </div>
           </div>
-        </SectionCard>
-
-        {/* ── Countdown Template ── full width */}
-        <div className="md:col-span-2">
-          <SectionCard
-            icon={<IconHourglass className="w-5 h-5" />}
-            iconColor="#f59e0b"
-            iconBg="rgba(245,158,11,0.12)"
-            title="Countdown Display Template"
-          >
-            <div>
-              <p className="text-xs text-text-secondary mb-3">
-                Select how countdown cards appear globally across your app
-              </p>
-              <div className="max-w-sm">
-                <CustomSelect
-                  value={settings.countdownTemplate}
-                  onChange={val => updateSettings({ countdownTemplate: val as never })}
-                  options={COUNTDOWN_TEMPLATES}
-                />
-              </div>
-            </div>
-          </SectionCard>
         </div>
 
-        {/* ── App Tour ── full width */}
-        <div className="md:col-span-2">
-          <SectionCard
-            icon={<IconRefresh className="w-5 h-5" />}
-            iconColor="#a855f7"
-            iconBg="rgba(168,85,247,0.12)"
-            title="App Onboarding"
-          >
-            <div className="flex items-center justify-between gap-6">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
-                <p className="mt-1 text-xs leading-relaxed text-text-secondary">
-                  Want a quick refresher on how to use Personal HQ? Trigger the interactive guided tour to explore all the main features.
-                </p>
-              </div>
-              <button
-                onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-muted text-white text-sm font-bold rounded-xl transition-all shrink-0"
-              >
-                Start Tour
-              </button>
+        {/* ── Countdown Display Template Card ── full width */}
+        <div className="md:col-span-2 bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <IconHourglass className="w-5 h-5" />
             </div>
-          </SectionCard>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">Countdown Display Template</h3>
+              <p className="text-xs text-text-muted">Select how countdown cards appear globally across your app</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+            <div className="flex-1 w-full max-w-sm">
+              <CustomSelect
+                value={settings.countdownTemplate}
+                onChange={val => updateSettings({ countdownTemplate: val as any })}
+                options={COUNTDOWN_TEMPLATES}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 items-center sm:items-end w-full sm:w-auto">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-text-secondary select-none">
+                Preview
+              </span>
+              {renderCountdownPreview()}
+            </div>
+          </div>
+        </div>
+
+        {/* ── App Onboarding Card ── full width */}
+        <div className="md:col-span-2 bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center">
+              <IconCompass className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">App Onboarding</h3>
+              <p className="text-xs text-text-muted">Explore tours and guides</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
+              <p className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl">
+                Get a quick walkthrough of all features and how to use Personal HQ effectively.
+              </p>
+            </div>
+            <button
+              onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
+              className="btn btn-primary btn-md flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center"
+            >
+              <IconPlayerPlay className="w-4 h-4 fill-current" /> Start Tour
+            </button>
+          </div>
         </div>
 
       </div>
