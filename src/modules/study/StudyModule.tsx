@@ -6,6 +6,7 @@ import {
   IconCode, IconLink, IconHelpCircle, IconNotes, IconEdit, IconRefresh
 } from '@tabler/icons-react';
 import { useAppStore, type Topic } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -35,7 +36,15 @@ export default function StudyModule() {
   const {
     subjects, addSubject, addTopic, deleteSubject, deleteTopic,
     updateTopic, showConfirm
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    subjects: state.subjects,
+    addSubject: state.addSubject,
+    addTopic: state.addTopic,
+    deleteSubject: state.deleteSubject,
+    deleteTopic: state.deleteTopic,
+    updateTopic: state.updateTopic,
+    showConfirm: state.showConfirm
+  })));
 
   // Navigation states
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);

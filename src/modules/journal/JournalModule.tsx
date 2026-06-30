@@ -5,6 +5,7 @@ import {
   IconEdit, IconBook, IconTrash, IconSparkles, IconMicrophone
 } from '@tabler/icons-react';
 import { useAppStore, type JournalEntry } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
@@ -40,7 +41,13 @@ const DAILY_PROMPTS = [
 ];
 
 export default function JournalModule() {
-  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm } = useAppStore();
+  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm } = useAppStore(useShallow(state => ({
+    journals: state.journals,
+    addJournalEntry: state.addJournalEntry,
+    updateJournalEntry: state.updateJournalEntry,
+    deleteJournalEntry: state.deleteJournalEntry,
+    showConfirm: state.showConfirm
+  })));
 
   // Navigation states
   const [activeTab, setActiveTab] = useState<'entries' | 'favorites' | 'timeline'>('entries');

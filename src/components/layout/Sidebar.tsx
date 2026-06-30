@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { exportData, importData } from '../../utils/exportImport';
 import { useToastStore } from '../../store/useToastStore';
 import { useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { AppLogo } from '../ui/AppLogo';
 import { motion } from 'framer-motion';
 
@@ -38,7 +39,13 @@ const NAV_ITEM_STYLE = (active: boolean) => ({
 });
 
 export const Sidebar = () => {
-  const { activeModule, setActiveModule, theme, setTheme, showConfirm } = useAppStore();
+  const { activeModule, setActiveModule, theme, setTheme, showConfirm } = useAppStore(useShallow(state => ({
+    activeModule: state.activeModule,
+    setActiveModule: state.setActiveModule,
+    theme: state.theme,
+    setTheme: state.setTheme,
+    showConfirm: state.showConfirm
+  })));
   const { user, signOut } = useAuthStore();
   const addToast = useToastStore((s) => s.addToast);
   const fileInputRef = useRef<HTMLInputElement>(null);

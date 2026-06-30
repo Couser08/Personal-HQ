@@ -5,6 +5,7 @@ import {
   IconFlame, IconClock, IconTarget
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 
 // SESSIONS Config
@@ -21,7 +22,10 @@ const PRESETS = [5, 10, 20, 25, 45, 60];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export default function PomodoroModule() {
-  const { pomodoroStats, recordPomodoroSession } = useAppStore();
+  const { pomodoroStats, recordPomodoroSession } = useAppStore(useShallow(state => ({
+    pomodoroStats: state.pomodoroStats,
+    recordPomodoroSession: state.recordPomodoroSession
+  })));
   const addToast = useToastStore(s => s.addToast);
 
   const [sessionId, setSessionId] = useState<SessionId>('focus');

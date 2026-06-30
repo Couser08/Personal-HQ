@@ -6,6 +6,7 @@ import {
   IconChevronDown
 } from '@tabler/icons-react';
 import { useAppStore, type Note } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Badge } from '../../components/ui/Badge';
 import { TagInput } from '../../components/ui/TagInput';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
@@ -37,7 +38,13 @@ function wordCount(text: string) {
 }
 
 export default function NotesModule() {
-  const { notes, addNote, updateNote, deleteNote, showConfirm } = useAppStore();
+  const { notes, addNote, updateNote, deleteNote, showConfirm } = useAppStore(useShallow(state => ({
+    notes: state.notes,
+    addNote: state.addNote,
+    updateNote: state.updateNote,
+    deleteNote: state.deleteNote,
+    showConfirm: state.showConfirm
+  })));
 
   // Search, sorting, filters
   const [search, setSearch] = useState('');

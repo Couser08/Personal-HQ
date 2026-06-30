@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type AccentColor } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import {
   IconSun, IconMoon, IconPalette, IconBell, IconHourglass,
@@ -43,7 +44,12 @@ const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
 ];
 
 export default function SettingsModule() {
-  const { theme, setTheme, settings, updateSettings } = useAppStore();
+  const { theme, setTheme, settings, updateSettings } = useAppStore(useShallow(state => ({
+    theme: state.theme,
+    setTheme: state.setTheme,
+    settings: state.settings,
+    updateSettings: state.updateSettings
+  })));
   const addToast = useToastStore(s => s.addToast);
   const [toastPos, setToastPos] = useState<string>(useToastStore.getState().position || 'top-right');
 
