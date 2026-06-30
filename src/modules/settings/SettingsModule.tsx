@@ -61,22 +61,142 @@ export default function SettingsModule() {
 
   // Render a mini preview countdown card based on currently selected template style
   const renderCountdownPreview = () => {
+    const template = settings.countdownTemplate || 'default';
+    
+    // Base preview wrapper with theme and styling
+    const isDarkTemplate = template === 'dark';
+    const wrapperBg = isDarkTemplate ? 'bg-[#111] border-[#222] text-white' : 'bg-surface border-border text-text-primary';
+    const borderL = template === 'vertical' ? 'border-l-4 border-l-primary' : '';
+    
     return (
-      <div className={`p-4 rounded-xl border border-border bg-surface-alt flex flex-col gap-2 max-w-[200px] w-full shadow-sm`}>
-        <div className="flex justify-between items-center text-[10px] text-text-muted font-bold">
-          <span>Exam</span>
-          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">12 Oct</span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-3xl font-extrabold tracking-tight text-text-primary">27</span>
-          <span className="text-[10px] uppercase font-bold tracking-wider text-text-secondary">
-            Days Left
-          </span>
-          <span className="text-[9px] font-mono text-text-muted">08h 45m 12s left</span>
-        </div>
-        <div className="w-full bg-border-alt h-1 rounded-full overflow-hidden mt-1">
-          <div className="bg-primary h-full w-[70%]" />
-        </div>
+      <div className={`p-4 rounded-xl border ${wrapperBg} ${borderL} flex flex-col gap-3 w-full max-w-[240px] shadow-sm select-none`}>
+        {/* Event Header (unless split or compact) */}
+        {template !== 'split' && template !== 'compact' && (
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎓</span>
+            <div className="text-left">
+              <h4 className="text-xs font-bold leading-tight">Graduation</h4>
+              <span className="text-[9px] text-text-muted dark:text-zinc-500">12 Oct 2026</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Template specific countdown rendering */}
+        {(() => {
+          switch (template) {
+            case 'minimal':
+              return (
+                <div className="flex items-baseline gap-1 text-sm font-mono font-bold mt-1 text-left">
+                  <span>27</span><span className="text-[10px] text-text-muted mr-1">d</span>
+                  <span>08</span><span className="text-[10px] text-text-muted mr-1">h</span>
+                  <span>45</span><span className="text-[10px] text-text-muted mr-1">m</span>
+                  <span>12</span><span className="text-[10px] text-text-muted">s</span>
+                </div>
+              );
+            case 'gradient':
+              return (
+                <div className="flex gap-1 mt-1 justify-start">
+                  {[{ v: '27', l: 'D' }, { v: '08', l: 'H' }, { v: '45', l: 'M' }, { v: '12', l: 'S' }].map(x => (
+                    <div key={x.l} className="flex flex-col items-center bg-gradient-to-br from-primary to-rose-400 text-white rounded p-1 min-w-[32px] text-center shadow-sm">
+                      <span className="text-xs font-bold font-mono">{x.v}</span>
+                      <span className="text-[7px] font-bold opacity-80">{x.l}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            case 'circle':
+              return (
+                <div className="flex gap-1.5 justify-start mt-1">
+                  {['D', 'H', 'M', 'S'].map(x => (
+                    <div key={x} className="relative w-8 h-8 rounded-full border-2 border-primary/20 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-primary">{x}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            case 'event':
+              return (
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-2 mt-1 text-center">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">Big Event</span>
+                  <span className="text-sm font-black font-mono text-text-primary dark:text-white mt-1 block">27 Days Left</span>
+                </div>
+              );
+            case 'sale':
+              return (
+                <div className="bg-red-600 text-white rounded-lg p-2 mt-1 text-center font-bold relative overflow-hidden">
+                  <div className="text-[7px] uppercase tracking-widest bg-black/20 px-1 py-0.5 rounded w-max mx-auto mb-1">FLASH SALE</div>
+                  <span className="text-xs font-mono">27d : 08h : 45m</span>
+                </div>
+              );
+            case 'compact':
+              return (
+                <div className="flex items-center justify-between mt-1 w-full text-left">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm shrink-0">🎓</span>
+                    <span className="text-xs font-bold truncate max-w-[80px]">Graduation</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-primary shrink-0 ml-2">27d 08h</span>
+                </div>
+              );
+            case 'flip':
+              return (
+                <div className="flex gap-1 justify-start mt-1">
+                  {['27', '08', '45', '12'].map((v, i) => (
+                    <div key={i} className="bg-zinc-850 dark:bg-zinc-905 text-zinc-100 border border-zinc-700 rounded px-1.5 py-1 text-xs font-bold font-mono text-center shadow-md relative min-w-[28px]">
+                      <div className="absolute top-1/2 left-0 right-0 h-px bg-black/40" />
+                      {v}
+                    </div>
+                  ))}
+                </div>
+              );
+            case 'progress':
+              return (
+                <div className="flex flex-col gap-1.5 mt-1 text-left">
+                  <div className="flex justify-between text-[9px] font-bold text-text-muted">
+                    <span>27 Days Left</span>
+                    <span>70%</span>
+                  </div>
+                  <div className="w-full bg-border-alt dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-primary h-full w-[70%]" />
+                  </div>
+                </div>
+              );
+            case 'vertical':
+              return (
+                <div className="flex flex-col gap-1 pl-2 mt-1 text-left">
+                  <span className="text-xs font-bold font-mono text-primary">27 Days Left</span>
+                  <span className="text-[9px] text-text-muted dark:text-zinc-500">College graduation ceremony</span>
+                </div>
+              );
+            case 'split':
+              return (
+                <div className="flex flex-col gap-1 mt-1 text-left">
+                  <div className="text-xs font-black uppercase text-text-primary dark:text-white">Graduation</div>
+                  <div className="flex items-baseline gap-1 text-sm font-mono font-bold text-primary">
+                    <span>27</span><span className="text-[8px] text-text-muted">d</span>
+                    <span>08</span><span className="text-[8px] text-text-muted">h</span>
+                    <span>45</span><span className="text-[8px] text-text-muted">m</span>
+                  </div>
+                </div>
+              );
+            default:
+              return (
+                <div className="flex flex-col gap-2 mt-1 text-left">
+                  <div className="flex gap-1">
+                    {[{ v: '27', l: 'days' }, { v: '08', l: 'hrs' }, { v: '45', l: 'mins' }].map(x => (
+                      <div key={x.l} className="flex-1 bg-surface-alt dark:bg-zinc-800/50 border border-border rounded p-1 text-center">
+                        <span className="text-xs font-black font-mono block text-text-primary dark:text-white">{x.v}</span>
+                        <span className="text-[8px] text-text-muted uppercase font-bold">{x.l}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-full bg-border-alt dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-primary h-full w-[70%]" />
+                  </div>
+                </div>
+              );
+          }
+        })()}
       </div>
     );
   };
@@ -251,7 +371,7 @@ export default function SettingsModule() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-            <div className="flex-1 w-full max-w-sm">
+            <div className="w-full sm:w-80 select-none">
               <CustomSelect
                 value={settings.countdownTemplate}
                 onChange={val => updateSettings({ countdownTemplate: val as any })}
@@ -282,7 +402,10 @@ export default function SettingsModule() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
               <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
-              <p className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl">
+              <p 
+                className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl"
+                style={{ display: 'block', width: '100%', whiteSpace: 'normal' }}
+              >
                 Get a quick walkthrough of all features and how to use Personal HQ effectively.
               </p>
             </div>

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   IconPlus, IconTrash, IconBook, IconCheck, IconSearch,
   IconTargetArrow, IconChecklist, IconLayoutGrid, IconArrowLeft, IconClock,
-  IconCode, IconLink, IconHelpCircle, IconNotes, IconEdit, IconRefresh
+  IconCode, IconLink, IconHelpCircle, IconNotes, IconEdit, IconRefresh,
+  IconFileText, IconDots
 } from '@tabler/icons-react';
 import { useAppStore, type Topic } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -12,6 +13,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
+import { ShikiHighlighter } from '../../components/ui/ShikiHighlighter';
 
 const FILTERS = ['all', 'active', 'completed'] as const;
 type StudyFilter = typeof FILTERS[number];
@@ -24,7 +26,7 @@ const formatMinutes = (m: number = 0) => {
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 };
 
-// Clean HTML to text
+// Clean HTML to text for plain previews
 const cleanHtmlText = (html: string) => {
   if (typeof document === 'undefined') return html;
   const div = document.createElement('div');
@@ -35,7 +37,7 @@ const cleanHtmlText = (html: string) => {
 export default function StudyModule() {
   const {
     subjects, addSubject, addTopic, deleteSubject, deleteTopic,
-    updateTopic, showConfirm
+    updateTopic, showConfirm, theme
   } = useAppStore(useShallow(state => ({
     subjects: state.subjects,
     addSubject: state.addSubject,
@@ -43,8 +45,11 @@ export default function StudyModule() {
     deleteSubject: state.deleteSubject,
     deleteTopic: state.deleteTopic,
     updateTopic: state.updateTopic,
-    showConfirm: state.showConfirm
+    showConfirm: state.showConfirm,
+    theme: state.theme
   })));
+
+  const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Navigation states
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -661,13 +666,34 @@ export default function StudyModule() {
                     <div
                       key={note.id}
                       onClick={() => setNoteModal({ open: true, noteId: note.id, title: note.title, content: note.content })}
-                      className="bg-surface border border-border hover:border-primary/25 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-sm"
+                      className="bg-surface border border-border hover:border-primary/25 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-sm flex flex-col gap-4 relative"
                     >
-                      <h4 className="font-bold text-sm text-text-primary line-clamp-1">{note.title}</h4>
-                      <p className="text-xs text-text-secondary mt-2 line-clamp-3">
-                        {cleanHtmlText(note.content) || 'Empty note content'}
-                      </p>
-                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-border-alt text-[10px] text-text-muted">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                            <IconFileText className="w-5 h-5" />
+                          </div>
+                          <h4 className="font-bold text-sm text-text-primary line-clamp-1">{note.title}</h4>
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            showConfirm('Delete Note', 'Delete this note permanently?', () => {
+                              const list = activeTopic.notes?.filter(n => n.id !== note.id) || [];
+                              handleUpdateTopicField({ notes: list });
+                            });
+                          }}
+                          className="text-text-muted hover:text-text-primary p-1 shrink-0"
+                        >
+                          <IconDots className="w-5 h-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="note-preview text-xs text-text-secondary leading-relaxed overflow-hidden" style={{ maxHeight: '180px' }}>
+                        <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-auto pt-3 border-t border-border-alt text-[10px] text-text-muted">
                         <span>Updated {new Date(note.updatedAt).toLocaleDateString()}</span>
                         <button
                           onClick={e => {
@@ -677,7 +703,7 @@ export default function StudyModule() {
                               handleUpdateTopicField({ notes: list });
                             });
                           }}
-                          className="text-text-muted hover:text-rose-500"
+                          className="text-rose-500 font-medium hover:text-rose-600 transition-colors"
                         >
                           Delete
                         </button>
@@ -740,9 +766,13 @@ export default function StudyModule() {
                         </div>
                       </div>
                       {snip.description && <p className="text-xs text-text-secondary leading-relaxed">{snip.description}</p>}
-                      <pre className="bg-[#1e1e1e] text-[#d4d4d4] font-mono text-xs rounded-xl p-3.5 overflow-x-auto max-h-40">
-                        <code>{snip.code}</code>
-                      </pre>
+                      <div className="rounded-xl overflow-hidden border border-border mt-1">
+                        <ShikiHighlighter
+                          code={snip.code}
+                          lang={snip.language}
+                          theme={isDark ? 'github-dark' : 'snazzy-light'}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1096,6 +1126,7 @@ export default function StudyModule() {
               className="w-full bg-transparent border-none text-lg font-bold focus:outline-none placeholder:text-text-muted text-text-primary"
             />
             <RichTextEditor
+              key={noteModal.noteId || 'new'}
               value={noteModal.content}
               onChange={val => setNoteModal(prev => ({ ...prev, content: val }))}
             />
@@ -1643,9 +1674,13 @@ export default function StudyModule() {
                       <span className="text-[10px] uppercase font-bold text-text-muted">{snip.topicName}</span>
                       <h4 className="font-bold text-sm text-text-primary mt-1 line-clamp-1">{snip.title}</h4>
                     </div>
-                    <pre className="bg-[#1e1e1e] text-[#d4d4d4] font-mono text-xs rounded-xl p-3.5 overflow-x-auto max-h-40">
-                      <code>{snip.code}</code>
-                    </pre>
+                    <div className="rounded-xl overflow-hidden border border-border w-full">
+                      <ShikiHighlighter
+                        code={snip.code}
+                        lang={snip.language}
+                        theme={isDark ? 'github-dark' : 'snazzy-light'}
+                      />
+                    </div>
                   </div>
                 ))}
                 {totalSnippets === 0 && (

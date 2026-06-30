@@ -145,7 +145,7 @@ export function CustomSelect({
         onKeyDown={handleKeyDown}
         className={[
           'flex items-center justify-between gap-3 w-full px-4 py-2.5 rounded-xl',
-          'text-sm font-medium text-left cursor-pointer select-none',
+          'text-sm font-medium text-left cursor-pointer select-none min-h-[42px]',
           'border transition-all duration-150 focus:outline-none',
           open
             ? 'border-primary ring-2 ring-primary/20 bg-surface-alt text-text-primary'

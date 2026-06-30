@@ -9,8 +9,7 @@ import { useToastStore } from '../../store/useToastStore';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { TagInput } from '../../components/ui/TagInput';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ShikiHighlighter } from '../../components/ui/ShikiHighlighter';
 import { CustomSelect, type SelectOption } from '../../components/ui/CustomSelect';
 
 const LANGUAGES = [
@@ -124,12 +123,7 @@ export default function CodeSnippetModule() {
     return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [snippets, search, activeFilter]);
 
-  // Set default selected snippet if none is selected
-  useMemo(() => {
-    if (!selectedSnippetId && filteredSnippets.length > 0) {
-      setSelectedSnippetId(filteredSnippets[0].id);
-    }
-  }, [filteredSnippets, selectedSnippetId]);
+
 
   const selectedSnippet = useMemo(() => snippets.find(s => s.id === selectedSnippetId), [snippets, selectedSnippetId]);
 
@@ -305,15 +299,11 @@ export default function CodeSnippetModule() {
                 </div>
                 
                 <div className="flex-1 overflow-auto bg-[#1e1e1e] p-4 code-preview-container">
-                  <SyntaxHighlighter
-                    language={selectedSnippet.language.toLowerCase()}
-                    style={vscDarkPlus}
-                    customStyle={{ margin: 0, padding: 0, background: 'transparent', fontSize: '13px' }}
-                    showLineNumbers={true}
-                    wrapLines={true}
-                  >
-                    {selectedSnippet.code}
-                  </SyntaxHighlighter>
+                  <ShikiHighlighter
+                    code={selectedSnippet.code}
+                    lang={selectedSnippet.language.toLowerCase()}
+                    theme="github-dark"
+                  />
                 </div>
                 
                 <div className="px-6 py-4 border-t border-border bg-surface-alt flex flex-wrap justify-between items-center gap-4">

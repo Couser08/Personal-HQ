@@ -8,6 +8,7 @@ import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const JOURNAL_TEMPLATES = [
   { id: 'blank', label: 'Blank Page', icon: '📄', prompt: '' },
@@ -419,12 +420,19 @@ export default function JournalModule() {
                   {/* Metal Binder Rings (Apple Material Craft) */}
                   <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 flex flex-col justify-around py-8 z-30 pointer-events-none w-10">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-6 w-9 rounded-full border-t border-b border-r border-[#666] bg-gradient-to-r from-gray-300 via-gray-100 to-gray-400 shadow-md relative -left-0.5 opacity-90" />
+                      <div key={i} className="relative flex items-center justify-center h-6 w-10">
+                        {/* Left hole */}
+                        <div className="absolute left-0 w-1.5 h-3 bg-black/25 dark:bg-black/60 rounded-full" />
+                        {/* Right hole */}
+                        <div className="absolute right-0 w-1.5 h-3 bg-black/25 dark:bg-black/60 rounded-full" />
+                        {/* Metal ring */}
+                        <div className="h-4 w-9 rounded-full border border-black/10 dark:border-white/10 bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-400 dark:from-zinc-600 dark:via-zinc-400 dark:to-zinc-700 shadow-md relative z-10" />
+                      </div>
                     ))}
                   </div>
 
                   {/* Open Book Container */}
-                  <div className="bg-[#fcfbf9] dark:bg-[#1a1917] border border-border shadow-2xl rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative min-h-[580px] p-8 md:p-12 gap-8 text-[#2e2d2b] dark:text-[#e4e2df]">
+                  <div className="bg-[#fcfaf2] dark:bg-[#181816] border border-border shadow-2xl rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative min-h-[580px] p-8 md:p-12 gap-8 text-[#2e2d2b] dark:text-[#e4e2df]">
                     
                     {/* Left Page (Content & Sticky Note) */}
                     <div className="flex flex-col gap-5 justify-between pr-2 md:pr-6 border-r border-border/10">
@@ -493,7 +501,7 @@ export default function JournalModule() {
                               onChange={(e) => setWhatWentWell(e.target.value)}
                               onBlur={saveReflections}
                               placeholder="Record wins, accomplishments, or positive moments..."
-                              className="w-full bg-surface-alt border border-border/50 rounded-xl px-3 py-2 text-xs focus:outline-none text-text-primary"
+                              className="w-full bg-white/60 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 text-text-primary transition-all"
                               rows={3}
                             />
                           </div>
@@ -505,33 +513,45 @@ export default function JournalModule() {
                               onChange={(e) => setWhatCanBeBetter(e.target.value)}
                               onBlur={saveReflections}
                               placeholder="Areas of focus, learnings, or improvements..."
-                              className="w-full bg-surface-alt border border-border/50 rounded-xl px-3 py-2 text-xs focus:outline-none text-text-primary"
+                              className="w-full bg-white/60 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 text-text-primary transition-all"
                               rows={3}
                             />
                           </div>
                         </div>
 
                         {/* Mood overview */}
-                        <div className="space-y-1.5 pt-2">
+                        <div className="space-y-2 pt-2">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">Today's Mood</span>
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-semibold text-text-primary capitalize">{activeEntry.mood}</span>
-                            <div className="flex gap-1">
-                              {['great', 'good', 'meh', 'bad', 'terrible'].map(m => (
-                                <button
-                                  key={m}
-                                  onClick={() => {
-                                    setMood(m as any);
-                                    updateJournalEntry(activeEntry.id, { mood: m as any });
-                                  }}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs border ${
-                                    activeEntry.mood === m ? 'border-[#a855f7] bg-[#a855f7]/10' : 'border-border hover:bg-surface-hover'
-                                  }`}
-                                  title={m}
-                                >
-                                  {m === 'great' ? '🟢' : m === 'good' ? '🟢' : m === 'meh' ? '🟡' : '🔴'}
-                                </button>
-                              ))}
+                            <div className="flex gap-1.5">
+                              {['great', 'good', 'meh', 'bad', 'terrible'].map(m => {
+                                const emojis: Record<string, string> = {
+                                  great: '😄',
+                                  good: '🙂',
+                                  meh: '😐',
+                                  bad: '🙁',
+                                  terrible: '😫'
+                                };
+                                const isSel = activeEntry.mood === m;
+                                return (
+                                  <button
+                                    key={m}
+                                    onClick={() => {
+                                      setMood(m as any);
+                                      updateJournalEntry(activeEntry.id, { mood: m as any });
+                                    }}
+                                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all border ${
+                                      isSel 
+                                        ? 'border-purple-500 bg-purple-500/10 scale-110 shadow-sm' 
+                                        : 'border-border/60 hover:bg-surface-hover'
+                                    }`}
+                                    title={m}
+                                  >
+                                    {emojis[m]}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
@@ -674,18 +694,20 @@ export default function JournalModule() {
               </div>
             </div>
           ) : (
-            <div className="bg-surface border border-border rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[460px]">
-              <span className="text-4xl mb-4">📖</span>
-              <h3 className="text-lg font-bold text-text-primary">No journal entry selected</h3>
-              <p className="text-text-secondary text-sm max-w-sm mt-2 leading-relaxed">
-                Click "+ New Entry" or select an entry on the left to start reflecting, tracking your mood, or documenting daily priorities!
-              </p>
-              <button
-                onClick={() => handleCreateEntry('blank')}
-                className="btn btn-primary btn-md mt-6 bg-[#a855f7] hover:bg-[#9333ea]"
-              >
-                Create First Entry
-              </button>
+            <div className="bg-surface border border-border rounded-2xl flex items-center justify-center min-h-[460px]">
+              <EmptyState
+                icon={<IconBook className="w-9 h-9 text-text-muted" />}
+                title="No journal entry selected"
+                description="Click '+ New Entry' or select an entry on the left to start reflecting, tracking your mood, or documenting daily priorities!"
+                action={
+                  <button
+                    onClick={() => handleCreateEntry('blank')}
+                    className="btn btn-primary btn-md bg-[#a855f7] hover:bg-[#9333ea]"
+                  >
+                    Create First Entry
+                  </button>
+                }
+              />
             </div>
           )}
 

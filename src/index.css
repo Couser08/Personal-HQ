@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 /* ─── Design Tokens ─────────────────────────────────────────────────── */
 /* Global → Semantic mapping for Tailwind utilities                      */
 @theme {
@@ -247,14 +249,14 @@ select:focus {
 .rich-editor s { text-decoration: line-through; }
 .rich-editor mark { background-color: #fef08a; color: #09090b; border-radius: 2px; padding: 0 2px; }
 .dark .rich-editor mark { background-color: #854d0e; color: #fef9c3; }
-.rich-editor code {
+.rich-editor :not(.note-code-pre) > code {
   @apply font-mono text-xs bg-surface-alt border border-border px-1 py-0.5 rounded;
 }
 .rich-editor .note-code-block {
   margin: 16px 0;
   border-radius: 12px;
   border: 1px solid var(--border-border);
-  background: #1e1e1e;
+  background: #f4f4f5;
   overflow: hidden;
   font-family: monospace;
 }
@@ -263,8 +265,8 @@ select:focus {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #252526;
-  border-bottom: 1px solid #2d2d2d;
+  background: #e4e4e7;
+  border-bottom: 1px solid var(--border-border);
 }
 .note-code-badge {
   font-size: 11px;
@@ -281,25 +283,49 @@ select:focus {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
-  background: #333;
-  color: #ccc;
-  border: none;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-border-alt);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
 .note-code-edit-trigger:hover {
-  background: #444;
-  color: #fff;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
 }
 .note-code-pre {
   margin: 0;
   padding: 16px;
   overflow-x: auto;
-  color: #d4d4d4;
+  color: #27272a;
   font-size: 13px;
   line-height: 1.6;
   background: transparent;
 }
+
+/* Dark mode overrides for code blocks */
+.dark .note-code-block {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+}
+.dark .note-code-header {
+  background: #252526;
+  border-bottom-color: #2d2d2d;
+}
+.dark .note-code-pre {
+  color: #d4d4d4;
+}
+.dark .note-code-edit-trigger {
+  background: #333;
+  color: #ccc;
+  border-color: #444;
+}
+.dark .note-code-edit-trigger:hover {
+  background: #444;
+  color: #fff;
+}
+
+
 .rich-editor h1 { @apply text-2xl font-bold mb-2; }
 .rich-editor ul { @apply list-disc pl-5 my-1; }
 .rich-editor ol { @apply list-decimal pl-5 my-1; }
@@ -334,4 +360,12 @@ select:focus {
 @media (min-width: 1024px) {
   .sidebar-desktop   { display: flex !important; }
   .mobile-bottom-nav { display: none !important; }
+}
+
+/* Note preview adjustments */
+.note-preview .note-code-edit-trigger {
+  display: none !important;
+}
+.note-preview .note-code-block {
+  margin: 1rem 0;
 }

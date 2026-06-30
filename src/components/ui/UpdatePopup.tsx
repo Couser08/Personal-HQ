@@ -1,44 +1,45 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconLayoutDashboard, IconBolt, IconShieldCheck, IconSparkles } from '@tabler/icons-react';
+import { IconX, IconLayoutDashboard, IconBolt, IconSparkles } from '@tabler/icons-react';
 
-const APP_VERSION = '0.7.2';
+const APP_VERSION = '0.8.1';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconLayoutDashboard className="w-5 h-5" />,
-    color: '#f43f5e',
-    bg: 'rgba(244,63,94,0.1)',
-    title: 'Pomodoro Timer',
-    desc: 'Professional focus timer with SVG ring, session tracking, and auto-advance.',
+    icon: <IconSparkles className="w-5 h-5" />,
+    color: '#a855f7',
+    bg: 'rgba(168,85,247,0.1)',
+    title: 'Modernised Reflections',
+    desc: 'Interactive 3D metal rings, translucent text fields, and scale-animated squircle emoji mood buttons.',
   },
   {
     icon: <IconBolt className="w-5 h-5" />,
     color: '#3b82f6',
     bg: 'rgba(59,130,246,0.1)',
-    title: 'Rich Text Notes',
-    desc: 'Bold, italic, highlights, bullet lists, numbered lists, headings & more.',
+    title: 'Syntax Highlighter',
+    desc: 'Prism syntax highlighting integrated into Notes editor & Study Tracker with light/dark themes.',
   },
   {
-    icon: <IconShieldCheck className="w-5 h-5" />,
+    icon: <IconLayoutDashboard className="w-5 h-5" />,
     color: '#22c55e',
     bg: 'rgba(34,197,94,0.1)',
-    title: '12 Countdown Templates',
-    desc: 'All templates rebuilt — Gradient, Flip, Split, Circle, Event, Sale and more.',
+    title: 'Visual Enhancements',
+    desc: 'Dynamic countdown template previews, resized custom selects, and smooth stats sparklines.',
   },
 ];
 
 const WHATS_NEW = [
-  'Interactive Code Blocks inside Notes',
-  'Custom animated Select dropdowns',
-  'Throttled actions to prevent duplicate clicks',
-  'Pomodoro timer with Apple Watch design',
-  'Rich text editor for Notes',
-  'Code Snippet Vault module',
-  '12 Countdown display templates',
-  'Settings page rebuilt',
-  'Dark / Light mode responsiveness improvements',
+  'Prism syntax highlighted code blocks in Notes',
+  'Syntax highlighting for Study Tracker snippets',
+  'Interactive metallic binder rings with slot shadows',
+  'Translucent textarea fields on warm paper journal pages',
+  'Modern scale-animated squircle emoji mood selector',
+  'Dynamic template previewing in Countdown Settings',
+  'Wider Settings Countdown Template select element',
+  'Fixed Code Vault snippet auto-selection on load',
+  'Smoother Notes sparklines with safety padding margins',
+  'Fixed App Onboarding and Journal empty state layouts',
 ];
 
 /* ── Crisp, Theme-Aware Vector Rocket SVG ──────────────────────────────── */
@@ -132,18 +133,19 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
         </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-4 items-center">
         <button
           onClick={onDismiss}
-          className="flex-1 py-2 text-xs font-semibold text-text-secondary border border-border rounded-xl hover:bg-surface-hover transition-colors"
+          className="px-3 py-2 text-xs font-semibold text-text-secondary border border-border rounded-xl hover:bg-surface-hover transition-colors shrink-0"
         >
           Later
         </button>
         <button
           onClick={onExpand}
-          className="flex-1 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-muted rounded-xl transition-colors"
+          className="flex-1 py-2 px-1 text-xs font-bold text-white bg-primary hover:bg-primary-muted rounded-xl transition-colors truncate text-center"
+          title="Experience Latest Update"
         >
-          Update Now
+          Experience Latest Update
         </button>
       </div>
     </motion.div>
@@ -170,86 +172,117 @@ function FullModal({ onClose }: { onClose: () => void }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 24 }}
           transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-          className="bg-surface border border-border rounded-3xl shadow-high w-full max-w-4xl pointer-events-auto overflow-hidden relative"
+          className="bg-[#0c0c14] border border-white/10 rounded-3xl shadow-high w-full max-w-4xl pointer-events-auto overflow-hidden relative flex flex-col md:flex-row text-white"
         >
-          {/* Top gradient bar */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-pink-400 to-rose-300" />
-
+          {/* Close button in top-right */}
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-4 right-4 p-2 rounded-xl text-text-muted hover:bg-surface-hover hover:text-text-primary transition-colors z-10"
+            className="absolute top-4 right-4 p-2 rounded-xl text-zinc-500 hover:bg-white/5 hover:text-white transition-colors z-10 cursor-pointer"
           >
             <IconX className="w-5 h-5" />
           </button>
 
-          <div className="flex flex-col md:flex-row">
-            {/* Left: illustration */}
-            <div className="md:w-64 shrink-0 flex items-center justify-center p-8 bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent">
-              <RocketSVG className="w-40 h-40 md:w-48 md:h-48 drop-shadow-lg" />
+          {/* Left panel: app icon & version summary */}
+          <div className="md:w-72 shrink-0 bg-[#0e0e16] border-r border-white/5 flex flex-col justify-between p-8 min-h-[520px]">
+            {/* Top part: App icon in squircle glow container */}
+            <div className="flex flex-col items-center">
+              <div className="w-28 h-28 mt-4 bg-gradient-to-b from-[#1e1e30] to-[#12121a] border border-white/10 rounded-[28px] flex items-center justify-center shadow-[0_15px_45px_rgba(0,0,0,0.5),_inset_0_2px_4px_rgba(255,255,255,0.05)] relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 via-transparent to-blue-500/10 opacity-60" />
+                <RocketSVG className="w-16 h-16 drop-shadow-[0_4px_12px_rgba(168,85,247,0.3)] transform group-hover:scale-105 transition-transform duration-300" />
+              </div>
             </div>
 
-            {/* Center: changelog */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 border-t md:border-t-0 md:border-l border-border">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-                    Version {APP_VERSION}
-                  </span>
-                </div>
-                <h2 className="text-2xl font-bold text-text-primary">Update Shipped</h2>
-                <p className="text-sm text-text-secondary mt-1">
-                  We've successfully deployed new updates to your Personal HQ. Explore the new changes below!
-                </p>
-              </div>
+            {/* Middle part: version details */}
+            <div className="my-auto py-6">
+              <span className="text-[10px] uppercase font-black tracking-widest text-[#a855f7] block">
+                Release
+              </span>
+              <h2 className="text-3xl font-black text-white mt-1.5">
+                Version {APP_VERSION}
+              </h2>
+              <p className="text-xs text-zinc-400 mt-3 leading-relaxed">
+                We've successfully deployed new updates to your Personal HQ. Explore what's new.
+              </p>
+            </div>
 
-              <div className="flex flex-col gap-3">
+            {/* Bottom part: capsule badge */}
+            <div>
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/10 text-[9px] font-bold text-zinc-500 select-none uppercase tracking-wide">
+                What's New <span className="text-[#a855f7] font-semibold">&gt;</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Center panel: Highlights list & Quote box */}
+          <div className="flex-1 p-8 flex flex-col justify-between bg-[#0c0c14] min-h-[520px]">
+            {/* Highlights Header */}
+            <div>
+              <h3 className="text-base font-bold text-white mb-6">Highlights</h3>
+              
+              {/* Highlight Cards */}
+              <div className="flex flex-col gap-6">
                 {FEATURES.map(f => (
-                  <div key={f.title} className="flex items-start gap-3">
+                  <div key={f.title} className="flex items-start gap-4">
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5"
                       style={{ background: f.bg, color: f.color }}
                     >
                       {f.icon}
                     </div>
                     <div>
-                      <p className="font-semibold text-sm text-text-primary">{f.title}</p>
-                      <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{f.desc}</p>
+                      <p className="font-bold text-sm text-white">{f.title}</p>
+                      <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{f.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right: What's New */}
-            <div className="md:w-56 shrink-0 p-6 md:p-8 bg-surface-alt border-t md:border-t-0 md:border-l border-border flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <IconSparkles className="w-4 h-4 text-primary" />
-                <h3 className="font-bold text-sm text-text-primary">What's New</h3>
+            {/* Quote block at the bottom */}
+            <div className="bg-[#12121e] border border-white/5 rounded-2xl p-4 flex gap-2.5 mt-8 select-none">
+              <span className="text-2xl text-[#a855f7] font-serif leading-none">“</span>
+              <p className="text-xs text-zinc-400 italic leading-relaxed flex-1">
+                Small details, big impact. A smoother, smarter Personal HQ.
+              </p>
+              <span className="text-2xl text-[#a855f7] font-serif leading-none self-end">”</span>
+            </div>
+          </div>
+
+          {/* Right panel: What's New bullet list & actions */}
+          <div className="md:w-[280px] shrink-0 bg-[#08080e] border-l border-white/5 p-8 flex flex-col justify-between min-h-[520px]">
+            {/* Header */}
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <IconSparkles className="w-4 h-4 text-[#a855f7]" />
+                <h3 className="font-bold text-sm text-white">What's New</h3>
               </div>
-              <ul className="flex flex-col gap-2">
+
+              {/* Bullet list */}
+              <ul className="flex flex-col gap-3.5 overflow-y-auto max-h-[300px] pr-2">
                 {WHATS_NEW.map(item => (
-                  <li key={item} className="flex items-start gap-2 text-xs text-text-secondary leading-relaxed">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
-                    {item}
+                  <li key={item} className="flex items-start gap-2.5 text-xs text-zinc-400 leading-relaxed">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7] mt-1.5 shrink-0 shadow-[0_0_8px_#a855f7]" />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
+            </div>
 
-              <div className="flex gap-2 mt-auto pt-4">
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-2.5 text-xs font-semibold text-text-secondary border border-border rounded-xl hover:bg-surface-hover transition-colors"
-                >
-                  Later
-                </button>
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-muted rounded-xl transition-colors"
-                >
-                  Update Now
-                </button>
-              </div>
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-8 pt-4 border-t border-white/5">
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 text-xs font-semibold text-zinc-400 border border-white/10 rounded-full hover:bg-white/5 hover:text-white transition-all shrink-0 cursor-pointer"
+              >
+                Later
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-grow py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-full transition-all shadow-[0_4px_20px_rgba(124,58,237,0.3)] text-center cursor-pointer"
+              >
+                Explore Update
+              </button>
             </div>
           </div>
         </motion.div>

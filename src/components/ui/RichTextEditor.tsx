@@ -7,6 +7,8 @@ import {
 import { CustomSelect } from './CustomSelect';
 import { Modal } from './Modal';
 
+import { codeToHtml } from 'shiki';
+
 const LANG_OPTIONS = [
   { value: 'javascript', label: 'JavaScript' },
   { value: 'typescript', label: 'TypeScript' },
@@ -59,6 +61,84 @@ function escapeHtml(text: string) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+async function highlightAllCodeBlocksInHtml(html: string, isDark: boolean): Promise<string> {
+  if (typeof window === 'undefined' || !html) return html;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const theme = isDark ? 'github-dark' : 'snazzy-light';
+
+  // 1. Highlight custom note-code-blocks
+  const codeBlocks = doc.querySelectorAll<HTMLElement>('.note-code-block');
+  for (const block of Array.from(codeBlocks)) {
+    const lang = block.getAttribute('data-language') || 'javascript';
+    const encoded = block.getAttribute('data-code') || '';
+    
+    const codeElem = block.querySelector('.note-code-pre code');
+    if (!codeElem) continue;
+
+    let code = '';
+    try {
+      code = encoded ? decodeURIComponent(encoded) : (codeElem.textContent || '');
+    } catch {
+      code = codeElem.textContent || '';
+    }
+
+    if (!code) continue;
+
+    try {
+      const language = (lang && lang.toLowerCase() !== 'other') ? lang.toLowerCase() : 'javascript';
+      const highlighted = await codeToHtml(code, { lang: language, theme });
+      const tempDoc = parser.parseFromString(highlighted, 'text/html');
+      const shikiCode = tempDoc.querySelector('code');
+      if (shikiCode) {
+        codeElem.innerHTML = shikiCode.innerHTML;
+      } else {
+        codeElem.innerHTML = escapeHtml(code);
+      }
+    } catch (e) {
+      console.error('Shiki error:', e);
+      codeElem.innerHTML = escapeHtml(code);
+    }
+  }
+
+  // 2. Highlight plain pre > code blocks (for backwards compatibility)
+  const plainPreCodes = doc.querySelectorAll('pre code');
+  for (const codeElem of Array.from(plainPreCodes)) {
+    if (codeElem.closest('.note-code-block')) continue;
+    
+    const preElem = codeElem.parentElement;
+    if (!preElem) continue;
+    
+    let lang = 'javascript';
+    const classList = Array.from(codeElem.classList).concat(Array.from(preElem.classList));
+    const langClass = classList.find(c => c.startsWith('language-') || c.startsWith('lang-'));
+    if (langClass) {
+      lang = langClass.replace(/^(language-|lang-)/, '');
+    } else {
+      lang = detectLanguage(codeElem.textContent || '');
+    }
+    
+    const codeText = codeElem.textContent || '';
+    if (codeText) {
+      try {
+        const language = (lang && lang.toLowerCase() !== 'other') ? lang.toLowerCase() : 'javascript';
+        const highlighted = await codeToHtml(codeText, { lang: language, theme });
+        const tempDoc = parser.parseFromString(highlighted, 'text/html');
+        const shikiCode = tempDoc.querySelector('code');
+        if (shikiCode) {
+          codeElem.innerHTML = shikiCode.innerHTML;
+        } else {
+          codeElem.innerHTML = escapeHtml(codeText);
+        }
+      } catch (e) {
+        codeElem.innerHTML = escapeHtml(codeText);
+      }
+    }
+  }
+
+  return doc.body.innerHTML;
 }
 
 function detectLanguage(code: string): string {
@@ -175,11 +255,28 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
   }, [saveRange]);
 
   // Save changes from the Code Modal
-  const handleSaveCode = () => {
+  const handleSaveCode = async () => {
     const { elementId, code, lang } = codeModal;
     const cleanCode = code.trim() || '// write code here';
     const escaped = escapeHtml(cleanCode);
     const encoded = encodeURIComponent(cleanCode);
+
+    let highlightedCode = escaped;
+    const isDark = document.documentElement.classList.contains('dark');
+    const theme = isDark ? 'github-dark' : 'snazzy-light';
+    const language = (lang && lang.toLowerCase() !== 'other') ? lang.toLowerCase() : 'javascript';
+
+    try {
+      const rawHtml = await codeToHtml(cleanCode, { lang: language, theme });
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(rawHtml, 'text/html');
+      const shikiCode = doc.querySelector('code');
+      if (shikiCode) {
+        highlightedCode = shikiCode.innerHTML;
+      }
+    } catch (err) {
+      console.error('Failed to highlight with Shiki:', err);
+    }
 
     if (elementId && editorRef.current) {
       // Edit existing
@@ -190,7 +287,7 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         const badge = block.querySelector('.note-code-badge');
         if (badge) badge.textContent = lang;
         const codeElem = block.querySelector('.note-code-pre code');
-        if (codeElem) codeElem.innerHTML = escaped;
+        if (codeElem) codeElem.innerHTML = highlightedCode;
       }
     } else {
       // Insert new
@@ -201,7 +298,7 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         `    <span class="note-code-badge">${lang}</span>`,
         `    <button class="note-code-edit-trigger" type="button">Edit Code</button>`,
         `  </div>`,
-        `  <pre class="note-code-pre"><code>${escaped}</code></pre> `,
+        `  <pre class="note-code-pre"><code>${highlightedCode}</code></pre> `,
         `</div>`,
         `<p><br></p>`,
       ].join('\n');
@@ -236,7 +333,10 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
 
   const editorCallbackRef = useCallback((node: HTMLDivElement | null) => {
     if (node && !initRef.current) {
-      node.innerHTML = value;
+      const isDark = document.documentElement.classList.contains('dark');
+      highlightAllCodeBlocksInHtml(value, isDark).then(html => {
+        if (editorRef.current) editorRef.current.innerHTML = html;
+      });
       initRef.current = true;
       editorRef.current = node;
     } else if (node) {

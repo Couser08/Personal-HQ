@@ -242,16 +242,16 @@ export default function NotesModule() {
             <p className="text-3xl font-extrabold text-text-primary mt-2">{recentCount}</p>
           </div>
           {/* Custom pink line sparkline in the corner */}
-          <div className="absolute right-0 bottom-0 left-0 h-9 pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+          <div className="absolute right-0 bottom-0 left-0 h-10 pointer-events-none">
+            <svg className="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="pink-spark-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.15" />
                   <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <path d="M0,25 Q15,10 30,22 T60,5 T90,20 L100,10 L100,30 L0,30 Z" fill="url(#pink-spark-grad)" />
-              <path d="M0,25 Q15,10 30,22 T60,5 T90,20 L100,10" fill="none" stroke="#f43f5e" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 0 35 C 10 30, 20 18, 35 25 C 50 32, 60 12, 75 16 C 85 18, 93 25, 100 15 L 100 40 L 0 40 Z" fill="url(#pink-spark-grad)" />
+              <path d="M 0 35 C 10 30, 20 18, 35 25 C 50 32, 60 12, 75 16 C 85 18, 93 25, 100 15" fill="none" stroke="#f43f5e" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -442,7 +442,12 @@ export default function NotesModule() {
 
               {/* Rich Text Editor */}
               <div className="flex-1 min-h-[300px]">
-                <RichTextEditor value={content} onChange={setContent} placeholder="Start typing your thoughts..." />
+                <RichTextEditor
+                  key={activeNoteId || 'new'}
+                  value={content}
+                  onChange={setContent}
+                  placeholder="Start typing your thoughts..."
+                />
               </div>
 
               {/* Footer status & Actions */}

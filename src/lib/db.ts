@@ -426,7 +426,12 @@ export const budgetCategoryService = {
       .from('budget_categories')
       .select('*')
       .eq('user_id', userId);
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
+        return [];
+      }
+      throw error;
+    }
     return (data ?? []).map((r) => ({
       id: r.id,
       name: r.name,
@@ -479,7 +484,12 @@ export const budgetTransactionService = {
       .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
+        return [];
+      }
+      throw error;
+    }
     return (data ?? []).map((r) => ({
       id: r.id,
       categoryId: r.category_id,
