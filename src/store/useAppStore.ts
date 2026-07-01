@@ -131,6 +131,7 @@ export interface TopicResource {
   type: 'link' | 'pdf' | 'doc' | 'image' | 'video' | 'youtube';
   url: string;
   fileSize?: string;
+  tags?: string[];
   uploadDate: string;
 }
 

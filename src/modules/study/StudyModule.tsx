@@ -4,7 +4,9 @@ import {
   IconPlus, IconTrash, IconBook, IconCheck, IconSearch,
   IconTargetArrow, IconChecklist, IconLayoutGrid, IconArrowLeft, IconClock,
   IconCode, IconLink, IconHelpCircle, IconNotes, IconEdit, IconRefresh,
-  IconFileText, IconDots
+  IconFileText, IconDots, IconCopy,
+  IconBrandYoutube, IconExternalLink, IconBrandGithub,
+  IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useAppStore, type Topic } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -738,14 +740,28 @@ export default function StudyModule() {
                   {activeTopic.snippets.map(snip => (
                     <div
                       key={snip.id}
-                      className="bg-surface border border-border rounded-2xl p-5 flex flex-col gap-3"
+                      className="bg-surface border-none shadow-sm ring-1 ring-black/5 dark:ring-white/5 rounded-3xl p-5 flex flex-col gap-4 transition-shadow hover:shadow-md"
                     >
-                      <div className="flex justify-between items-start gap-2">
-                        <div>
-                          <h4 className="font-bold text-sm text-text-primary line-clamp-1">{snip.title}</h4>
-                          <span className="text-[10px] uppercase font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full block mt-1 w-max">
-                            {snip.language}
-                          </span>
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner ${
+                            snip.language.toLowerCase() === 'javascript' || snip.language.toLowerCase() === 'js' ? 'bg-[#F7DF1E] text-black' :
+                            snip.language.toLowerCase() === 'typescript' || snip.language.toLowerCase() === 'ts' ? 'bg-[#3178C6] text-white' :
+                            snip.language.toLowerCase() === 'python' ? 'bg-[#3776AB] text-white' :
+                            snip.language.toLowerCase() === 'html' ? 'bg-[#E34F26] text-white' :
+                            snip.language.toLowerCase() === 'css' ? 'bg-[#1572B6] text-white' :
+                            'bg-gray-100 dark:bg-gray-800 text-text-primary'
+                          }`}>
+                            {snip.language.toLowerCase() === 'javascript' ? 'JS' : 
+                             snip.language.toLowerCase() === 'typescript' ? 'TS' :
+                             snip.language.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex flex-col">
+                            <h4 className="font-bold text-base text-text-primary line-clamp-1 leading-tight mb-1">{snip.title}</h4>
+                            <span className="text-[10px] uppercase font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-md w-max">
+                              {snip.language}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -765,13 +781,25 @@ export default function StudyModule() {
                           </button>
                         </div>
                       </div>
-                      {snip.description && <p className="text-xs text-text-secondary leading-relaxed">{snip.description}</p>}
-                      <div className="rounded-xl overflow-hidden border border-border mt-1">
-                        <ShikiHighlighter
-                          code={snip.code}
-                          lang={snip.language}
-                          theme={isDark ? 'github-dark' : 'snazzy-light'}
-                        />
+                      {snip.description && <p className="text-sm text-text-secondary leading-relaxed pl-1">{snip.description}</p>}
+                      <div className="rounded-2xl overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 ring-1 ring-black/5 dark:ring-white/5 relative group">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(snip.code);
+                            // Assuming there's a toast function available, ideally we'd show a toast here.
+                          }}
+                          className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-surface/80 backdrop-blur border border-border text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary z-10"
+                          title="Copy Code"
+                        >
+                          <IconCopy className="w-4 h-4" />
+                        </button>
+                        <div className="p-1">
+                          <ShikiHighlighter
+                            code={snip.code}
+                            lang={snip.language}
+                            theme={isDark ? 'github-dark' : 'snazzy-light'}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -803,25 +831,43 @@ export default function StudyModule() {
                   {activeTopic.resources.map(res => (
                     <div
                       key={res.id}
-                      className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between gap-4"
+                      className="bg-surface border-none shadow-sm ring-1 ring-black/5 dark:ring-white/5 rounded-3xl p-5 flex items-center justify-between gap-4 transition-shadow hover:shadow-md"
                     >
-                      <div className="min-w-0 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-surface-alt border flex items-center justify-center shrink-0">
-                          {res.type === 'youtube' || res.type === 'video' ? '📺' : res.type === 'pdf' ? '📄' : '🔗'}
+                      <div className="min-w-0 flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${
+                          res.type === 'youtube' || res.type === 'video' ? 'bg-[#FF0000]/10 text-[#FF0000]' :
+                          res.type === 'pdf' ? 'bg-red-500/10 text-red-500' :
+                          res.url.includes('github.com') ? 'bg-gray-800/10 text-gray-800 dark:bg-gray-100/10 dark:text-gray-100' :
+                          'bg-blue-500/10 text-blue-500'
+                        }`}>
+                          {res.type === 'youtube' || res.type === 'video' ? <IconBrandYoutube className="w-7 h-7" /> : 
+                           res.type === 'pdf' ? <IconFileText className="w-7 h-7" /> : 
+                           res.url.includes('github.com') ? <IconBrandGithub className="w-7 h-7" /> :
+                           <IconLink className="w-7 h-7" />}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-text-primary line-clamp-1">{res.title}</p>
-                          <p className="text-[10px] text-text-muted mt-0.5 truncate">{res.url}</p>
+                        <div className="min-w-0 flex flex-col justify-center">
+                          <p className="text-base font-bold text-text-primary line-clamp-1 leading-tight">{res.title}</p>
+                          <p className="text-xs text-text-muted mt-1 truncate">{res.url}</p>
+                          <div className="flex gap-2 mt-2">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 w-max">
+                              {res.type === 'youtube' || res.type === 'video' ? 'Video' : res.type === 'pdf' ? 'Document' : 'Link'}
+                            </span>
+                            {res.tags?.map(t => (
+                              <span key={t} className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-gray-500/10 text-gray-600 dark:text-gray-400 w-max">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <a
                           href={res.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-3 py-1.5 bg-surface-alt hover:bg-surface-hover border rounded-lg text-xs font-semibold text-text-primary transition-colors"
+                          className="px-4 py-2 bg-surface hover:bg-gray-50 dark:hover:bg-gray-800 ring-1 ring-black/5 dark:ring-white/5 shadow-sm rounded-full text-sm font-bold text-text-primary transition-all flex items-center gap-2"
                         >
-                          Open
+                          Open <IconExternalLink className="w-4 h-4 text-text-muted" />
                         </a>
                         <button
                           onClick={() => {
@@ -830,7 +876,7 @@ export default function StudyModule() {
                           }}
                           className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500"
                         >
-                          <IconTrash className="w-3.5 h-3.5" />
+                          <IconTrash className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -841,62 +887,98 @@ export default function StudyModule() {
           )}
 
           {topicTab === 'tasks' && (
-            <div className="space-y-4 max-w-xl">
-              <h3 className="font-bold text-base">Topic-Specific Checklist</h3>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. Read Textbook page 231"
-                  value={taskInput}
-                  onChange={e => setTaskInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAddTopicTask()}
-                  className="input-field flex-1"
-                />
-                <button
-                  onClick={handleAddTopicTask}
-                  className="btn btn-primary btn-md"
-                >
-                  Add Task
-                </button>
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
+              {/* Left Column */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-bold text-xl text-text-primary mb-2 leading-tight">Topic-Specific<br/>Checklist</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    Break down your topic into small, actionable tasks.
+                  </p>
+                </div>
+                
+                <div className="pt-6 border-t border-border/60">
+                  <h4 className="font-bold text-base text-text-primary mb-2">All clear</h4>
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-xs text-text-muted leading-relaxed">
+                      Divide this topic into micro actionable tasks (e.g. review, practice, quiz).
+                    </p>
+                    {(!activeTopic.tasks?.length || activeTopic.tasks.every(t => t.done)) ? (
+                      <div className="w-10 h-10 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center shrink-0 shadow-sm">
+                        <IconCheck className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full border-2 border-dashed border-border flex items-center justify-center shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-text-muted" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {!activeTopic.tasks?.length ? (
-                <EmptyState
-                  icon={<IconChecklist className="w-8 h-8 text-text-muted" />}
-                  title="All clear"
-                  description="Divide this topic into micro actionable tasks (e.g. review lecture, solve MCQs)."
-                />
-              ) : (
-                <div className="border border-border rounded-2xl overflow-hidden bg-surface divide-y divide-border">
-                  {activeTopic.tasks.map(task => (
-                    <div
-                      key={task.id}
-                      onClick={() => handleToggleTopicTask(task.id)}
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-hover/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                            task.done ? 'bg-primary border-primary' : 'border-text-muted'
-                          }`}
-                        >
-                          {task.done && <IconCheck className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={`text-sm ${task.done ? 'text-text-muted line-through' : 'text-text-primary'}`}>
-                          {task.title}
-                        </span>
-                      </div>
-                      <button
-                        onClick={e => { e.stopPropagation(); handleDeleteTopicTask(task.id); }}
-                        className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500"
-                      >
-                        <IconTrash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+              {/* Right Column */}
+              <div className="bg-surface rounded-3xl p-6 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/5 flex flex-col min-h-[300px]">
+                <div className="flex justify-between items-start gap-4 mb-6">
+                  <div className="flex-1 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Read Textbook page 231"
+                      value={taskInput}
+                      onChange={e => setTaskInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAddTopicTask()}
+                      className="input-field flex-1 h-9 bg-surface-alt border-none shadow-inner text-sm px-4 rounded-full"
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddTopicTask}
+                    disabled={!taskInput.trim()}
+                    className="btn btn-primary btn-sm rounded-full h-9 px-4 shadow-md shadow-red-500/20 whitespace-nowrap disabled:opacity-50"
+                  >
+                    <IconPlus className="w-4 h-4" /> Add Task
+                  </button>
                 </div>
-              )}
+
+                <div className="flex-1 flex flex-col justify-center">
+                  {!activeTopic.tasks?.length ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
+                         <IconChecklist className="w-8 h-8" />
+                      </div>
+                      <h4 className="font-bold text-lg text-text-primary mb-1">No tasks yet</h4>
+                      <p className="text-sm text-text-secondary">Add your first task to get started</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeTopic.tasks.map(task => (
+                        <div
+                          key={task.id}
+                          onClick={() => handleToggleTopicTask(task.id)}
+                          className="flex items-center justify-between p-4 rounded-2xl bg-surface hover:bg-surface-alt transition-colors cursor-pointer border border-transparent hover:border-border group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shadow-inner ${
+                                task.done ? 'bg-green-500 border-green-500 text-white' : 'border-border bg-surface'
+                              }`}
+                            >
+                              {task.done && <IconCheck className="w-3 h-3" />}
+                            </div>
+                            <span className={`text-sm font-medium transition-all ${task.done ? 'text-text-muted line-through' : 'text-text-primary'}`}>
+                              {task.title}
+                            </span>
+                          </div>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleDeleteTopicTask(task.id); }}
+                            className="p-2 rounded-xl text-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <IconTrash className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -966,12 +1048,12 @@ export default function StudyModule() {
           )}
 
           {topicTab === 'flashcards' && (
-            <div className="space-y-6 max-w-xl mx-auto">
-              <div className="flex justify-between items-center">
+            <div className="space-y-6 max-w-4xl mx-auto pb-10">
+              <div className="flex justify-between items-center px-4">
                 <h3 className="font-bold text-base">Flashcard Deck</h3>
                 <button
                   onClick={() => setFlashcardModal({ open: true, front: '', back: '' })}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm rounded-full"
                 >
                   <IconPlus className="w-4 h-4" /> Add Card
                 </button>
@@ -984,85 +1066,101 @@ export default function StudyModule() {
                   description="Leverage flashcards for active recall and spaced repetition memory enhancement."
                 />
               ) : (
-                <div className="space-y-6 text-center">
-                  {/* Card Container (3D Flip Effect) */}
-                  <div
-                    onClick={() => setFlashcardFlipped(!flashcardFlipped)}
-                    style={{ perspective: 1000 }}
-                    className="w-full h-64 cursor-pointer relative"
-                  >
-                    <motion.div
-                      animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
-                      style={{ transformStyle: 'preserve-3d' }}
-                      className="w-full h-full relative"
+                <div className="space-y-8 flex flex-col items-center">
+                  <div className="flex items-center gap-6 w-full justify-center">
+                    <button
+                      onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0)); }}
+                      disabled={currentFlashcardIndex === 0}
+                      className="w-12 h-12 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      {/* Front Side */}
-                      <div
-                        style={{ backfaceVisibility: 'hidden' }}
-                        className="absolute inset-0 bg-surface border border-border rounded-3xl p-6 flex flex-col justify-center items-center shadow-sm"
-                      >
-                        <span className="text-[10px] text-text-muted uppercase tracking-widest font-bold mb-4">Question (Click to flip)</span>
-                        <p className="text-lg font-semibold text-text-primary max-w-md">{activeTopic.flashcards[currentFlashcardIndex]?.front}</p>
-                      </div>
+                      <IconChevronLeft className="w-6 h-6" />
+                    </button>
 
-                      {/* Back Side */}
-                      <div
-                        style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                        className="absolute inset-0 bg-surface-alt border border-border-alt rounded-3xl p-6 flex flex-col justify-center items-center shadow-inner"
+                    {/* Card Container (3D Flip Effect) */}
+                    <div
+                      onClick={() => setFlashcardFlipped(!flashcardFlipped)}
+                      style={{ perspective: 1000 }}
+                      className="w-full max-w-2xl h-80 cursor-pointer relative"
+                    >
+                      <motion.div
+                        animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
+                        transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
+                        style={{ transformStyle: 'preserve-3d' }}
+                        className="w-full h-full relative"
                       >
-                        <span className="text-[10px] text-text-muted uppercase tracking-widest font-bold mb-4">Answer (Click to flip)</span>
-                        <p className="text-base font-medium text-text-secondary max-w-md">{activeTopic.flashcards[currentFlashcardIndex]?.back}</p>
-                      </div>
-                    </motion.div>
+                        {/* Front Side */}
+                        <div
+                          style={{ backfaceVisibility: 'hidden' }}
+                          className="absolute inset-0 bg-white dark:bg-gray-800 border-none rounded-[32px] p-8 flex flex-col items-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] justify-center relative ring-1 ring-black/5 dark:ring-white/10"
+                        >
+                          <span className="absolute top-8 text-[10px] text-red-500 uppercase tracking-widest font-bold">Question (Click to flip)</span>
+                          <p className="text-3xl font-medium text-text-primary text-center max-w-lg leading-relaxed">{activeTopic.flashcards[currentFlashcardIndex]?.front}</p>
+                        </div>
+
+                        {/* Back Side */}
+                        <div
+                          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                          className="absolute inset-0 bg-gray-50 dark:bg-gray-900 border-none rounded-[32px] p-8 flex flex-col items-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] justify-center relative ring-1 ring-black/5 dark:ring-white/10"
+                        >
+                          <span className="absolute top-8 text-[10px] text-blue-500 uppercase tracking-widest font-bold">Answer (Click to flip)</span>
+                          <p className="text-xl font-medium text-text-secondary text-center max-w-lg leading-relaxed">{activeTopic.flashcards[currentFlashcardIndex]?.back}</p>
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    <button
+                      onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.min(prev + 1, activeTopic.flashcards!.length - 1)); }}
+                      disabled={currentFlashcardIndex === activeTopic.flashcards.length - 1}
+                      className="w-12 h-12 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <IconChevronRight className="w-6 h-6" />
+                    </button>
                   </div>
 
+                  {/* Dot Pagination */}
+                  <div className="flex gap-2 items-center">
+                    {activeTopic.flashcards.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setFlashcardFlipped(false);
+                          setCurrentFlashcardIndex(idx);
+                        }}
+                        className={`transition-all rounded-full ${idx === currentFlashcardIndex ? 'w-2 h-2 bg-red-500' : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400'}`}
+                        aria-label={`Go to flashcard ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  
                   {/* Rating Actions */}
                   {flashcardFlipped && (
-                    <div className="flex flex-col gap-2 p-4 bg-surface-alt rounded-2xl border border-border-alt animate-fade-in">
+                    <div className="flex flex-col items-center gap-3 mt-4 animate-fade-in">
                       <p className="text-xs font-semibold text-text-secondary">Rate recall difficulty to schedule review:</p>
-                      <div className="flex justify-center gap-2">
+                      <div className="flex justify-center gap-3">
                         <button
                           onClick={() => handleRateFlashcard('easy')}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold text-xs rounded-xl transition-colors"
+                          className="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-green-500/20"
                         >
                           Easy (4 Days)
                         </button>
                         <button
                           onClick={() => handleRateFlashcard('medium')}
-                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-colors"
+                          className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-amber-500/20"
                         >
                           Medium (2 Days)
                         </button>
                         <button
                           onClick={() => handleRateFlashcard('hard')}
-                          className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-colors"
+                          className="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-rose-500/20"
                         >
                           Hard (1 Day)
                         </button>
                       </div>
                     </div>
                   )}
-
-                  {/* Deck Progression */}
-                  <div className="flex justify-between items-center text-xs text-text-muted pt-2">
-                    <span>Card {currentFlashcardIndex + 1} of {activeTopic.flashcards.length}</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0)); }}
-                        disabled={currentFlashcardIndex === 0}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.min(prev + 1, activeTopic.flashcards!.length - 1)); }}
-                        disabled={currentFlashcardIndex === activeTopic.flashcards.length - 1}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        Next
-                      </button>
-                    </div>
+                  
+                  <div className="text-xs font-semibold text-text-muted mt-2">
+                    Card {currentFlashcardIndex + 1} of {activeTopic.flashcards.length}
                   </div>
                 </div>
               )}
@@ -1070,39 +1168,57 @@ export default function StudyModule() {
           )}
 
           {topicTab === 'revision' && (
-            <div className="space-y-6 max-w-xl">
-              <h3 className="font-bold text-base">Memory & Revision Spacing</h3>
-              
-              <div className="bg-surface border border-border p-6 rounded-2xl flex items-center justify-between gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
+              {/* Left Column */}
+              <div className="space-y-6">
                 <div>
-                  <h4 className="font-bold text-sm text-text-primary">Spaced Repetition Metric</h4>
-                  <p className="text-xs text-text-secondary mt-1">Estimations based on review card frequencies</p>
+                  <h3 className="font-bold text-xl text-text-primary mb-2 leading-tight">Memory & Revision<br/>Spacing</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    Smart repetition to help you remember better.
+                  </p>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex flex-col justify-center items-center shrink-0">
-                  <span className="text-base font-bold text-primary">85%</span>
-                  <span className="text-[9px] text-text-muted">Retention</span>
+                
+                <div className="bg-surface rounded-3xl p-8 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/5 flex flex-col items-center justify-center min-h-[220px]">
+                  <div className="relative w-32 h-32 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-border dark:text-gray-800" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray="283" strokeDashoffset="42" strokeLinecap="round" className="text-primary" />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-black text-text-primary">85<span className="text-lg">%</span></span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-muted mt-6">Retention Rate</span>
                 </div>
               </div>
 
-              {/* Spacing Timeline */}
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Spacing Schedule Intervals</p>
-                <div className="flex flex-col gap-3">
+              {/* Right Column */}
+              <div className="bg-surface rounded-3xl p-6 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/5 flex flex-col">
+                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-6">Spacing Schedule Intervals</p>
+                <div className="flex flex-col gap-2">
                   {[
-                    { label: 'Session 1 (Same day)', delta: 'Completed' },
-                    { label: 'Session 2 (1 Day)', delta: 'Tomorrow' },
-                    { label: 'Session 3 (3 Days)', delta: 'In 3 days' },
-                    { label: 'Session 4 (7 Days)', delta: 'In 7 days' },
-                    { label: 'Session 5 (30 Days)', delta: 'In 30 days' },
+                    { label: 'Session 1', subtitle: 'Same day', status: 'Completed', color: 'bg-green-500/10 text-green-600 dark:text-green-400' },
+                    { label: 'Session 2', subtitle: '1 Day', status: 'Tomorrow', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+                    { label: 'Session 3', subtitle: '3 Days', status: 'Upcoming', color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+                    { label: 'Session 4', subtitle: '7 Days', status: 'Upcoming', color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+                    { label: 'Session 5', subtitle: '30 Days', status: 'Upcoming', color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
                   ].map((lvl, idx) => (
-                    <div key={lvl.label} className="bg-surface-alt border border-border-alt rounded-xl p-4 flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-surface border flex items-center justify-center text-xs font-bold">
+                    <div key={lvl.label} className="bg-surface hover:bg-surface-alt transition-colors rounded-2xl p-4 flex justify-between items-center cursor-pointer group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 border-none flex items-center justify-center text-sm font-bold shadow-inner">
                           {idx + 1}
                         </div>
-                        <span className="text-sm text-text-primary font-medium">{lvl.label}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-text-primary font-bold">{lvl.label}</span>
+                          <span className="text-xs text-text-muted">{lvl.subtitle}</span>
+                        </div>
                       </div>
-                      <span className="text-xs text-text-secondary">{lvl.delta}</span>
+                      <div className="flex items-center gap-4">
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-md ${lvl.color}`}>
+                          {lvl.status}
+                        </span>
+                        <IconChevronRight className="w-5 h-5 text-text-muted group-hover:text-text-primary transition-colors" />
+                      </div>
                     </div>
                   ))}
                 </div>

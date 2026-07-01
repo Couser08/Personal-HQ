@@ -4,7 +4,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { 
   IconCheck, IconPlus, IconTrash, IconCalendar, 
   IconFlag, IconTag, IconSearch,
-  IconSun, IconCalendarEvent, IconLayoutList
+  IconSun, IconCalendarEvent, IconLayoutList,
+  IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
@@ -35,6 +36,8 @@ export default function TodoModule() {
   // Input properties
   const [newTaskPriority, setNewTaskPriority] = useState<TodoTask['priority']>('none');
   const [newTaskProject] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +49,12 @@ export default function TodoModule() {
       priority: newTaskPriority,
       tags: [],
       completed: false,
-      dueDate: activeList === 'today' ? new Date().toISOString() : null, // Simplistic default
+      dueDate: selectedDate ? selectedDate.toISOString() : null,
       createdAt: new Date().toISOString(),
     });
     setNewTaskTitle('');
     setNewTaskPriority('none');
+    setSelectedDate(new Date());
   };
 
   const getPriorityIconColor = (priority: TodoTask['priority']) => {
@@ -216,53 +220,99 @@ export default function TodoModule() {
         {/* Task Area */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-4xl mx-auto w-full relative z-0">
           
-          <div className="flex items-center gap-4 mb-8">
-            <button className="px-4 py-1.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">All</button>
-            <button className="px-4 py-1.5 rounded-full text-xs font-medium text-text-secondary hover:bg-surface border border-transparent">
-              <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-rose-500" /> High</span>
-            </button>
-            <button className="px-4 py-1.5 rounded-full text-xs font-medium text-text-secondary hover:bg-surface border border-transparent">
-              <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-orange-500" /> Medium</span>
-            </button>
-            <button className="px-4 py-1.5 rounded-full text-xs font-medium text-text-secondary hover:bg-surface border border-transparent">
-              <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-blue-500" /> Low</span>
-            </button>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <button className="px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-text-primary shadow-inner">All</button>
+              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+                <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-rose-500" /> High</span>
+              </button>
+              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+                <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-orange-500" /> Medium</span>
+              </button>
+              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+                <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-blue-500" /> Low</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-1 bg-surface-alt p-1 rounded-xl border border-border">
+              <button className="px-3 py-1.5 rounded-lg bg-surface text-text-primary shadow-sm text-xs font-bold transition-all">List</button>
+              <button className="px-3 py-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface/50 text-xs font-bold transition-all">Calendar</button>
+              <button className="px-3 py-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface/50 text-xs font-bold transition-all">Board</button>
+            </div>
           </div>
 
           {/* Quick Add */}
-          <form onSubmit={handleAddTask} className="bg-surface border border-border rounded-2xl p-4 mb-8 focus-within:border-primary/50 transition-colors shadow-sm">
+          <form onSubmit={handleAddTask} className="bg-surface border-none rounded-3xl p-6 mb-8 shadow-sm ring-1 ring-black/5 dark:ring-white/5 focus-within:ring-primary/30 transition-all relative">
             <input 
               type="text" 
               placeholder="What needs to be done?" 
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
-              className="w-full bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-lg mb-4"
+              className="w-full bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-xl font-medium mb-6"
             />
-            <div className="flex items-center justify-between border-t border-border-alt pt-3">
-              <div className="flex items-center gap-2">
-                <button type="button" className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors">
-                  <IconCalendar className="w-5 h-5" />
-                </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
+                  >
+                    <IconCalendar className="w-4 h-4 text-rose-500" />
+                    {selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + ', Today' : 'Add Date'}
+                  </button>
+                  {showDatePicker && (
+                    <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-border rounded-xl shadow-lg p-4 z-50 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-bold text-sm">October 2026</span>
+                        <div className="flex gap-1">
+                          <button type="button" className="p-1 hover:bg-surface-hover rounded text-text-muted"><IconChevronLeft className="w-4 h-4"/></button>
+                          <button type="button" className="p-1 hover:bg-surface-hover rounded text-text-muted"><IconChevronRight className="w-4 h-4"/></button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-text-muted mb-2">
+                        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-center text-sm">
+                        {Array.from({length: 31}).map((_, i) => (
+                          <button 
+                            key={i} 
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              d.setDate(i + 1);
+                              setSelectedDate(d);
+                              setShowDatePicker(false);
+                            }}
+                            className={`p-1.5 rounded-full hover:bg-rose-500/10 hover:text-rose-500 transition-colors ${i === 19 ? 'bg-rose-500 text-white font-bold hover:bg-rose-600 hover:text-white' : 'text-text-primary'}`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button 
                   type="button" 
                   onClick={() => {
                     const next = newTaskPriority === 'none' ? 'high' : newTaskPriority === 'high' ? 'medium' : newTaskPriority === 'medium' ? 'low' : 'none';
                     setNewTaskPriority(next);
                   }}
-                  className={`p-1.5 rounded-lg transition-colors ${newTaskPriority !== 'none' ? 'bg-surface-alt' : 'hover:bg-surface-hover text-text-muted hover:text-text-primary'}`}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
                 >
-                  <IconFlag className="w-5 h-5" fill={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'none'} color={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'currentColor'} />
+                  <IconFlag className="w-4 h-4" fill={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'none'} color={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'currentColor'} />
+                  {newTaskPriority !== 'none' ? newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1) : 'Priority'}
                 </button>
-                <button type="button" className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors">
-                  <IconTag className="w-5 h-5" />
+                <button type="button" className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors">
+                  <IconTag className="w-4 h-4 text-purple-500" /> Tags
                 </button>
               </div>
               <button 
                 type="submit" 
                 disabled={!newTaskTitle.trim()}
-                className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600 transition-colors shadow-sm"
+                className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
               >
-                <IconPlus className="w-5 h-5" />
+                <IconPlus className="w-6 h-6" />
               </button>
             </div>
           </form>
