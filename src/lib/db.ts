@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
 import type {
   Note, Link, StockEntry, Subject, InterestRecord,
-  MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction
+  MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
+  TodoProject, TodoTask
 } from '../store/useAppStore';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -516,5 +517,147 @@ export const budgetTransactionService = {
   async delete(id: string) {
     const { error } = await supabase.from('budget_transactions').delete().eq('id', id);
     if (error) throw error;
+  },
+};
+
+// ─── To-Do Projects ────────────────────────────────────────────────────────────
+
+export const todoProjectService = {
+  async fetchAll(userId: string): Promise<TodoProject[]> {
+    const { data, error } = await supabase
+      .from('todo_projects')
+      .select('*')
+      .eq('user_id', userId);
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
+        return [];
+      }
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      color: r.color,
+    }));
+  },
+
+  async create(userId: string, project: TodoProject): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('todo_projects').insert({
+        id: project.id,
+        user_id: userId,
+        name: project.name,
+        color: project.color,
+      });
+      if (error) {
+        console.warn('TodoProject Create Error:', error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('TodoProject Create Exception:', e);
+      return false;
+    }
+  },
+
+  async delete(id: string) {
+    try {
+      const { error: taskError } = await supabase
+        .from('todo_tasks')
+        .delete()
+        .eq('project_id', id);
+      if (taskError) {
+        console.warn('TodoTasks Delete Error:', taskError);
+      }
+
+      const { error } = await supabase.from('todo_projects').delete().eq('id', id);
+      if (error) {
+        console.warn('TodoProject Delete Error:', error);
+      }
+    } catch (e) {
+      console.warn('TodoProject Delete Exception:', e);
+    }
+  },
+};
+
+// ─── To-Do Tasks ───────────────────────────────────────────────────────────────
+
+export const todoTaskService = {
+  async fetchAll(userId: string): Promise<TodoTask[]> {
+    const { data, error } = await supabase
+      .from('todo_tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
+        return [];
+      }
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      projectId: r.project_id,
+      title: r.title,
+      completed: r.completed,
+      priority: r.priority,
+      tags: r.tags ?? [],
+      dueDate: r.due_date,
+      createdAt: r.created_at,
+    }));
+  },
+
+  async create(userId: string, task: TodoTask): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('todo_tasks').insert({
+        id: task.id,
+        user_id: userId,
+        project_id: task.projectId,
+        title: task.title,
+        completed: task.completed,
+        priority: task.priority,
+        tags: task.tags,
+        due_date: task.dueDate,
+        created_at: task.createdAt,
+      });
+      if (error) {
+        console.warn('TodoTask Create Error:', error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('TodoTask Create Exception:', e);
+      return false;
+    }
+  },
+
+  async update(id: string, data: Partial<TodoTask>) {
+    try {
+      const payload: any = {};
+      if (data.projectId !== undefined) payload.project_id = data.projectId;
+      if (data.title !== undefined) payload.title = data.title;
+      if (data.completed !== undefined) payload.completed = data.completed;
+      if (data.priority !== undefined) payload.priority = data.priority;
+      if (data.tags !== undefined) payload.tags = data.tags;
+      if (data.dueDate !== undefined) payload.due_date = data.dueDate;
+
+      const { error } = await supabase.from('todo_tasks').update(payload).eq('id', id);
+      if (error) {
+        console.warn('TodoTask Update Error:', error);
+      }
+    } catch (e) {
+      console.warn('TodoTask Update Exception:', e);
+    }
+  },
+
+  async delete(id: string) {
+    try {
+      const { error } = await supabase.from('todo_tasks').delete().eq('id', id);
+      if (error) {
+        console.warn('TodoTask Delete Error:', error);
+      }
+    } catch (e) {
+      console.warn('TodoTask Delete Exception:', e);
+    }
   },
 };

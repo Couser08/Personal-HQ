@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
-  budgetCategoryService, budgetTransactionService
+  budgetCategoryService, budgetTransactionService,
+  todoProjectService, todoTaskService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -87,6 +88,23 @@ export interface StockEntry {
   action: 'BUY' | 'SELL' | 'WATCHLIST';
   notes: string;
   date: string;
+}
+
+export interface TodoProject {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface TodoTask {
+  id: string;
+  projectId: string | null;
+  title: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high' | 'none';
+  tags: string[];
+  dueDate: string | null;
+  createdAt: string;
 }
 
 export interface TopicNote {
@@ -329,6 +347,15 @@ export interface AppStore {
   addBudgetTransaction: (transaction: BudgetTransaction) => Promise<void>;
   deleteBudgetTransaction: (id: string) => Promise<void>;
   
+  // To-Do
+  todoTasks: TodoTask[];
+  todoProjects: TodoProject[];
+  addTodoTask: (task: TodoTask) => Promise<void>;
+  updateTodoTask: (id: string, data: Partial<TodoTask>) => Promise<void>;
+  deleteTodoTask: (id: string) => Promise<void>;
+  addTodoProject: (project: TodoProject) => Promise<void>;
+  deleteTodoProject: (id: string) => Promise<void>;
+  
   // Journal Tracker
   journals: JournalEntry[];
   addJournalEntry: (entry: JournalEntry) => void;
@@ -394,6 +421,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       snippetService.fetchAll(userId),
       budgetCategoryService.fetchAll(userId),
       budgetTransactionService.fetchAll(userId),
+      todoProjectService.fetchAll(userId),
+      todoTaskService.fetchAll(userId),
     ]);
 
     const serviceNames = [
@@ -407,6 +436,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'code snippets',
       'budget categories',
       'budget transactions',
+      'todo projects',
+      'todo tasks',
     ];
 
     const failedServices = results
@@ -423,6 +454,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const snippets = results[7].status === 'fulfilled' ? results[7].value : [];
     const budgetCategories = results[8].status === 'fulfilled' ? results[8].value : [];
     const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
+    const todoProjects = results[10].status === 'fulfilled' ? results[10].value : [];
+    const todoTasks = results[11].status === 'fulfilled' ? results[11].value : [];
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -435,7 +468,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
-      budgetCategories, budgetTransactions,
+      budgetCategories, budgetTransactions, todoProjects, todoTasks,
       dataLoaded: true
     });
   },
@@ -445,6 +478,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],
       snippets: [], budgetCategories: [], budgetTransactions: [],
+      todoProjects: [], todoTasks: [],
       dataLoaded: false,
     }),
 
@@ -818,6 +852,73 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set((state) => ({ budgetTransactions: state.budgetTransactions.filter(t => t.id !== id) }));
     await budgetTransactionService.delete(id);
     useToastStore.getState().addToast('Success', 'Budget transaction deleted', 'success');
+  },
+
+  // ── To-Do ──────────────────────────────────────────────────────────────────
+  todoTasks: [],
+  todoProjects: [],
+  
+  addTodoProject: async (project) => {
+    if (shouldThrottle('addTodoProject')) return;
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().todoProjects;
+    set((state) => ({ todoProjects: [...state.todoProjects, project] }));
+    try {
+      const savedInDb = await todoProjectService.create(uid, project);
+      const location = savedInDb ? 'Database' : 'Local Storage';
+      useToastStore.getState().addToast('Success', `Project saved to ${location}`, 'success');
+    } catch (error) {
+      set({ todoProjects: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not create project'), 'error');
+      throw error;
+    }
+  },
+  
+  deleteTodoProject: async (id) => {
+    const previousProjects = get().todoProjects;
+    const previousTasks = get().todoTasks;
+    set((state) => ({
+      todoProjects: state.todoProjects.filter(p => p.id !== id),
+      todoTasks: state.todoTasks.filter(t => t.projectId !== id),
+    }));
+    try {
+      await todoProjectService.delete(id);
+      useToastStore.getState().addToast('Success', 'Project deleted', 'success');
+    } catch (error) {
+      set({ todoProjects: previousProjects, todoTasks: previousTasks });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete project'), 'error');
+      throw error;
+    }
+  },
+  
+  addTodoTask: async (task) => {
+    if (shouldThrottle('addTodoTask')) return;
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().todoTasks;
+    set((state) => ({ todoTasks: [task, ...state.todoTasks] }));
+    try {
+      const savedInDb = await todoTaskService.create(uid, task);
+      const location = savedInDb ? 'Database' : 'Local Storage';
+      useToastStore.getState().addToast('Success', `Task saved to ${location}`, 'success');
+    } catch (error) {
+      set({ todoTasks: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not create task'), 'error');
+      throw error;
+    }
+  },
+  
+  updateTodoTask: async (id, data) => {
+    set((state) => ({
+      todoTasks: state.todoTasks.map(t => t.id === id ? { ...t, ...data } : t),
+    }));
+    await todoTaskService.update(id, data);
+  },
+  
+  deleteTodoTask: async (id) => {
+    set((state) => ({ todoTasks: state.todoTasks.filter(t => t.id !== id) }));
+    await todoTaskService.delete(id);
   },
 
   addJournalEntry: (entry) => {

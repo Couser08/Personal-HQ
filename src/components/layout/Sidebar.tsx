@@ -3,7 +3,7 @@ import {
   IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
   IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconWallet
+  IconWallet, IconChecklist
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty },
   { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
+  { id: 'todo', label: 'To-Do List', icon: IconChecklist },
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
 ];
 

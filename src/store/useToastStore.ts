@@ -21,7 +21,7 @@ interface ToastStore {
 
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  position: (localStorage.getItem('toast-position') as ToastPosition) || 'bottom-right',
+  position: (localStorage.getItem('toast-position') as ToastPosition) || 'bottom-center',
   setPosition: (position) => {
     localStorage.setItem('toast-position', position);
     set({ position });
@@ -51,7 +51,7 @@ export const useToastStore = create<ToastStore>((set) => ({
       set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id)
       }));
-    }, 4000);
+    }, 3000);
   },
   removeToast: (id) =>
     set((state) => ({
