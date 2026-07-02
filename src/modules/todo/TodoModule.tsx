@@ -5,7 +5,7 @@ import {
   IconCheck, IconPlus, IconTrash, IconCalendar, 
   IconFlag, IconTag, IconSearch,
   IconSun, IconCalendarEvent, IconLayoutList,
-  IconChevronLeft, IconChevronRight
+  IconChevronLeft, IconChevronRight, IconClock
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
@@ -49,6 +49,17 @@ export default function TodoModule() {
   const [newTaskTagInput, setNewTaskTagInput] = useState('');
   const [newTaskTags, setNewTaskTags] = useState<string[]>([]);
   const [completingIds, setCompletingIds] = useState<string[]>([]);
+
+  // Time range picker states
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [taskStartTime, setTaskStartTime] = useState('');
+  const [taskEndTime, setTaskEndTime] = useState('');
+  const [fromHour, setFromHour] = useState('10');
+  const [fromMin, setFromMin] = useState('00');
+  const [fromAmPm, setFromAmPm] = useState('AM');
+  const [toHour, setToHour] = useState('10');
+  const [toMin, setToMin] = useState('30');
+  const [toAmPm, setToAmPm] = useState('AM');
   
   const [todoView, setTodoView] = useState<'list' | 'calendar' | 'board'>('list');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
@@ -64,12 +75,16 @@ export default function TodoModule() {
       tags: newTaskTags,
       completed: false,
       dueDate: selectedDate ? selectedDate.toISOString() : null,
+      startTime: taskStartTime || null,
+      endTime: taskEndTime || null,
       createdAt: new Date().toISOString(),
     });
     setNewTaskTitle('');
     setNewTaskPriority('none');
     setSelectedDate(new Date());
     setNewTaskTags([]);
+    setTaskStartTime('');
+    setTaskEndTime('');
   };
 
   const handleToggleTask = (id: string) => {
@@ -409,6 +424,174 @@ export default function TodoModule() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Time Range Selector */}
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowTimePicker(!showTimePicker);
+                      setShowDatePicker(false);
+                      setShowPriorityDropdown(false);
+                      setShowTagsDropdown(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
+                  >
+                    <IconClock className="w-4 h-4 text-rose-500" />
+                    {taskStartTime && taskEndTime ? `${taskStartTime} - ${taskEndTime}` : 'Add Time'}
+                  </button>
+                  <AnimatePresence>
+                    {showTimePicker && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                        className="absolute top-full left-0 mt-2 w-72 bg-surface/90 backdrop-blur-xl border border-border rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-sm text-text-primary">Time Range</span>
+                          {(taskStartTime || taskEndTime) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTaskStartTime('');
+                                setTaskEndTime('');
+                                setShowTimePicker(false);
+                              }}
+                              className="text-[10px] text-rose-500 hover:text-rose-600 font-bold transition-colors"
+                            >
+                              Clear Time
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col gap-4">
+                          {/* From Time */}
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block mb-1.5">From</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                maxLength={2}
+                                placeholder="10"
+                                value={fromHour}
+                                onChange={e => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  if (parseInt(val) <= 12 || val === '') setFromHour(val);
+                                }}
+                                className="w-12 h-9 text-center bg-surface-alt border border-border rounded-xl text-sm font-semibold focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all"
+                              />
+                              <span className="font-bold text-text-muted">:</span>
+                              <input
+                                type="text"
+                                maxLength={2}
+                                placeholder="00"
+                                value={fromMin}
+                                onChange={e => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  if (parseInt(val) <= 59 || val === '') setFromMin(val);
+                                }}
+                                className="w-12 h-9 text-center bg-surface-alt border border-border rounded-xl text-sm font-semibold focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all"
+                              />
+                              <div className="flex rounded-xl bg-surface-alt p-0.5 border border-border overflow-hidden ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => setFromAmPm('AM')}
+                                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
+                                    fromAmPm === 'AM' ? 'bg-rose-500 text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                                  }`}
+                                >
+                                  AM
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFromAmPm('PM')}
+                                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
+                                    fromAmPm === 'PM' ? 'bg-rose-500 text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                                  }`}
+                                >
+                                  PM
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* To Time */}
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block mb-1.5">To</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                maxLength={2}
+                                placeholder="10"
+                                value={toHour}
+                                onChange={e => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  if (parseInt(val) <= 12 || val === '') setToHour(val);
+                                }}
+                                className="w-12 h-9 text-center bg-surface-alt border border-border rounded-xl text-sm font-semibold focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all"
+                              />
+                              <span className="font-bold text-text-muted">:</span>
+                              <input
+                                type="text"
+                                maxLength={2}
+                                placeholder="30"
+                                value={toMin}
+                                onChange={e => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  if (parseInt(val) <= 59 || val === '') setToMin(val);
+                                }}
+                                className="w-12 h-9 text-center bg-surface-alt border border-border rounded-xl text-sm font-semibold focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all"
+                              />
+                              <div className="flex rounded-xl bg-surface-alt p-0.5 border border-border overflow-hidden ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => setToAmPm('AM')}
+                                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
+                                    toAmPm === 'AM' ? 'bg-rose-500 text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                                  }`}
+                                >
+                                  AM
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setToAmPm('PM')}
+                                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all ${
+                                    toAmPm === 'PM' ? 'bg-rose-500 text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                                  }`}
+                                >
+                                  PM
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Set Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            let fh = parseInt(fromHour) || 12;
+                            let fm = parseInt(fromMin) || 0;
+                            let th = parseInt(toHour) || 12;
+                            let tm = parseInt(toMin) || 0;
+
+                            const formattedFrom = `${fh}:${fm.toString().padStart(2, '0')} ${fromAmPm}`;
+                            const formattedTo = `${th}:${tm.toString().padStart(2, '0')} ${toAmPm}`;
+
+                            setTaskStartTime(formattedFrom);
+                            setTaskEndTime(formattedTo);
+                            setShowTimePicker(false);
+                          }}
+                          className="w-full py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow transition-all active:scale-95 mt-2"
+                        >
+                          Set Range
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="relative">
                   <button 
@@ -802,6 +985,12 @@ function TaskGroup({
                   >
                     {task.title}
                   </span>
+                  {(task.startTime || task.endTime) && (
+                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                      <IconClock className="w-3 h-3" />
+                      {task.startTime || '??'} - {task.endTime || '??'}
+                    </span>
+                  )}
                 </div>
                 
                 {task.projectId && projects.find(p => p.id === task.projectId) && (

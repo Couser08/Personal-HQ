@@ -26,6 +26,8 @@ CREATE TABLE todo_tasks (
     priority TEXT NOT NULL DEFAULT 'none',
     tags TEXT[] NOT NULL DEFAULT '{}',
     due_date TIMESTAMPTZ,
+    start_time TEXT,
+    end_time TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -37,3 +39,7 @@ CREATE POLICY "Users can manage their own todo tasks"
     FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
+
+-- Alter table to ensure columns exist for existing installations
+ALTER TABLE todo_tasks ADD COLUMN IF NOT EXISTS start_time TEXT;
+ALTER TABLE todo_tasks ADD COLUMN IF NOT EXISTS end_time TEXT;

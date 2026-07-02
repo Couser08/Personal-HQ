@@ -104,6 +104,8 @@ export interface TodoTask {
   priority: 'low' | 'medium' | 'high' | 'none';
   tags: string[];
   dueDate: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   deleted?: boolean;
   createdAt: string;
 }

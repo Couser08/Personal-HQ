@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconMovie, IconListCheck, IconCode } from '@tabler/icons-react';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '0.9.5';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
