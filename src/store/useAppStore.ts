@@ -214,6 +214,7 @@ export interface MediaLog {
   status: 'WATCHING' | 'COMPLETED' | 'DROPPED' | 'PLANNING' | 'PLAYING' | 'FINISHED' | 'WISHLIST';
   rating: number | null;
   episodes?: number;
+  season?: number;
   notes: string;
   addedAt: string;
 }
