@@ -797,7 +797,7 @@ export default function StudyModule() {
                           <ShikiHighlighter
                             code={snip.code}
                             lang={snip.language}
-                            theme={isDark ? 'github-dark' : 'snazzy-light'}
+                            theme={isDark ? 'one-dark-pro' : 'snazzy-light'}
                           />
                         </div>
                       </div>
@@ -1794,7 +1794,7 @@ export default function StudyModule() {
                       <ShikiHighlighter
                         code={snip.code}
                         lang={snip.language}
-                        theme={isDark ? 'github-dark' : 'snazzy-light'}
+                        theme={isDark ? 'one-dark-pro' : 'snazzy-light'}
                       />
                     </div>
                   </div>

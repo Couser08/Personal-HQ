@@ -603,6 +603,7 @@ export const todoTaskService = {
       priority: r.priority,
       tags: r.tags ?? [],
       dueDate: r.due_date,
+      deleted: r.deleted ?? false,
       createdAt: r.created_at,
     }));
   },
@@ -618,6 +619,7 @@ export const todoTaskService = {
         priority: task.priority,
         tags: task.tags,
         due_date: task.dueDate,
+        deleted: task.deleted ?? false,
         created_at: task.createdAt,
       });
       if (error) {
@@ -640,6 +642,7 @@ export const todoTaskService = {
       if (data.priority !== undefined) payload.priority = data.priority;
       if (data.tags !== undefined) payload.tags = data.tags;
       if (data.dueDate !== undefined) payload.due_date = data.dueDate;
+      if (data.deleted !== undefined) payload.deleted = data.deleted;
 
       const { error } = await supabase.from('todo_tasks').update(payload).eq('id', id);
       if (error) {

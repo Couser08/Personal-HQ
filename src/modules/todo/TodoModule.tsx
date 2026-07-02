@@ -13,7 +13,7 @@ import type { TodoTask, TodoProject } from '../../store/useAppStore';
 export default function TodoModule() {
   const { 
     todoTasks, todoProjects, 
-    addTodoTask, updateTodoTask, deleteTodoTask, 
+    addTodoTask, updateTodoTask, deleteTodoTask, restoreTodoTask, emptyTodoTrash,
     addTodoProject, deleteTodoProject
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
@@ -21,6 +21,8 @@ export default function TodoModule() {
     addTodoTask: state.addTodoTask,
     updateTodoTask: state.updateTodoTask,
     deleteTodoTask: state.deleteTodoTask,
+    restoreTodoTask: state.restoreTodoTask,
+    emptyTodoTrash: state.emptyTodoTrash,
     addTodoProject: state.addTodoProject,
     deleteTodoProject: state.deleteTodoProject,
   })));
@@ -38,6 +40,22 @@ export default function TodoModule() {
   const [newTaskProject] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  
+  // New State variables for calendar, tags, priority select, custom project creation modal, and views
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
+  const [newTaskTagInput, setNewTaskTagInput] = useState('');
+  const [newTaskTags, setNewTaskTags] = useState<string[]>([]);
+  const [completingIds, setCompletingIds] = useState<string[]>([]);
+  
+  const [todoView, setTodoView] = useState<'list' | 'calendar' | 'board'>('list');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectColor, setNewProjectColor] = useState('#f43f5e');
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +65,7 @@ export default function TodoModule() {
       title: newTaskTitle.trim(),
       projectId: newTaskProject,
       priority: newTaskPriority,
-      tags: [],
+      tags: newTaskTags,
       completed: false,
       dueDate: selectedDate ? selectedDate.toISOString() : null,
       createdAt: new Date().toISOString(),
@@ -55,6 +73,49 @@ export default function TodoModule() {
     setNewTaskTitle('');
     setNewTaskPriority('none');
     setSelectedDate(new Date());
+    setNewTaskTags([]);
+  };
+
+  const handleToggleTask = (id: string) => {
+    const t = todoTasks.find(x => x.id === id);
+    if (!t) return;
+    if (!t.completed) {
+      setCompletingIds(prev => [...prev, id]);
+      setTimeout(() => {
+        updateTodoTask(id, { completed: true });
+        setCompletingIds(prev => prev.filter(x => x !== id));
+      }, 600);
+    } else {
+      updateTodoTask(id, { completed: false });
+    }
+  };
+
+  // Date picker helpers & navigation
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+  const getFirstDayOfMonth = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay(); // 0 is Sunday
+  };
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear(y => y - 1);
+    } else {
+      setCalendarMonth(m => m - 1);
+    }
+  };
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear(y => y + 1);
+    } else {
+      setCalendarMonth(m => m + 1);
+    }
   };
 
   const getPriorityIconColor = (priority: TodoTask['priority']) => {
@@ -68,13 +129,22 @@ export default function TodoModule() {
 
   const filteredTasks = useMemo(() => {
     let list = todoTasks;
+    if (activeList === 'trash') {
+      list = list.filter(t => t.deleted);
+    } else {
+      list = list.filter(t => !t.deleted);
+    }
+
     if (search) {
       list = list.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
+    }
+
+    if (priorityFilter !== 'all') {
+      list = list.filter(t => t.priority === priorityFilter);
     }
     
     switch (activeList) {
       case 'today':
-        // Simplified today logic (just checking if it has a due date roughly)
         list = list.filter(t => !t.completed && t.dueDate);
         break;
       case 'upcoming':
@@ -87,7 +157,7 @@ export default function TodoModule() {
         list = list.filter(t => !t.completed);
         break;
       case 'trash':
-        list = []; // not implemented yet
+        // already filtered above
         break;
       default:
         // Project filter
@@ -143,12 +213,7 @@ export default function TodoModule() {
             <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Projects</h3>
             <button 
               className="text-text-muted hover:text-text-primary"
-              onClick={() => {
-                const name = prompt('Project Name:');
-                if (name) {
-                  addTodoProject({ id: crypto.randomUUID(), name, color: '#3b82f6' });
-                }
-              }}
+              onClick={() => setShowProjectModal(true)}
             >
               <IconPlus className="w-4 h-4" />
             </button>
@@ -222,21 +287,50 @@ export default function TodoModule() {
           
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-text-primary shadow-inner">All</button>
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+              <button 
+                onClick={() => setPriorityFilter('all')}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${priorityFilter === 'all' ? 'bg-gray-200 dark:bg-gray-800 text-text-primary shadow-inner' : 'text-text-secondary hover:bg-surface border border-transparent'}`}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setPriorityFilter('high')}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${priorityFilter === 'high' ? 'bg-rose-500/10 text-rose-500 shadow-sm border border-rose-500/20' : 'text-text-secondary hover:bg-surface border border-transparent'}`}
+              >
                 <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-rose-500" /> High</span>
               </button>
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+              <button 
+                onClick={() => setPriorityFilter('medium')}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${priorityFilter === 'medium' ? 'bg-orange-500/10 text-orange-500 shadow-sm border border-orange-500/20' : 'text-text-secondary hover:bg-surface border border-transparent'}`}
+              >
                 <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-orange-500" /> Medium</span>
               </button>
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary hover:bg-surface border border-transparent">
+              <button 
+                onClick={() => setPriorityFilter('low')}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${priorityFilter === 'low' ? 'bg-blue-500/10 text-blue-500 shadow-sm border border-blue-500/20' : 'text-text-secondary hover:bg-surface border border-transparent'}`}
+              >
                 <span className="flex items-center gap-1.5"><IconFlag className="w-3.5 h-3.5 text-blue-500" /> Low</span>
               </button>
             </div>
             <div className="flex items-center gap-1 bg-surface-alt p-1 rounded-xl border border-border">
-              <button className="px-3 py-1.5 rounded-lg bg-surface text-text-primary shadow-sm text-xs font-bold transition-all">List</button>
-              <button className="px-3 py-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface/50 text-xs font-bold transition-all">Calendar</button>
-              <button className="px-3 py-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface/50 text-xs font-bold transition-all">Board</button>
+              <button 
+                onClick={() => setTodoView('list')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${todoView === 'list' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                List
+              </button>
+              <button 
+                onClick={() => setTodoView('calendar')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${todoView === 'calendar' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                Calendar
+              </button>
+              <button 
+                onClick={() => setTodoView('board')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${todoView === 'board' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                Board
+              </button>
             </div>
           </div>
 
@@ -263,49 +357,152 @@ export default function TodoModule() {
                   {showDatePicker && (
                     <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-border rounded-xl shadow-lg p-4 z-50 animate-fade-in">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="font-bold text-sm">October 2026</span>
+                        <span className="font-bold text-sm text-text-primary">
+                          {monthNames[calendarMonth]} {calendarYear}
+                        </span>
                         <div className="flex gap-1">
-                          <button type="button" className="p-1 hover:bg-surface-hover rounded text-text-muted"><IconChevronLeft className="w-4 h-4"/></button>
-                          <button type="button" className="p-1 hover:bg-surface-hover rounded text-text-muted"><IconChevronRight className="w-4 h-4"/></button>
+                          <button 
+                            type="button" 
+                            onClick={handlePrevMonth}
+                            className="p-1 hover:bg-surface-hover rounded text-text-muted transition-colors"
+                          >
+                            <IconChevronLeft className="w-4 h-4"/>
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={handleNextMonth}
+                            className="p-1 hover:bg-surface-hover rounded text-text-muted transition-colors"
+                          >
+                            <IconChevronRight className="w-4 h-4"/>
+                          </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-text-muted mb-2">
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-text-muted mb-2 uppercase">
                         <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                       </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-sm">
-                        {Array.from({length: 31}).map((_, i) => (
-                          <button 
-                            key={i} 
-                            type="button"
-                            onClick={() => {
-                              const d = new Date();
-                              d.setDate(i + 1);
-                              setSelectedDate(d);
-                              setShowDatePicker(false);
-                            }}
-                            className={`p-1.5 rounded-full hover:bg-rose-500/10 hover:text-rose-500 transition-colors ${i === 19 ? 'bg-rose-500 text-white font-bold hover:bg-rose-600 hover:text-white' : 'text-text-primary'}`}
-                          >
-                            {i + 1}
-                          </button>
+                      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                        {/* Empty offsets for day index */}
+                        {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
+                          <div key={`empty-${i}`} />
                         ))}
+                        {/* Actual Days */}
+                        {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
+                          const dayNum = i + 1;
+                          const isCurrentSelection = selectedDate && 
+                            selectedDate.getDate() === dayNum && 
+                            selectedDate.getMonth() === calendarMonth && 
+                            selectedDate.getFullYear() === calendarYear;
+                          return (
+                            <button 
+                              key={`day-${dayNum}`} 
+                              type="button"
+                              onClick={() => {
+                                setSelectedDate(new Date(calendarYear, calendarMonth, dayNum));
+                                setShowDatePicker(false);
+                              }}
+                              className={`p-1.5 rounded-full hover:bg-rose-500/10 hover:text-rose-500 transition-colors font-medium ${
+                                isCurrentSelection 
+                                  ? 'bg-rose-500 text-white font-bold hover:bg-rose-600 hover:text-white' 
+                                  : 'text-text-primary'
+                              }`}
+                            >
+                              {dayNum}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    const next = newTaskPriority === 'none' ? 'high' : newTaskPriority === 'high' ? 'medium' : newTaskPriority === 'medium' ? 'low' : 'none';
-                    setNewTaskPriority(next);
-                  }}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
-                >
-                  <IconFlag className="w-4 h-4" fill={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'none'} color={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'currentColor'} />
-                  {newTaskPriority !== 'none' ? newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1) : 'Priority'}
-                </button>
-                <button type="button" className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors">
-                  <IconTag className="w-4 h-4 text-purple-500" /> Tags
-                </button>
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
+                  >
+                    <IconFlag className="w-4 h-4" fill={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'none'} color={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'currentColor'} />
+                    {newTaskPriority !== 'none' ? newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1) : 'Priority'}
+                  </button>
+                  {showPriorityDropdown && (
+                    <div className="absolute bottom-full left-0 mb-2 w-40 bg-surface border border-border rounded-xl shadow-lg p-2 z-50 animate-fade-in flex flex-col gap-1">
+                      {[
+                        { value: 'none', label: 'No Priority', color: '#71717a' },
+                        { value: 'low', label: 'Low', color: '#3b82f6' },
+                        { value: 'medium', label: 'Medium', color: '#f97316' },
+                        { value: 'high', label: 'High', color: '#f43f5e' }
+                      ].map(p => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => {
+                            setNewTaskPriority(p.value as any);
+                            setShowPriorityDropdown(false);
+                          }}
+                          className="flex items-center gap-2 w-full text-left px-3 py-2 hover:bg-surface-hover rounded-lg text-xs font-bold text-text-primary transition-colors"
+                        >
+                          <IconFlag className="w-3.5 h-3.5" fill={p.value !== 'none' ? p.color : 'none'} color={p.color} />
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
+                  >
+                    <IconTag className="w-4 h-4 text-purple-500" /> 
+                    {newTaskTags.length > 0 ? `${newTaskTags.length} Tag(s)` : 'Tags'}
+                  </button>
+                  {showTagsDropdown && (
+                    <div className="absolute bottom-full left-0 mb-2 w-56 bg-surface border border-border rounded-xl shadow-lg p-3 z-50 animate-fade-in flex flex-col gap-2">
+                      {newTaskTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto mb-1">
+                          {newTaskTags.map(t => (
+                            <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-bold">
+                              {t}
+                              <button type="button" onClick={() => setNewTaskTags(prev => prev.filter(x => x !== t))} className="hover:text-purple-800 dark:hover:text-purple-200">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-1.5">
+                        <input 
+                          type="text" 
+                          placeholder="Add new tag..."
+                          value={newTaskTagInput}
+                          onChange={e => setNewTaskTagInput(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const trimmed = newTaskTagInput.trim();
+                              if (trimmed && !newTaskTags.includes(trimmed)) {
+                                setNewTaskTags(prev => [...prev, trimmed]);
+                                setNewTaskTagInput('');
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-surface-alt border-none text-xs p-1.5 rounded-lg outline-none text-text-primary"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const trimmed = newTaskTagInput.trim();
+                            if (trimmed && !newTaskTags.includes(trimmed)) {
+                              setNewTaskTags(prev => [...prev, trimmed]);
+                              setNewTaskTagInput('');
+                            }
+                          }}
+                          className="px-2 py-1 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <button 
                 type="submit" 
@@ -317,24 +514,283 @@ export default function TodoModule() {
             </div>
           </form>
 
-          {/* Grouped Lists (Mock logic for today/upcoming) */}
-          <div className="flex flex-col gap-8">
-            <TaskGroup 
-              title="Tasks" 
-              count={filteredTasks.length} 
-              tasks={filteredTasks} 
-              onToggle={id => {
-                const t = todoTasks.find(x => x.id === id);
-                if (t) updateTodoTask(id, { completed: !t.completed });
-              }}
-              onDelete={id => deleteTodoTask(id)}
-              tickStyle={tickStyle}
-              strikeStyle={strikeStyle}
-              projects={todoProjects}
-            />
-          </div>
+          {/* Main Views */}
+          <AnimatePresence mode="wait">
+            {todoView === 'list' && (
+              <motion.div
+                key="list-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-8"
+              >
+                {activeList === 'trash' && filteredTasks.length > 0 && (
+                  <div className="flex justify-between items-center bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 mb-2">
+                    <span className="text-xs text-rose-500 font-bold">Trash tasks are permanently deleted after clicking delete icon.</span>
+                    <button 
+                      onClick={() => emptyTodoTrash()}
+                      className="btn btn-danger btn-sm rounded-full text-xs"
+                    >
+                      Empty Trash
+                    </button>
+                  </div>
+                )}
+                {activeList === 'trash' ? (
+                  <div>
+                    <div className="flex items-center gap-3 mb-4 text-sm">
+                      <h3 className="font-bold text-text-primary">Deleted Tasks</h3>
+                      <span className="w-5 h-5 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center text-xs font-bold">{filteredTasks.length}</span>
+                    </div>
+                    {filteredTasks.length === 0 ? (
+                      <div className="text-center py-10 text-text-muted text-sm font-medium">Trash is empty</div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {filteredTasks.map(task => (
+                          <div key={task.id} className="flex items-center justify-between p-3 rounded-xl bg-surface border border-border">
+                            <span className="text-sm font-medium text-text-primary line-through">{task.title}</span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => restoreTodoTask(task.id)}
+                                className="px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-600 rounded-lg text-xs font-bold transition-all"
+                              >
+                                Restore
+                              </button>
+                              <button 
+                                onClick={() => deleteTodoTask(task.id)}
+                                className="p-1 hover:bg-rose-500/10 text-text-muted hover:text-rose-500 rounded transition-all"
+                              >
+                                <IconTrash className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <TaskGroup 
+                    title="Tasks" 
+                    count={filteredTasks.length} 
+                    tasks={filteredTasks} 
+                    onToggle={handleToggleTask}
+                    onDelete={id => deleteTodoTask(id)}
+                    tickStyle={tickStyle}
+                    strikeStyle={strikeStyle}
+                    projects={todoProjects}
+                    completingIds={completingIds}
+                  />
+                )}
+              </motion.div>
+            )}
+
+            {todoView === 'calendar' && (
+              <motion.div
+                key="calendar-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-surface rounded-3xl p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-lg text-text-primary">
+                    {monthNames[calendarMonth]} {calendarYear}
+                  </h3>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={handlePrevMonth} className="btn btn-secondary btn-sm btn-square"><IconChevronLeft className="w-4 h-4"/></button>
+                    <button type="button" onClick={handleNextMonth} className="btn btn-secondary btn-sm btn-square"><IconChevronRight className="w-4 h-4"/></button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-bold text-text-muted mb-4 uppercase">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-2 min-h-[300px]">
+                  {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
+                    <div key={`offset-${i}`} className="bg-surface-alt/20 rounded-2xl border border-transparent" />
+                  ))}
+                  {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
+                    const dayNum = i + 1;
+                    const dateObj = new Date(calendarYear, calendarMonth, dayNum);
+                    const dayTasks = todoTasks.filter(t => !t.deleted && t.dueDate && new Date(t.dueDate).toDateString() === dateObj.toDateString());
+                    
+                    return (
+                      <div 
+                        key={`cal-${dayNum}`}
+                        onClick={() => {
+                          setSelectedDate(dateObj);
+                          setShowDatePicker(false);
+                        }}
+                        className={`p-3 rounded-2xl border border-border/40 hover:border-primary/50 transition-all flex flex-col justify-between items-start cursor-pointer min-h-[70px] ${
+                          dateObj.toDateString() === new Date().toDateString() ? 'bg-rose-500/5 ring-1 ring-rose-500' : 'bg-surface-alt/40'
+                        }`}
+                      >
+                        <span className={`text-xs font-bold ${dateObj.toDateString() === new Date().toDateString() ? 'text-rose-500' : 'text-text-secondary'}`}>
+                          {dayNum}
+                        </span>
+                        {dayTasks.length > 0 && (
+                          <div className="flex flex-col gap-1 w-full mt-2">
+                            {dayTasks.slice(0, 2).map(t => (
+                              <div key={t.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate max-w-full">
+                                {t.title}
+                              </div>
+                            ))}
+                            {dayTasks.length > 2 && (
+                              <div className="text-[8px] font-semibold text-text-muted text-center">
+                                +{dayTasks.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {todoView === 'board' && (
+              <motion.div
+                key="board-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-10"
+              >
+                {([
+                  { id: 'none', title: 'No Priority', color: 'border-t-gray-400 bg-gray-400/5 text-gray-500' },
+                  { id: 'low', title: 'Low', color: 'border-t-blue-500 bg-blue-500/5 text-blue-500' },
+                  { id: 'medium', title: 'Medium', color: 'border-t-orange-500 bg-orange-500/5 text-orange-500' },
+                  { id: 'high', title: 'High', color: 'border-t-rose-500 bg-rose-500/5 text-rose-500' }
+                ] as const).map(col => {
+                  const colTasks = filteredTasks.filter(t => t.priority === col.id);
+                  return (
+                    <div key={col.id} className={`flex flex-col rounded-3xl p-4 border-t-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${col.color} min-h-[400px]`}>
+                      <div className="flex justify-between items-center mb-4 pb-2 border-b border-border/50">
+                        <span className="font-bold text-sm text-text-primary">{col.title}</span>
+                        <span className="text-[10px] font-extrabold bg-surface px-2 py-0.5 rounded-full border shadow-sm text-text-secondary">{colTasks.length}</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 overflow-y-auto flex-1 max-h-[350px] pr-1">
+                        {colTasks.length === 0 ? (
+                          <div className="text-center py-10 text-[10px] text-text-muted font-medium">No tasks</div>
+                        ) : (
+                          colTasks.map(task => (
+                            <div 
+                              key={task.id}
+                              className="bg-surface p-3 rounded-2xl border border-border shadow-sm flex flex-col gap-2 hover:shadow transition-shadow group cursor-pointer"
+                              onClick={() => handleToggleTask(task.id)}
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <span className={`text-xs font-semibold text-text-primary line-clamp-2 ${task.completed ? 'line-through text-text-muted' : ''}`}>
+                                  {task.title}
+                                </span>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); deleteTodoTask(task.id); }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 hover:text-rose-500 rounded transition-all text-text-muted"
+                                >
+                                  <IconTrash className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              {task.dueDate && (
+                                <div className="flex items-center gap-1 text-[9px] font-bold text-text-muted">
+                                  <IconCalendar className="w-3 h-3" />
+                                  {new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </div>
+
+        {/* Custom Project Modal */}
+        <AnimatePresence>
+          {showProjectModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => {
+                  setShowProjectModal(false);
+                  setNewProjectName('');
+                }}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+              />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                  className="bg-surface/90 backdrop-blur-2xl w-full max-w-sm rounded-[32px] p-6 sm:p-8 shadow-2xl border border-border pointer-events-auto relative overflow-hidden"
+                >
+                  <h3 className="text-2xl font-black tracking-tight text-text-primary mb-6">New Project</h3>
+                  <div className="flex flex-col gap-6">
+                    <div>
+                      <label className="text-[12px] font-bold text-text-secondary block mb-2">Project Name</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Design, Homework"
+                        value={newProjectName}
+                        onChange={e => setNewProjectName(e.target.value)}
+                        className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-[15px] text-text-primary placeholder:text-text-muted/50"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[12px] font-bold text-text-secondary block mb-3">Color Label</label>
+                      <div className="flex gap-3">
+                        {['#f43f5e', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#06b6d4'].map(color => (
+                          <button 
+                            key={color}
+                            type="button"
+                            onClick={() => setNewProjectColor(color)}
+                            className={`w-8 h-8 rounded-full transition-transform ${newProjectColor === color ? 'scale-110 ring-2 ring-offset-2 ring-surface-alt' : 'hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-end gap-3">
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setShowProjectModal(false);
+                          setNewProjectName('');
+                        }}
+                        className="px-5 py-2.5 rounded-full font-bold text-[14px] text-text-secondary bg-surface-alt hover:bg-surface-hover transition-colors"
+                      >
+                        Cancel
+                    </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const trimmed = newProjectName.trim();
+                          if (trimmed) {
+                            addTodoProject({ id: crypto.randomUUID(), name: trimmed, color: newProjectColor });
+                            setShowProjectModal(false);
+                            setNewProjectName('');
+                          }
+                        }}
+                        disabled={!newProjectName.trim()}
+                        className="px-5 py-2.5 rounded-full font-bold text-[14px] text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 transition-colors shadow-sm"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -367,11 +823,12 @@ function NavItem({ icon, label, count, active, onClick }: { icon: React.ReactNod
 
 function TaskGroup({ 
   title, count, tasks, onToggle, onDelete, 
-  tickStyle, strikeStyle, projects 
+  tickStyle, strikeStyle, projects, completingIds = []
 }: { 
   title: string, count: number, tasks: TodoTask[], 
   onToggle: (id: string) => void, onDelete: (id: string) => void,
-  tickStyle: string, strikeStyle: string, projects: TodoProject[]
+  tickStyle: string, strikeStyle: string, projects: TodoProject[],
+  completingIds?: string[]
 }) {
   if (tasks.length === 0) return null;
   return (
@@ -384,76 +841,79 @@ function TaskGroup({
       </div>
       <div className="flex flex-col gap-2">
         <AnimatePresence>
-          {tasks.map(task => (
-            <motion.div 
-              key={task.id}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              className="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface border border-transparent hover:border-border transition-colors relative overflow-hidden"
-            >
-              <button 
-                onClick={() => onToggle(task.id)}
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 ${
-                  task.completed 
-                    ? 'border-rose-500 bg-rose-500' 
-                    : 'border-text-muted hover:border-rose-400'
-                }`}
+          {tasks.map(task => {
+            const isCompleted = task.completed || completingIds.includes(task.id);
+            return (
+              <motion.div 
+                key={task.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface border border-transparent hover:border-border transition-colors relative overflow-hidden"
               >
-                <AnimatePresence>
-                  {task.completed && (
-                    <motion.svg 
-                      initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
-                      animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                      className="w-3.5 h-3.5 text-white" 
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-                    >
-                      <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </motion.svg>
-                  )}
-                </AnimatePresence>
-              </button>
-              
-              <div className="flex-1 min-w-0 relative">
-                <span className={`block truncate text-sm font-medium transition-colors ${task.completed ? 'text-text-muted' : 'text-text-primary'}`}>
-                  {task.title}
-                </span>
-                {/* Strike-through animation */}
-                {task.completed && (
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ borderBottom: `${strikeStyle === 'double' ? '3px' : '2px'} ${strikeStyle} var(--text-muted)` }}
-                  />
-                )}
-              </div>
-              
-              {task.projectId && projects.find(p => p.id === task.projectId) && (
-                <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase shrink-0">
-                  {projects.find(p => p.id === task.projectId)?.name}
-                </span>
-              )}
-              
-              {task.priority !== 'none' && (
-                <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted">
-                  <IconFlag className={`w-3.5 h-3.5 ${task.priority === 'high' ? 'text-rose-500' : task.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`} fill="currentColor" />
-                  <span className="hidden sm:inline capitalize">{task.priority}</span>
+                <button 
+                  onClick={() => onToggle(task.id)}
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 ${
+                    isCompleted 
+                      ? 'border-rose-500 bg-rose-500' 
+                      : 'border-text-muted hover:border-rose-400'
+                  }`}
+                >
+                  <AnimatePresence>
+                    {isCompleted && (
+                      <motion.svg 
+                        initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
+                        animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        className="w-3.5 h-3.5 text-white" 
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
+                      >
+                        <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
+                </button>
+                
+                <div className="flex-1 min-w-0 relative">
+                  <span 
+                    className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'}`}
+                    style={isCompleted ? { 
+                      textDecorationLine: 'line-through',
+                      textDecorationStyle: strikeStyle as any,
+                      textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
+                      textDecorationColor: 'currentColor'
+                    } : undefined}
+                  >
+                    {task.title}
+                  </span>
                 </div>
-              )}
-              
-              <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted w-24 justify-end">
-                <IconCalendar className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Today</span>
-              </div>
-              
-              <button onClick={() => onDelete(task.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-text-muted hover:text-rose-500 transition-all shrink-0">
-                <IconTrash className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ))}
+                
+                {task.projectId && projects.find(p => p.id === task.projectId) && (
+                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase shrink-0">
+                    {projects.find(p => p.id === task.projectId)?.name}
+                  </span>
+                )}
+                
+                {task.priority !== 'none' && (
+                  <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted">
+                    <IconFlag className={`w-3.5 h-3.5 ${task.priority === 'high' ? 'text-rose-500' : task.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`} fill="currentColor" />
+                    <span className="hidden sm:inline capitalize">{task.priority}</span>
+                  </div>
+                )}
+                
+                {task.dueDate && (
+                  <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted w-24 justify-end">
+                    <IconCalendar className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                )}
+                
+                <button onClick={() => onDelete(task.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-text-muted hover:text-rose-500 transition-all shrink-0">
+                  <IconTrash className="w-4 h-4" />
+                </button>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     </div>

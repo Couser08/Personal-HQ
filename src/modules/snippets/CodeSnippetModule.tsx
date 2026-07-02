@@ -302,7 +302,7 @@ export default function CodeSnippetModule() {
                   <ShikiHighlighter
                     code={selectedSnippet.code}
                     lang={selectedSnippet.language.toLowerCase()}
-                    theme="github-dark"
+                    theme="one-dark-pro"
                   />
                 </div>
                 

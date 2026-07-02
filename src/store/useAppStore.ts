@@ -104,6 +104,7 @@ export interface TodoTask {
   priority: 'low' | 'medium' | 'high' | 'none';
   tags: string[];
   dueDate: string | null;
+  deleted?: boolean;
   createdAt: string;
 }
 
@@ -354,6 +355,8 @@ export interface AppStore {
   addTodoTask: (task: TodoTask) => Promise<void>;
   updateTodoTask: (id: string, data: Partial<TodoTask>) => Promise<void>;
   deleteTodoTask: (id: string) => Promise<void>;
+  restoreTodoTask: (id: string) => Promise<void>;
+  emptyTodoTrash: () => Promise<void>;
   addTodoProject: (project: TodoProject) => Promise<void>;
   deleteTodoProject: (id: string) => Promise<void>;
   
@@ -918,8 +921,56 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   },
   
   deleteTodoTask: async (id) => {
-    set((state) => ({ todoTasks: state.todoTasks.filter(t => t.id !== id) }));
-    await todoTaskService.delete(id);
+    const task = get().todoTasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (task.deleted) {
+      set((state) => ({ todoTasks: state.todoTasks.filter(t => t.id !== id) }));
+      await todoTaskService.delete(id);
+      useToastStore.getState().addToast('Success', 'Task deleted permanently', 'success');
+    } else {
+      const previous = get().todoTasks;
+      set((state) => ({
+        todoTasks: state.todoTasks.map(t => t.id === id ? { ...t, deleted: true } : t)
+      }));
+      try {
+        await todoTaskService.update(id, { deleted: true });
+        useToastStore.getState().addToast('Success', 'Task moved to Trash', 'success');
+      } catch (error) {
+        set({ todoTasks: previous });
+        useToastStore.getState().addToast('Sync Failed', 'Could not move task to Trash', 'error');
+      }
+    }
+  },
+
+  restoreTodoTask: async (id) => {
+    const previous = get().todoTasks;
+    set((state) => ({
+      todoTasks: state.todoTasks.map(t => t.id === id ? { ...t, deleted: false } : t)
+    }));
+    try {
+      await todoTaskService.update(id, { deleted: false });
+      useToastStore.getState().addToast('Success', 'Task restored', 'success');
+    } catch (error) {
+      set({ todoTasks: previous });
+      useToastStore.getState().addToast('Sync Failed', 'Could not restore task', 'error');
+    }
+  },
+
+  emptyTodoTrash: async () => {
+    const trashTasks = get().todoTasks.filter(t => t.deleted);
+    if (trashTasks.length === 0) return;
+
+    const previous = get().todoTasks;
+    set((state) => ({ todoTasks: state.todoTasks.filter(t => !t.deleted) }));
+
+    try {
+      await Promise.all(trashTasks.map(t => todoTaskService.delete(t.id)));
+      useToastStore.getState().addToast('Success', 'Trash emptied', 'success');
+    } catch (error) {
+      set({ todoTasks: previous });
+      useToastStore.getState().addToast('Sync Failed', 'Could not empty Trash', 'error');
+    }
   },
 
   addJournalEntry: (entry) => {

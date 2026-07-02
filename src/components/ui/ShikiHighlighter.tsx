@@ -14,7 +14,19 @@ export function ShikiHighlighter({ code, lang, theme, className, style }: ShikiH
 
   useEffect(() => {
     let isMounted = true;
-    const language = (lang && lang.toLowerCase() !== 'other') ? lang.toLowerCase() : 'javascript';
+    const getShikiLang = (l: string) => {
+      const clean = l.trim().toLowerCase();
+      if (clean === 'c++') return 'cpp';
+      if (clean === 'c#') return 'csharp';
+      if (clean === 'js') return 'javascript';
+      if (clean === 'ts') return 'typescript';
+      if (clean === 'py') return 'python';
+      if (clean === 'bash' || clean === 'sh') return 'shellscript';
+      if (clean === 'other' || !clean) return 'javascript';
+      return clean;
+    };
+
+    const language = getShikiLang(lang);
     
     codeToHtml(code, {
       lang: language,
@@ -23,9 +35,9 @@ export function ShikiHighlighter({ code, lang, theme, className, style }: ShikiH
       if (isMounted) setHtml(result);
     }).catch(e => {
       console.error('Shiki highlighting failed:', e);
-      // Fallback
+      // Fallback with explicit premium code styles so it never renders in default blue/black
       if (isMounted) {
-        setHtml(`<pre class="shiki" style="padding: 14px; margin: 0;"><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
+        setHtml(`<pre class="shiki" style="padding: 16px; margin: 0; font-family: monospace; font-size: 13px; line-height: 1.6; color: #e1e4e8; background-color: #24292e;"><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
       }
     });
     
