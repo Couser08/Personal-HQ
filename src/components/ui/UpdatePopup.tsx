@@ -2,42 +2,40 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconMovie, IconListCheck, IconCode } from '@tabler/icons-react';
 
-const APP_VERSION = '0.9.1';
+const APP_VERSION = '1.0.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconMovie className="w-5 h-5" />,
-    color: '#007AFF', // iOS Blue
-    bg: 'rgba(0, 122, 255, 0.1)',
-    title: 'Media Log Overhaul',
-    desc: 'Completely redesigned Media Log with Apple-style glassmorphism, fluid micro-interactions, and flawless tab switching.',
-  },
-  {
     icon: <IconListCheck className="w-5 h-5" />,
     color: '#FF2D55', // iOS Pink
     bg: 'rgba(255, 45, 85, 0.1)',
-    title: 'To-Do Supercharged',
-    desc: 'Interactive date pickers, calendar & board views, priority filters, and a beautiful new project creation modal.',
+    title: 'Journal Module',
+    desc: 'Capture your day with the gorgeous new Journal module. Complete with a rich text editor, mood/category selection, and clean styling.',
+  },
+  {
+    icon: <IconMovie className="w-5 h-5" />,
+    color: '#007AFF', // iOS Blue
+    bg: 'rgba(0, 122, 255, 0.1)',
+    title: 'Performance Optimization',
+    desc: 'Optimized the entire state management structure using shallow selectors, preventing unnecessary component re-renders.',
   },
   {
     icon: <IconCode className="w-5 h-5" />,
     color: '#5856D6', // iOS Purple
     bg: 'rgba(88, 86, 214, 0.1)',
-    title: 'Code Vault Syntax',
-    desc: 'Robust syntax highlighting with beautiful fallback themes and custom language mappings (C++, C#, etc).',
+    title: 'Custom Brand Assets',
+    desc: 'Introduced the official AppLogo vector asset, cleaner layout spacing, and streamlined sidebar navigation.',
   },
 ];
 
 const WHATS_NEW = [
-  'Apple-inspired minimal design language across all new popups',
-  'Fluid glassmorphism effects on modals and floating UI',
-  'Month navigation (back/forward) added to To-Do Date Picker',
-  'Board view for To-Do list with drag-and-drop aesthetics',
-  'Dedicated Trash section for deleted tasks',
-  'Flawless tab switching between Anime and Games',
-  'Micro-interactions and spring animations for task completion',
-  'Premium custom Project Creation modal in To-Do List',
+  'Added a complete Journal module with Rich Text support',
+  'Optimized store selectors using useShallow across Sidebar, Notes, Pomodoro, and Settings',
+  'Integrated AppLogo into the Login page and Sidebar header',
+  'Improved countdown preview card rendering inside Settings',
+  'Cleaned up obsolete UI dependencies and unused imports',
+  'Enforced stricter type checking across build configurations',
 ];
 
 // ── Mini notification card (shown first) ──────────────────────────────────────

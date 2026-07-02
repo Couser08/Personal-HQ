@@ -263,6 +263,12 @@ export interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
+export interface MediaEntryModalState {
+  isOpen: boolean;
+  editingLog: MediaLog | null;
+  activeTab: 'ANIME' | 'GAME';
+}
+
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
@@ -292,6 +298,14 @@ export interface AppStore {
   confirmDialog: ConfirmDialogState;
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
   closeConfirm: () => void;
+
+  mediaEntryModal: MediaEntryModalState;
+  openMediaEntryModal: (tab: 'ANIME' | 'GAME', log?: MediaLog) => void;
+  closeMediaEntryModal: () => void;
+
+  todoProjectModal: { isOpen: boolean };
+  openTodoProjectModal: () => void;
+  closeTodoProjectModal: () => void;
 
   // Supabase sync
   dataLoaded: boolean;
@@ -404,6 +418,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set({ confirmDialog: { isOpen: true, title, message, onConfirm } }),
   closeConfirm: () =>
     set((state) => ({ confirmDialog: { ...state.confirmDialog, isOpen: false } })),
+
+  mediaEntryModal: { isOpen: false, editingLog: null, activeTab: 'ANIME' },
+  openMediaEntryModal: (tab, log) =>
+    set({ mediaEntryModal: { isOpen: true, editingLog: log || null, activeTab: tab } }),
+  closeMediaEntryModal: () =>
+    set((state) => ({ mediaEntryModal: { ...state.mediaEntryModal, isOpen: false } })),
+
+  todoProjectModal: { isOpen: false },
+  openTodoProjectModal: () => set({ todoProjectModal: { isOpen: true } }),
+  closeTodoProjectModal: () => set({ todoProjectModal: { isOpen: false } }),
 
   // Helper for toasts
   notifySuccess: (msg: string) => useToastStore.getState().addToast('Success', msg, 'success'),
