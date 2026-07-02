@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
@@ -711,25 +712,25 @@ export default function TodoModule() {
 
         </div>
 
-        {/* Custom Project Modal */}
-        <AnimatePresence>
-          {showProjectModal && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={() => {
-                  setShowProjectModal(false);
-                  setNewProjectName('');
-                }}
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
-              />
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        {/* Custom Project Modal — portal-rendered to escape overflow:auto */}
+        {createPortal(
+          <AnimatePresence>
+            {showProjectModal && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  onClick={() => {
+                    setShowProjectModal(false);
+                    setNewProjectName('');
+                  }}
+                  className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                />
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
                   transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                  className="bg-surface/90 backdrop-blur-2xl w-full max-w-sm rounded-[32px] p-6 sm:p-8 shadow-2xl border border-border pointer-events-auto relative overflow-hidden"
+                  className="relative w-[92vw] max-w-sm bg-surface rounded-[32px] p-6 sm:p-8 shadow-2xl border border-border z-10 flex flex-col"
                 >
                   <h3 className="text-2xl font-black tracking-tight text-text-primary mb-6">New Project</h3>
                   <div className="flex flex-col gap-6">
@@ -740,7 +741,7 @@ export default function TodoModule() {
                         placeholder="e.g. Design, Homework"
                         value={newProjectName}
                         onChange={e => setNewProjectName(e.target.value)}
-                        className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-[15px] text-text-primary placeholder:text-text-muted/50"
+                        className="w-full bg-surface-alt border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/30 transition-all text-[15px] text-text-primary placeholder:text-text-muted"
                         autoFocus
                       />
                     </div>
@@ -752,13 +753,13 @@ export default function TodoModule() {
                             key={color}
                             type="button"
                             onClick={() => setNewProjectColor(color)}
-                            className={`w-8 h-8 rounded-full transition-transform ${newProjectColor === color ? 'scale-110 ring-2 ring-offset-2 ring-surface-alt' : 'hover:scale-105'}`}
+                            className={`w-9 h-9 rounded-full transition-all ${newProjectColor === color ? 'scale-110 ring-2 ring-offset-2 ring-border' : 'hover:scale-105 opacity-80 hover:opacity-100'}`}
                             style={{ backgroundColor: color }}
                           />
                         ))}
                       </div>
                     </div>
-                    <div className="mt-2 flex justify-end gap-3">
+                    <div className="pt-2 flex justify-end gap-3">
                       <button 
                         type="button" 
                         onClick={() => {
@@ -768,7 +769,7 @@ export default function TodoModule() {
                         className="px-5 py-2.5 rounded-full font-bold text-[14px] text-text-secondary bg-surface-alt hover:bg-surface-hover transition-colors"
                       >
                         Cancel
-                    </button>
+                      </button>
                       <button 
                         type="button" 
                         onClick={() => {
@@ -780,7 +781,7 @@ export default function TodoModule() {
                           }
                         }}
                         disabled={!newProjectName.trim()}
-                        className="px-5 py-2.5 rounded-full font-bold text-[14px] text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 transition-colors shadow-sm"
+                        className="px-5 py-2.5 rounded-full font-bold text-[14px] text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                       >
                         Create
                       </button>
@@ -788,9 +789,10 @@ export default function TodoModule() {
                   </div>
                 </motion.div>
               </div>
-            </>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
     </div>
   );

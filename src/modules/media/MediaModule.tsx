@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconMovie, IconDeviceGamepad2, 
@@ -313,130 +314,132 @@ export default function MediaModule() {
         </motion.div>
       </AnimatePresence>
 
-      {/* iOS Style Sheet Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
-            />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+      {/* iOS Style Sheet Modal — rendered via portal to escape overflow:auto clipping */}
+      {createPortal(
+        <AnimatePresence>
+          {isModalOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setIsModalOpen(false)}
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              />
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                className="bg-surface/90 backdrop-blur-2xl w-full max-w-md rounded-[32px] p-6 sm:p-8 shadow-2xl border border-border pointer-events-auto relative overflow-hidden"
+                className="relative w-[92vw] max-w-md bg-surface rounded-[32px] p-6 sm:p-8 shadow-2xl border border-border z-10 flex flex-col"
               >
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black tracking-tight text-text-primary">
-                    {editingLog ? `Edit Entry` : `Add ${activeTab === 'ANIME' ? 'Anime' : 'Game'}`}
-                  </h3>
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="p-2 rounded-full bg-surface-alt text-text-muted hover:text-text-primary transition-colors"
-                  >
-                    <IconX className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <label className="text-[12px] font-bold text-text-secondary block mb-2">Title</label>
-                    <input
-                      type="text"
-                      placeholder={`e.g. ${activeTab === 'ANIME' ? 'Attack on Titan' : 'Elden Ring'}`}
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] transition-all text-[15px] text-text-primary placeholder:text-text-muted/50"
-                    />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="text-[12px] font-bold text-text-secondary block mb-2">Status</label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] transition-all text-[15px] text-text-primary cursor-pointer appearance-none"
-                      >
-                        {STATUS_OPTIONS[activeTab].map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {activeTab === 'ANIME' && (
-                      <div className="flex-1">
-                        <label className="text-[12px] font-bold text-text-secondary block mb-2">Episodes</label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 24"
-                          value={episodes}
-                          onChange={(e) => setEpisodes(e.target.value)}
-                          className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] transition-all text-[15px] text-text-primary placeholder:text-text-muted/50"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-[12px] font-bold text-text-secondary block mb-3 flex justify-between">
-                      Rating <span>{rating > 0 ? `${rating}/10` : 'Unrated'}</span>
-                    </label>
-                    <div className="flex gap-1 justify-between bg-surface-alt/30 p-2 rounded-[20px] border border-border">
-                      {[1,2,3,4,5,6,7,8,9,10].map(val => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setRating(val)}
-                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] font-black text-[13px] transition-all flex items-center justify-center ${
-                            rating >= val 
-                              ? 'bg-amber-400 text-black shadow-sm' 
-                              : 'hover:bg-surface-hover text-text-secondary'
-                          }`}
-                        >
-                          {val}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[12px] font-bold text-text-secondary block mb-2">Review Notes</label>
-                    <textarea
-                      placeholder="Thoughts, review details, or tags..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="w-full bg-surface-alt/50 border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] transition-all text-[15px] min-h-[120px] resize-none text-text-primary placeholder:text-text-muted/50"
-                    />
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-border flex justify-end gap-3">
+                  <div className="flex justify-between items-center mb-8">
+                    <h3 className="text-2xl font-black tracking-tight text-text-primary">
+                      {editingLog ? `Edit Entry` : `Add ${activeTab === 'ANIME' ? 'Anime' : 'Game'}`}
+                    </h3>
                     <button
-                      type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="px-6 py-3 rounded-full font-bold text-[15px] text-text-secondary bg-surface-alt hover:bg-surface-hover transition-colors"
+                      className="p-2 rounded-full bg-surface-alt text-text-muted hover:text-text-primary transition-colors"
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={!title.trim()}
-                      className="px-6 py-3 rounded-full font-bold text-[15px] text-white bg-[#007AFF] hover:bg-[#0066CC] disabled:opacity-50 transition-colors flex items-center gap-2"
-                    >
-                      <IconCheck className="w-5 h-5" />
-                      Save Entry
+                      <IconX className="w-5 h-5" />
                     </button>
                   </div>
-                </div>
+
+                  <div className="flex flex-col gap-5">
+                    <div>
+                      <label className="text-[12px] font-bold text-text-secondary block mb-2">Title</label>
+                      <input
+                        type="text"
+                        placeholder={`e.g. ${activeTab === 'ANIME' ? 'Attack on Titan' : 'Elden Ring'}`}
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full bg-surface-alt border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/30 transition-all text-[15px] text-text-primary placeholder:text-text-muted"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-[12px] font-bold text-text-secondary block mb-2">Status</label>
+                        <select
+                          value={status}
+                          onChange={(e) => setStatus(e.target.value)}
+                          className="w-full bg-surface-alt border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/30 transition-all text-[15px] text-text-primary cursor-pointer"
+                        >
+                          {STATUS_OPTIONS[activeTab].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {activeTab === 'ANIME' && (
+                        <div className="flex-1">
+                          <label className="text-[12px] font-bold text-text-secondary block mb-2">Episodes</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 24"
+                            value={episodes}
+                            onChange={(e) => setEpisodes(e.target.value)}
+                            className="w-full bg-surface-alt border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/30 transition-all text-[15px] text-text-primary placeholder:text-text-muted"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[12px] font-bold text-text-secondary block mb-3 flex justify-between">
+                        Rating <span className="font-black">{rating > 0 ? `${rating}/10` : 'Unrated'}</span>
+                      </label>
+                      <div className="flex gap-1 justify-between bg-surface-alt p-2 rounded-[20px] border border-border">
+                        {[1,2,3,4,5,6,7,8,9,10].map(val => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setRating(val)}
+                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] font-black text-[13px] transition-all flex items-center justify-center ${
+                              rating >= val 
+                                ? 'bg-amber-400 text-black shadow-sm' 
+                                : 'hover:bg-surface-hover text-text-secondary'
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[12px] font-bold text-text-secondary block mb-2">Review Notes</label>
+                      <textarea
+                        placeholder="Thoughts, review details, or tags..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full bg-surface-alt border border-border rounded-[16px] px-4 py-3.5 focus:outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/30 transition-all text-[15px] min-h-[100px] resize-none text-text-primary placeholder:text-text-muted"
+                      />
+                    </div>
+
+                    <div className="mt-2 pt-4 border-t border-border flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="px-6 py-2.5 rounded-full font-bold text-[14px] text-text-secondary bg-surface-alt hover:bg-surface-hover transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={!title.trim()}
+                        className="px-6 py-2.5 rounded-full font-bold text-[14px] text-white bg-[#007AFF] hover:bg-[#0066CC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      >
+                        <IconCheck className="w-4 h-4" />
+                        Save Entry
+                      </button>
+                    </div>
+                  </div>
               </motion.div>
             </div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }
