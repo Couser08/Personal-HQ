@@ -3,7 +3,7 @@ import {
   IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
   IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconWallet, IconChecklist
+  IconWallet, IconChecklist, IconSitemap
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 const NAV_ITEMS = [
   { id: 'notes', label: 'Notes', icon: IconNotes },
   { id: 'links', label: 'Link Vault', icon: IconLink },
-  { id: 'budget', label: 'Budget Tracker', icon: IconWallet },
+  { id: 'budget', label: 'Expense & Income', icon: IconWallet },
   { id: 'study', label: 'Study Tracker', icon: IconBook },
   { id: 'journal', label: 'Journal', icon: IconBook },
   { id: 'calculator', label: 'Interest Calc', icon: IconCalculator },
@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
   { id: 'todo', label: 'To-Do List', icon: IconChecklist },
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
+  { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
 ];
 
 const NAV_ITEM_STYLE = (active: boolean) => ({

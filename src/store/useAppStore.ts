@@ -278,6 +278,29 @@ export interface TodoTaskModalState {
   task: TodoTask | null;
 }
 
+export interface MindmapNode {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  color?: 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'gray';
+  isRoot?: boolean;
+}
+
+export interface MindmapLink {
+  source: string;
+  target: string;
+}
+
+export interface Mindmap {
+  id: string;
+  title: string;
+  nodes: MindmapNode[];
+  links: MindmapLink[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
@@ -394,6 +417,12 @@ export interface AppStore {
   updateJournalEntry: (id: string, data: Partial<JournalEntry>) => void;
   deleteJournalEntry: (id: string) => void;
   
+  // Mindmap Creator
+  mindmaps: Mindmap[];
+  addMindmap: (mindmap: Mindmap) => void;
+  updateMindmap: (id: string, data: Partial<Mindmap>) => void;
+  deleteMindmap: (id: string) => void;
+
   importData: (data: Partial<AppStore>) => void;
 }
 
@@ -415,6 +444,14 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   journals: (() => {
     try {
       const raw = localStorage.getItem('phq_journals');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  mindmaps: (() => {
+    try {
+      const raw = localStorage.getItem('phq_mindmaps');
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -1052,6 +1089,30 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       return { journals: next };
     });
     useToastStore.getState().addToast('Success', 'Journal entry deleted', 'success');
+  },
+
+  addMindmap: (mindmap) => {
+    set((state) => {
+      const next = [mindmap, ...state.mindmaps];
+      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+      return { mindmaps: next };
+    });
+    useToastStore.getState().addToast('Success', 'Mindmap created', 'success');
+  },
+  updateMindmap: (id, data) => {
+    set((state) => {
+      const next = state.mindmaps.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
+      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+      return { mindmaps: next };
+    });
+  },
+  deleteMindmap: (id) => {
+    set((state) => {
+      const next = state.mindmaps.filter((m) => m.id !== id);
+      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+      return { mindmaps: next };
+    });
+    useToastStore.getState().addToast('Success', 'Mindmap deleted', 'success');
   },
 
   importData: (data) =>

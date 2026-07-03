@@ -19,6 +19,7 @@ const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
 const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const TodoModule = lazy(() => import('./modules/todo/TodoModule'));
+const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
 
 function LoadingSplash() {
   return (
@@ -158,6 +159,7 @@ function AppContent() {
       case 'todo': return <TodoModule />;
       case 'settings': return <SettingsModule />;
       case 'profile': return <ProfileModule />;
+      case 'mindmap': return <MindmapModule />;
       default: return <NotesModule />;
     }
   };
