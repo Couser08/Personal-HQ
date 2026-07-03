@@ -36,6 +36,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   animationSpeed: 'normal',
   compactMode: false,
   soundEnabled: true,
+  initialBankBalance: 0,
+  initialCashBalance: 0,
 };
 
 export const buildBackupData = (state: AppStore, owner: BackupOwner): BackupPayload => ({
