@@ -285,6 +285,10 @@ export interface MindmapNode {
   y: number;
   color?: 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'gray';
   isRoot?: boolean;
+  parentId?: string;
+  side?: 'left' | 'right' | 'bottom';
+  collapsed?: boolean;
+  icon?: string;
 }
 
 export interface MindmapLink {
