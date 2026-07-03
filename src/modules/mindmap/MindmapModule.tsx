@@ -3,7 +3,8 @@ import {
   IconPlus, IconTrash, IconSearch, IconSitemap, IconZoomIn, 
   IconZoomOut, IconEdit, IconLink, IconFocusCentered,
   IconArrowLeft, IconChevronDown, IconFolder, IconShare,
-  IconArrowBackUp, IconArrowForwardUp, IconCloudCheck
+  IconArrowBackUp, IconArrowForwardUp, IconCloudCheck,
+  IconLayout, IconBook, IconExternalLink, IconDownload, IconHistory
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
@@ -17,6 +18,50 @@ const COLOR_PRESETS = [
   { id: 'blue', label: 'Blue', bg: 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-950/20 dark:border-blue-800/40 dark:text-blue-400' },
   { id: 'gray', label: 'Gray', bg: 'bg-surface border-border text-text-primary' }
 ] as const;
+
+// Helper: reconstruct the hierarchy in case properties are missing
+const sanitizeMindmapNodes = (nodes: MindmapNode[], links: MindmapLink[]): MindmapNode[] => {
+  const root = nodes.find(n => n.isRoot) || nodes[0];
+  if (!root) return nodes;
+
+  const nodeMap = new Map<string, MindmapNode>(nodes.map(n => [n.id, { ...n }]));
+  const visited = new Set<string>();
+  const queue: { id: string; parentId?: string; side?: 'left' | 'right' | 'bottom' }[] = [{ id: root.id }];
+
+  // BFS traversal to discover and repair parentId & side connections
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (visited.has(current.id)) continue;
+    visited.add(current.id);
+
+    const node = nodeMap.get(current.id);
+    if (node) {
+      if (!node.isRoot) {
+        if (current.parentId && !node.parentId) node.parentId = current.parentId;
+        if (current.side && !node.side) node.side = current.side;
+      }
+    }
+
+    const connectedLinks = links.filter(l => l.source === current.id || l.target === current.id);
+    connectedLinks.forEach(link => {
+      const neighborId = link.source === current.id ? link.target : link.source;
+      if (!visited.has(neighborId)) {
+        let side = current.side;
+        if (current.id === root.id) {
+          const neighbor = nodes.find(n => n.id === neighborId);
+          if (neighbor) {
+            if (neighbor.x < root.x - 50) side = 'left';
+            else if (neighbor.x > root.x + 50) side = 'right';
+            else side = 'bottom';
+          }
+        }
+        queue.push({ id: neighborId, parentId: current.id, side });
+      }
+    });
+  }
+
+  return Array.from(nodeMap.values());
+};
 
 export default function MindmapModule() {
   const { mindmaps, addMindmap, updateMindmap, deleteMindmap, showConfirm } = useAppStore();
@@ -38,11 +83,11 @@ export default function MindmapModule() {
     }
   }, [mindmaps, activeMindmapId]);
 
-  // Create default Productivity Mindmap or empty
+  // Create default Productivity Mindmap
   const handleCreateMindmap = (customTitle?: string) => {
     const newId = crypto.randomUUID();
     
-    // Initial nodes based exactly on the user mockup image:
+    // Default nodes array
     const initialNodes: MindmapNode[] = [
       { id: 'root', text: 'Productivity Mind Map', x: 450, y: 250, color: 'gray', isRoot: true, icon: '🧠' },
       
@@ -77,7 +122,7 @@ export default function MindmapModule() {
       { id: 'wb3', text: 'Healthy Diet', x: 860, y: 430, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🍏' },
       { id: 'wb4', text: 'Sleep', x: 860, y: 490, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🌙' },
 
-      // Tools Children (Bottom Flow - ALIGNED HORIZONTALLY BELOW!)
+      // Tools Children (Bottom Flow)
       { id: 'tl1', text: 'Notes', x: 250, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '🗒️' },
       { id: 'tl2', text: 'Task Manager', x: 380, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '☑️' },
       { id: 'tl3', text: 'Calendar', x: 520, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '📅' },
@@ -129,6 +174,88 @@ export default function MindmapModule() {
     setActiveMindmapId(newId);
   };
 
+  const handleResetToDefault = () => {
+    if (!activeMindmap) return;
+    showConfirm(
+      'Reset Mindmap',
+      'Reset all nodes & connections to default Outline?',
+      () => {
+        // Recreate default Productivity layout on current ID
+        const initialNodes: MindmapNode[] = [
+          { id: 'root', text: 'Productivity Mind Map', x: 450, y: 250, color: 'gray', isRoot: true, icon: '🧠' },
+          { id: 'mindset', text: 'Mindset', x: 260, y: 150, color: 'rose', parentId: 'root', side: 'left' },
+          { id: 'planning', text: 'Planning', x: 640, y: 150, color: 'amber', parentId: 'root', side: 'right' },
+          { id: 'habits', text: 'Habits', x: 260, y: 350, color: 'purple', parentId: 'root', side: 'left' },
+          { id: 'wellbeing', text: 'Wellbeing', x: 640, y: 350, color: 'green', parentId: 'root', side: 'right' },
+          { id: 'tools', text: 'Tools', x: 450, y: 440, color: 'blue', parentId: 'root', side: 'bottom' },
+          
+          { id: 'ms1', text: 'Positive Thinking', x: 40, y: 60, color: 'gray', parentId: 'mindset', side: 'left', icon: '⭐' },
+          { id: 'ms2', text: 'Growth Mindset', x: 40, y: 120, color: 'gray', parentId: 'mindset', side: 'left', icon: '📈' },
+          { id: 'ms3', text: 'Self Discipline', x: 40, y: 180, color: 'gray', parentId: 'mindset', side: 'left', icon: '🛡️' },
+          { id: 'ms4', text: 'Focus & Clarity', x: 40, y: 240, color: 'gray', parentId: 'mindset', side: 'left', icon: '🎯' },
+
+          { id: 'pl1', text: 'Set Goals', x: 860, y: 60, color: 'gray', parentId: 'planning', side: 'right', icon: '🎯' },
+          { id: 'pl2', text: 'Prioritize Tasks', x: 860, y: 120, color: 'gray', parentId: 'planning', side: 'right', icon: '📋' },
+          { id: 'pl3', text: 'Time Blocking', x: 860, y: 180, color: 'gray', parentId: 'planning', side: 'right', icon: '⏰' },
+          { id: 'pl4', text: 'Review & Reflect', x: 860, y: 240, color: 'gray', parentId: 'planning', side: 'right', icon: '🔄' },
+
+          { id: 'hb1', text: 'Daily Routine', x: 40, y: 310, color: 'gray', parentId: 'habits', side: 'left', icon: '⏰' },
+          { id: 'hb2', text: 'Morning Ritual', x: 40, y: 370, color: 'gray', parentId: 'habits', side: 'left', icon: '🌅' },
+          { id: 'hb3', text: 'Pomodoro Technique', x: 40, y: 430, color: 'gray', parentId: 'habits', side: 'left', icon: '⏱️' },
+          { id: 'hb4', text: 'Digital Detox', x: 40, y: 490, color: 'gray', parentId: 'habits', side: 'left', icon: '📱' },
+
+          { id: 'wb1', text: 'Exercise', x: 860, y: 310, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🏋️' },
+          { id: 'wb2', text: 'Meditation', x: 860, y: 370, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🧘' },
+          { id: 'wb3', text: 'Healthy Diet', x: 860, y: 430, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🍏' },
+          { id: 'wb4', text: 'Sleep', x: 860, y: 490, color: 'gray', parentId: 'wellbeing', side: 'right', icon: '🌙' },
+
+          { id: 'tl1', text: 'Notes', x: 250, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '🗒️' },
+          { id: 'tl2', text: 'Task Manager', x: 380, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '☑️' },
+          { id: 'tl3', text: 'Calendar', x: 520, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '📅' },
+          { id: 'tl4', text: 'Mind Maps', x: 650, y: 560, color: 'gray', parentId: 'tools', side: 'bottom', icon: '🗺️' }
+        ];
+
+        const initialLinks: MindmapLink[] = [
+          { source: 'root', target: 'mindset' },
+          { source: 'root', target: 'planning' },
+          { source: 'root', target: 'habits' },
+          { source: 'root', target: 'wellbeing' },
+          { source: 'root', target: 'tools' },
+          
+          { source: 'mindset', target: 'ms1' },
+          { source: 'mindset', target: 'ms2' },
+          { source: 'mindset', target: 'ms3' },
+          { source: 'mindset', target: 'ms4' },
+
+          { source: 'planning', target: 'pl1' },
+          { source: 'planning', target: 'pl2' },
+          { source: 'planning', target: 'pl3' },
+          { source: 'planning', target: 'pl4' },
+
+          { source: 'habits', target: 'hb1' },
+          { source: 'habits', target: 'hb2' },
+          { source: 'habits', target: 'hb3' },
+          { source: 'habits', target: 'hb4' },
+
+          { source: 'wellbeing', target: 'wb1' },
+          { source: 'wellbeing', target: 'wb2' },
+          { source: 'wellbeing', target: 'wb3' },
+          { source: 'wellbeing', target: 'wb4' },
+
+          { source: 'tools', target: 'tl1' },
+          { source: 'tools', target: 'tl2' },
+          { source: 'tools', target: 'tl3' },
+          { source: 'tools', target: 'tl4' }
+        ];
+
+        updateMindmap(activeMindmap.id, {
+          nodes: initialNodes,
+          links: initialLinks
+        });
+      }
+    );
+  };
+
   const handleRenameMindmap = () => {
     if (activeMindmap && titleInput.trim()) {
       updateMindmap(activeMindmap.id, { title: titleInput.trim() });
@@ -150,7 +277,7 @@ export default function MindmapModule() {
   return (
     <div className="flex h-[calc(100vh-130px)] gap-0 overflow-hidden bg-background text-text-primary rounded-[32px] border border-border/60">
       
-      {/* Workspace Sidebar List (Replicating FocusFlow sidebar UI mockup) */}
+      {/* Workspace Sidebar List */}
       <div className="w-[260px] bg-surface/40 border-r border-border/50 flex flex-col shrink-0">
         
         {/* Workspace Brand Selector */}
@@ -302,13 +429,20 @@ export default function MindmapModule() {
               {/* Header Action Menu tools */}
               <div className="flex items-center gap-3">
                 <IconCloudCheck className="w-5 h-5 text-emerald-500" title="All changes saved to local space" />
+                <button 
+                  onClick={handleResetToDefault}
+                  className="w-8 h-8 rounded-lg border border-border/40 bg-surface text-text-muted hover:text-rose-500 flex items-center justify-center transition-colors"
+                  title="Reset Mindmap data layout to default hierarchy"
+                >
+                  <IconHistory className="w-4 h-4" />
+                </button>
                 <div className="flex gap-0.5 border-l border-r border-border/50 px-2.5">
                   <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Undo"><IconArrowBackUp className="w-4.5 h-4.5" /></button>
                   <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Redo"><IconArrowForwardUp className="w-4.5 h-4.5" /></button>
                 </div>
                 <button 
                   className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer"
-                  onClick={() => alert("Sharing features are synced locally. Export JSON to backup.")}
+                  onClick={() => alert("Sharing features are synced locally. Export JSON/SVG to backup.")}
                 >
                   <IconShare className="w-3.5 h-3.5" /> Share
                 </button>
@@ -317,7 +451,20 @@ export default function MindmapModule() {
 
             <MindmapCanvas 
               mindmap={activeMindmap}
-              onUpdate={(updatedData) => updateMindmap(activeMindmap.id, updatedData)}
+              onUpdate={(updatedData) => {
+                // Automatically sanitize nodes to reconstruct hierarchies
+                let finalNodes = updatedData.nodes || activeMindmap.nodes;
+                const finalLinks = updatedData.links || activeMindmap.links;
+                
+                if (updatedData.nodes || updatedData.links) {
+                  finalNodes = sanitizeMindmapNodes(finalNodes, finalLinks);
+                }
+
+                updateMindmap(activeMindmap.id, {
+                  ...updatedData,
+                  nodes: finalNodes
+                });
+              }}
             />
           </>
         ) : (
@@ -373,19 +520,20 @@ function MindmapCanvas({
   const [zoom, setZoom] = useState(1);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   
-  // Linking mode state
+  // Linking/Dragging/Drawer/Exporter states
   const [linkingSourceId, setLinkingSourceId] = useState<string | null>(null);
   const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const cameraStartPan = useRef({ x: 0, y: 0 });
 
-  // Node Dragging state
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const nodeDragStartOffset = useRef({ x: 0, y: 0 });
 
-  // Node text inline edit state
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+
+  // Right side panel drawer for notes/attachments
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Center camera on nodes
   const handleCenterCamera = () => {
@@ -411,17 +559,43 @@ function MindmapCanvas({
     setZoom(1);
   };
 
-  // Center once on loading
   useEffect(() => {
     handleCenterCamera();
     setSelectedNodeId(null);
     setLinkingSourceId(null);
     setEditingNodeId(null);
+    setIsDrawerOpen(false);
   }, [mindmap.id]);
+
+  // Keyboard Shortcuts Handler (Tab for child, Enter for sibling)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger canvas shortcuts while typing inside inputs
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.getAttribute('contenteditable'))) {
+        return;
+      }
+
+      if (!selectedNodeId) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        handleAddChildNode();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAddSiblingNode();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedNodeId, mindmap.nodes, mindmap.links]);
 
   // Handle canvas background drag (Panning)
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // only left click
+    if (e.button !== 0) return;
     if (editingNodeId) return;
 
     setIsDraggingCanvas(true);
@@ -429,7 +603,6 @@ function MindmapCanvas({
     cameraStartPan.current = { ...pan };
   };
 
-  // Mouse Move: handles panning camera or dragging nodes
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDraggingCanvas) {
       const dx = e.clientX - dragStartPos.current.x;
@@ -456,7 +629,6 @@ function MindmapCanvas({
     setDraggingNodeId(null);
   };
 
-  // Zooming with scroll wheel
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     if (!containerRef.current) return;
@@ -483,7 +655,6 @@ function MindmapCanvas({
     setZoom(nextZoom);
   };
 
-  // Double click canvas: create root node or floating node
   const handleDoubleClickCanvas = (e: React.MouseEvent) => {
     if (e.target !== e.currentTarget) return;
     if (editingNodeId) return;
@@ -508,7 +679,6 @@ function MindmapCanvas({
     setSelectedNodeId(newNode.id);
   };
 
-  // Node Dragging Start
   const handleStartDragNode = (e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
     if (e.button !== 0) return;
@@ -545,27 +715,22 @@ function MindmapCanvas({
     setEditingNodeId(null);
   };
 
-  // Create Sub-node (Child node) connected to selected parent node
+  // Add child subtopic
   const handleAddChildNode = () => {
     const parent = mindmap.nodes.find(n => n.id === selectedNodeId);
     if (!parent) return;
 
     const childId = crypto.randomUUID();
-    
-    // Choose side based on parent side, default to right for root
     let side: 'left' | 'right' | 'bottom' = parent.side || 'right';
-    
     let x = parent.x;
     let y = parent.y;
 
     if (parent.isRoot) {
-      // Determine side dynamically for children of root
       const leftCount = mindmap.nodes.filter(n => n.parentId === parent.id && n.side === 'left').length;
       const rightCount = mindmap.nodes.filter(n => n.parentId === parent.id && n.side === 'right').length;
       side = leftCount <= rightCount ? 'left' : 'right';
     }
 
-    // Auto-spacing placement rules based on flow direction
     if (side === 'left') {
       x = parent.x - 200;
       const peerCount = mindmap.nodes.filter(n => n.parentId === parent.id).length;
@@ -575,7 +740,6 @@ function MindmapCanvas({
       const peerCount = mindmap.nodes.filter(n => n.parentId === parent.id).length;
       y = parent.y + (peerCount * 60) - 90;
     } else {
-      // Bottom flow: horizontally stacked below
       y = parent.y + 120;
       const peerCount = mindmap.nodes.filter(n => n.parentId === parent.id).length;
       x = parent.x + (peerCount * 130) - 180;
@@ -603,25 +767,134 @@ function MindmapCanvas({
     setSelectedNodeId(childId);
   };
 
-  // Toggle Collapse / Expand state of parent branches via connection circle dots
+  // Add sibling subtopic (Enter key)
+  const handleAddSiblingNode = () => {
+    const selected = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!selected || selected.isRoot) return;
+
+    const parentId = selected.parentId;
+    if (!parentId) return;
+
+    const siblingId = crypto.randomUUID();
+    const side = selected.side || 'right';
+
+    let x = selected.x;
+    let y = selected.y + 60; // stack below sibling
+
+    if (side === 'bottom') {
+      x = selected.x + 135; // horizontal stack
+      y = selected.y;
+    }
+
+    const siblingNode: MindmapNode = {
+      id: siblingId,
+      text: 'New Topic',
+      x: Math.round(x),
+      y: Math.round(y),
+      color: selected.color || 'gray',
+      parentId,
+      side
+    };
+
+    const siblingLink: MindmapLink = {
+      source: parentId,
+      target: siblingId
+    };
+
+    onUpdate({
+      nodes: [...mindmap.nodes, siblingNode],
+      links: [...mindmap.links, siblingLink]
+    });
+    setSelectedNodeId(siblingId);
+  };
+
+  // Auto-Arrange Layout algorithm
+  const handleAutoArrange = () => {
+    const root = mindmap.nodes.find(n => n.isRoot);
+    if (!root) return;
+
+    const newNodes = [...mindmap.nodes];
+    const rootIndex = newNodes.findIndex(n => n.id === root.id);
+    newNodes[rootIndex] = { ...root, x: 450, y: 250 }; // Center root node
+
+    const primaryBranches = newNodes.filter(n => n.parentId === root.id);
+    const leftBranches = primaryBranches.filter(n => n.side === 'left');
+    const rightBranches = primaryBranches.filter(n => n.side === 'right');
+    const bottomBranches = primaryBranches.filter(n => n.side === 'bottom');
+
+    // Layout left branches
+    leftBranches.forEach((branch, bIdx) => {
+      const bX = root.x - 190;
+      const bY = root.y + (bIdx - (leftBranches.length - 1) / 2) * 200;
+      const nodeIdx = newNodes.findIndex(n => n.id === branch.id);
+      newNodes[nodeIdx] = { ...branch, x: Math.round(bX), y: Math.round(bY) };
+
+      const children = newNodes.filter(n => n.parentId === branch.id);
+      children.forEach((child, cIdx) => {
+        const cX = bX - 220;
+        const cY = bY + (cIdx - (children.length - 1) / 2) * 60;
+        const cNodeIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[cNodeIdx] = { ...child, x: Math.round(cX), y: Math.round(cY) };
+      });
+    });
+
+    // Layout right branches
+    rightBranches.forEach((branch, bIdx) => {
+      const bX = root.x + 190;
+      const bY = root.y + (bIdx - (rightBranches.length - 1) / 2) * 200;
+      const nodeIdx = newNodes.findIndex(n => n.id === branch.id);
+      newNodes[nodeIdx] = { ...branch, x: Math.round(bX), y: Math.round(bY) };
+
+      const children = newNodes.filter(n => n.parentId === branch.id);
+      children.forEach((child, cIdx) => {
+        const cX = bX + 220;
+        const cY = bY + (cIdx - (children.length - 1) / 2) * 60;
+        const cNodeIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[cNodeIdx] = { ...child, x: Math.round(cX), y: Math.round(cY) };
+      });
+    });
+
+    // Layout bottom branches (Horizontal alignment below)
+    bottomBranches.forEach((branch, bIdx) => {
+      const bX = root.x + (bIdx - (bottomBranches.length - 1) / 2) * 240;
+      const bY = root.y + 190;
+      const nodeIdx = newNodes.findIndex(n => n.id === branch.id);
+      newNodes[nodeIdx] = { ...branch, x: Math.round(bX), y: Math.round(bY) };
+
+      const children = newNodes.filter(n => n.parentId === branch.id);
+      children.forEach((child, cIdx) => {
+        const cY = bY + 120;
+        const cX = bX + (cIdx - (children.length - 1) / 2) * 140;
+        const cNodeIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[cNodeIdx] = { ...child, x: Math.round(cX), y: Math.round(cY) };
+      });
+    });
+
+    onUpdate({ nodes: newNodes });
+    handleCenterCamera();
+  };
+
+  // Toggle Collapse / Expand parent branch
   const handleToggleCollapse = (e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
+    e.preventDefault();
     const node = mindmap.nodes.find(n => n.id === nodeId);
     if (!node) return;
 
     const nextCollapsed = !node.collapsed;
+    
+    // Trigger deep state update
     onUpdate({
       nodes: mindmap.nodes.map(n => n.id === nodeId ? { ...n, collapsed: nextCollapsed } : n)
     });
   };
 
-  // Helper: check if a node is collapsed or hidden under a collapsed parent
+  // Helper recursive checking for branch folding
   const isNodeHidden = (nodeId: string): boolean => {
     const node = mindmap.nodes.find(n => n.id === nodeId);
     if (!node) return false;
     if (node.isRoot) return false;
     
-    // Check if immediate parent is collapsed
     if (node.parentId) {
       const parent = mindmap.nodes.find(n => n.id === node.parentId);
       if (parent && (parent.collapsed || isNodeHidden(parent.id))) {
@@ -631,7 +904,6 @@ function MindmapCanvas({
     return false;
   };
 
-  // Filter out collapsed/hidden elements
   const visibleNodes = useMemo(() => {
     return mindmap.nodes.filter(n => !isNodeHidden(n.id));
   }, [mindmap.nodes]);
@@ -640,7 +912,6 @@ function MindmapCanvas({
     return mindmap.links.filter(l => !isNodeHidden(l.source) && !isNodeHidden(l.target));
   }, [mindmap.links, mindmap.nodes]);
 
-  // Connect source to target
   const handleNodeClick = (nodeId: string) => {
     if (linkingSourceId) {
       if (linkingSourceId !== nodeId) {
@@ -673,6 +944,7 @@ function MindmapCanvas({
       links: mindmap.links.filter(l => l.source !== selectedNodeId && l.target !== selectedNodeId)
     });
     setSelectedNodeId(null);
+    setIsDrawerOpen(false);
   };
 
   const handleChangeNodeColor = (colorId: 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'gray') => {
@@ -682,7 +954,15 @@ function MindmapCanvas({
     });
   };
 
-  // Coordinate math helpers for bezier curve branch connector path overlays
+  // Node editing state updates inside sliding drawer
+  const handleUpdateNodeProp = (key: 'text' | 'notes' | 'linkUrl' | 'imageUrl', val: string) => {
+    if (!selectedNodeId) return;
+    onUpdate({
+      nodes: mindmap.nodes.map(n => n.id === selectedNodeId ? { ...n, [key]: val } : n)
+    });
+  };
+
+  // Bezier connectors
   const getNodeCenters = useMemo(() => {
     const centers: Record<string, { x: number; y: number }> = {};
     mindmap.nodes.forEach(node => {
@@ -695,6 +975,90 @@ function MindmapCanvas({
   }, [mindmap.nodes]);
 
   const selectedNode = mindmap.nodes.find(n => n.id === selectedNodeId) || null;
+
+  // Outline Export (Markdown format)
+  const handleExportOutline = () => {
+    const root = mindmap.nodes.find(n => n.isRoot);
+    if (!root) return;
+
+    let outlineStr = `# ${root.text}\n\n`;
+
+    const formatNode = (nodeId: string, depth: number) => {
+      const node = mindmap.nodes.find(n => n.id === nodeId);
+      if (!node) return;
+
+      const indent = '  '.repeat(depth);
+      outlineStr += `${indent}- ${node.text}${node.notes ? ` (${node.notes})` : ''}\n`;
+
+      const children = mindmap.nodes.filter(n => n.parentId === nodeId);
+      children.forEach(c => formatNode(c.id, depth + 1));
+    };
+
+    const primaryBranches = mindmap.nodes.filter(n => n.parentId === root.id);
+    primaryBranches.forEach(b => formatNode(b.id, 0));
+
+    const blob = new Blob([outlineStr], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${mindmap.title}_outline.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // SVG Export
+  const handleExportSvg = () => {
+    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" style="background:#f8fafc;">`;
+    
+    // Draw connection links
+    visibleLinks.forEach(link => {
+      const sourceNode = mindmap.nodes.find(n => n.id === link.source);
+      const targetNode = mindmap.nodes.find(n => n.id === link.target);
+      if (!sourceNode || !targetNode) return;
+      const start = { x: sourceNode.x + 80, y: sourceNode.y + 22 };
+      const end = { x: targetNode.x + 80, y: targetNode.y + 22 };
+      
+      svgContent += `<path d="M ${start.x} ${start.y} C ${start.x + (end.x - start.x)/2} ${start.y}, ${start.x + (end.x - start.x)/2} ${end.y}, ${end.x} ${end.y}" fill="none" stroke="#cbd5e1" stroke-width="2" />`;
+    });
+
+    // Draw nodes
+    visibleNodes.forEach(node => {
+      const width = node.isRoot ? 180 : 160;
+      const height = node.isRoot ? 64 : 44;
+      const fillColor = node.isRoot ? '#ffffff' :
+                        node.color === 'rose' ? '#fff1f2' :
+                        node.color === 'amber' ? '#fef3c7' :
+                        node.color === 'purple' ? '#faf5ff' :
+                        node.color === 'green' ? '#ecfdf5' : '#eff6ff';
+      const strokeColor = node.isRoot ? '#cbd5e1' :
+                          node.color === 'rose' ? '#fda4af' :
+                          node.color === 'amber' ? '#fde047' :
+                          node.color === 'purple' ? '#e9d5ff' :
+                          node.color === 'green' ? '#a7f3d0' : '#bfdbfe';
+      const textColor = node.isRoot ? '#1e293b' :
+                        node.color === 'rose' ? '#e11d48' :
+                        node.color === 'amber' ? '#d97706' :
+                        node.color === 'purple' ? '#9333ea' :
+                        node.color === 'green' ? '#059669' : '#2563eb';
+
+      svgContent += `<g transform="translate(${node.x}, ${node.y})">
+        <rect width="${width}" height="${height}" rx="12" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" />
+        <text x="${width/2}" y="${height/2 + 5}" text-anchor="middle" fill="${textColor}" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">${node.text}</text>
+      </g>`;
+    });
+
+    svgContent += `</svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${mindmap.title}.svg`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Mini-Map box bounding variables
   const miniMapBounds = useMemo(() => {
@@ -709,336 +1073,494 @@ function MindmapCanvas({
   }, [mindmap.nodes]);
 
   return (
-    <div 
-      ref={containerRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onWheel={handleWheel}
-      onDoubleClick={handleDoubleClickCanvas}
-      className="flex-1 w-full h-full select-none cursor-grab active:cursor-grabbing relative overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1.2px,transparent_1.2px)]"
-      style={{
-        backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
-        backgroundPosition: `${pan.x}px ${pan.y}px`
-      }}
-    >
-      {/* Node & Link Scaled Canvas Container */}
+    <div className="flex-1 w-full h-full flex relative overflow-hidden">
+      
+      {/* Infinite Canvas */}
       <div 
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
+        onDoubleClick={handleDoubleClickCanvas}
+        className="flex-1 h-full select-none cursor-grab active:cursor-grabbing relative overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1.2px,transparent_1.2px)]"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: '0 0',
-          position: 'absolute',
-          left: 0, top: 0, right: 0, bottom: 0,
-          pointerEvents: 'none'
+          backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
+          backgroundPosition: `${pan.x}px ${pan.y}px`
         }}
       >
-        {/* SVG Bezier Curves Layer */}
-        <svg 
-          style={{ 
-            position: 'absolute', 
-            width: '100%', height: '100%', 
-            left: 0, top: 0, 
-            overflow: 'visible', pointerEvents: 'none'
+        {/* Node & Link Scaled Canvas Container */}
+        <div 
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            position: 'absolute',
+            left: 0, top: 0, right: 0, bottom: 0,
+            pointerEvents: 'none'
           }}
         >
-          {visibleLinks.map((link, idx) => {
-            const sourceNode = mindmap.nodes.find(n => n.id === link.source);
-            const targetNode = mindmap.nodes.find(n => n.id === link.target);
-            if (!sourceNode || !targetNode) return null;
+          {/* SVG Bezier Curves Layer */}
+          <svg 
+            style={{ 
+              position: 'absolute', 
+              width: '100%', height: '100%', 
+              left: 0, top: 0, 
+              overflow: 'visible', pointerEvents: 'none'
+            }}
+          >
+            {visibleLinks.map((link, idx) => {
+              const sourceNode = mindmap.nodes.find(n => n.id === link.source);
+              const targetNode = mindmap.nodes.find(n => n.id === link.target);
+              if (!sourceNode || !targetNode) return null;
 
-            const start = getNodeCenters[link.source];
-            const end = getNodeCenters[link.target];
-            if (!start || !end) return null;
+              const start = getNodeCenters[link.source];
+              const end = getNodeCenters[link.target];
+              if (!start || !end) return null;
 
-            // Calculate precise control points for flowing organic connector branches
-            let pathData = '';
-            const side = targetNode.side || 'right';
+              let pathData = '';
+              const side = targetNode.side || 'right';
 
-            if (side === 'left') {
-              // Left alignment curve: starts left, moves left, ends right
-              const xStart = sourceNode.x;
-              const yStart = sourceNode.y + 22;
-              const xEnd = targetNode.x + 160;
-              const yEnd = targetNode.y + 22;
-              
-              const controlX1 = xStart - (xStart - xEnd) / 2;
-              const controlX2 = xStart - (xStart - xEnd) / 2;
-              pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
-            } else if (side === 'right') {
-              // Right alignment curve: starts right, moves right, ends left
-              const xStart = sourceNode.x + 160;
-              const yStart = sourceNode.y + 22;
-              const xEnd = targetNode.x;
-              const yEnd = targetNode.y + 22;
+              if (side === 'left') {
+                const xStart = sourceNode.x;
+                const yStart = sourceNode.y + 22;
+                const xEnd = targetNode.x + 160;
+                const yEnd = targetNode.y + 22;
+                const controlX1 = xStart - (xStart - xEnd) / 2;
+                const controlX2 = xStart - (xStart - xEnd) / 2;
+                pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
+              } else if (side === 'right') {
+                const xStart = sourceNode.x + 160;
+                const yStart = sourceNode.y + 22;
+                const xEnd = targetNode.x;
+                const yEnd = targetNode.y + 22;
+                const controlX1 = xStart + (xEnd - xStart) / 2;
+                const controlX2 = xStart + (xEnd - xStart) / 2;
+                pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
+              } else {
+                const xStart = sourceNode.x + 80;
+                const yStart = sourceNode.y + 44;
+                const xEnd = targetNode.x + 80;
+                const yEnd = targetNode.y;
+                const controlY1 = yStart + (yEnd - yStart) / 2;
+                const controlY2 = yStart + (yEnd - yStart) / 2;
+                pathData = `M ${xStart} ${yStart} C ${xStart} ${controlY1}, ${xEnd} ${controlY2}, ${xEnd} ${yEnd}`;
+              }
 
-              const controlX1 = xStart + (xEnd - xStart) / 2;
-              const controlX2 = xStart + (xEnd - xStart) / 2;
-              pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
-            } else {
-              // Bottom flow curve: starts bottom, moves down, ends top
-              const xStart = sourceNode.x + 80;
-              const yStart = sourceNode.y + 44;
-              const xEnd = targetNode.x + 80;
-              const yEnd = targetNode.y;
+              const colorPreset = COLOR_PRESETS.find(c => c.id === sourceNode.color);
+              let strokeColor = 'rgba(148, 163, 184, 0.4)';
+              if (colorPreset && colorPreset.id !== 'gray') {
+                strokeColor = colorPreset.id === 'rose' ? 'rgba(244, 63, 94, 0.45)' :
+                              colorPreset.id === 'amber' ? 'rgba(245, 158, 11, 0.45)' :
+                              colorPreset.id === 'purple' ? 'rgba(168, 85, 247, 0.45)' :
+                              colorPreset.id === 'green' ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+              }
 
-              const controlY1 = yStart + (yEnd - yStart) / 2;
-              const controlY2 = yStart + (yEnd - yStart) / 2;
-              pathData = `M ${xStart} ${yStart} C ${xStart} ${controlY1}, ${xEnd} ${controlY2}, ${xEnd} ${yEnd}`;
-            }
-
-            // Get link color matched to parent node preset
-            const colorPreset = COLOR_PRESETS.find(c => c.id === sourceNode.color);
-            let strokeColor = 'rgba(148, 163, 184, 0.4)'; // fallback slate-400
-            if (colorPreset && colorPreset.id !== 'gray') {
-              strokeColor = colorPreset.id === 'rose' ? 'rgba(244, 63, 94, 0.45)' :
-                            colorPreset.id === 'amber' ? 'rgba(245, 158, 11, 0.45)' :
-                            colorPreset.id === 'purple' ? 'rgba(168, 85, 247, 0.45)' :
-                            colorPreset.id === 'green' ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.45)';
-            }
-
-            return (
-              <path
-                key={idx}
-                d={pathData}
-                fill="none"
-                stroke={strokeColor}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                className="transition-all duration-300"
-              />
-            );
-          })}
-        </svg>
-
-        {/* HTML Nodes Layer */}
-        {visibleNodes.map((node) => {
-          const isSelected = selectedNodeId === node.id;
-          const isLinkingSource = linkingSourceId === node.id;
-          
-          // Style classes
-          const colorPreset = COLOR_PRESETS.find(c => c.id === node.color) || COLOR_PRESETS[5];
-
-          // Determine if children exist to show expand/collapse dot toggle
-          const hasChildren = mindmap.nodes.some(n => n.parentId === node.id);
-
-          return (
-            <div
-              key={node.id}
-              onMouseDown={(e) => handleStartDragNode(e, node.id)}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNodeClick(node.id);
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                handleStartEditNode(node);
-              }}
-              style={{
-                left: node.x,
-                top: node.y,
-                width: node.isRoot ? '180px' : '160px',
-                minHeight: node.isRoot ? '64px' : '44px',
-                position: 'absolute',
-                pointerEvents: 'auto',
-                boxSizing: 'border-box'
-              }}
-              className={`rounded-2xl border px-3 py-2 flex items-center justify-center text-center cursor-pointer transition-all shadow-sm font-semibold text-xs leading-tight relative group ${
-                node.isRoot 
-                  ? 'bg-surface border-border text-text-primary text-sm font-black shadow-md flex-col gap-1' 
-                  : `${colorPreset.bg} ${isSelected ? 'ring-4 ring-rose-500/10 border-rose-500 shadow-md' : 'hover:shadow'}`
-              } ${isLinkingSource ? 'ring-4 ring-amber-500/20 border-amber-500 animate-pulse' : ''}`}
-            >
-              {/* Node Contents */}
-              {editingNodeId === node.id ? (
-                <input
-                  type="text"
-                  value={editingText}
-                  autoFocus
-                  onBlur={() => handleSaveNodeText(node.id)}
-                  onChange={(e) => setEditingText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveNodeText(node.id);
-                    if (e.key === 'Escape') setEditingNodeId(null);
-                  }}
-                  className="w-full bg-surface-alt border border-primary/40 rounded-lg px-2 py-1 text-xs text-text-primary text-center font-bold outline-none focus:ring-1 focus:ring-primary"
-                  onClick={e => e.stopPropagation()}
-                  onMouseDown={e => e.stopPropagation()}
+              return (
+                <path
+                  key={idx}
+                  d={pathData}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className="transition-all duration-300"
                 />
-              ) : (
-                <div className="flex flex-col items-center justify-center w-full">
-                  {node.icon && (
-                    <span className={`${node.isRoot ? 'text-lg mb-0.5' : 'mr-1.5 inline-block text-xs'}`}>
-                      {node.icon}
-                    </span>
-                  )}
-                  <span className={`break-words w-full truncate-3-lines ${node.isRoot ? 'font-extrabold text-[13px] tracking-tight' : 'font-bold'}`}>
-                    {node.text}
-                  </span>
-                  {node.isRoot && <span className="text-[9px] text-text-muted font-bold tracking-wider uppercase">Mind Map</span>}
-                </div>
-              )}
+              );
+            })}
+          </svg>
 
-              {/* Collapsible dot toggle on branch border */}
-              {hasChildren && !node.isRoot && (
-                <button
-                  onClick={(e) => handleToggleCollapse(e, node.id)}
-                  onMouseDown={e => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    // Align on the outer border side facing children
-                    left: node.side === 'left' ? '-7px' : node.side === 'right' ? 'auto' : '50%',
-                    right: node.side === 'right' ? '-7px' : 'auto',
-                    bottom: node.side === 'bottom' ? '-7px' : 'auto',
-                    top: node.side === 'bottom' ? 'auto' : '50%',
-                    transform: node.side === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
-                    zIndex: 20
-                  }}
-                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center border text-[9px] font-black transition-all shadow-sm ${
-                    node.collapsed 
-                      ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600' 
-                      : 'bg-surface hover:bg-surface-alt border-border text-text-secondary hover:text-text-primary'
-                  }`}
-                  title={node.collapsed ? 'Expand branch' : 'Collapse branch'}
-                >
-                  {node.collapsed ? '+' : '–'}
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+          {/* HTML Nodes Layer */}
+          {visibleNodes.map((node) => {
+            const isSelected = selectedNodeId === node.id;
+            const isLinkingSource = linkingSourceId === node.id;
+            const colorPreset = COLOR_PRESETS.find(c => c.id === node.color) || COLOR_PRESETS[5];
+            const hasChildren = mindmap.nodes.some(n => n.parentId === node.id);
 
-      {/* Floating Canvas UI Indicators (Zoom state pill) */}
-      <div className="absolute top-4 left-4 bg-surface/80 border border-border/50 px-3 py-1.5 rounded-full text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
-        {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
-      </div>
-
-      {/* Zoom panel matching bottom-left controls */}
-      <div className="absolute bottom-6 left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3.5 backdrop-blur z-20">
-        <button 
-          onClick={() => setZoom(prev => Math.max(prev / 1.15, 0.4))}
-          className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
-          title="Zoom Out"
-        >
-          <IconZoomOut className="w-4 h-4" />
-        </button>
-        <span className="text-xs font-black text-text-primary min-w-[36px] text-center">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button 
-          onClick={() => setZoom(prev => Math.min(prev * 1.15, 2.5))}
-          className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
-          title="Zoom In"
-        >
-          <IconZoomIn className="w-4 h-4" />
-        </button>
-        <button 
-          onClick={handleCenterCamera}
-          className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-l border-border/50 pl-2"
-          title="Center Canvas"
-        >
-          <IconFocusCentered className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Mini-Map Preview (Floating thumbnail widget in bottom-right corner) */}
-      <div className="absolute bottom-6 right-6 w-32 h-24 bg-surface/90 border border-border/60 rounded-2xl shadow-xl p-2.5 backdrop-blur z-20 flex flex-col items-center justify-center overflow-hidden">
-        <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block select-none">
-          Canvas Preview
-        </span>
-        <div className="relative w-full h-full bg-surface-alt/40 rounded-lg border border-border/30 overflow-hidden">
-          {/* Miniature absolute Div nodes scaled down */}
-          {visibleNodes.map(n => {
-            const scaleX = 100 / miniMapBounds.width;
-            const scaleY = 60 / miniMapBounds.height;
-            const left = (n.x - miniMapBounds.minX) * scaleX;
-            const top = (n.y - miniMapBounds.minY) * scaleY;
             return (
-              <div 
-                key={n.id}
-                style={{
-                  left: `${left + 5}%`,
-                  top: `${top + 10}%`,
-                  width: n.isRoot ? '12px' : '9px',
-                  height: '4px',
-                  position: 'absolute',
-                  backgroundColor: n.isRoot ? 'var(--color-primary, #f43f5e)' :
-                                   n.color === 'rose' ? '#f43f5e' :
-                                   n.color === 'amber' ? '#f59e0b' :
-                                   n.color === 'purple' ? '#a855f7' :
-                                   n.color === 'green' ? '#10b880' : '#3b82f6',
-                  borderRadius: '1px',
-                  opacity: 0.8
+              <div
+                key={node.id}
+                onMouseDown={(e) => handleStartDragNode(e, node.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNodeClick(node.id);
                 }}
-              />
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  handleStartEditNode(node);
+                }}
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.isRoot ? '180px' : '160px',
+                  minHeight: node.isRoot ? '64px' : '44px',
+                  position: 'absolute',
+                  pointerEvents: 'auto',
+                  boxSizing: 'border-box'
+                }}
+                className={`rounded-2xl border px-3 py-2 flex items-center justify-center text-center cursor-pointer transition-all shadow-sm font-semibold text-xs leading-tight relative group ${
+                  node.isRoot 
+                    ? 'bg-surface border-border text-text-primary text-sm font-black shadow-md flex-col gap-1' 
+                    : `${colorPreset.bg} ${isSelected ? 'ring-4 ring-rose-500/10 border-rose-500 shadow-md' : 'hover:shadow'}`
+                } ${isLinkingSource ? 'ring-4 ring-amber-500/20 border-amber-500 animate-pulse' : ''}`}
+              >
+                {/* Node Contents */}
+                {editingNodeId === node.id ? (
+                  <input
+                    type="text"
+                    value={editingText}
+                    autoFocus
+                    onBlur={() => handleSaveNodeText(node.id)}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveNodeText(node.id);
+                      if (e.key === 'Escape') setEditingNodeId(null);
+                    }}
+                    className="w-full bg-surface-alt border border-primary/40 rounded-lg px-2 py-1 text-xs text-text-primary text-center font-bold outline-none focus:ring-1 focus:ring-primary"
+                    onClick={e => e.stopPropagation()}
+                    onMouseDown={e => e.stopPropagation()}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center w-full">
+                    
+                    {/* Embedded image rendering */}
+                    {node.imageUrl && (
+                      <img 
+                        src={node.imageUrl} 
+                        alt="embedded" 
+                        className="w-full h-14 object-cover rounded-lg mb-1 pointer-events-none" 
+                      />
+                    )}
+
+                    <div className="flex items-center justify-center flex-wrap gap-1">
+                      {node.icon && (
+                        <span className={`${node.isRoot ? 'text-lg mb-0.5' : 'text-xs'}`}>
+                          {node.icon}
+                        </span>
+                      )}
+                      
+                      {/* Attached hyperlink badge */}
+                      {node.linkUrl && (
+                        <a 
+                          href={node.linkUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-primary hover:opacity-80 p-0.5"
+                          title="Open attached Link"
+                        >
+                          <IconExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      {/* Notes indicator badge */}
+                      {node.notes && (
+                        <IconBook className="w-3.5 h-3.5 text-text-muted" title="Has markdown notes" />
+                      )}
+                    </div>
+
+                    <span className={`break-words w-full truncate-3-lines ${node.isRoot ? 'font-extrabold text-[13px] tracking-tight' : 'font-bold'}`}>
+                      {node.text}
+                    </span>
+                    {node.isRoot && <span className="text-[9px] text-text-muted font-bold tracking-wider uppercase">Mind Map</span>}
+                  </div>
+                )}
+
+                {/* Collapsible dot toggle on branch border */}
+                {hasChildren && !node.isRoot && (
+                  <button
+                    onClick={(e) => handleToggleCollapse(e, node.id)}
+                    onMouseDown={e => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    style={{
+                      position: 'absolute',
+                      left: node.side === 'left' ? '-7px' : node.side === 'right' ? 'auto' : '50%',
+                      right: node.side === 'right' ? '-7px' : 'auto',
+                      bottom: node.side === 'bottom' ? '-7px' : 'auto',
+                      top: node.side === 'bottom' ? 'auto' : '50%',
+                      transform: node.side === 'bottom' ? 'translateX(-50%)' : 'translateY(-50%)',
+                      zIndex: 20
+                    }}
+                    className={`w-4.5 h-4.5 rounded-full flex items-center justify-center border text-[9px] font-black transition-all shadow-sm pointer-events-auto ${
+                      node.collapsed 
+                        ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600' 
+                        : 'bg-surface hover:bg-surface-alt border-border text-text-secondary hover:text-text-primary'
+                    }`}
+                    title={node.collapsed ? 'Expand branch' : 'Collapse branch'}
+                  >
+                    {node.collapsed ? '+' : '–'}
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
-      </div>
 
-      {/* Floating Apple-Style Toolbar at Top Center */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3.5 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-xl w-fit z-20 overflow-visible">
-        
-        {/* Connection Link Connect Trigger */}
-        <button
-          onClick={() => {
-            if (selectedNodeId) {
-              setLinkingSourceId(selectedNodeId);
-            } else {
-              alert('Select a parent node first.');
-            }
-          }}
-          className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all ${
-            linkingSourceId 
-              ? 'bg-amber-500 text-white' 
-              : 'bg-transparent text-text-secondary hover:bg-surface-alt'
-          }`}
-          title="Connect node connection line"
-        >
-          <IconLink className="w-4 h-4" />
-        </button>
+        {/* Floating Canvas UI Indicators (Zoom state pill) */}
+        <div className="absolute top-4 left-4 bg-surface/80 border border-border/50 px-3 py-1.5 rounded-full text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
+          {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
+        </div>
 
-        {/* Add connected Sub-node */}
-        <button
-          onClick={handleAddChildNode}
-          disabled={!selectedNodeId}
-          className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-3 py-1.5 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <IconPlus className="w-3.5 h-3.5" /> Sub-topic
-        </button>
-
-        {/* Color selection buttons */}
-        {selectedNode && (
-          <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-2">
-            {COLOR_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handleChangeNodeColor(preset.id as any)}
-                className={`w-4 h-4 rounded-full transition-all border ${
-                  preset.id === 'gray' ? 'bg-surface border-border' :
-                  preset.id === 'rose' ? 'bg-rose-500 border-rose-600' :
-                  preset.id === 'amber' ? 'bg-amber-500 border-amber-600' :
-                  preset.id === 'purple' ? 'bg-purple-500 border-purple-600' :
-                  preset.id === 'green' ? 'bg-emerald-500 border-emerald-600' : 'bg-blue-500 border-blue-600'
-                } ${selectedNode.color === preset.id ? 'scale-115 border-text-primary' : 'scale-90 border-transparent'}`}
-                title={`Set Color: ${preset.label}`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Delete Selection */}
-        {selectedNode && !selectedNode.isRoot && (
-          <button
-            onClick={handleDeleteSelectedNode}
-            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-            title="Delete Selected Node"
+        {/* Zoom panel matching bottom-left controls */}
+        <div className="absolute bottom-6 left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3.5 backdrop-blur z-20">
+          <button 
+            onClick={() => setZoom(prev => Math.max(prev / 1.15, 0.4))}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title="Zoom Out"
           >
-            <IconTrash className="w-4.5 h-4.5" />
+            <IconZoomOut className="w-4 h-4" />
           </button>
-        )}
+          <span className="text-xs font-black text-text-primary min-w-[36px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button 
+            onClick={() => setZoom(prev => Math.min(prev * 1.15, 2.5))}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title="Zoom In"
+          >
+            <IconZoomIn className="w-4 h-4" />
+          </button>
+          
+          <button 
+            onClick={handleCenterCamera}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-l border-border/50 pl-2"
+            title="Center Canvas"
+          >
+            <IconFocusCentered className="w-4 h-4" />
+          </button>
+
+          {/* Symmetrical Auto-Arrange button */}
+          <button 
+            onClick={handleAutoArrange}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title="Auto-Arrange Nodes Symmetrically"
+          >
+            <IconLayout className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Mini-Map Preview */}
+        <div className="absolute bottom-6 right-6 w-32 h-24 bg-surface/90 border border-border/60 rounded-2xl shadow-xl p-2.5 backdrop-blur z-20 flex flex-col items-center justify-center overflow-hidden">
+          <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block select-none">
+            Canvas Preview
+          </span>
+          <div className="relative w-full h-full bg-surface-alt/40 rounded-lg border border-border/30 overflow-hidden">
+            {visibleNodes.map(n => {
+              const scaleX = 100 / miniMapBounds.width;
+              const scaleY = 60 / miniMapBounds.height;
+              const left = (n.x - miniMapBounds.minX) * scaleX;
+              const top = (n.y - miniMapBounds.minY) * scaleY;
+              return (
+                <div 
+                  key={n.id}
+                  style={{
+                    left: `${left + 5}%`,
+                    top: `${top + 10}%`,
+                    width: n.isRoot ? '12px' : '9px',
+                    height: '4px',
+                    position: 'absolute',
+                    backgroundColor: n.isRoot ? 'var(--color-primary, #f43f5e)' :
+                                     n.color === 'rose' ? '#f43f5e' :
+                                     n.color === 'amber' ? '#f59e0b' :
+                                     n.color === 'purple' ? '#a855f7' :
+                                     n.color === 'green' ? '#10b880' : '#3b82f6',
+                    borderRadius: '1px',
+                    opacity: 0.8
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Floating Apple-Style Toolbar at Top Center */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-2xl w-fit z-20 overflow-visible">
+          
+          {/* Connection Link Connect Trigger */}
+          <button
+            onClick={() => {
+              if (selectedNodeId) {
+                setLinkingSourceId(selectedNodeId);
+              } else {
+                alert('Select a parent node first.');
+              }
+            }}
+            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all ${
+              linkingSourceId 
+                ? 'bg-amber-500 text-white' 
+                : 'bg-transparent text-text-secondary hover:bg-surface-alt'
+            }`}
+            title="Connect node connection line"
+          >
+            <IconLink className="w-4 h-4" />
+          </button>
+
+          {/* Add child node */}
+          <button
+            onClick={handleAddChildNode}
+            disabled={!selectedNodeId}
+            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-3 py-1.5 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <IconPlus className="w-3.5 h-3.5" /> Sub-topic
+          </button>
+
+          {/* Sibling node */}
+          <button
+            onClick={handleAddSiblingNode}
+            disabled={!selectedNodeId || selectedNode?.isRoot}
+            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-3 py-1.5 border border-border bg-surface hover:bg-surface-alt transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none text-text-secondary"
+          >
+            <IconPlus className="w-3.5 h-3.5 text-text-muted" /> Sibling
+          </button>
+
+          {/* Edit selected Node Trigger */}
+          <button
+            onClick={() => {
+              if (selectedNode) handleStartEditNode(selectedNode);
+            }}
+            disabled={!selectedNodeId}
+            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt disabled:opacity-40"
+            title="Edit Node Text"
+          >
+            <IconEdit className="w-4 h-4" />
+          </button>
+
+          {/* Notes Drawer Toggle */}
+          <button
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            disabled={!selectedNodeId}
+            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40 ${
+              isDrawerOpen 
+                ? 'bg-primary/15 text-primary' 
+                : 'text-text-secondary hover:bg-surface-alt'
+            }`}
+            title="Open Advanced Notes & Media Panel"
+          >
+            <IconBook className="w-4 h-4" />
+          </button>
+
+          {/* Color selection buttons */}
+          {selectedNode && (
+            <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-2">
+              {COLOR_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handleChangeNodeColor(preset.id as any)}
+                  className={`w-4 h-4 rounded-full transition-all border ${
+                    preset.id === 'gray' ? 'bg-surface border-border' :
+                    preset.id === 'rose' ? 'bg-rose-50 border-rose-600' :
+                    preset.id === 'amber' ? 'bg-amber-50 border-amber-600' :
+                    preset.id === 'purple' ? 'bg-purple-50 border-purple-600' :
+                    preset.id === 'green' ? 'bg-emerald-50 border-emerald-600' : 'bg-blue-50 border-blue-600'
+                  } ${selectedNode.color === preset.id ? 'scale-115 border-text-primary' : 'scale-90 border-transparent'}`}
+                  title={`Set Color: ${preset.label}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Outline Export Dropdown */}
+          <div className="relative group/export border-l border-border/50 pl-2">
+            <button 
+              className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt"
+              title="Export Options"
+            >
+              <IconDownload className="w-4.5 h-4.5" />
+            </button>
+            <div className="absolute top-9 right-0 bg-surface border border-border/55 rounded-xl shadow-lg p-1 min-w-[130px] hidden group-hover/export:block z-30">
+              <button 
+                onClick={handleExportSvg}
+                className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5"
+              >
+                Export SVG
+              </button>
+              <button 
+                onClick={handleExportOutline}
+                className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5"
+              >
+                Export Outline
+              </button>
+            </div>
+          </div>
+
+          {/* Delete Selection */}
+          {selectedNode && !selectedNode.isRoot && (
+            <button
+              onClick={handleDeleteSelectedNode}
+              className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+              title="Delete Selected Node"
+            >
+              <IconTrash className="w-4.5 h-4.5" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Slide-out Drawer Node Panel (Advanced Notes, Image URLs, Attachment Links) */}
+      {isDrawerOpen && selectedNode && (
+        <div className="w-[320px] bg-surface border-l border-border/50 flex flex-col relative z-20 shrink-0 h-full animate-fade-in shadow-xl text-left">
+          <div className="p-4 border-b border-border/40 flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-text-primary">Advanced Panel</h3>
+            <button 
+              onClick={() => setIsDrawerOpen(false)}
+              className="px-2.5 py-1 text-xs font-bold rounded-lg border border-border hover:bg-surface-alt text-text-secondary"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            {/* Title / Text Edit */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Node Name</label>
+              <input
+                type="text"
+                value={selectedNode.text}
+                onChange={e => handleUpdateNodeProp('text', e.target.value)}
+                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-text-primary"
+              />
+            </div>
+
+            {/* long markdown notes */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Advanced Notes</label>
+              <textarea
+                value={selectedNode.notes || ''}
+                onChange={e => handleUpdateNodeProp('notes', e.target.value)}
+                placeholder="Write long outline notes, logs, or details here..."
+                rows={7}
+                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-text-primary resize-y"
+              />
+            </div>
+
+            {/* hyperlinks link attachments */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Hyperlink Attachment</label>
+              <input
+                type="url"
+                value={selectedNode.linkUrl || ''}
+                onChange={e => handleUpdateNodeProp('linkUrl', e.target.value)}
+                placeholder="https://example.com"
+                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-text-primary"
+              />
+            </div>
+
+            {/* Image attachments URL embedding */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Image Embed URL</label>
+              <input
+                type="url"
+                value={selectedNode.imageUrl || ''}
+                onChange={e => handleUpdateNodeProp('imageUrl', e.target.value)}
+                placeholder="https://image-url.jpg"
+                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-text-primary"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

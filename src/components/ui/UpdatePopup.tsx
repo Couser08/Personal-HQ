@@ -1,69 +1,69 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconMovie, IconListCheck, IconCode } from '@tabler/icons-react';
+import { IconX, IconDeviceWatch, IconSitemap, IconListCheck, IconSparkles } from '@tabler/icons-react';
 
-const APP_VERSION = '0.9.5';
+const APP_VERSION = '0.9.8';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconListCheck className="w-5 h-5" />,
-    color: '#FF2D55', // iOS Pink
-    bg: 'rgba(255, 45, 85, 0.1)',
-    title: 'Journal Module',
-    desc: 'Capture your day with the gorgeous new Journal module. Complete with a rich text editor, mood/category selection, and clean styling.',
+    icon: <IconDeviceWatch className="w-5 h-5" />,
+    color: '#FF9500', // iOS Orange
+    bg: 'rgba(255, 149, 0, 0.1)',
+    title: 'Global Pomodoro Engine',
+    desc: 'Centralized focus session tracking with streaks, customizable break intervals, automated task log binding, and dynamic Picture-in-Picture display.',
   },
   {
-    icon: <IconMovie className="w-5 h-5" />,
+    icon: <IconSitemap className="w-5 h-5" />,
     color: '#007AFF', // iOS Blue
     bg: 'rgba(0, 122, 255, 0.1)',
-    title: 'Performance Optimization',
-    desc: 'Optimized the entire state management structure using shallow selectors, preventing unnecessary component re-renders.',
+    title: 'Interactive Mind Mapping',
+    desc: 'A gorgeous canvas to brainstorm, collapse branches, customize colors, set parent-child relationships, and map your ideas structurally.',
   },
   {
-    icon: <IconCode className="w-5 h-5" />,
-    color: '#5856D6', // iOS Purple
-    bg: 'rgba(88, 86, 214, 0.1)',
-    title: 'Custom Brand Assets',
-    desc: 'Introduced the official AppLogo vector asset, cleaner layout spacing, and streamlined sidebar navigation.',
+    icon: <IconListCheck className="w-5 h-5" />,
+    color: '#34C759', // iOS Green
+    bg: 'rgba(52, 199, 89, 0.1)',
+    title: 'Supercharged Todos',
+    desc: 'Specify exact start/end times for items, utilize updated schema migrations, and enjoy refined sorting filters and faster rendering.',
   },
 ];
 
 const WHATS_NEW = [
-  'Added a complete Journal module with Rich Text support',
-  'Optimized store selectors using useShallow across Sidebar, Notes, Pomodoro, and Settings',
-  'Integrated AppLogo into the Login page and Sidebar header',
-  'Improved countdown preview card rendering inside Settings',
-  'Cleaned up obsolete UI dependencies and unused imports',
-  'Enforced stricter type checking across build configurations',
+  'Implemented a full Pomodoro dashboard and background state sync',
+  'Created a beautiful, collapsible node-based Mindmap workspace',
+  'Added startTime and endTime properties to Todos with updated database schemas',
+  'Integrated the custom AppLogo branding assets across modules',
+  'Eliminated store selector lags by implementing Zustand useShallow',
+  'Refined modal interactions and removed duplicate ConfirmDialog setups',
 ];
 
 // ── Mini notification card (shown first) ──────────────────────────────────────
 function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      initial={{ opacity: 0, y: 30, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 40, scale: 0.95 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-      className="bg-surface/80 backdrop-blur-xl border border-border shadow-high rounded-[24px] p-4 w-[320px] relative overflow-hidden"
+      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+      className="bg-white/70 dark:bg-black/60 backdrop-blur-2xl border border-white/20 dark:border-white/5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] rounded-[24px] p-4.5 w-[330px] relative overflow-hidden"
     >
       <button
         onClick={onDismiss}
         aria-label="Dismiss"
-        className="absolute top-3 right-3 p-1.5 rounded-full text-text-muted hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        className="absolute top-3.5 right-3.5 p-1 rounded-full text-text-muted hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
       >
         <IconX className="w-4 h-4" />
       </button>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center shadow-sm shrink-0">
-            <span className="text-white font-black text-sm tracking-widest">v0.9</span>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center shadow-[0_4px_12px_rgba(0,122,255,0.25)] shrink-0">
+            <IconSparkles className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-base text-text-primary">Update Installed</h3>
-            <p className="text-xs text-text-secondary truncate">Version {APP_VERSION} is here.</p>
+            <h3 className="font-bold text-base text-text-primary tracking-tight">System Update</h3>
+            <p className="text-xs text-text-secondary">Version {APP_VERSION} is ready.</p>
           </div>
         </div>
 
@@ -74,12 +74,14 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
           >
             Later
           </button>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onExpand}
-            className="flex-1 py-2 px-4 text-xs font-bold text-white bg-[#007AFF] hover:bg-[#0066CC] rounded-full transition-colors text-center"
+            className="flex-1 py-2 px-4 text-xs font-bold text-white bg-[#007AFF] hover:bg-[#0066CC] rounded-full shadow-[0_2px_8px_rgba(0,122,255,0.2)] transition-colors text-center"
           >
             See What's New
-          </button>
+          </motion.button>
         </div>
       </div>
     </motion.div>
@@ -95,57 +97,61 @@ function FullModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-md z-40"
+        className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xl z-40"
       />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.96, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          className="bg-surface/90 backdrop-blur-2xl border border-border rounded-[32px] shadow-2xl w-full max-w-2xl pointer-events-auto relative overflow-hidden flex flex-col md:flex-row text-text-primary"
+          exit={{ opacity: 0, scale: 0.96, y: 30 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+          className="bg-white/80 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl border border-white/20 dark:border-white/5 rounded-[32px] shadow-[0_32px_80px_rgba(0,0,0,0.25)] w-full max-w-2xl pointer-events-auto relative overflow-hidden flex flex-col text-text-primary max-h-[90vh]"
         >
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-5 right-5 p-2 rounded-full text-text-muted hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-10"
+            className="absolute top-6 right-6 p-2 rounded-full text-text-muted hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-10"
           >
             <IconX className="w-5 h-5" />
           </button>
 
-          <div className="p-8 md:p-10 flex-1 overflow-y-auto max-h-[80vh]">
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-[22px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] shadow-lg mb-5">
-                <span className="text-white font-black text-2xl tracking-tight">HQ</span>
+          <div className="p-8 md:p-10 overflow-y-auto flex-1">
+            <div className="mb-10 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-[22px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] shadow-[0_8px_24px_rgba(0,122,255,0.3)] mb-5">
+                <IconSparkles className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-black tracking-tight mb-2">
                 What's New in {APP_VERSION}
               </h2>
-              <p className="text-sm text-text-secondary max-w-sm mx-auto">
-                A massive update focusing on Apple-inspired design aesthetics, fixing bugs, and improving module workflows.
+              <p className="text-sm text-text-secondary max-w-md mx-auto">
+                A premium release introducing collapsible Mindmaps, a robust global Pomodoro engine, and overall optimization changes.
               </p>
             </div>
 
             <div className="space-y-6 mb-10">
               {FEATURES.map(f => (
-                <div key={f.title} className="flex items-start gap-4">
+                <motion.div 
+                  key={f.title} 
+                  className="flex items-start gap-4 p-4 rounded-[20px] bg-black/5 dark:bg-white/5 border border-transparent hover:border-black/5 dark:hover:border-white/5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all"
+                  whileHover={{ scale: 1.01 }}
+                >
                   <div
                     className="w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 shadow-sm"
                     style={{ background: f.bg, color: f.color }}
                   >
                     {f.icon}
                   </div>
-                  <div className="pt-1">
+                  <div className="pt-0.5">
                     <p className="font-bold text-base text-text-primary mb-1">{f.title}</p>
                     <p className="text-sm text-text-secondary leading-relaxed">{f.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="bg-surface-alt/50 border border-border rounded-[24px] p-6 mb-8">
-              <h3 className="font-bold text-sm mb-4 uppercase tracking-wider text-text-muted">Changelog</h3>
+            <div className="bg-surface-alt/60 border border-border rounded-[24px] p-6 mb-10">
+              <h3 className="font-bold text-xs mb-4 uppercase tracking-wider text-text-muted">Changelog Details</h3>
               <ul className="space-y-3">
                 {WHATS_NEW.map(item => (
                   <li key={item} className="flex items-start gap-3 text-sm text-text-secondary">
@@ -157,12 +163,14 @@ function FullModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="flex justify-center">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onClose}
-                className="py-3 px-8 text-sm font-bold text-white bg-[#007AFF] hover:bg-[#0066CC] rounded-full transition-colors shadow-md w-full md:w-auto"
+                className="py-3 px-10 text-sm font-bold text-white bg-[#007AFF] hover:bg-[#0066CC] rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.25)] transition-colors w-full md:w-auto"
               >
                 Continue
-              </button>
+              </motion.button>
             </div>
           </div>
         </motion.div>

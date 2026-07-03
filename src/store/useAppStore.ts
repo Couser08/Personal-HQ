@@ -289,6 +289,9 @@ export interface MindmapNode {
   side?: 'left' | 'right' | 'bottom';
   collapsed?: boolean;
   icon?: string;
+  notes?: string;
+  linkUrl?: string;
+  imageUrl?: string;
 }
 
 export interface MindmapLink {
