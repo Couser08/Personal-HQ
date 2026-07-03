@@ -727,6 +727,9 @@ export const journalService = {
       pinned: entry.pinned,
       focus_list: entry.focusList,
       page_style: entry.pageStyle,
+      images: entry.images,
+      reflection: entry.reflection,
+      attachments: entry.attachments,
     });
     if (error) throw error;
   },
@@ -741,6 +744,9 @@ export const journalService = {
     if (data.pinned !== undefined) payload.pinned = data.pinned;
     if (data.focusList !== undefined) payload.focus_list = data.focusList;
     if (data.pageStyle !== undefined) payload.page_style = data.pageStyle;
+    if (data.images !== undefined) payload.images = data.images;
+    if (data.reflection !== undefined) payload.reflection = data.reflection;
+    if (data.attachments !== undefined) payload.attachments = data.attachments;
     payload.updated_at = new Date().toISOString();
 
     const { error } = await supabase.from('journals').update(payload).eq('id', id);

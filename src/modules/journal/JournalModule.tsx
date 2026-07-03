@@ -486,7 +486,6 @@ export default function JournalModule() {
                         value={content}
                         onChange={(html: string) => {
                           setContent(html);
-                          updateJournalEntry(activeEntry.id, { content: html });
                         }}
                         placeholder="Start writing..."
                       />

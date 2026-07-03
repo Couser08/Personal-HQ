@@ -50,11 +50,32 @@ export default function CalculatorModule() {
   const [activeTab, setActiveTab] = useState<'standard' | 'interest'>('standard');
   const [calcInput, setCalcInput] = useState('0');
   const [calcResult, setCalcResult] = useState('');
+  const [liveResult, setLiveResult] = useState('');
+
+  useEffect(() => {
+    try {
+      const cleanExpr = calcInput.replace(/×/g, '*').replace(/÷/g, '/');
+      if (/[+\-*/]/.test(cleanExpr) && !/[+\-*/]$/.test(cleanExpr)) {
+        // eslint-disable-next-line no-new-func
+        const res = new Function(`return ${cleanExpr}`)();
+        if (Number.isFinite(res)) {
+          setLiveResult(parseFloat(res.toFixed(6)).toString());
+        } else {
+          setLiveResult('');
+        }
+      } else {
+        setLiveResult('');
+      }
+    } catch {
+      setLiveResult('');
+    }
+  }, [calcInput]);
 
   const handleCalcClick = (val: string) => {
     if (val === 'AC') { 
       setCalcInput('0'); 
       setCalcResult(''); 
+      setLiveResult('');
     } else if (val === '⌫') { 
       setCalcInput(prev => prev.length > 1 ? prev.slice(0, -1) : '0'); 
     } else if (val === '=') {
@@ -72,6 +93,8 @@ export default function CalculatorModule() {
             result: formattedRes,
             createdAt: new Date().toISOString()
           });
+          setCalcInput(formattedRes);
+          setLiveResult('');
         }
       } catch {
         setCalcResult('Error');
@@ -427,8 +450,8 @@ export default function CalculatorModule() {
           <div className="bg-[#1C1C1E] dark:bg-[#000000] border border-[#3A3A3C] shadow-2xl rounded-3xl p-6 w-[320px] flex flex-col gap-4 text-white">
             {/* Display Screen */}
             <div className="flex flex-col items-end justify-end h-24 mb-2">
-              <span className="text-gray-400 text-lg h-7 font-mono tracking-wider">{calcInput}</span>
-              <span className="text-5xl font-light tracking-tighter truncate w-full text-right">{calcResult || calcInput}</span>
+              <span className="text-gray-400 text-lg h-7 font-mono tracking-normal">{liveResult ? `= ${liveResult}` : ''}</span>
+              <span className="text-5xl font-light tracking-normal truncate w-full text-right">{calcInput}</span>
             </div>
 
             {/* Keypad */}

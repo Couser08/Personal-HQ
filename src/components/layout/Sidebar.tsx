@@ -3,16 +3,16 @@ import {
   IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
   IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconWallet, IconChecklist, IconSitemap
+  IconWallet, IconChecklist, IconSitemap, IconDots
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { exportData, importData } from '../../utils/exportImport';
 import { useToastStore } from '../../store/useToastStore';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AppLogo } from '../ui/AppLogo';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { id: 'notes', label: 'Notes', icon: IconNotes },
@@ -161,22 +161,78 @@ const BOTTOM_NAV = NAV_ITEMS.slice(0, 4);
 
 export const MobileBottomNav = () => {
   const { activeModule, setActiveModule } = useAppStore();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  const MORE_NAV = NAV_ITEMS.slice(4);
 
   return (
-    <nav className="mobile-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'var(--bg-surface)', borderTop: '1px solid var(--border-border)', display: 'none', alignItems: 'center', justifyContent: 'space-around', padding: '8px 4px env(safe-area-inset-bottom, 8px)', boxShadow: '0 -4px 20px rgba(0,0,0,0.04)' }}>
-      {BOTTOM_NAV.map(({ id, label, icon: Icon }) => {
-        const active = activeModule === id;
-        return (
-          <motion.button key={id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: active ? '#f43f5e' : 'var(--text-muted)', position: 'relative', minWidth: 48 }}>
-            <Icon size={22} style={{ position: 'relative', zIndex: 1 }} />
-            <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>{label.split(' ')[0]}</span>
-          </motion.button>
-        );
-      })}
-      <motion.button onClick={() => setActiveModule('profile')} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: activeModule === 'profile' ? '#f43f5e' : 'var(--text-muted)', minWidth: 48 }}>
-        <IconUser size={22} />
-        <span style={{ fontSize: 10, fontWeight: 500 }}>Profile</span>
-      </motion.button>
-    </nav>
+    <>
+      {isMoreOpen && (
+        <div 
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setIsMoreOpen(false)}
+        />
+      )}
+      <AnimatePresence>
+        {isMoreOpen && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            style={{ position: 'fixed', bottom: 70, left: 16, right: 16, zIndex: 45, background: 'var(--bg-surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border-border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', maxHeight: '60vh', overflowY: 'auto' }}
+          >
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--text-secondary)' }}>More Features</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              {MORE_NAV.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => { setActiveModule(id); setIsMoreOpen(false); }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === id ? '#f43f5e' : 'var(--text-primary)' }}
+                >
+                  <div style={{ padding: 10, borderRadius: 12, background: activeModule === id ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                    <Icon size={24} />
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>{label}</span>
+                </button>
+              ))}
+              <button
+                onClick={() => { setActiveModule('profile'); setIsMoreOpen(false); }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'profile' ? '#f43f5e' : 'var(--text-primary)' }}
+              >
+                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'profile' ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                  <IconUser size={24} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>Profile</span>
+              </button>
+              <button
+                onClick={() => { setActiveModule('settings'); setIsMoreOpen(false); }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'settings' ? '#f43f5e' : 'var(--text-primary)' }}
+              >
+                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'settings' ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                  <IconSettings size={24} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>Settings</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <nav className="mobile-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'var(--bg-surface)', borderTop: '1px solid var(--border-border)', display: 'none', alignItems: 'center', justifyContent: 'space-around', padding: '8px 4px env(safe-area-inset-bottom, 8px)', boxShadow: '0 -4px 20px rgba(0,0,0,0.04)' }}>
+        {BOTTOM_NAV.map(({ id, label, icon: Icon }) => {
+          const active = activeModule === id;
+          return (
+            <motion.button key={id} onClick={() => { setActiveModule(id); setIsMoreOpen(false); }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: active ? '#f43f5e' : 'var(--text-muted)', position: 'relative', minWidth: 48 }}>
+              <Icon size={22} style={{ position: 'relative', zIndex: 1 }} />
+              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>{label.split(' ')[0]}</span>
+            </motion.button>
+          );
+        })}
+        <motion.button onClick={() => setIsMoreOpen(!isMoreOpen)} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreOpen ? '#f43f5e' : 'var(--text-muted)', minWidth: 48 }}>
+          <IconDots size={22} />
+          <span style={{ fontSize: 10, fontWeight: isMoreOpen ? 700 : 500 }}>More</span>
+        </motion.button>
+      </nav>
+    </>
   );
 };

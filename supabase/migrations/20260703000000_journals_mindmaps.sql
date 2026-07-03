@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS public.journals (
     pinned BOOLEAN NOT NULL DEFAULT false,
     focus_list JSONB NOT NULL DEFAULT '[]'::jsonb,
     page_style TEXT NOT NULL DEFAULT 'default',
+    images TEXT[] NOT NULL DEFAULT '{}',
+    reflection JSONB NOT NULL DEFAULT '{"whatWentWell": "", "whatCanBeBetter": ""}'::jsonb,
+    attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
