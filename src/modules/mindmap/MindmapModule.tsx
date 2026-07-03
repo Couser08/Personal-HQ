@@ -200,6 +200,7 @@ function MindmapCanvas({
   mindmap: Mindmap; 
   onUpdate: (data: Partial<Mindmap>) => void; 
 }) {
+  const { theme } = useAppStore();
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Pan and Zoom Camera state
@@ -511,8 +512,8 @@ function MindmapCanvas({
         <svg 
           style={{ 
             position: 'absolute', 
-            width: '3000px', height: '3000px', 
-            left: -1000, top: -1000, 
+            width: '100%', height: '100%', 
+            left: 0, top: 0, 
             overflow: 'visible', pointerEvents: 'none'
           }}
         >
@@ -527,13 +528,16 @@ function MindmapCanvas({
             const controlX2 = start.x + (end.x - start.x) / 3;
             const controlY2 = end.y;
 
+            const isDark = document.documentElement.classList.contains('dark') || theme === 'dark';
+            const strokeColor = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.18)';
+
             return (
               <path
                 key={idx}
                 d={`M ${start.x} ${start.y} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${end.x} ${end.y}`}
                 fill="none"
-                stroke="var(--color-primary-muted, var(--border-border))"
-                strokeWidth="2"
+                stroke={strokeColor}
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 className="opacity-70"
               />
@@ -623,9 +627,9 @@ function MindmapCanvas({
       </div>
 
       {/* Floating Apple-Style Toolbar at Bottom Center */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-surface/90 border border-border/60 p-3 rounded-[32px] shadow-xl backdrop-blur-md max-w-xl w-fit relative z-30">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-surface/90 border border-border/60 p-3 rounded-[32px] shadow-xl backdrop-blur-md max-w-xl w-fit z-30 overflow-visible">
         {/* Zoom Operations */}
-        <div className="flex gap-1 pr-3 border-r border-border/60">
+        <div className={`flex gap-1 pr-3 ${selectedNode ? 'border-r border-border/60' : ''}`}>
           <button 
             onClick={() => setZoom(prev => Math.max(prev / 1.15, 0.4))}
             className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:bg-surface-alt transition-colors active:scale-90"
@@ -648,7 +652,7 @@ function MindmapCanvas({
             {/* Add connected Sub-node */}
             <button
               onClick={handleAddChildNode}
-              className="btn btn-primary btn-sm flex items-center gap-1 font-bold text-xs rounded-full px-3 py-1.5"
+              className="flex items-center gap-1.5 font-bold text-xs rounded-full px-4 py-2 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
             >
               <IconPlus className="w-3.5 h-3.5" /> Add Sub-topic
             </button>

@@ -6,6 +6,7 @@ import { UpdatePopup } from '../ui/UpdatePopup';
 import { MediaEntryModal } from '../ui/MediaEntryModal';
 import { TodoProjectModal } from '../ui/TodoProjectModal';
 import { TodoTaskModal } from '../ui/TodoTaskModal';
+import { PipTimerPortal } from '../ui/PipTimerPortal';
 
 interface LayoutProps {
   children: ReactNode;
@@ -34,6 +35,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <MediaEntryModal />
       <TodoProjectModal />
       <TodoTaskModal />
+      <PipTimerPortal />
     </div>
   );
 };

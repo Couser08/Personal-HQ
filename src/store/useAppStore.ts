@@ -389,6 +389,26 @@ export interface AppStore {
 
   pomodoroStats: PomodoroStats;
   recordPomodoroSession: (minutes: number) => void;
+  pomodoroSecondsLeft: number;
+  pomodoroTotalSeconds: number;
+  pomodoroTimerState: 'idle' | 'running' | 'paused';
+  pomodoroSessionId: 'focus' | 'short-break' | 'long-break';
+  pomodoroStreak: number;
+  pomodoroAssociatedTaskId: string | null;
+  pomodoroPipWindow: Window | null;
+  pomodoroPipEnabled: boolean;
+  setPomodoroSecondsLeft: (secs: number) => void;
+  setPomodoroTotalSeconds: (secs: number) => void;
+  setPomodoroTimerState: (state: 'idle' | 'running' | 'paused') => void;
+  setPomodoroSessionId: (id: 'focus' | 'short-break' | 'long-break') => void;
+  setPomodoroStreak: (streak: number) => void;
+  setPomodoroAssociatedTaskId: (id: string | null) => void;
+  setPomodoroPipWindow: (win: Window | null) => void;
+  setPomodoroPipEnabled: (enabled: boolean) => void;
+  startGlobalPomodoro: () => void;
+  pauseGlobalPomodoro: () => void;
+  resumeGlobalPomodoro: () => void;
+  stopGlobalPomodoro: () => void;
 
   // Budget Tracker
   budgetCategories: BudgetCategory[];
@@ -425,6 +445,8 @@ export interface AppStore {
 
   importData: (data: Partial<AppStore>) => void;
 }
+
+let globalPomodoroInterval: any = null;
 
 export const useAppStore = create<AppStore>()((set, get) => ({
   activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'notes'),
@@ -867,6 +889,24 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   // ── Pomodoro ──────────────────────────────────────────────────────────────
 
   pomodoroStats: { totalSessions: 0, totalMinutes: 0 },
+  pomodoroSecondsLeft: 25 * 60,
+  pomodoroTotalSeconds: 25 * 60,
+  pomodoroTimerState: 'idle',
+  pomodoroSessionId: 'focus',
+  pomodoroStreak: 0,
+  pomodoroAssociatedTaskId: null,
+  pomodoroPipWindow: null,
+  pomodoroPipEnabled: false,
+
+  setPomodoroSecondsLeft: (secs) => set({ pomodoroSecondsLeft: secs }),
+  setPomodoroTotalSeconds: (secs) => set({ pomodoroTotalSeconds: secs }),
+  setPomodoroTimerState: (state) => set({ pomodoroTimerState: state }),
+  setPomodoroSessionId: (id) => set({ pomodoroSessionId: id }),
+  setPomodoroStreak: (streak) => set({ pomodoroStreak: streak }),
+  setPomodoroAssociatedTaskId: (id) => set({ pomodoroAssociatedTaskId: id }),
+  setPomodoroPipWindow: (win) => set({ pomodoroPipWindow: win }),
+  setPomodoroPipEnabled: (enabled) => set({ pomodoroPipEnabled: enabled }),
+
   recordPomodoroSession: (minutes) =>
     set((state) => ({
       pomodoroStats: {
@@ -874,6 +914,97 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         totalMinutes: state.pomodoroStats.totalMinutes + minutes,
       },
     })),
+
+  startGlobalPomodoro: () => {
+    if (globalPomodoroInterval) clearInterval(globalPomodoroInterval);
+    set({ pomodoroTimerState: 'running' });
+
+    const tick = () => {
+      const { 
+        pomodoroSecondsLeft, 
+        pomodoroSessionId, 
+        pomodoroStreak, 
+        pomodoroAssociatedTaskId, 
+        todoTasks, 
+        updateTodoTask, 
+        recordPomodoroSession, 
+        pomodoroTotalSeconds 
+      } = get();
+
+      if (pomodoroSecondsLeft <= 1) {
+        clearInterval(globalPomodoroInterval);
+        globalPomodoroInterval = null;
+        set({ pomodoroTimerState: 'idle', pomodoroSecondsLeft: 0 });
+
+        const addToast = useToastStore.getState().addToast;
+
+        if (pomodoroSessionId === 'focus') {
+          const nextStreak = pomodoroStreak + 1;
+          set({ pomodoroStreak: nextStreak });
+          recordPomodoroSession(Math.round(pomodoroTotalSeconds / 60));
+
+          if (pomodoroAssociatedTaskId) {
+            const matchedTask = todoTasks.find(t => t.id === pomodoroAssociatedTaskId);
+            if (matchedTask) {
+              updateTodoTask(pomodoroAssociatedTaskId, {
+                pomodoroCount: (matchedTask.pomodoroCount || 0) + 1
+              });
+              addToast('🍅 Session Logged', `Logged focus session to "${matchedTask.title}"`, 'success');
+            }
+          } else {
+            addToast('🎉 Focus Complete!', 'Great work! Time for a break.', 'success');
+          }
+
+          const nextSid = nextStreak % 4 === 0 ? 'long-break' : 'short-break';
+          const breakMins = nextSid === 'short-break' ? 5 : 15;
+          set({ 
+            pomodoroSessionId: nextSid, 
+            pomodoroSecondsLeft: breakMins * 60,
+            pomodoroTotalSeconds: breakMins * 60
+          });
+        } else {
+          addToast('⏰ Break Over!', 'Ready to focus again? 🚀', 'info');
+          set({ 
+            pomodoroSessionId: 'focus', 
+            pomodoroSecondsLeft: 25 * 60,
+            pomodoroTotalSeconds: 25 * 60
+          });
+        }
+      } else {
+        set({ pomodoroSecondsLeft: pomodoroSecondsLeft - 1 });
+      }
+    };
+
+    globalPomodoroInterval = setInterval(tick, 1000);
+  },
+
+  pauseGlobalPomodoro: () => {
+    if (globalPomodoroInterval) {
+      clearInterval(globalPomodoroInterval);
+      globalPomodoroInterval = null;
+    }
+    set({ pomodoroTimerState: 'paused' });
+  },
+
+  resumeGlobalPomodoro: () => {
+    get().startGlobalPomodoro();
+  },
+
+  stopGlobalPomodoro: () => {
+    if (globalPomodoroInterval) {
+      clearInterval(globalPomodoroInterval);
+      globalPomodoroInterval = null;
+    }
+    const { pomodoroTotalSeconds, pomodoroPipWindow } = get();
+    set({ 
+      pomodoroTimerState: 'idle', 
+      pomodoroSecondsLeft: pomodoroTotalSeconds 
+    });
+    if (pomodoroPipWindow) {
+      pomodoroPipWindow.close();
+      set({ pomodoroPipWindow: null });
+    }
+  },
 
   // Budget Tracker
   budgetCategories: [],
