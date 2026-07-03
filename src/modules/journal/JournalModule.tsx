@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   IconPlus, IconSearch, IconHeart, IconHeartFilled,
-  IconEdit, IconBook, IconTrash, IconSparkles, IconMicrophone
+  IconBook, IconTrash, IconSparkles, IconMicrophone
 } from '@tabler/icons-react';
 import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -67,8 +67,6 @@ export default function JournalModule() {
   const [pageStyle, setPageStyle] = useState<JournalEntry['pageStyle']>('default');
 
   // Reflections and sticky note focus items (saved in active entry)
-  const [whatWentWell, setWhatWentWell] = useState('');
-  const [whatCanBeBetter, setWhatCanBeBetter] = useState('');
   const [focusItems, setFocusItems] = useState<{ text: string; checked: boolean }[]>([]);
   const [newFocusText, setNewFocusText] = useState('');
 
@@ -86,8 +84,6 @@ export default function JournalModule() {
       setMood(activeEntry.mood);
       setTags(activeEntry.tags);
       setPageStyle(activeEntry.pageStyle);
-      setWhatWentWell(activeEntry.reflection?.whatWentWell || '');
-      setWhatCanBeBetter(activeEntry.reflection?.whatCanBeBetter || '');
       setFocusItems(activeEntry.focusList || []);
     } else {
       setTitle('');
@@ -95,8 +91,6 @@ export default function JournalModule() {
       setMood('good');
       setTags([]);
       setPageStyle('default');
-      setWhatWentWell('');
-      setWhatCanBeBetter('');
       setFocusItems([]);
     }
   }, [activeEntryId, activeEntry]);
@@ -184,16 +178,6 @@ export default function JournalModule() {
     }
   };
 
-  // Save reflection questions on Right Page
-  const saveReflections = () => {
-    if (!activeEntryId) return;
-    updateJournalEntry(activeEntryId, {
-      reflection: {
-        whatWentWell,
-        whatCanBeBetter
-      }
-    });
-  };
 
   // Words count helper
   const wordCount = (text: string) => {

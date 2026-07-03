@@ -19,6 +19,8 @@ const COLOR_PRESETS = [
   { id: 'gray', label: 'Gray', bg: 'bg-surface border-border text-text-primary' }
 ] as const;
 
+type MindmapColor = NonNullable<MindmapNode['color']>;
+
 // Helper: reconstruct the hierarchy in case properties are missing
 const sanitizeMindmapNodes = (nodes: MindmapNode[], links: MindmapLink[]): MindmapNode[] => {
   const root = nodes.find(n => n.isRoot) || nodes[0];
@@ -751,11 +753,13 @@ function MindmapCanvas({
   };
 
   // Auto color assignment helper
-  const getNextAvailableColor = (parentId: string, currentParentColor?: string) => {
-    const COLORS = ['rose', 'amber', 'purple', 'green', 'blue'];
+  const getNextAvailableColor = (parentId: string, currentParentColor?: MindmapColor): MindmapColor => {
+    const COLORS: MindmapColor[] = ['rose', 'amber', 'purple', 'green', 'blue'];
     const siblingColors = mindmap.nodes.filter(n => n.parentId === parentId).map(n => n.color);
     const available = COLORS.filter(c => c !== currentParentColor && !siblingColors.includes(c));
-    return available.length > 0 ? available[0] : COLORS.filter(c => c !== currentParentColor)[Math.floor(Math.random() * 4)];
+    if (available.length > 0) return available[0];
+    const fallbackColors = COLORS.filter(c => c !== currentParentColor);
+    return fallbackColors[Math.floor(Math.random() * fallbackColors.length)] || 'blue';
   };
 
   // Add child subtopic
@@ -996,7 +1000,7 @@ function MindmapCanvas({
     setIsDrawerOpen(false);
   };
 
-  const handleChangeNodeColor = (colorId: 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'gray') => {
+  const handleChangeNodeColor = (colorId: MindmapColor) => {
     if (!selectedNodeId) return;
     onUpdate({
       nodes: mindmap.nodes.map(n => n.id === selectedNodeId ? { ...n, color: colorId } : n)
@@ -1554,6 +1558,26 @@ function MindmapCanvas({
                 onChange={e => handleUpdateNodeProp('text', e.target.value)}
                 className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-text-primary"
               />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Node Color</label>
+              <div className="grid grid-cols-3 gap-2">
+                {COLOR_PRESETS.map(color => (
+                  <button
+                    key={color.id}
+                    type="button"
+                    onClick={() => handleChangeNodeColor(color.id)}
+                    className={`h-8 rounded-lg border text-[10px] font-black transition-all ${color.bg} ${
+                      (selectedNode.color || 'gray') === color.id
+                        ? 'ring-2 ring-primary/30 scale-[1.02]'
+                        : 'hover:scale-[1.02]'
+                    }`}
+                  >
+                    {color.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* long markdown notes */}
