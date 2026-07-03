@@ -380,19 +380,24 @@ export default function TodoModule() {
               onChange={e => setNewTaskTitle(e.target.value)}
               className="w-full bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-xl font-medium mb-6"
             />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative">
                   <button 
                     type="button" 
-                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    onClick={() => {
+                      setShowDatePicker(!showDatePicker);
+                      setShowTimePicker(false);
+                      setShowPriorityDropdown(false);
+                      setShowTagsDropdown(false);
+                    }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
                   >
                     <IconCalendar className="w-4 h-4 text-rose-500" />
                     {selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + ', Today' : 'Add Date'}
                   </button>
                   {showDatePicker && (
-                    <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-border rounded-xl shadow-lg p-4 z-50 animate-fade-in">
+                    <div className="absolute top-full left-0 mt-2 w-64 max-w-[calc(100vw-3rem)] bg-surface border border-border rounded-xl shadow-lg p-4 z-50 animate-fade-in">
                       <div className="flex justify-between items-center mb-4">
                         <span className="font-bold text-sm text-text-primary">
                           {monthNames[calendarMonth]} {calendarYear}
@@ -474,7 +479,7 @@ export default function TodoModule() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                        className="absolute top-full left-0 mt-2 w-72 bg-surface/90 backdrop-blur-xl border border-border rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4"
+                        className="absolute top-full left-0 mt-2 w-72 max-w-[calc(100vw-3rem)] bg-surface/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-black text-sm text-text-primary">Time Range</span>
@@ -622,7 +627,12 @@ export default function TodoModule() {
                 <div className="relative">
                   <button 
                     type="button" 
-                    onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                    onClick={() => {
+                      setShowPriorityDropdown(!showPriorityDropdown);
+                      setShowDatePicker(false);
+                      setShowTimePicker(false);
+                      setShowTagsDropdown(false);
+                    }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
                   >
                     <IconFlag className="w-4 h-4" fill={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'none'} color={newTaskPriority !== 'none' ? getPriorityIconColor(newTaskPriority) : 'currentColor'} />
@@ -655,14 +665,19 @@ export default function TodoModule() {
                 <div className="relative">
                   <button 
                     type="button" 
-                    onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                    onClick={() => {
+                      setShowTagsDropdown(!showTagsDropdown);
+                      setShowDatePicker(false);
+                      setShowTimePicker(false);
+                      setShowPriorityDropdown(false);
+                    }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
                   >
                     <IconTag className="w-4 h-4 text-purple-500" /> 
                     {newTaskTags.length > 0 ? `${newTaskTags.length} Tag(s)` : 'Tags'}
                   </button>
                   {showTagsDropdown && (
-                    <div className="absolute bottom-full left-0 mb-2 w-56 bg-surface border border-border rounded-xl shadow-lg p-3 z-50 animate-fade-in flex flex-col gap-2">
+                    <div className="absolute bottom-full left-0 mb-2 w-56 max-w-[calc(100vw-3rem)] bg-surface border border-border rounded-xl shadow-lg p-3 z-50 animate-fade-in flex flex-col gap-2">
                       {newTaskTags.length > 0 && (
                         <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto mb-1">
                           {newTaskTags.map(t => (
@@ -682,7 +697,7 @@ export default function TodoModule() {
                           onKeyDown={e => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const trimmed = newTaskTagInput.trim();
+                               const trimmed = newTaskTagInput.trim();
                               if (trimmed && !newTaskTags.includes(trimmed)) {
                                 setNewTaskTags(prev => [...prev, trimmed]);
                                 setNewTaskTagInput('');
@@ -712,7 +727,7 @@ export default function TodoModule() {
               <button 
                 type="submit" 
                 disabled={!newTaskTitle.trim()}
-                className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#007AFF] hover:bg-[#0066CC] text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-[#007AFF]/20 shrink-0 self-end sm:self-auto"
               >
                 <IconPlus className="w-6 h-6" />
               </button>
@@ -1008,44 +1023,48 @@ function TaskItem({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-      className={`group flex items-center gap-4 p-3 rounded-xl hover:bg-surface border transition-colors relative overflow-hidden ${
+      className={`group flex flex-col p-4 rounded-2xl hover:bg-surface/85 border transition-all relative overflow-hidden ${
         isCompleted 
-          ? 'border-transparent' 
-          : 'border-dashed border-border-alt hover:border-border'
+          ? 'border-transparent bg-surface/30' 
+          : 'border-dashed border-border-alt hover:border-border bg-surface/60 shadow-sm'
       }`}
     >
-      <button 
-        onClick={() => onToggle(task.id)}
-        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 ${
-          isCompleted 
-            ? 'border-rose-500 bg-rose-500' 
-            : 'border-text-muted hover:border-rose-400'
-        }`}
-      >
-        <AnimatePresence>
-          {isCompleted && (
-            <motion.svg 
-              initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
-              animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="w-3.5 h-3.5 text-white" 
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-            >
-              <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </motion.svg>
-          )}
-        </AnimatePresence>
-      </button>
-      
-      <div className="flex-1 min-w-0 relative">
-        <div className="flex flex-col gap-0.5">
+      {/* Top Row: Checkbox + Title + Edit/Delete Actions */}
+      <div className="flex items-start gap-3 w-full">
+        {/* Checkbox */}
+        <button 
+          onClick={() => onToggle(task.id)}
+          className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 mt-0.5 ${
+            isCompleted 
+              ? 'border-rose-500 bg-rose-500' 
+              : 'border-text-muted hover:border-rose-400 bg-transparent'
+          }`}
+        >
+          <AnimatePresence>
+            {isCompleted && (
+              <motion.svg 
+                initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
+                animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="w-3.5 h-3.5 text-white" 
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
+              >
+                <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </motion.svg>
+            )}
+          </AnimatePresence>
+        </button>
+
+        {/* Task Title */}
+        <div className="flex-1 min-w-0">
           <span 
             onDoubleClick={() => {
               if (!isCompleted) openTodoTaskModal(task);
             }}
-            className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'} cursor-pointer`}
+            className={`block text-sm font-semibold leading-snug transition-all ${
+              isCompleted ? 'text-text-muted line-through' : 'text-text-primary'
+            } cursor-pointer break-words`}
             style={isCompleted ? { 
-              textDecorationLine: 'line-through',
               textDecorationStyle: strikeStyle as any,
               textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
               textDecorationColor: 'currentColor'
@@ -1054,60 +1073,94 @@ function TaskItem({
           >
             {task.title}
           </span>
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {(task.startTime || task.endTime) && (
-              <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-rose-500 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
-                <IconClock className="w-2.5 h-2.5" />
-                {task.startTime || '??'} - {task.endTime || '??'}
-              </span>
-            )}
-            {task.pomodoroCount !== undefined && task.pomodoroCount > 0 && (
-              <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-orange-500 bg-orange-500/5 px-2 py-0.5 rounded-full border border-orange-500/10" title={`${task.pomodoroCount} focus sessions completed`}>
-                <span>🍅</span> {task.pomodoroCount}
-              </span>
-            )}
-          </div>
         </div>
-      </div>
-      
-      {task.projectId && projects.find(p => p.id === task.projectId) && (
-        <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase shrink-0">
-          {projects.find(p => p.id === task.projectId)?.name}
-        </span>
-      )}
-      
-      {task.priority !== 'none' && (
-        <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted">
-          <IconFlag className={`w-3.5 h-3.5 ${task.priority === 'high' ? 'text-rose-500' : task.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`} fill="currentColor" />
-          <span className="hidden sm:inline capitalize">{task.priority}</span>
-        </div>
-      )}
-      
-      {task.dueDate && (
-        <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted w-24 justify-end">
-          <IconCalendar className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
-        </div>
-      )}
-      
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0 ml-2">
-        {!isCompleted && (
+
+        {/* Action Buttons (Edit, Delete) - Always visible on mobile, hover-only on desktop */}
+        <div className="flex items-center gap-0.5 shrink-0 ml-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          {!isCompleted && (
+            <button 
+              onClick={() => openTodoTaskModal(task)} 
+              className="p-1.5 text-text-muted hover:text-[#007AFF] hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+              title="Edit task details"
+            >
+              <IconEdit className="w-4 h-4" />
+            </button>
+          )}
           <button 
-            onClick={() => openTodoTaskModal(task)} 
-            className="p-1.5 text-text-muted hover:text-rose-500 transition-colors"
-            title="Edit task details"
+            onClick={() => onDelete(task.id)} 
+            className="p-1.5 text-text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+            title="Delete task"
           >
-            <IconEdit className="w-4 h-4" />
+            <IconTrash className="w-4 h-4" />
           </button>
-        )}
-        <button 
-          onClick={() => onDelete(task.id)} 
-          className="p-1.5 text-text-muted hover:text-rose-500 transition-colors"
-          title="Delete task"
-        >
-          <IconTrash className="w-4 h-4" />
-        </button>
+        </div>
       </div>
+
+      {/* Bottom Row: Metadata badges below the title */}
+      {(task.projectId || task.priority !== 'none' || task.dueDate || task.startTime || task.endTime || (task.tags && task.tags.length > 0) || (task.pomodoroCount !== undefined && task.pomodoroCount > 0)) && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-border/30 w-full text-[11px] text-text-secondary">
+          {/* Associated Project */}
+          {task.projectId && projects.find(p => p.id === task.projectId) && (
+            <span 
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-[9px] shrink-0"
+              style={{
+                backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}15`,
+                color: projects.find(p => p.id === task.projectId)?.color,
+                border: `1px solid ${projects.find(p => p.id === task.projectId)?.color}30`
+              }}
+            >
+              {projects.find(p => p.id === task.projectId)?.name}
+            </span>
+          )}
+
+          {/* Priority Level */}
+          {task.priority !== 'none' && (
+            <span 
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold border ${
+                task.priority === 'high' 
+                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
+                  : task.priority === 'medium'
+                  ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                  : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+              }`}
+            >
+              <IconFlag className="w-3 h-3" fill="currentColor" />
+              <span className="capitalize">{task.priority} Priority</span>
+            </span>
+          )}
+
+          {/* Due Date */}
+          {task.dueDate && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-alt border border-border">
+              <IconCalendar className="w-3 h-3 text-text-muted" />
+              <span>Due {new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+            </span>
+          )}
+
+          {/* Time Range */}
+          {(task.startTime || task.endTime) && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/5 text-rose-500 border border-rose-500/10">
+              <IconClock className="w-3 h-3" />
+              <span>{task.startTime || '??'} - {task.endTime || '??'}</span>
+            </span>
+          )}
+
+          {/* Pomodoro Focus Sessions */}
+          {task.pomodoroCount !== undefined && task.pomodoroCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/5 text-orange-500 border border-orange-500/10" title={`${task.pomodoroCount} focus sessions completed`}>
+              <span>🍅</span>
+              <span>{task.pomodoroCount} Focus Session{task.pomodoroCount > 1 ? 's' : ''}</span>
+            </span>
+          )}
+
+          {/* Tags */}
+          {task.tags && task.tags.map(t => (
+            <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-medium">
+              #{t}
+            </span>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

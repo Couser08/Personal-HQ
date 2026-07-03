@@ -185,8 +185,8 @@ export function TodoTaskModal() {
             </div>
 
             {/* Due Date & Times */}
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1.2 }}>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-[1.2]">
                 <label style={labelStyle}>Due Date</label>
                 <input
                   type="date"
@@ -195,7 +195,7 @@ export function TodoTaskModal() {
                   style={inputStyle}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <label style={labelStyle}>Start Time</label>
                 <input
                   type="text"
@@ -205,7 +205,7 @@ export function TodoTaskModal() {
                   style={inputStyle}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <label style={labelStyle}>End Time</label>
                 <input
                   type="text"
