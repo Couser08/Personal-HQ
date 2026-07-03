@@ -341,7 +341,7 @@ export default function CalculatorModule() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
