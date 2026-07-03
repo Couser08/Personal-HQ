@@ -49,7 +49,6 @@ export default function CalculatorModule() {
 
   const [activeTab, setActiveTab] = useState<'standard' | 'interest'>('standard');
   const [calcInput, setCalcInput] = useState('0');
-  const [calcResult, setCalcResult] = useState('');
   const [liveResult, setLiveResult] = useState('');
 
   useEffect(() => {
@@ -74,7 +73,6 @@ export default function CalculatorModule() {
   const handleCalcClick = (val: string) => {
     if (val === 'AC') { 
       setCalcInput('0'); 
-      setCalcResult(''); 
       setLiveResult('');
     } else if (val === '⌫') { 
       setCalcInput(prev => prev.length > 1 ? prev.slice(0, -1) : '0'); 
@@ -84,7 +82,6 @@ export default function CalculatorModule() {
         // eslint-disable-next-line no-new-func
         const res = new Function(`return ${cleanExpr}`)();
         const formattedRes = Number.isFinite(res) ? parseFloat(res.toFixed(6)).toString() : 'Error';
-        setCalcResult(formattedRes);
         
         if (formattedRes !== 'Error') {
           addStandardRecord({
@@ -97,7 +94,7 @@ export default function CalculatorModule() {
           setLiveResult('');
         }
       } catch {
-        setCalcResult('Error');
+        // Do nothing on error or set some error state if needed
       }
     } else {
       setCalcInput(prev => {
@@ -564,7 +561,7 @@ export default function CalculatorModule() {
                   <div 
                     key={h.id} 
                     className="p-2.5 bg-surface-alt/40 border border-border/40 hover:border-border rounded-xl flex flex-col items-end gap-1 cursor-pointer transition-colors text-right"
-                    onClick={() => { setCalcInput(h.expression); setCalcResult(h.result); }}
+                    onClick={() => { setCalcInput(h.expression); }}
                   >
                     <span className="text-[10px] text-text-muted font-mono truncate max-w-full leading-tight">{h.expression}</span>
                     <span className="text-sm font-bold text-text-primary leading-tight font-mono">{h.result}</span>
