@@ -413,283 +413,154 @@ export default function JournalModule() {
           {/* Active Worksite Card */}
           {activeEntryId && activeEntry ? (
             <div>
-              {/* Dynamic Workspace Modes */}
-              {mode === 'reflect' ? (
-                /* 📖 IMMERSIVE BOOK LAYOUT MODE */
-                <div className="relative">
-                  {/* Metal Binder Rings (Apple Material Craft) */}
-                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 flex flex-col justify-around py-8 z-30 pointer-events-none w-10">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="relative flex items-center justify-center h-6 w-10">
-                        {/* Left hole */}
-                        <div className="absolute left-0 w-1.5 h-3 bg-black/25 dark:bg-black/60 rounded-full" />
-                        {/* Right hole */}
-                        <div className="absolute right-0 w-1.5 h-3 bg-black/25 dark:bg-black/60 rounded-full" />
-                        {/* Metal ring */}
-                        <div className="h-4 w-9 rounded-full border border-black/10 dark:border-white/10 bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-400 dark:from-zinc-600 dark:via-zinc-400 dark:to-zinc-700 shadow-md relative z-10" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Open Book Container */}
-                  <div className="bg-[#fcfaf2] dark:bg-[#181816] border border-border shadow-2xl rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-2 relative min-h-[580px] p-8 md:p-12 gap-8 text-[#2e2d2b] dark:text-[#e4e2df]">
-                    
-                    {/* Left Page (Content & Sticky Note) */}
-                    <div className="flex flex-col gap-5 justify-between pr-2 md:pr-6 border-r border-border/10">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b border-border/10 pb-2">
-                          <span className="text-[10px] uppercase font-bold tracking-wider opacity-60 font-mono">
-                            {new Date(activeEntry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                          </span>
-                          <span className="text-xl">
-                            {activeEntry.mood === 'great' ? '🟢' : activeEntry.mood === 'good' ? '🟢' : '🟡'}
-                          </span>
-                        </div>
-                        <h2 className="text-2xl font-bold font-serif tracking-tight leading-tight">{activeEntry.title}</h2>
-                        
-                        {/* Text body area */}
-                        <div
-                          className="text-sm leading-relaxed font-serif space-y-3 prose max-h-[300px] overflow-y-auto pr-1 scrollbar-thin"
-                          dangerouslySetInnerHTML={{ __html: activeEntry.content || '<p class="italic opacity-60">No entries written for today. Click the Edit/Write button below to write.</p>' }}
-                        />
-                      </div>
-
-                      {/* Sticky note: Today's Focus checklist */}
-                      <div className="bg-amber-100 dark:bg-amber-950/40 border border-amber-200/50 p-4 rounded-xl shadow-md rotate-[-1deg] relative mt-4">
-                        <div className="absolute top-2 right-2 text-amber-500">📌</div>
-                        <h4 className="text-xs uppercase font-extrabold tracking-wider text-amber-800 dark:text-amber-300 font-mono mb-2">Today's Focus</h4>
-                        <div className="flex flex-col gap-1.5">
-                          {focusItems.map((item, idx) => (
-                            <label key={idx} className="flex items-center gap-2 text-xs text-amber-900 dark:text-amber-200 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={item.checked}
-                                onChange={() => toggleFocusItem(idx)}
-                                className="w-3.5 h-3.5 rounded accent-[#a855f7]"
-                              />
-                              <span className={item.checked ? 'line-through opacity-50' : ''}>{item.text}</span>
-                            </label>
-                          ))}
-                        </div>
-                        <div className="flex gap-1.5 mt-3 pt-2 border-t border-amber-200/20">
-                          <input
-                            type="text"
-                            placeholder="New item..."
-                            value={newFocusText}
-                            onChange={(e) => setNewFocusText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addFocusItem()}
-                            className="bg-transparent border-none focus:outline-none text-xs flex-1 text-amber-900 placeholder:text-amber-800/40"
-                          />
-                          <button onClick={addFocusItem} className="text-amber-800 font-bold text-xs">+</button>
-                        </div>
-                      </div>
+              {/* 📖 MINIMAL APPLE-STYLE JOURNAL EDITOR */}
+              <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm flex flex-col h-full min-h-[650px] relative">
+                
+                {/* Header: Date, Mood & Actions */}
+                <div className="flex justify-between items-center px-8 py-5 border-b border-border/40 bg-surface-alt/30">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] uppercase font-bold tracking-widest text-text-muted font-mono">
+                      {new Date(activeEntry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      {['great', 'good', 'meh', 'bad', 'terrible'].map(m => {
+                        const emojis: Record<string, string> = { great: '😄', good: '🙂', meh: '😐', bad: '🙁', terrible: '😫' };
+                        const isSel = activeEntry.mood === m;
+                        return (
+                          <button
+                            key={m}
+                            onClick={() => { setMood(m as any); updateJournalEntry(activeEntry.id, { mood: m as any }); }}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all border ${isSel ? 'border-[#a855f7] bg-[#a855f7]/10 scale-110 shadow-sm' : 'border-transparent hover:bg-border'}`}
+                            title={m}
+                          >
+                            {emojis[m]}
+                          </button>
+                        );
+                      })}
                     </div>
-
-                    {/* Right Page (Reflections & Mood overview) */}
-                    <div className="flex flex-col gap-6 pl-2 md:pl-6 justify-between">
-                      <div className="space-y-5">
-                        <div className="border-b border-border/10 pb-2">
-                          <span className="text-[10px] uppercase font-bold tracking-wider opacity-60 font-mono">Reflections & Mood</span>
-                        </div>
-
-                        {/* Reflections questions */}
-                        <div className="flex flex-col gap-3">
-                          <div>
-                            <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block mb-1">What went well today?</label>
-                            <textarea
-                              value={whatWentWell}
-                              onChange={(e) => setWhatWentWell(e.target.value)}
-                              onBlur={saveReflections}
-                              placeholder="Record wins, accomplishments, or positive moments..."
-                              className="w-full bg-white/60 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 text-text-primary transition-all"
-                              rows={3}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block mb-1">What can be better?</label>
-                            <textarea
-                              value={whatCanBeBetter}
-                              onChange={(e) => setWhatCanBeBetter(e.target.value)}
-                              onBlur={saveReflections}
-                              placeholder="Areas of focus, learnings, or improvements..."
-                              className="w-full bg-white/60 dark:bg-black/20 border border-black/10 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 text-text-primary transition-all"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Mood overview */}
-                        <div className="space-y-2 pt-2">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">Today's Mood</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-semibold text-text-primary capitalize">{activeEntry.mood}</span>
-                            <div className="flex gap-1.5">
-                              {['great', 'good', 'meh', 'bad', 'terrible'].map(m => {
-                                const emojis: Record<string, string> = {
-                                  great: '😄',
-                                  good: '🙂',
-                                  meh: '😐',
-                                  bad: '🙁',
-                                  terrible: '😫'
-                                };
-                                const isSel = activeEntry.mood === m;
-                                return (
-                                  <button
-                                    key={m}
-                                    onClick={() => {
-                                      setMood(m as any);
-                                      updateJournalEntry(activeEntry.id, { mood: m as any });
-                                    }}
-                                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all border ${
-                                      isSel 
-                                        ? 'border-purple-500 bg-purple-500/10 scale-110 shadow-sm' 
-                                        : 'border-border/60 hover:bg-surface-hover'
-                                    }`}
-                                    title={m}
-                                  >
-                                    {emojis[m]}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Delete actions */}
-                      <div className="flex justify-between items-center border-t border-border/10 pt-4 mt-6">
-                        <button
-                          onClick={() => {
-                            showConfirm('Delete Entry', 'Are you sure you want to delete this journal entry?', () => {
-                              deleteJournalEntry(activeEntry.id);
-                              setActiveEntryId(journals[0]?.id || null);
-                            });
-                          }}
-                          className="btn btn-ghost text-red-500 hover:bg-red-500/10 btn-sm flex items-center gap-1.5"
-                        >
-                          <IconTrash className="w-4 h-4" /> Delete Entry
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            updateJournalEntry(activeEntry.id, { pinned: !activeEntry.pinned });
-                          }}
-                          className="btn btn-ghost btn-sm"
-                          title="Pin Entry"
-                        >
-                          {activeEntry.pinned ? <IconHeartFilled className="w-4.5 h-4.5 text-red-500" /> : <IconHeart className="w-4.5 h-4.5" />}
-                        </button>
-                      </div>
-                    </div>
-
                   </div>
-                </div>
-              ) : (
-                /* ✍️ EDITOR WRITE MODE */
-                <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
-                  <div className="flex justify-between items-center pb-2 border-b border-border-alt">
-                    <h3 className="font-bold text-sm text-text-primary">Edit Entry</h3>
+                  
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => setMode('reflect')}
-                      className="btn btn-secondary btn-sm flex items-center gap-1"
+                      onClick={() => updateJournalEntry(activeEntry.id, { pinned: !activeEntry.pinned })}
+                      className="btn btn-ghost btn-sm btn-square hover:bg-border transition-colors"
+                      title="Pin Entry"
                     >
-                      <IconBook className="w-4 h-4" /> Open Book View
+                      {activeEntry.pinned ? <IconHeartFilled className="w-4.5 h-4.5 text-red-500" /> : <IconHeart className="w-4.5 h-4.5" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        showConfirm('Delete Entry', 'Are you sure you want to delete this journal entry?', () => {
+                          deleteJournalEntry(activeEntry.id);
+                          setActiveEntryId(journals[0]?.id || null);
+                        });
+                      }}
+                      className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <IconTrash className="w-4.5 h-4.5" />
                     </button>
                   </div>
+                </div>
 
-                  {/* Title */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Entry Title</label>
-                    <input
-                      type="text"
-                      placeholder="Title of this entry..."
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-transparent border-none text-xl font-bold focus:outline-none placeholder:text-text-muted text-text-primary"
+                <div className="flex flex-1 overflow-hidden">
+                  {/* Main Editor Area */}
+                  <div className="flex-1 flex flex-col border-r border-border/40">
+                    {/* Title */}
+                    <div className="px-8 pt-6 pb-2">
+                      <input
+                        type="text"
+                        placeholder="Title of this entry..."
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full bg-transparent border-none text-3xl font-bold font-serif tracking-tight focus:outline-none placeholder:text-text-muted/50 text-text-primary"
+                      />
+                    </div>
+                    
+                    {/* Minimal Formatting Toolbar */}
+                    <div className="flex items-center px-8 py-2 gap-4">
+                      <div className="flex gap-1.5 items-center">
+                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors font-serif font-bold w-7 text-center">B</button>
+                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors font-serif italic w-7 text-center">I</button>
+                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors underline w-7 text-center">U</button>
+                      </div>
+                      <div className="h-4 w-px bg-border"></div>
+                      <div className="flex gap-1.5 items-center">
+                        <button onClick={insertRandomPrompt} className="p-1.5 rounded hover:bg-surface-hover text-amber-500 transition-colors" title="Insert Prompt">
+                          <IconSparkles className="w-4 h-4" />
+                        </button>
+                        <button onClick={toggleVoiceRecording} className={`p-1.5 rounded transition-colors ${isRecording ? 'bg-red-500/10 text-red-500 animate-pulse' : 'hover:bg-surface-hover text-text-secondary'}`} title="Record Voice">
+                          <IconMicrophone className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex-1"></div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-text-muted uppercase">Page:</span>
+                        {['default', 'lines', 'grid'].map(style => (
+                          <button
+                            key={style}
+                            onClick={() => setPageStyle(style as any)}
+                            className={`px-2 py-0.5 rounded text-[10px] border transition-all ${
+                              pageStyle === style
+                                ? 'bg-[#a855f7] text-white border-[#a855f7]'
+                                : 'border-transparent hover:bg-surface-hover text-text-secondary'
+                            }`}
+                          >
+                            {style}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Textarea */}
+                    <textarea
+                      value={content.replace(/<[^>]*>/g, '')}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Start writing..."
+                      className="flex-1 w-full bg-transparent border-none focus:outline-none text-base font-serif px-8 py-4 resize-none placeholder:text-text-muted/40 text-text-primary leading-relaxed"
+                      style={
+                        pageStyle === 'lines'
+                          ? { backgroundImage: 'linear-gradient(rgba(0,0,0,0) 95%, var(--border-border-alt) 95%)', backgroundSize: '100% 28px', lineHeight: '28px' }
+                          : pageStyle === 'grid'
+                          ? { backgroundImage: 'linear-gradient(var(--border-border-alt) 1px, transparent 1px), linear-gradient(90deg, var(--border-border-alt) 1px, transparent 1px)', backgroundSize: '24px 24px', lineHeight: '24px' }
+                          : {}
+                      }
                     />
                   </div>
 
-                  {/* Styling toolbar & insert actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 p-2 bg-surface-alt rounded-xl border border-border">
-                    <div className="flex items-center gap-1">
-                      <button onClick={insertRandomPrompt} className="p-1.5 rounded hover:bg-surface-hover text-text-secondary" title="Insert Daily Prompt">
-                        <IconSparkles className="w-4 h-4 text-amber-500" />
-                      </button>
-                      <button onClick={toggleVoiceRecording} className={`p-1.5 rounded hover:bg-surface-hover text-text-secondary ${isRecording ? 'bg-red-500/10 text-red-500 animate-pulse' : ''}`} title="Record Voice Note">
-                        <IconMicrophone className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Page Style selection */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-text-muted uppercase">Page:</span>
-                      {['default', 'lines', 'dotted', 'grid', 'cornell'].map(style => (
-                        <button
-                          key={style}
-                          onClick={() => setPageStyle(style as any)}
-                          className={`px-2 py-0.5 rounded text-[10px] border transition-all ${
-                            pageStyle === style
-                              ? 'bg-[#a855f7] text-white border-[#a855f7]'
-                              : 'border-border hover:bg-surface-hover text-text-secondary'
-                          }`}
-                        >
-                          {style}
-                        </button>
-                      ))}
+                  {/* Right Side: Focus & Meta */}
+                  <div className="w-72 bg-surface-alt/20 p-6 flex flex-col gap-8 overflow-y-auto">
+                    {/* Today's Focus Widget */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-amber-500 mb-1">
+                        <IconSparkles className="w-4 h-4" />
+                        <h4 className="text-xs uppercase font-extrabold tracking-widest font-mono">Today's Focus</h4>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {focusItems.map((item, idx) => (
+                          <label key={idx} className="flex items-start gap-2.5 text-sm text-text-secondary cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={item.checked}
+                              onChange={() => toggleFocusItem(idx)}
+                              className="w-4 h-4 mt-0.5 rounded accent-[#a855f7] border-border bg-surface shrink-0 cursor-pointer"
+                            />
+                            <span className={`leading-snug transition-all ${item.checked ? 'line-through opacity-50' : 'group-hover:text-text-primary'}`}>{item.text}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 mt-2 pt-3 border-t border-border/40">
+                        <input
+                          type="text"
+                          placeholder="Add new focus..."
+                          value={newFocusText}
+                          onChange={(e) => setNewFocusText(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && addFocusItem()}
+                          className="bg-transparent border-none focus:outline-none text-sm flex-1 text-text-primary placeholder:text-text-muted"
+                        />
+                        <button onClick={addFocusItem} className="text-[#a855f7] hover:text-[#9333ea] font-bold text-sm">+</button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Textarea editor canvas */}
-                  <textarea
-                    value={content.replace(/<[^>]*>/g, '')}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Woke up early and felt really refreshed..."
-                    className="w-full bg-transparent border-none focus:outline-none text-sm font-serif min-h-[260px] resize-y placeholder:text-text-muted text-text-primary"
-                    style={
-                      pageStyle === 'lines'
-                        ? { backgroundImage: 'linear-gradient(rgba(0,0,0,0) 95%, var(--border-border-alt) 95%)', backgroundSize: '100% 24px', lineHeight: '24px' }
-                        : pageStyle === 'grid'
-                        ? { backgroundImage: 'linear-gradient(var(--border-border-alt) 1px, transparent 1px), linear-gradient(90deg, var(--border-border-alt) 1px, transparent 1px)', backgroundSize: '20px 20px', lineHeight: '20px' }
-                        : {}
-                    }
-                  />
-
-                  {/* Footer status bar */}
-                  <div className="flex justify-between items-center pt-3 border-t border-border-alt">
-                    <span className="text-xs text-text-muted flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Auto-saved just now
-                    </span>
-
-                    <button
-                      onClick={() => setMode('reflect')}
-                      className="btn btn-primary btn-md bg-[#a855f7] hover:bg-[#9333ea]"
-                    >
-                      Save & Read
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Floating Bottom Nav bar selector (Mockup style) */}
-              <div className="flex justify-center mt-6">
-                <div className="flex bg-surface border border-border shadow-high rounded-2xl p-1 gap-2">
-                  <button
-                    onClick={() => setMode('write')}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all ${
-                      mode === 'write' ? 'bg-[#a855f7]/10 text-[#a855f7]' : 'text-text-secondary hover:bg-surface-hover'
-                    }`}
-                  >
-                    <IconEdit className="w-4 h-4" /> Write
-                  </button>
-                  <button
-                    onClick={() => setMode('reflect')}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all ${
-                      mode === 'reflect' ? 'bg-[#a855f7]/10 text-[#a855f7]' : 'text-text-secondary hover:bg-surface-hover'
-                    }`}
-                  >
-                    <IconBook className="w-4 h-4" /> Reflect
-                  </button>
                 </div>
               </div>
             </div>

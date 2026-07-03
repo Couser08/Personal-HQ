@@ -1122,20 +1122,13 @@ export default function StudyModule() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 w-full justify-center">
-                    <button
-                      onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0)); }}
-                      disabled={currentFlashcardIndex === 0}
-                      className="w-10 h-10 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                    >
-                      <IconChevronLeft className="w-5 h-5" />
-                    </button>
-
-                    {/* Card Container (3D Flip Effect) */}
+                  <div className="flex flex-col items-center gap-6 w-full justify-center">
+                    
+                    {/* Card Container (3D Flip Effect - Vertical & Minimal) */}
                     <div
                       onClick={() => setFlashcardFlipped(!flashcardFlipped)}
                       style={{ perspective: 1200 }}
-                      className="w-full h-72 cursor-pointer relative"
+                      className="w-full max-w-sm aspect-[3/4] cursor-pointer relative"
                     >
                       <motion.div
                         animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
@@ -1146,83 +1139,99 @@ export default function StudyModule() {
                         {/* Front Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden' }}
-                          className="absolute inset-0 bg-surface border border-border rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden"
+                          className="absolute inset-0 bg-surface border border-border-alt hover:border-border rounded-[24px] p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden transition-colors"
                         >
-                          <span className="absolute top-6 text-[9px] font-black text-rose-500 uppercase tracking-[0.2em]">
-                            QUESTION (TAP TO FLIP)
+                          <span className="absolute top-6 px-3 py-1 text-[10px] font-bold text-text-secondary border border-border rounded-full uppercase tracking-widest">
+                            Question
                           </span>
-                          <p className="text-xl font-bold text-text-primary max-w-md leading-relaxed px-2">
+                          <p className="text-2xl font-semibold text-text-primary max-w-xs leading-relaxed px-2">
                             {activeTopic.flashcards[currentFlashcardIndex]?.front}
                           </p>
+                          <span className="absolute bottom-6 text-[10px] text-text-muted">Tap to flip</span>
                         </div>
 
                         {/* Back Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                          className="absolute inset-0 bg-surface border border-border rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden"
+                          className="absolute inset-0 bg-surface-alt border border-border-alt rounded-[24px] p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden"
                         >
-                          <span className="absolute top-6 text-[9px] font-black text-blue-500 uppercase tracking-[0.2em]">
-                            ANSWER (TAP TO FLIP)
+                          <span className="absolute top-6 px-3 py-1 text-[10px] font-bold text-text-secondary border border-border rounded-full uppercase tracking-widest">
+                            Answer
                           </span>
-                          <p className="text-base font-semibold text-text-secondary max-w-md leading-relaxed px-2 overflow-y-auto max-h-[160px]">
+                          <p className="text-lg font-medium text-text-primary max-w-xs leading-relaxed px-2 overflow-y-auto max-h-[220px] scrollbar-thin">
                             {activeTopic.flashcards[currentFlashcardIndex]?.back}
                           </p>
                         </div>
                       </motion.div>
                     </div>
 
-                    <button
-                      onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.min(prev + 1, activeTopic.flashcards!.length - 1)); }}
-                      disabled={currentFlashcardIndex === activeTopic.flashcards.length - 1}
-                      className="w-10 h-10 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                    >
-                      <IconChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Dot Page Pills */}
-                  <div className="flex gap-1.5 items-center flex-wrap justify-center max-w-xs">
-                    {activeTopic.flashcards.map((_, idx) => (
+                    {/* Controls Row */}
+                    <div className="flex items-center gap-6 w-full justify-center mt-2">
                       <button
-                        key={idx}
-                        onClick={() => {
-                          setFlashcardFlipped(false);
-                          setCurrentFlashcardIndex(idx);
-                        }}
-                        className={`transition-all rounded-full h-1.5 ${
-                          idx === currentFlashcardIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border hover:bg-text-secondary'
-                        }`}
-                        aria-label={`Go to flashcard ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Rating Actions */}
-                  {flashcardFlipped && (
-                    <div className="flex flex-col items-center gap-3.5 mt-4 w-full animate-fade-in">
-                      <p className="text-[10px] font-black tracking-wider uppercase text-text-secondary">Rate recall difficulty to schedule review:</p>
-                      <div className="flex justify-center gap-3 w-full max-w-md">
-                        <button
-                          onClick={() => handleRateFlashcard('easy')}
-                          className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
-                        >
-                          🟢 Easy (4D)
-                        </button>
-                        <button
-                          onClick={() => handleRateFlashcard('medium')}
-                          className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
-                        >
-                          🟡 Medium (2D)
-                        </button>
-                        <button
-                          onClick={() => handleRateFlashcard('hard')}
-                          className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
-                        >
-                          🔴 Hard (1D)
-                        </button>
+                        onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0)); }}
+                        disabled={currentFlashcardIndex === 0}
+                        className="w-10 h-10 rounded-full border border-border hover:bg-surface-hover flex items-center justify-center text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <IconChevronLeft className="w-5 h-5" />
+                      </button>
+
+                      {/* Dot Page Pills */}
+                      <div className="flex gap-1.5 items-center flex-wrap justify-center max-w-[150px]">
+                        {activeTopic.flashcards.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setFlashcardFlipped(false);
+                              setCurrentFlashcardIndex(idx);
+                            }}
+                            className={`transition-all rounded-full h-1.5 ${
+                              idx === currentFlashcardIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border-alt hover:bg-text-secondary'
+                            }`}
+                            aria-label={`Go to flashcard ${idx + 1}`}
+                          />
+                        ))}
                       </div>
+
+                      <button
+                        onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.min(prev + 1, activeTopic.flashcards!.length - 1)); }}
+                        disabled={currentFlashcardIndex === activeTopic.flashcards.length - 1}
+                        className="w-10 h-10 rounded-full border border-border hover:bg-surface-hover flex items-center justify-center text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <IconChevronRight className="w-5 h-5" />
+                      </button>
                     </div>
-                  )}
+
+                    {/* Rating Actions */}
+                    {flashcardFlipped && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center gap-3.5 mt-2 w-full max-w-sm"
+                      >
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-text-muted">How well did you recall?</p>
+                        <div className="flex justify-center gap-3 w-full">
+                          <button
+                            onClick={() => handleRateFlashcard('easy')}
+                            className="flex-1 py-3 bg-surface border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-50 text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-500/10 font-semibold text-xs rounded-xl transition-colors shadow-sm"
+                          >
+                            Easy (4D)
+                          </button>
+                          <button
+                            onClick={() => handleRateFlashcard('medium')}
+                            className="flex-1 py-3 bg-surface border border-amber-500/30 hover:border-amber-500 hover:bg-amber-50 text-amber-700 dark:text-amber-400 dark:hover:bg-amber-500/10 font-semibold text-xs rounded-xl transition-colors shadow-sm"
+                          >
+                            Medium (2D)
+                          </button>
+                          <button
+                            onClick={() => handleRateFlashcard('hard')}
+                            className="flex-1 py-3 bg-surface border border-rose-500/30 hover:border-rose-500 hover:bg-rose-50 text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10 font-semibold text-xs rounded-xl transition-colors shadow-sm"
+                          >
+                            Hard (1D)
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

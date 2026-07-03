@@ -10,44 +10,72 @@ export const AppTour = () => {
         animate: true,
         steps: [
           {
-            element: '#tour-notes',
+            element: '#tour-todos',
             popover: {
-              title: 'Welcome to Personal HQ',
-              description: 'This is the Notes module where you can write and organize your daily thoughts.',
+              title: 'Supercharged Todos',
+              description: 'Manage your tasks with precision. Add start and end times, and track your daily progress seamlessly.',
               side: 'right',
               align: 'start'
             }
           },
           {
-            element: '#tour-snippets',
+            element: '#tour-mindmap',
             popover: {
-              title: 'Code Vault',
-              description: 'A dedicated space to save, organize, and reuse your code snippets with beautiful syntax highlighting.',
+              title: 'Interactive Mind Mapping',
+              description: 'Brainstorm ideas on a beautiful canvas. Collapse branches, add notes, and watch colors auto-assign hierarchically.',
               side: 'right',
               align: 'start'
             }
           },
           {
-            element: '#tour-profile',
+            element: '#tour-pomodoro',
             popover: {
-              title: 'Profile & Auth',
-              description: 'Manage your account securely. You can update your profile or sign out from here.',
+              title: 'Focus Engine & PiP',
+              description: 'Stay on track with the Pomodoro timer. It runs in the background and supports an immersive Picture-in-Picture window.',
+              side: 'right',
+              align: 'start'
+            }
+          },
+          {
+            element: '#tour-study',
+            popover: {
+              title: 'Study & Snippets',
+              description: 'Master any topic using minimal vertical flashcards, and organize your code snippets beautifully.',
+              side: 'right',
+              align: 'start'
+            }
+          },
+          {
+            element: '#tour-calculator',
+            popover: {
+              title: 'All-in-One Calculator',
+              description: 'Switch between a standard arithmetic calculator and an advanced interest calculator with history tracking.',
+              side: 'right',
+              align: 'start'
+            }
+          },
+          {
+            element: '#tour-journal',
+            popover: {
+              title: 'Rich-Text Journal',
+              description: 'Reflect daily using a premium Apple-style minimal journal editor featuring rich-text styling and mood tracking.',
+              side: 'right',
               align: 'start'
             }
           },
           {
             element: '#tour-settings',
             popover: {
-              title: 'Settings & Theming',
-              description: 'Customize your experience, toggle Dark/Light mode, and preview system notifications.',
+              title: 'Customization',
+              description: 'Tweak themes, preview notifications, and manage system preferences to make the workspace yours.',
               side: 'right',
               align: 'start'
             }
           },
           {
             popover: {
-              title: 'You are all set!',
-              description: 'Enjoy exploring Personal HQ. You can restart this tour anytime from the Settings page.',
+              title: 'Ready for v0.9.9!',
+              description: 'Enjoy exploring the ultimate Personal HQ. You can restart this tour anytime from the Settings page.',
               align: 'center'
             }
           }

@@ -44,6 +44,26 @@ export default function CalculatorModule() {
   const { interestHistory, addInterestRecord, deleteInterestRecord } = useAppStore();
   const addToast = useToastStore(state => state.addToast);
 
+  const [activeTab, setActiveTab] = useState<'standard' | 'interest'>('standard');
+  const [calcInput, setCalcInput] = useState('0');
+  const [calcResult, setCalcResult] = useState('');
+
+  const handleCalcClick = (val: string) => {
+    if (val === 'AC') { setCalcInput('0'); setCalcResult(''); }
+    else if (val === '⌫') { setCalcInput(prev => prev.length > 1 ? prev.slice(0, -1) : '0'); }
+    else if (val === '=') {
+      try {
+        // eslint-disable-next-line no-new-func
+        const res = new Function(`return ${calcInput.replace(/×/g, '*').replace(/÷/g, '/')}`)();
+        setCalcResult(Number.isFinite(res) ? parseFloat(res.toFixed(6)).toString() : 'Error');
+      } catch {
+        setCalcResult('Error');
+      }
+    } else {
+      setCalcInput(prev => prev === '0' && !['+','-','×','÷','.'].includes(val) ? val : prev + val);
+    }
+  };
+
   const [type, setType] = useState<'SI' | 'CI'>('SI');
   const [principal, setPrincipal] = useState<string>('');
   const [rate, setRate] = useState<string>('');
@@ -117,11 +137,27 @@ export default function CalculatorModule() {
     >
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          Interest Calculator <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
+          All-in-One Calculator <span className="w-2 h-2 rounded-full bg-[#007AFF] inline-block"></span>
         </h2>
-        <p className="text-text-secondary text-sm">Calculate simple and compound interest</p>
+        <p className="text-text-secondary text-sm">Standard arithmetic and advanced interest calculations</p>
       </div>
 
+      <div className="flex bg-surface-alt p-1 rounded-lg w-fit border border-border">
+        <button
+          onClick={() => setActiveTab('standard')}
+          className={`px-6 py-2 text-sm font-bold rounded-md transition-all ${activeTab === 'standard' ? 'bg-surface shadow-sm text-[#007AFF]' : 'text-text-secondary hover:text-text-primary'}`}
+        >
+          Standard
+        </button>
+        <button
+          onClick={() => setActiveTab('interest')}
+          className={`px-6 py-2 text-sm font-bold rounded-md transition-all ${activeTab === 'interest' ? 'bg-surface shadow-sm text-[#007AFF]' : 'text-text-secondary hover:text-text-primary'}`}
+        >
+          Interest
+        </button>
+      </div>
+
+      {activeTab === 'interest' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calculator Panel */}
         <div className="bg-surface border border-border p-6 rounded-xl flex flex-col gap-5 h-fit">
@@ -305,11 +341,60 @@ export default function CalculatorModule() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
       </div>
+      )}
+
+      {activeTab === 'standard' && (
+        <div className="flex items-center justify-center pt-8">
+          <div className="bg-[#1C1C1E] dark:bg-[#000000] border border-[#3A3A3C] shadow-2xl rounded-3xl p-6 w-[320px] flex flex-col gap-4 text-white">
+            {/* Display Screen */}
+            <div className="flex flex-col items-end justify-end h-24 mb-2">
+              <span className="text-gray-400 text-lg h-7 font-mono tracking-wider">{calcInput}</span>
+              <span className="text-5xl font-light tracking-tighter truncate w-full text-right">{calcResult || calcInput}</span>
+            </div>
+
+            {/* Keypad */}
+            <div className="grid grid-cols-4 gap-3">
+              {['AC', '⌫', '%', '÷'].map((btn, i) => (
+                <button key={btn} onClick={() => handleCalcClick(btn === '%' ? '/100' : btn)} className={`h-16 rounded-full text-xl font-medium flex items-center justify-center transition-all ${i === 3 ? 'bg-[#FF9F0A] text-white hover:bg-[#FFB340]' : 'bg-[#A5A5A5] text-black hover:bg-[#D4D4D2]'}`}>
+                  {btn}
+                </button>
+              ))}
+              {['7', '8', '9', '×'].map((btn, i) => (
+                <button key={btn} onClick={() => handleCalcClick(btn)} className={`h-16 rounded-full text-xl flex items-center justify-center transition-all ${i === 3 ? 'bg-[#FF9F0A] text-white hover:bg-[#FFB340]' : 'bg-[#333333] text-white hover:bg-[#505050]'}`}>
+                  {btn}
+                </button>
+              ))}
+              {['4', '5', '6', '-'].map((btn, i) => (
+                <button key={btn} onClick={() => handleCalcClick(btn)} className={`h-16 rounded-full text-xl flex items-center justify-center transition-all ${i === 3 ? 'bg-[#FF9F0A] text-white hover:bg-[#FFB340]' : 'bg-[#333333] text-white hover:bg-[#505050]'}`}>
+                  {btn}
+                </button>
+              ))}
+              {['1', '2', '3', '+'].map((btn, i) => (
+                <button key={btn} onClick={() => handleCalcClick(btn)} className={`h-16 rounded-full text-xl flex items-center justify-center transition-all ${i === 3 ? 'bg-[#FF9F0A] text-white hover:bg-[#FFB340]' : 'bg-[#333333] text-white hover:bg-[#505050]'}`}>
+                  {btn}
+                </button>
+              ))}
+              <div className="grid grid-cols-4 gap-3 col-span-4">
+                <button onClick={() => handleCalcClick('0')} className="col-span-2 h-16 rounded-full bg-[#333333] text-white hover:bg-[#505050] text-xl flex items-center justify-start pl-8 transition-all">
+                  0
+                </button>
+                <button onClick={() => handleCalcClick('.')} className="h-16 rounded-full bg-[#333333] text-white hover:bg-[#505050] text-xl flex items-center justify-center transition-all">
+                  .
+                </button>
+                <button onClick={() => handleCalcClick('=')} className="h-16 rounded-full bg-[#FF9F0A] text-white hover:bg-[#FFB340] text-xl flex items-center justify-center transition-all font-bold">
+                  =
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </motion.div>
   );
 }

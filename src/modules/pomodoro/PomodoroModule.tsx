@@ -199,7 +199,29 @@ export default function PomodoroModule() {
 
       // Inject theme configurations
       pip.document.documentElement.className = document.documentElement.className;
-      pip.document.body.className = 'm-0 p-0 h-full overflow-hidden';
+      pip.document.body.className = 'm-0 p-0 h-full overflow-hidden bg-background text-text-primary';
+
+      // Copy stylesheets
+      [...document.styleSheets].forEach((sheet) => {
+        try {
+          const cssRules = [...sheet.cssRules].map((rule) => rule.cssText).join('');
+          const style = pip.document.createElement('style');
+          style.textContent = cssRules;
+          pip.document.head.appendChild(style);
+        } catch (e) {
+          if (sheet.href) {
+            const link = pip.document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = sheet.href;
+            pip.document.head.appendChild(link);
+          }
+        }
+      });
+
+      // Inject outline resets
+      const resetStyle = pip.document.createElement('style');
+      resetStyle.textContent = '* { outline: none !important; box-sizing: border-box; } button:focus, button:active { outline: none !important; } body { font-family: "DM Sans", system-ui, sans-serif; }';
+      pip.document.head.appendChild(resetStyle);
 
       setPomodoroPipWindow(pip);
     } catch (err) {

@@ -304,6 +304,7 @@ export interface Mindmap {
   title: string;
   nodes: MindmapNode[];
   links: MindmapLink[];
+  edgeStyle?: 'solid' | 'dashed' | 'dotted';
   createdAt: string;
   updatedAt?: string;
 }

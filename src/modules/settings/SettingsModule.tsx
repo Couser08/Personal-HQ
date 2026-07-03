@@ -403,8 +403,8 @@ export default function SettingsModule() {
             <div className="flex-1">
               <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
               <p 
-                className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl"
-                style={{ display: 'block', width: '100%', whiteSpace: 'normal' }}
+                className="mt-1 text-xs text-text-secondary leading-relaxed"
+                style={{ display: 'block', width: '100%', maxWidth: '600px' }}
               >
                 Get a quick walkthrough of all features and how to use Personal HQ effectively.
               </p>

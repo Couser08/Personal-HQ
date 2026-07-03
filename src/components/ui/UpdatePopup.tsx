@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconDeviceWatch, IconSitemap, IconListCheck, IconSparkles } from '@tabler/icons-react';
 
-const APP_VERSION = '0.9.8';
+const APP_VERSION = '0.9.9';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -18,24 +18,24 @@ const FEATURES = [
     color: '#007AFF', // iOS Blue
     bg: 'rgba(0, 122, 255, 0.1)',
     title: 'Interactive Mind Mapping',
-    desc: 'A gorgeous canvas to brainstorm, collapse branches, customize colors, set parent-child relationships, and map your ideas structurally.',
+    desc: 'A gorgeous canvas to brainstorm, collapse branches, customize outline styles, upload JSON imports, and auto-assign distinct colors hierarchically.',
   },
   {
     icon: <IconListCheck className="w-5 h-5" />,
     color: '#34C759', // iOS Green
     bg: 'rgba(52, 199, 89, 0.1)',
-    title: 'Supercharged Todos',
-    desc: 'Specify exact start/end times for items, utilize updated schema migrations, and enjoy refined sorting filters and faster rendering.',
+    title: 'Premium Journal & Tools',
+    desc: 'An upgraded All-in-One Calc tab, modernized Study Tracker with vertical flashcards, and a simplified rich-text Apple-style Journal editor.',
   },
 ];
 
 const WHATS_NEW = [
-  'Implemented a full Pomodoro dashboard and background state sync',
-  'Created a beautiful, collapsible node-based Mindmap workspace',
-  'Added startTime and endTime properties to Todos with updated database schemas',
-  'Integrated the custom AppLogo branding assets across modules',
-  'Eliminated store selector lags by implementing Zustand useShallow',
-  'Refined modal interactions and removed duplicate ConfirmDialog setups',
+  'Bumped to Final Release v0.9.9 with extensive App Tour improvements',
+  'Created a beautiful, collapsible node-based Mindmap with dynamic edge styling and JSON imports',
+  'Integrated an All-in-One Standard Arithmetic Calculator alongside the Interest Calculator',
+  'Redesigned the Study Tracker flashcards to feature a minimal vertical profile',
+  'Upgraded the Journal to a streamlined Apple-style rich text notebook without forced splits',
+  'Resolved PiP Pomodoro window white outlines and long-text vertical wrapping bugs',
 ];
 
 // ── Mini notification card (shown first) ──────────────────────────────────────
@@ -124,8 +124,11 @@ function FullModal({ onClose }: { onClose: () => void }) {
               <h2 className="text-3xl font-black tracking-tight mb-2">
                 What's New in {APP_VERSION}
               </h2>
-              <p className="text-sm text-text-secondary max-w-md mx-auto">
-                A premium release introducing collapsible Mindmaps, a robust global Pomodoro engine, and overall optimization changes.
+              <p 
+                className="text-sm text-text-secondary mx-auto"
+                style={{ display: 'block', width: '100%', maxWidth: '480px' }}
+              >
+                A premium release introducing collapsible Mindmaps, a robust global Pomodoro engine, a standard Calculator, and overall optimization changes.
               </p>
             </div>
 

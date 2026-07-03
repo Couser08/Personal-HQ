@@ -71,6 +71,33 @@ export default function MindmapModule() {
   const [titleInput, setTitleInput] = useState('');
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.nodes && data.links) {
+          const newId = crypto.randomUUID();
+          addMindmap({
+            ...data,
+            id: newId,
+            title: data.title || 'Imported Mindmap',
+            createdAt: new Date().toISOString()
+          });
+          setActiveMindmapId(newId);
+        }
+      } catch (err) {
+        alert("Invalid JSON format");
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   // Active mindmap
   const activeMindmap = useMemo(() => {
     return mindmaps.find(m => m.id === activeMindmapId) || null;
@@ -440,6 +467,14 @@ export default function MindmapModule() {
                   <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Undo"><IconArrowBackUp className="w-4.5 h-4.5" /></button>
                   <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Redo"><IconArrowForwardUp className="w-4.5 h-4.5" /></button>
                 </div>
+                <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportJson} className="hidden" />
+                <button 
+                  className="px-4 py-1.5 rounded-full bg-surface hover:bg-surface-alt text-text-primary border border-border font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Import JSON Mindmap"
+                >
+                  <IconDownload className="w-3.5 h-3.5 rotate-180" /> Import
+                </button>
                 <button 
                   className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer"
                   onClick={() => alert("Sharing features are synced locally. Export JSON/SVG to backup.")}
@@ -715,6 +750,14 @@ function MindmapCanvas({
     setEditingNodeId(null);
   };
 
+  // Auto color assignment helper
+  const getNextAvailableColor = (parentId: string, currentParentColor?: string) => {
+    const COLORS = ['rose', 'amber', 'purple', 'green', 'blue'];
+    const siblingColors = mindmap.nodes.filter(n => n.parentId === parentId).map(n => n.color);
+    const available = COLORS.filter(c => c !== currentParentColor && !siblingColors.includes(c));
+    return available.length > 0 ? available[0] : COLORS.filter(c => c !== currentParentColor)[Math.floor(Math.random() * 4)];
+  };
+
   // Add child subtopic
   const handleAddChildNode = () => {
     const parent = mindmap.nodes.find(n => n.id === selectedNodeId);
@@ -745,12 +788,14 @@ function MindmapCanvas({
       x = parent.x + (peerCount * 130) - 180;
     }
 
+    const assignedColor = getNextAvailableColor(parent.id, parent.color);
+
     const childNode: MindmapNode = {
       id: childId,
       text: 'Sub-topic',
       x: Math.round(x),
       y: Math.round(y),
-      color: parent.color && parent.color !== 'gray' ? parent.color : 'gray',
+      color: assignedColor,
       parentId: parent.id,
       side
     };
@@ -774,6 +819,8 @@ function MindmapCanvas({
 
     const parentId = selected.parentId;
     if (!parentId) return;
+    
+    const parentNode = mindmap.nodes.find(n => n.id === parentId);
 
     const siblingId = crypto.randomUUID();
     const side = selected.side || 'right';
@@ -786,12 +833,14 @@ function MindmapCanvas({
       y = selected.y;
     }
 
+    const assignedColor = getNextAvailableColor(parentId, parentNode?.color);
+
     const siblingNode: MindmapNode = {
       id: siblingId,
       text: 'New Topic',
       x: Math.round(x),
       y: Math.round(y),
-      color: selected.color || 'gray',
+      color: assignedColor,
       parentId,
       side
     };
@@ -976,32 +1025,14 @@ function MindmapCanvas({
 
   const selectedNode = mindmap.nodes.find(n => n.id === selectedNodeId) || null;
 
-  // Outline Export (Markdown format)
+  // JSON Export (For backup & importing)
   const handleExportOutline = () => {
-    const root = mindmap.nodes.find(n => n.isRoot);
-    if (!root) return;
-
-    let outlineStr = `# ${root.text}\n\n`;
-
-    const formatNode = (nodeId: string, depth: number) => {
-      const node = mindmap.nodes.find(n => n.id === nodeId);
-      if (!node) return;
-
-      const indent = '  '.repeat(depth);
-      outlineStr += `${indent}- ${node.text}${node.notes ? ` (${node.notes})` : ''}\n`;
-
-      const children = mindmap.nodes.filter(n => n.parentId === nodeId);
-      children.forEach(c => formatNode(c.id, depth + 1));
-    };
-
-    const primaryBranches = mindmap.nodes.filter(n => n.parentId === root.id);
-    primaryBranches.forEach(b => formatNode(b.id, 0));
-
-    const blob = new Blob([outlineStr], { type: 'text/markdown;charset=utf-8;' });
+    const dataStr = JSON.stringify(mindmap, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `${mindmap.title}_outline.md`);
+    link.setAttribute('download', `${mindmap.title.replace(/\s+/g, '_')}_backup.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1155,6 +1186,9 @@ function MindmapCanvas({
                               colorPreset.id === 'green' ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.45)';
               }
 
+              const edgeStyle = mindmap.edgeStyle || 'solid';
+              const strokeDasharray = edgeStyle === 'dashed' ? '8, 8' : edgeStyle === 'dotted' ? '3, 6' : 'none';
+
               return (
                 <path
                   key={idx}
@@ -1163,6 +1197,7 @@ function MindmapCanvas({
                   stroke={strokeColor}
                   strokeWidth="2.5"
                   strokeLinecap="round"
+                  strokeDasharray={strokeDasharray}
                   className="transition-all duration-300"
                 />
               );
@@ -1440,48 +1475,46 @@ function MindmapCanvas({
             <IconBook className="w-4 h-4" />
           </button>
 
-          {/* Color selection buttons */}
-          {selectedNode && (
-            <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-2">
-              {COLOR_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => handleChangeNodeColor(preset.id as any)}
-                  className={`w-4 h-4 rounded-full transition-all border ${
-                    preset.id === 'gray' ? 'bg-surface border-border' :
-                    preset.id === 'rose' ? 'bg-rose-50 border-rose-600' :
-                    preset.id === 'amber' ? 'bg-amber-50 border-amber-600' :
-                    preset.id === 'purple' ? 'bg-purple-50 border-purple-600' :
-                    preset.id === 'green' ? 'bg-emerald-50 border-emerald-600' : 'bg-blue-50 border-blue-600'
-                  } ${selectedNode.color === preset.id ? 'scale-115 border-text-primary' : 'scale-90 border-transparent'}`}
-                  title={`Set Color: ${preset.label}`}
-                />
-              ))}
-            </div>
-          )}
+          {/* Outline Style customizer */}
+          <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-2">
+            {['solid', 'dashed', 'dotted'].map((style) => (
+              <button
+                key={style}
+                onClick={() => onUpdate({ edgeStyle: style as any })}
+                className={`w-14 h-5 rounded flex items-center justify-center transition-all ${
+                  (mindmap.edgeStyle || 'solid') === style ? 'bg-surface border border-border text-text-primary font-bold text-[9px] uppercase tracking-wider shadow-sm' : 'text-text-muted hover:text-text-primary font-medium text-[9px] uppercase tracking-wider'
+                }`}
+              >
+                {style}
+              </button>
+            ))}
+          </div>
 
           {/* Outline Export Dropdown */}
-          <div className="relative group/export border-l border-border/50 pl-2">
+          <div className="relative group/export border-l border-border/50 pl-2 flex items-center">
             <button 
               className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt"
               title="Export Options"
             >
               <IconDownload className="w-4.5 h-4.5" />
             </button>
-            <div className="absolute top-9 right-0 bg-surface border border-border/55 rounded-xl shadow-lg p-1 min-w-[130px] hidden group-hover/export:block z-30">
-              <button 
-                onClick={handleExportSvg}
-                className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5"
-              >
-                Export SVG
-              </button>
-              <button 
-                onClick={handleExportOutline}
-                className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5"
-              >
-                Export Outline
-              </button>
+            
+            {/* The invisible bridge that prevents hover gap issues */}
+            <div className="absolute top-full right-0 pt-2 hidden group-hover/export:block z-30">
+              <div className="bg-surface border border-border/55 rounded-xl shadow-lg p-1 min-w-[130px]">
+                <button 
+                  onClick={handleExportSvg}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Export SVG
+                </button>
+                <button 
+                  onClick={handleExportOutline}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-alt text-xs font-bold text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Export JSON
+                </button>
+              </div>
             </div>
           </div>
 
