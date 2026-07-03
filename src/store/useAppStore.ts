@@ -106,6 +106,7 @@ export interface TodoTask {
   dueDate: string | null;
   startTime?: string | null;
   endTime?: string | null;
+  pomodoroCount?: number;
   deleted?: boolean;
   createdAt: string;
 }

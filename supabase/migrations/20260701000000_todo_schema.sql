@@ -28,6 +28,7 @@ CREATE TABLE todo_tasks (
     due_date TIMESTAMPTZ,
     start_time TEXT,
     end_time TEXT,
+    pomodoro_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -43,3 +44,4 @@ CREATE POLICY "Users can manage their own todo tasks"
 -- Alter table to ensure columns exist for existing installations
 ALTER TABLE todo_tasks ADD COLUMN IF NOT EXISTS start_time TEXT;
 ALTER TABLE todo_tasks ADD COLUMN IF NOT EXISTS end_time TEXT;
+ALTER TABLE todo_tasks ADD COLUMN IF NOT EXISTS pomodoro_count INTEGER DEFAULT 0;

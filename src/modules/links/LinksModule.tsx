@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconPlus, IconSearch, IconTrash, IconExternalLink, IconLink as IconLinkTabler } from '@tabler/icons-react';
+import { IconPlus, IconSearch, IconTrash, IconLink as IconLinkTabler, IconCopy, IconCheck } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
@@ -128,54 +128,17 @@ export default function LinksModule() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredLinks.map(link => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+              <LinkCard 
                 key={link.id}
-                className="bg-surface border border-border p-4 rounded-xl flex flex-col gap-3 group hover:border-border transition-colors cursor-pointer"
-                onClick={() => window.open(link.url, '_blank')}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded bg-surface-alt flex items-center justify-center shrink-0 mt-1">
-                    <img 
-                      src={`https://www.google.com/s2/favicons?domain=${getDomain(link.url)}&sz=32`} 
-                      alt=""
-                      className="w-5 h-5"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-base truncate group-hover:text-primary transition-colors">{link.title}</h3>
-                    <p className="text-xs text-text-muted truncate">{getDomain(link.url)}</p>
-                  </div>
-                  <IconExternalLink className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                
-                <div className="flex items-center justify-between mt-auto pt-2">
-                  <div className="flex flex-wrap gap-1">
-                    {link.tags.slice(0, 3).map(tag => (
-                      <Badge key={tag} className="text-[10px] py-0 px-1.5">{tag}</Badge>
-                    ))}
-                    {link.tags.length > 3 && <Badge className="text-[10px] py-0 px-1.5">+{link.tags.length - 3}</Badge>}
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      showConfirm('Confirm Delete', 'Delete this link?', () => { deleteLink(link.id); });
-                    }}
-                    className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500 opacity-0 group-hover:opacity-100"
-                  >
-                    <IconTrash className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
+                link={link}
+                onDelete={(id) => {
+                  showConfirm('Confirm Delete', 'Delete this link?', () => { deleteLink(id); });
+                }}
+                getDomain={getDomain}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -227,6 +190,102 @@ export default function LinksModule() {
           </div>
         </div>
       </Modal>
+    </motion.div>
+  );
+}
+
+// Modern grid item card for Link Vault
+function LinkCard({ 
+  link, 
+  onDelete, 
+  getDomain 
+}: { 
+  link: any; 
+  onDelete: (id: string) => void; 
+  getDomain: (url: string) => string; 
+}) {
+  const [copied, setCopied] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(link.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const domain = getDomain(link.url);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-surface border border-border/80 p-5 rounded-[24px] flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer relative"
+      onClick={() => window.open(link.url, '_blank')}
+    >
+      <div className="flex items-start justify-between gap-3">
+        {/* Favicon Loader with Custom Fallback SVG */}
+        <div className="w-10 h-10 rounded-xl bg-surface-alt flex items-center justify-center shrink-0 border border-border/40">
+          {imgError ? (
+            <IconLinkTabler className="w-5 h-5 text-text-muted" />
+          ) : (
+            <img 
+              src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
+              alt=""
+              className="w-5 h-5 rounded-sm object-contain"
+              onError={() => setImgError(true)}
+            />
+          )}
+        </div>
+        
+        {/* Hover Actions */}
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <button 
+            onClick={handleCopy}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface hover:bg-surface-hover transition-colors"
+            title="Copy URL"
+          >
+            {copied ? <IconCheck className="w-4 h-4 text-emerald-500" /> : <IconCopy className="w-4 h-4" />}
+          </button>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(link.id);
+            }}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface hover:bg-rose-500/10 transition-colors"
+            title="Delete Link"
+          >
+            <IconTrash className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-[15px] leading-snug text-text-primary group-hover:text-primary transition-colors line-clamp-2 mb-1.5">
+          {link.title}
+        </h3>
+        <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-alt border border-border/50 text-text-muted tracking-wide">
+          {domain}
+        </span>
+      </div>
+
+      {/* Tags */}
+      {link.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-3 border-t border-border/40 mt-auto">
+          {link.tags.slice(0, 3).map((tag: string) => (
+            <Badge key={tag} className="text-[10px] py-0 px-2 font-bold bg-primary/5 text-primary border-none">
+              {tag}
+            </Badge>
+          ))}
+          {link.tags.length > 3 && (
+            <Badge className="text-[10px] py-0 px-2 font-bold bg-surface-alt text-text-muted border-none">
+              +{link.tags.length - 3}
+            </Badge>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

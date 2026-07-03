@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
   IconCheck, IconPlus, IconTrash, IconCalendar, 
   IconFlag, IconTag, IconSearch,
   IconSun, IconCalendarEvent, IconLayoutList,
-  IconChevronLeft, IconChevronRight, IconClock
+  IconChevronLeft, IconChevronRight, IconClock, IconEdit
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
@@ -757,6 +757,7 @@ export default function TodoModule() {
                     strikeStyle={strikeStyle}
                     projects={todoProjects}
                     completingIds={completingIds}
+                    updateTodoTask={updateTodoTask}
                   />
                 )}
               </motion.div>
@@ -922,12 +923,13 @@ function NavItem({ icon, label, count, active, onClick }: { icon: React.ReactNod
 
 function TaskGroup({ 
   title, count, tasks, onToggle, onDelete, 
-  tickStyle, strikeStyle, projects, completingIds = []
+  tickStyle, strikeStyle, projects, completingIds = [], updateTodoTask
 }: { 
   title: string, count: number, tasks: TodoTask[], 
   onToggle: (id: string) => void, onDelete: (id: string) => void,
   tickStyle: string, strikeStyle: string, projects: TodoProject[],
-  completingIds?: string[]
+  completingIds?: string[],
+  updateTodoTask: (id: string, data: Partial<TodoTask>) => void
 }) {
   if (tasks.length === 0) return null;
   return (
@@ -943,84 +945,178 @@ function TaskGroup({
           {tasks.map(task => {
             const isCompleted = task.completed || completingIds.includes(task.id);
             return (
-              <motion.div 
+              <TaskItem
                 key={task.id}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                className="group flex items-center gap-4 p-3 rounded-xl hover:bg-surface border border-transparent hover:border-border transition-colors relative overflow-hidden"
-              >
-                <button 
-                  onClick={() => onToggle(task.id)}
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 ${
-                    isCompleted 
-                      ? 'border-rose-500 bg-rose-500' 
-                      : 'border-text-muted hover:border-rose-400'
-                  }`}
-                >
-                  <AnimatePresence>
-                    {isCompleted && (
-                      <motion.svg 
-                        initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
-                        animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                        className="w-3.5 h-3.5 text-white" 
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-                      >
-                        <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </motion.svg>
-                    )}
-                  </AnimatePresence>
-                </button>
-                
-                <div className="flex-1 min-w-0 relative">
-                  <span 
-                    className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'}`}
-                    style={isCompleted ? { 
-                      textDecorationLine: 'line-through',
-                      textDecorationStyle: strikeStyle as any,
-                      textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
-                      textDecorationColor: 'currentColor'
-                    } : undefined}
-                  >
-                    {task.title}
-                  </span>
-                  {(task.startTime || task.endTime) && (
-                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                      <IconClock className="w-3 h-3" />
-                      {task.startTime || '??'} - {task.endTime || '??'}
-                    </span>
-                  )}
-                </div>
-                
-                {task.projectId && projects.find(p => p.id === task.projectId) && (
-                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase shrink-0">
-                    {projects.find(p => p.id === task.projectId)?.name}
-                  </span>
-                )}
-                
-                {task.priority !== 'none' && (
-                  <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted">
-                    <IconFlag className={`w-3.5 h-3.5 ${task.priority === 'high' ? 'text-rose-500' : task.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`} fill="currentColor" />
-                    <span className="hidden sm:inline capitalize">{task.priority}</span>
-                  </div>
-                )}
-                
-                {task.dueDate && (
-                  <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted w-24 justify-end">
-                    <IconCalendar className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
-                  </div>
-                )}
-                
-                <button onClick={() => onDelete(task.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-text-muted hover:text-rose-500 transition-all shrink-0">
-                  <IconTrash className="w-4 h-4" />
-                </button>
-              </motion.div>
+                task={task}
+                isCompleted={isCompleted}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                tickStyle={tickStyle}
+                strikeStyle={strikeStyle}
+                projects={projects}
+                updateTodoTask={updateTodoTask}
+              />
             );
           })}
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function TaskItem({
+  task, isCompleted, onToggle, onDelete,
+  tickStyle, strikeStyle, projects, updateTodoTask
+}: {
+  task: TodoTask;
+  isCompleted: boolean;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  tickStyle: string;
+  strikeStyle: string;
+  projects: TodoProject[];
+  updateTodoTask: (id: string, data: Partial<TodoTask>) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+
+  useEffect(() => {
+    setEditTitle(task.title);
+  }, [task.title]);
+
+  const handleSave = () => {
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTodoTask(task.id, { title: trimmed });
+    } else {
+      setEditTitle(task.title);
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+      className={`group flex items-center gap-4 p-3 rounded-xl hover:bg-surface border transition-colors relative overflow-hidden ${
+        isCompleted 
+          ? 'border-transparent' 
+          : 'border-dashed border-border-alt hover:border-border'
+      }`}
+    >
+      <button 
+        onClick={() => onToggle(task.id)}
+        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 ${
+          isCompleted 
+            ? 'border-rose-500 bg-rose-500' 
+            : 'border-text-muted hover:border-rose-400'
+        }`}
+      >
+        <AnimatePresence>
+          {isCompleted && (
+            <motion.svg 
+              initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
+              animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="w-3.5 h-3.5 text-white" 
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
+            >
+              <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </motion.svg>
+          )}
+        </AnimatePresence>
+      </button>
+      
+      <div className="flex-1 min-w-0 relative">
+        {isEditing ? (
+          <input
+            type="text"
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') {
+                setEditTitle(task.title);
+                setIsEditing(false);
+              }
+            }}
+            className="w-full bg-surface-alt border border-rose-500/30 rounded-lg px-2.5 py-1 text-sm font-medium text-text-primary focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+            autoFocus
+          />
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            <span 
+              onDoubleClick={() => {
+                if (!isCompleted) setIsEditing(true);
+              }}
+              className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'} cursor-pointer`}
+              style={isCompleted ? { 
+                textDecorationLine: 'line-through',
+                textDecorationStyle: strikeStyle as any,
+                textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
+                textDecorationColor: 'currentColor'
+              } : undefined}
+              title="Double click to edit"
+            >
+              {task.title}
+            </span>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {(task.startTime || task.endTime) && (
+                <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-rose-500 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
+                  <IconClock className="w-2.5 h-2.5" />
+                  {task.startTime || '??'} - {task.endTime || '??'}
+                </span>
+              )}
+              {task.pomodoroCount !== undefined && task.pomodoroCount > 0 && (
+                <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-orange-500 bg-orange-500/5 px-2 py-0.5 rounded-full border border-orange-500/10" title={`${task.pomodoroCount} focus sessions completed`}>
+                  <span>🍅</span> {task.pomodoroCount}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {task.projectId && projects.find(p => p.id === task.projectId) && (
+        <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase shrink-0">
+          {projects.find(p => p.id === task.projectId)?.name}
+        </span>
+      )}
+      
+      {task.priority !== 'none' && (
+        <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted">
+          <IconFlag className={`w-3.5 h-3.5 ${task.priority === 'high' ? 'text-rose-500' : task.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`} fill="currentColor" />
+          <span className="hidden sm:inline capitalize">{task.priority}</span>
+        </div>
+      )}
+      
+      {task.dueDate && (
+        <div className="flex items-center gap-1.5 shrink-0 text-xs text-text-muted w-24 justify-end">
+          <IconCalendar className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+        </div>
+      )}
+      
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0 ml-2">
+        {!isCompleted && !isEditing && (
+          <button 
+            onClick={() => setIsEditing(true)} 
+            className="p-1.5 text-text-muted hover:text-rose-500 transition-colors"
+            title="Edit task title"
+          >
+            <IconEdit className="w-4 h-4" />
+          </button>
+        )}
+        <button 
+          onClick={() => onDelete(task.id)} 
+          className="p-1.5 text-text-muted hover:text-rose-500 transition-colors"
+          title="Delete task"
+        >
+          <IconTrash className="w-4 h-4" />
+        </button>
+      </div>
+    </motion.div>
   );
 }

@@ -605,6 +605,7 @@ export const todoTaskService = {
       dueDate: r.due_date,
       startTime: r.start_time,
       endTime: r.end_time,
+      pomodoroCount: r.pomodoro_count ?? 0,
       deleted: r.deleted ?? false,
       createdAt: r.created_at,
     }));
@@ -623,6 +624,7 @@ export const todoTaskService = {
         due_date: task.dueDate,
         start_time: task.startTime,
         end_time: task.endTime,
+        pomodoro_count: task.pomodoroCount ?? 0,
         deleted: task.deleted ?? false,
         created_at: task.createdAt,
       });
@@ -648,6 +650,7 @@ export const todoTaskService = {
       if (data.dueDate !== undefined) payload.due_date = data.dueDate;
       if (data.startTime !== undefined) payload.start_time = data.startTime;
       if (data.endTime !== undefined) payload.end_time = data.endTime;
+      if (data.pomodoroCount !== undefined) payload.pomodoro_count = data.pomodoroCount;
       if (data.deleted !== undefined) payload.deleted = data.deleted;
 
       const { error } = await supabase.from('todo_tasks').update(payload).eq('id', id);
