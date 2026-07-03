@@ -1540,7 +1540,7 @@ function MindmapCanvas({
         </div>
 
         {/* Mini-Map Preview */}
-        <div className="absolute bottom-6 right-6 w-32 h-24 bg-surface/90 border border-border/60 rounded-2xl shadow-xl p-2.5 backdrop-blur z-20 flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute bottom-6 right-6 w-32 h-24 bg-surface/90 border border-border/60 rounded-2xl shadow-xl p-2.5 backdrop-blur z-20 flex flex-col items-center justify-center overflow-hidden hidden md:flex">
           <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block select-none">
             Canvas Preview
           </span>
@@ -1574,7 +1574,7 @@ function MindmapCanvas({
         </div>
 
         {/* Floating Apple-Style Toolbar at Top Center */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-2xl w-fit z-20 overflow-visible">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 bg-surface/90 border border-border/60 p-2 sm:p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-[90vw] md:max-w-2xl w-fit z-20 overflow-x-auto scrollbar-hide hide-scrollbar">
           
           {/* Connection Link Connect Trigger */}
           <button
