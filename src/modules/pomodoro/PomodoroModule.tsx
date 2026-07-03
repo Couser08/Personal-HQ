@@ -125,6 +125,16 @@ export default function PomodoroModule() {
   const [tempGoal, setTempGoal] = useState(4);
   const todaySessions = pomodoroStreak % dailyGoal;
 
+  const [ringSize, setRingSize] = useState(280);
+  useEffect(() => {
+    const handleResize = () => {
+      setRingSize(window.innerWidth < 640 ? 220 : 280);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const session = SESSIONS.find(s => s.id === pomodoroSessionId)!;
   const progress = pomodoroTotalSeconds > 0 ? 1 - (pomodoroSecondsLeft / pomodoroTotalSeconds) : 1;
   const mins = Math.floor(pomodoroSecondsLeft / 60);
@@ -347,7 +357,7 @@ export default function PomodoroModule() {
       </div>
 
       {/* Main Card Layout */}
-      <div className="bg-surface border border-border rounded-3xl p-10 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden shadow-sm">
+      <div className="bg-surface border border-border rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden shadow-sm">
         
         {/* Left pane: digital clock */}
         <div className="flex-1 flex flex-col justify-center h-full gap-8 text-center md:text-left w-full md:pl-10">
@@ -355,7 +365,7 @@ export default function PomodoroModule() {
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary block mb-4">
               {pomodoroSessionId === 'focus' ? 'FOCUS TIME' : 'BREAK TIME'}
             </span>
-            <div className={`text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-text-primary select-none ${fontStyle}`}>
+            <div className={`text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-text-primary select-none ${fontStyle}`}>
               {display}
             </div>
             
@@ -371,7 +381,7 @@ export default function PomodoroModule() {
               )}
             </div>
           </div>
-
+ 
           <div>
             <button
               onClick={stopGlobalPomodoro}
@@ -382,15 +392,15 @@ export default function PomodoroModule() {
             </button>
           </div>
         </div>
-
+ 
         {/* Vertical Divider */}
         <div className="hidden md:block w-px h-64 bg-border/60" />
-
+ 
         {/* Right pane: Ticked Dial Timer & Play/Pause */}
         <div className="flex-1 flex flex-col items-center justify-center relative w-full md:pr-10">
-          <div className="relative flex items-center justify-center" style={{ width: 280, height: 280 }}>
+          <div className="relative flex items-center justify-center" style={{ width: ringSize, height: ringSize }}>
             {/* The SVG Ring */}
-            <ProgressRing progress={progress} size={280} strokeWidth={8} color={pomodoroTheme !== 'default' ? 'var(--color-primary)' : session.color} style={ringStyle} />
+            <ProgressRing progress={progress} size={ringSize} strokeWidth={8} color={pomodoroTheme !== 'default' ? 'var(--color-primary)' : session.color} style={ringStyle} />
             
             {/* Play Button inside Ring */}
             <button

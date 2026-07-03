@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconSearch, IconSitemap, IconZoomIn, 
   IconZoomOut, IconEdit, IconLink, IconFocusCentered,
   IconArrowLeft, IconChevronDown, IconFolder, IconShare,
   IconArrowBackUp, IconArrowForwardUp, IconCloudCheck,
-  IconLayout, IconBook, IconExternalLink, IconDownload, IconHistory
+  IconLayout, IconBook, IconExternalLink, IconDownload, IconHistory, IconPhoto
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
@@ -307,7 +308,7 @@ export default function MindmapModule() {
     <div className="flex h-[calc(100vh-130px)] gap-0 overflow-hidden bg-background text-text-primary rounded-[32px] border border-border/60">
       
       {/* Workspace Sidebar List */}
-      <div className="w-[260px] bg-surface/40 border-r border-border/50 flex flex-col shrink-0">
+      <div className={`w-[260px] bg-surface/40 border-r border-border/50 flex flex-col shrink-0 ${activeMindmapId ? 'hidden md:flex' : 'flex w-full md:w-[260px]'}`}>
         
         {/* Workspace Brand Selector */}
         <div className="p-4 border-b border-border/40 flex items-center justify-between">
@@ -436,7 +437,7 @@ export default function MindmapModule() {
       </div>
 
       {/* Mindmap editor canvas */}
-      <div className="flex-1 h-full relative bg-surface-alt/25 overflow-hidden flex flex-col">
+      <div className={`flex-1 h-full relative bg-surface-alt/25 overflow-hidden flex flex-col ${activeMindmap ? 'flex w-full' : 'hidden md:flex'}`}>
         {activeMindmap ? (
           <>
             {/* Top Canvas Header Bar */}
@@ -551,6 +552,11 @@ function MindmapCanvas({
   onUpdate: (data: Partial<Mindmap>) => void; 
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { showConfirm } = useAppStore();
+  
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [fullScreenImages, setFullScreenImages] = useState<string[] | null>(null);
+  const [fullScreenImageIdx, setFullScreenImageIdx] = useState(0);
   
   // Pan and Zoom Camera state
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -984,6 +990,15 @@ function MindmapCanvas({
     }
   };
 
+  const getDescendants = (nodeId: string, nodes: MindmapNode[]): string[] => {
+    const childIds = nodes.filter(n => n.parentId === nodeId).map(n => n.id);
+    let descendants = [...childIds];
+    childIds.forEach(id => {
+      descendants = [...descendants, ...getDescendants(id, nodes)];
+    });
+    return descendants;
+  };
+
   const handleDeleteSelectedNode = () => {
     if (!selectedNodeId) return;
     const node = mindmap.nodes.find(n => n.id === selectedNodeId);
@@ -992,12 +1007,33 @@ function MindmapCanvas({
       return;
     }
 
-    onUpdate({
-      nodes: mindmap.nodes.filter(n => n.id !== selectedNodeId),
-      links: mindmap.links.filter(l => l.source !== selectedNodeId && l.target !== selectedNodeId)
-    });
-    setSelectedNodeId(null);
-    setIsDrawerOpen(false);
+    const descendants = getDescendants(selectedNodeId, mindmap.nodes);
+    if (descendants.length > 0) {
+      showConfirm(
+        'Delete Node and Sub-topics',
+        'Deleting this topic will also delete all of its sub-topics recursively. Do you want to proceed?',
+        () => {
+          onUpdate({
+            nodes: mindmap.nodes.filter(n => n.id !== selectedNodeId && !descendants.includes(n.id)),
+            links: mindmap.links.filter(l => 
+              l.source !== selectedNodeId && 
+              !descendants.includes(l.source as string) && 
+              l.target !== selectedNodeId && 
+              !descendants.includes(l.target as string)
+            )
+          });
+          setSelectedNodeId(null);
+          setIsDrawerOpen(false);
+        }
+      );
+    } else {
+      onUpdate({
+        nodes: mindmap.nodes.filter(n => n.id !== selectedNodeId),
+        links: mindmap.links.filter(l => l.source !== selectedNodeId && l.target !== selectedNodeId)
+      });
+      setSelectedNodeId(null);
+      setIsDrawerOpen(false);
+    }
   };
 
   const handleChangeNodeColor = (colorId: MindmapColor) => {
@@ -1008,11 +1044,95 @@ function MindmapCanvas({
   };
 
   // Node editing state updates inside sliding drawer
-  const handleUpdateNodeProp = (key: 'text' | 'notes' | 'linkUrl' | 'imageUrl', val: string) => {
+  const handleUpdateNodeProp = (key: keyof MindmapNode, val: any) => {
     if (!selectedNodeId) return;
     onUpdate({
       nodes: mindmap.nodes.map(n => n.id === selectedNodeId ? { ...n, [key]: val } : n)
     });
+  };
+
+  const handleAddLink = () => {
+    if (!newLinkUrl.trim() || !selectedNodeId) return;
+    let url = newLinkUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentLinks = currentNode.links || [];
+    if (!currentLinks.includes(url)) {
+      handleUpdateNodeProp('links', [...currentLinks, url]);
+    }
+    setNewLinkUrl('');
+  };
+
+  const handleRemoveLink = (urlToRemove: string) => {
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentLinks = currentNode.links || [];
+    handleUpdateNodeProp('links', currentLinks.filter(u => u !== urlToRemove));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !selectedNodeId) return;
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentImages = currentNode.images || [];
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          handleUpdateNodeProp('images', [...currentImages, base64]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentImages = currentNode.images || [];
+    handleUpdateNodeProp('images', currentImages.filter((_, idx) => idx !== index));
+  };
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !selectedNodeId) return;
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentPdfs = currentNode.pdfs || [];
+
+    Array.from(files).forEach(file => {
+      if (file.type !== 'application/pdf') return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          handleUpdateNodeProp('pdfs', [...currentPdfs, { name: file.name, base64 }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemovePdf = (index: number) => {
+    const currentNode = mindmap.nodes.find(n => n.id === selectedNodeId);
+    if (!currentNode) return;
+    const currentPdfs = currentNode.pdfs || [];
+    handleUpdateNodeProp('pdfs', currentPdfs.filter((_, idx) => idx !== index));
+  };
+
+  const getDomainFavicon = (urlStr: string) => {
+    try {
+      const domain = new URL(urlStr).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    } catch {
+      return '';
+    }
   };
 
   // Bezier connectors
@@ -1260,24 +1380,14 @@ function MindmapCanvas({
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full">
-                    
-                    {/* Embedded image rendering */}
-                    {node.imageUrl && (
-                      <img 
-                        src={node.imageUrl} 
-                        alt="embedded" 
-                        className="w-full h-14 object-cover rounded-lg mb-1 pointer-events-none" 
-                      />
-                    )}
-
-                    <div className="flex items-center justify-center flex-wrap gap-1">
+                    <div className="flex items-center justify-center flex-wrap gap-1 mb-1">
                       {node.icon && (
                         <span className={`${node.isRoot ? 'text-lg mb-0.5' : 'text-xs'}`}>
                           {node.icon}
                         </span>
                       )}
                       
-                      {/* Attached hyperlink badge */}
+                      {/* Attached legacy/external hyperlink badge */}
                       {node.linkUrl && (
                         <a 
                           href={node.linkUrl} 
@@ -1285,9 +1395,59 @@ function MindmapCanvas({
                           rel="noreferrer"
                           onClick={e => e.stopPropagation()}
                           className="text-primary hover:opacity-80 p-0.5"
-                          title="Open attached Link"
+                          title="Open Link"
                         >
                           <IconExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      {/* New multiple links indicator */}
+                      {node.links && node.links.length > 0 && (
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(node.links![0], '_blank', 'noopener,noreferrer');
+                          }}
+                          className="text-primary hover:opacity-80 p-0.5 cursor-pointer flex items-center"
+                          title={`Open link: ${node.links[0]}`}
+                        >
+                          {getDomainFavicon(node.links[0]) ? (
+                            <img src={getDomainFavicon(node.links[0])} alt="" className="w-3.5 h-3.5 rounded-sm" onError={e => (e.currentTarget.style.display = 'none')} />
+                          ) : (
+                            <IconExternalLink className="w-3.5 h-3.5" />
+                          )}
+                        </span>
+                      )}
+
+                      {/* Image attachments icon badge */}
+                      {((node.images && node.images.length > 0) || node.imageUrl) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const imgs = node.images && node.images.length > 0 ? node.images : node.imageUrl ? [node.imageUrl] : [];
+                            if (imgs.length > 0) {
+                              setFullScreenImages(imgs);
+                              setFullScreenImageIdx(0);
+                            }
+                          }}
+                          className="text-blue-500 hover:text-blue-600 p-0.5 cursor-pointer flex items-center justify-center pointer-events-auto"
+                          title="Open Image Gallery"
+                        >
+                          <IconPhoto className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {/* PDF attachments indicator */}
+                      {node.pdfs && node.pdfs.length > 0 && (
+                        <a
+                          href={node.pdfs[0].base64}
+                          download={node.pdfs[0].name}
+                          onClick={e => e.stopPropagation()}
+                          className="text-red-500 hover:text-red-600 p-0.5 cursor-pointer flex items-center justify-center font-bold text-[8px] border border-red-500/20 px-1 rounded bg-red-500/5 leading-none"
+                          title={`Download ${node.pdfs[0].name}`}
+                        >
+                          PDF
                         </a>
                       )}
 
@@ -1592,32 +1752,212 @@ function MindmapCanvas({
               />
             </div>
 
-            {/* hyperlinks link attachments */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Hyperlink Attachment</label>
-              <input
-                type="url"
-                value={selectedNode.linkUrl || ''}
-                onChange={e => handleUpdateNodeProp('linkUrl', e.target.value)}
-                placeholder="https://example.com"
-                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-text-primary"
-              />
+            {/* Multiple Links Manager */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Web Links</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newLinkUrl}
+                  onChange={e => setNewLinkUrl(e.target.value)}
+                  placeholder="Paste URL (e.g. google.com)"
+                  className="flex-1 bg-surface-alt border border-border/60 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-primary text-text-primary"
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddLink(); }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddLink}
+                  className="px-3 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-alt transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+
+              {/* Links list */}
+              {selectedNode.links && selectedNode.links.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1 max-h-36 overflow-y-auto pr-1">
+                  {selectedNode.links.map(url => (
+                    <div key={url} className="flex items-center justify-between p-2 bg-surface-alt/50 border border-border/40 rounded-xl">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 hover:underline text-text-secondary text-xs truncate max-w-[180px] font-medium"
+                      >
+                        {getDomainFavicon(url) ? (
+                          <img src={getDomainFavicon(url)} alt="" className="w-4 h-4 rounded-sm" onError={e => (e.currentTarget.style.display = 'none')} />
+                        ) : null}
+                        {url}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLink(url)}
+                        className="text-text-muted hover:text-red-500 transition-colors"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Image attachments URL embedding */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Image Embed URL</label>
-              <input
-                type="url"
-                value={selectedNode.imageUrl || ''}
-                onChange={e => handleUpdateNodeProp('imageUrl', e.target.value)}
-                placeholder="https://image-url.jpg"
-                className="w-full bg-surface-alt border border-border/60 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-text-primary"
-              />
+            {/* Multiple Images Manager */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Image Attachments</label>
+              <div className="relative border border-dashed border-border/80 rounded-xl p-3 bg-surface-alt/20 hover:bg-surface-alt/40 transition-colors flex flex-col items-center justify-center cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <span className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">Upload Images</span>
+                <span className="text-[8px] text-text-muted mt-0.5">Supports PNG, JPG, WebP</span>
+              </div>
+
+              {/* Thumbnails grid */}
+              {selectedNode.images && selectedNode.images.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mt-1">
+                  {selectedNode.images.map((base64, idx) => (
+                    <div key={idx} className="relative group aspect-square rounded-lg border border-border overflow-hidden bg-surface shadow-sm">
+                      <img
+                        src={base64}
+                        alt=""
+                        className="w-full h-full object-cover cursor-zoom-in"
+                        onClick={() => { setFullScreenImages(selectedNode.images || null); setFullScreenImageIdx(idx); }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 hover:bg-red-600 rounded-full text-white text-[10px] flex items-center justify-center transition-colors"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* PDF Attachments Manager */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">PDF Attachments</label>
+              <div className="relative border border-dashed border-border/80 rounded-xl p-3 bg-surface-alt/20 hover:bg-surface-alt/40 transition-colors flex flex-col items-center justify-center cursor-pointer">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  multiple
+                  onChange={handlePdfUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <span className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">Upload PDFs</span>
+                <span className="text-[8px] text-text-muted mt-0.5">Attach documents & readings</span>
+              </div>
+
+              {/* PDFs List */}
+              {selectedNode.pdfs && selectedNode.pdfs.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  {selectedNode.pdfs.map((pdf, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-surface-alt/50 border border-border/40 rounded-xl">
+                      <a
+                        href={pdf.base64}
+                        download={pdf.name}
+                        className="flex items-center gap-1.5 text-text-secondary hover:text-primary text-xs truncate max-w-[180px] font-medium"
+                        title="Click to Download PDF"
+                      >
+                        <span className="bg-red-500/10 text-red-500 px-1 py-0.5 text-[8px] font-black rounded uppercase">PDF</span>
+                        <span className="truncate">{pdf.name}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePdf(idx)}
+                        className="text-text-muted hover:text-red-500 transition-colors"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
+      {/* Full Screen Image Preview Modal (Apple-style UI/UX) */}
+      <AnimatePresence>
+        {fullScreenImages && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-between p-6 select-none"
+            onClick={() => setFullScreenImages(null)}
+          >
+            {/* Header controls */}
+            <div className="w-full flex items-center justify-between max-w-5xl z-10">
+              <span className="text-xs font-mono font-bold tracking-widest text-gray-400">
+                IMAGE {fullScreenImageIdx + 1} OF {fullScreenImages.length}
+              </span>
+              <div className="flex gap-4 items-center">
+                <a
+                  href={fullScreenImages[fullScreenImageIdx]}
+                  download={`image-${fullScreenImageIdx + 1}.png`}
+                  onClick={e => e.stopPropagation()}
+                  className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-full text-xs font-bold transition-colors uppercase tracking-wider"
+                >
+                  Download
+                </a>
+                <button
+                  onClick={() => setFullScreenImages(null)}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-bold text-lg transition-colors"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            {/* Image display */}
+            <div 
+              className="flex-1 w-full flex items-center justify-center max-w-5xl relative"
+              onClick={e => e.stopPropagation()}
+            >
+              {fullScreenImages.length > 1 && (
+                <button
+                  onClick={() => setFullScreenImageIdx(prev => (prev === 0 ? fullScreenImages.length - 1 : prev - 1))}
+                  className="absolute left-4 w-12 h-12 rounded-full bg-white/5 hover:bg-white/15 active:bg-white/25 text-white flex items-center justify-center transition-colors border border-white/15 text-lg font-bold"
+                >
+                  &#8592;
+                </button>
+              )}
+
+              <motion.img
+                key={fullScreenImageIdx}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                src={fullScreenImages[fullScreenImageIdx]}
+                alt="Fullscreen Preview"
+                className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-auto"
+              />
+
+              {fullScreenImages.length > 1 && (
+                <button
+                  onClick={() => setFullScreenImageIdx(prev => (prev === fullScreenImages.length - 1 ? 0 : prev + 1))}
+                  className="absolute right-4 w-12 h-12 rounded-full bg-white/5 hover:bg-white/15 active:bg-white/25 text-white flex items-center justify-center transition-colors border border-white/15 text-lg font-bold"
+                >
+                  &#8594;
+                </button>
+              )}
+            </div>
+
+            {/* Footer hints */}
+            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider z-10">
+              Click outside or press Close to exit
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

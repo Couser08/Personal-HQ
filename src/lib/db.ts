@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type {
   Note, Link, StockEntry, Subject, InterestRecord,
   MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
-  TodoProject, TodoTask
+  TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation
 } from '../store/useAppStore';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -684,4 +684,167 @@ export const todoTaskService = {
       console.warn('TodoTask Delete Exception:', e);
     }
   },
+};
+
+// ─── Journal Entries ──────────────────────────────────────────────────────────
+
+export const journalService = {
+  async fetchAll(userId: string): Promise<JournalEntry[]> {
+    const { data, error } = await supabase
+      .from('journals')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      content: r.content,
+      date: r.date,
+      mood: r.mood,
+      tags: r.tags ?? [],
+      pinned: r.pinned ?? false,
+      focusList: r.focus_list ?? [],
+      pageStyle: r.page_style ?? 'default',
+      images: r.images ?? [],
+      reflection: r.reflection ?? { whatWentWell: '', whatCanBeBetter: '' },
+      attachments: r.attachments ?? [],
+    }));
+  },
+
+  async create(userId: string, entry: JournalEntry) {
+    const { error } = await supabase.from('journals').insert({
+      id: entry.id,
+      user_id: userId,
+      title: entry.title,
+      content: entry.content,
+      date: entry.date,
+      mood: entry.mood,
+      tags: entry.tags,
+      pinned: entry.pinned,
+      focus_list: entry.focusList,
+      page_style: entry.pageStyle,
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<JournalEntry>) {
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.content !== undefined) payload.content = data.content;
+    if (data.date !== undefined) payload.date = data.date;
+    if (data.mood !== undefined) payload.mood = data.mood;
+    if (data.tags !== undefined) payload.tags = data.tags;
+    if (data.pinned !== undefined) payload.pinned = data.pinned;
+    if (data.focusList !== undefined) payload.focus_list = data.focusList;
+    if (data.pageStyle !== undefined) payload.page_style = data.pageStyle;
+    payload.updated_at = new Date().toISOString();
+
+    const { error } = await supabase.from('journals').update(payload).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('journals').delete().eq('id', id);
+    if (error) throw error;
+  }
+};
+
+// ─── Mindmaps ─────────────────────────────────────────────────────────────────
+
+export const mindmapService = {
+  async fetchAll(userId: string): Promise<Mindmap[]> {
+    const { data, error } = await supabase
+      .from('mindmaps')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      nodes: r.nodes ?? [],
+      links: r.links ?? [],
+      edgeStyle: r.edge_style ?? 'solid',
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+  },
+
+  async create(userId: string, mindmap: Mindmap) {
+    const { error } = await supabase.from('mindmaps').insert({
+      id: mindmap.id,
+      user_id: userId,
+      title: mindmap.title,
+      nodes: mindmap.nodes,
+      links: mindmap.links,
+      edge_style: mindmap.edgeStyle || 'solid',
+      created_at: mindmap.createdAt,
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<Mindmap>) {
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.nodes !== undefined) payload.nodes = data.nodes;
+    if (data.links !== undefined) payload.links = data.links;
+    if (data.edgeStyle !== undefined) payload.edge_style = data.edgeStyle;
+    payload.updated_at = new Date().toISOString();
+
+    const { error } = await supabase.from('mindmaps').update(payload).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('mindmaps').delete().eq('id', id);
+    if (error) throw error;
+  }
+};
+
+// ─── Standard Arithmetic Calculations ─────────────────────────────────────────
+
+export const standardCalcService = {
+  async fetchAll(userId: string): Promise<StandardCalculation[]> {
+    const { data, error } = await supabase
+      .from('standard_calculations')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      expression: r.expression,
+      result: r.result,
+      createdAt: r.created_at,
+    }));
+  },
+
+  async create(userId: string, record: StandardCalculation) {
+    const { error } = await supabase.from('standard_calculations').insert({
+      id: record.id,
+      user_id: userId,
+      expression: record.expression,
+      result: record.result,
+      created_at: record.createdAt,
+    });
+    if (error) throw error;
+  },
+
+  async clearAll(userId: string) {
+    const { error } = await supabase
+      .from('standard_calculations')
+      .delete()
+      .eq('user_id', userId);
+    if (error) throw error;
+  }
 };

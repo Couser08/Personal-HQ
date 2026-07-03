@@ -294,6 +294,31 @@ export default function TodoModule() {
           </div>
         </div>
 
+        {/* Mobile Horizontal Lists Selector */}
+        <div className="flex md:hidden items-center gap-2 overflow-x-auto px-6 py-3 border-b border-border bg-surface/30 scrollbar-hide shrink-0">
+          {[
+            { id: 'all', label: 'All Tasks', color: '#f43f5e' },
+            { id: 'today', label: 'Today', color: '#f97316' },
+            { id: 'upcoming', label: 'Upcoming', color: '#a855f7' },
+            { id: 'completed', label: 'Completed', color: '#10b981' },
+            { id: 'trash', label: 'Trash', color: '#6b7280' },
+            ...todoProjects.map(p => ({ id: p.id, label: p.name, color: p.color }))
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveList(item.id)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                activeList === item.id
+                  ? 'bg-primary/10 text-primary border-primary/20 shadow-inner'
+                  : 'bg-surface border-border hover:bg-surface-hover text-text-secondary'
+              }`}
+            >
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         {/* Task Area */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-4xl mx-auto w-full relative z-0">
           
@@ -770,10 +795,10 @@ export default function TodoModule() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-surface rounded-3xl p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+                className="bg-surface rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg text-text-primary">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <h3 className="font-bold text-base sm:text-lg text-text-primary">
                     {monthNames[calendarMonth]} {calendarYear}
                   </h3>
                   <div className="flex gap-1">
@@ -782,13 +807,13 @@ export default function TodoModule() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-bold text-text-muted mb-4 uppercase">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] font-bold text-text-muted mb-2 sm:mb-4 uppercase">
                   <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                 </div>
                 
-                <div className="grid grid-cols-7 gap-2 min-h-[300px]">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2 min-h-[220px] sm:min-h-[300px]">
                   {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
-                    <div key={`offset-${i}`} className="bg-surface-alt/20 rounded-2xl border border-transparent" />
+                    <div key={`offset-${i}`} className="bg-surface-alt/20 rounded-lg sm:rounded-2xl border border-transparent" />
                   ))}
                   {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
                     const dayNum = i + 1;
@@ -802,7 +827,7 @@ export default function TodoModule() {
                           setSelectedDate(dateObj);
                           setShowDatePicker(false);
                         }}
-                        className={`p-3 rounded-2xl border border-border/40 hover:border-primary/50 transition-all flex flex-col justify-between items-start cursor-pointer min-h-[70px] ${
+                        className={`p-1 sm:p-3 rounded-lg sm:rounded-2xl border border-border/40 hover:border-primary/50 transition-all flex flex-col justify-between items-start cursor-pointer min-h-[45px] sm:min-h-[70px] ${
                           dateObj.toDateString() === new Date().toDateString() ? 'bg-rose-500/5 ring-1 ring-rose-500' : 'bg-surface-alt/40'
                         }`}
                       >

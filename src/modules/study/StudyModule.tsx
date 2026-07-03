@@ -422,6 +422,45 @@ export default function StudyModule() {
     }
   };
 
+  useEffect(() => {
+    if (topicTab !== 'flashcards' || !activeTopic?.flashcards?.length) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.getAttribute('contenteditable'))) {
+        return;
+      }
+      
+      const cards = activeTopic.flashcards || [];
+      if (e.key === ' ') {
+        e.preventDefault();
+        setFlashcardFlipped(prev => !prev);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFlashcardFlipped(false);
+        setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFlashcardFlipped(false);
+        setCurrentFlashcardIndex(prev => Math.min(prev + 1, cards.length - 1));
+      } else if (flashcardFlipped) {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleRateFlashcard('easy');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          handleRateFlashcard('medium');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          handleRateFlashcard('hard');
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [topicTab, activeTopic?.flashcards, flashcardFlipped, currentFlashcardIndex]);
+
   /* ────────────────────────────────────────────────────────────────────────── */
   /*  RENDER BRANCHES: Workspace, Subject Dashboard, or root listing            */
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -1128,7 +1167,7 @@ export default function StudyModule() {
                     <div
                       onClick={() => setFlashcardFlipped(!flashcardFlipped)}
                       style={{ perspective: 1200 }}
-                      className="w-full max-w-sm aspect-[3/4] cursor-pointer relative"
+                      className="w-[320px] h-[430px] sm:w-[360px] sm:h-[480px] cursor-pointer relative select-none"
                     >
                       <motion.div
                         animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
@@ -1139,28 +1178,29 @@ export default function StudyModule() {
                         {/* Front Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden' }}
-                          className="absolute inset-0 bg-surface border border-border-alt hover:border-border rounded-[24px] p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden transition-colors"
+                          className="absolute inset-0 bg-surface border border-border rounded-[28px] p-8 flex flex-col items-center justify-between text-center shadow-lg relative overflow-hidden transition-colors"
                         >
-                          <span className="absolute top-6 px-3 py-1 text-[10px] font-bold text-text-secondary border border-border rounded-full uppercase tracking-widest">
+                          <span className="px-3.5 py-1 text-[10px] font-black text-text-secondary bg-surface-alt border border-border/50 rounded-full uppercase tracking-widest">
                             Question
                           </span>
-                          <p className="text-2xl font-semibold text-text-primary max-w-xs leading-relaxed px-2">
+                          <p className="text-2xl font-bold text-text-primary max-w-xs leading-relaxed px-2 my-auto">
                             {activeTopic.flashcards[currentFlashcardIndex]?.front}
                           </p>
-                          <span className="absolute bottom-6 text-[10px] text-text-muted">Tap to flip</span>
+                          <span className="text-[10px] text-text-muted font-bold tracking-wider uppercase">Tap to flip</span>
                         </div>
 
                         {/* Back Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                          className="absolute inset-0 bg-surface-alt border border-border-alt rounded-[24px] p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden"
+                          className="absolute inset-0 bg-surface border border-border rounded-[28px] p-8 flex flex-col items-center justify-between text-center shadow-lg relative overflow-hidden transition-colors"
                         >
-                          <span className="absolute top-6 px-3 py-1 text-[10px] font-bold text-text-secondary border border-border rounded-full uppercase tracking-widest">
+                          <span className="px-3.5 py-1 text-[10px] font-black text-text-secondary bg-surface-alt border border-border/50 rounded-full uppercase tracking-widest">
                             Answer
                           </span>
-                          <p className="text-lg font-medium text-text-primary max-w-xs leading-relaxed px-2 overflow-y-auto max-h-[220px] scrollbar-thin">
+                          <p className="text-lg font-semibold text-text-primary max-w-xs leading-relaxed px-2 overflow-y-auto max-h-[280px] my-auto scrollbar-thin">
                             {activeTopic.flashcards[currentFlashcardIndex]?.back}
                           </p>
+                          <span className="text-[10px] text-text-muted font-bold tracking-wider uppercase">Tap to flip back</span>
                         </div>
                       </motion.div>
                     </div>
@@ -1231,6 +1271,10 @@ export default function StudyModule() {
                         </div>
                       </motion.div>
                     )}
+                    {/* Keyboard Shortcuts Hint */}
+                    <div className="hidden sm:block text-[10px] text-text-muted font-black tracking-widest uppercase mt-4 text-center select-none bg-surface-alt/40 border border-border/40 px-4 py-2 rounded-full">
+                      Keyboard shortcuts: [Space] Flip • [← / →] Prev/Next • [1 / 2 / 3] Easy/Med/Hard
+                    </div>
                   </div>
                 </div>
               )}

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconSearch, IconTrash, IconCopy, IconCheck, IconCode, 
-  IconStar, IconStarFilled, IconClock, IconFilter, IconEdit, IconDots
+  IconStar, IconStarFilled, IconClock, IconFilter, IconEdit, IconDots, IconArrowLeft
 } from '@tabler/icons-react';
 import { useAppStore, type CodeSnippet } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -207,7 +207,7 @@ export default function CodeSnippetModule() {
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-[500px]">
           
           {/* Left: Masonry Grid of Snippets */}
-          <div className="w-full lg:w-5/12 xl:w-1/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 content-start overflow-y-auto pr-2 custom-scrollbar">
+          <div className={`w-full lg:w-5/12 xl:w-1/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 content-start overflow-y-auto pr-2 custom-scrollbar ${selectedSnippetId ? 'hidden lg:grid' : 'grid'}`}>
             <AnimatePresence>
               {filteredSnippets.map(snippet => {
                 const isSelected = selectedSnippetId === snippet.id;
@@ -258,31 +258,38 @@ export default function CodeSnippetModule() {
               })}
             </AnimatePresence>
           </div>
-
+ 
           {/* Right: Detailed Preview */}
-          <div className="w-full lg:w-7/12 xl:w-2/3 bg-surface border border-border rounded-[16px] flex flex-col overflow-hidden">
+          <div className={`w-full lg:w-7/12 xl:w-2/3 bg-surface border border-border rounded-[16px] flex flex-col overflow-hidden ${selectedSnippetId ? 'flex' : 'hidden lg:flex'}`}>
             {selectedSnippet ? (
               <>
-                <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-surface-alt">
-                  <div className="flex items-center gap-3">
-                    <h2 className="font-bold text-lg text-text-primary">{selectedSnippet.title}</h2>
-                    <span className="uppercase text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500">
+                <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b border-border bg-surface-alt">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <button 
+                      onClick={() => setSelectedSnippetId(null)}
+                      className="lg:hidden flex items-center justify-center p-1.5 rounded-lg hover:bg-surface-hover text-text-secondary transition-colors"
+                    >
+                      <IconArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="font-bold text-base sm:text-lg text-text-primary truncate max-w-[120px] sm:max-w-none">{selectedSnippet.title}</h2>
+                    <span className="uppercase text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 hidden sm:inline">
                       {selectedSnippet.language}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <button 
                       onClick={() => handleCopy(selectedSnippet.code, selectedSnippet.id)}
-                      className="btn btn-secondary btn-sm"
+                      className="btn btn-secondary btn-sm px-2 sm:px-3"
                     >
                       {copiedId === selectedSnippet.id ? <IconCheck className="w-4 h-4 text-green-500" /> : <IconCopy className="w-4 h-4" />} 
-                      Copy
+                      <span className="hidden sm:inline">Copy</span>
                     </button>
                     <button 
                       onClick={() => handleOpenModal(selectedSnippet)}
-                      className="btn btn-secondary btn-sm"
+                      className="btn btn-secondary btn-sm px-2 sm:px-3"
                     >
-                      <IconEdit className="w-4 h-4" /> Edit
+                      <IconEdit className="w-4 h-4" /> 
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
                     <button 
                       onClick={() => {
@@ -291,9 +298,10 @@ export default function CodeSnippetModule() {
                           setSelectedSnippetId(null);
                         });
                       }}
-                      className="btn btn-danger btn-sm"
+                      className="btn btn-danger btn-sm px-2 sm:px-3"
                     >
-                      <IconTrash className="w-4 h-4" /> Delete
+                      <IconTrash className="w-4 h-4" /> 
+                      <span className="hidden sm:inline">Delete</span>
                     </button>
                   </div>
                 </div>

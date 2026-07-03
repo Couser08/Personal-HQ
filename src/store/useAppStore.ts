@@ -3,7 +3,7 @@ import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
   budgetCategoryService, budgetTransactionService,
-  todoProjectService, todoTaskService
+  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -292,6 +292,9 @@ export interface MindmapNode {
   notes?: string;
   linkUrl?: string;
   imageUrl?: string;
+  images?: string[];
+  pdfs?: { name: string; base64: string }[];
+  links?: string[];
 }
 
 export interface MindmapLink {
@@ -307,6 +310,13 @@ export interface Mindmap {
   edgeStyle?: 'solid' | 'dashed' | 'dotted';
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface StandardCalculation {
+  id: string;
+  expression: string;
+  result: string;
+  createdAt: string;
 }
 
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
@@ -441,15 +451,20 @@ export interface AppStore {
   
   // Journal Tracker
   journals: JournalEntry[];
-  addJournalEntry: (entry: JournalEntry) => void;
-  updateJournalEntry: (id: string, data: Partial<JournalEntry>) => void;
-  deleteJournalEntry: (id: string) => void;
+  addJournalEntry: (entry: JournalEntry) => Promise<void>;
+  updateJournalEntry: (id: string, data: Partial<JournalEntry>) => Promise<void>;
+  deleteJournalEntry: (id: string) => Promise<void>;
   
   // Mindmap Creator
   mindmaps: Mindmap[];
-  addMindmap: (mindmap: Mindmap) => void;
-  updateMindmap: (id: string, data: Partial<Mindmap>) => void;
-  deleteMindmap: (id: string) => void;
+  addMindmap: (mindmap: Mindmap) => Promise<void>;
+  updateMindmap: (id: string, data: Partial<Mindmap>) => Promise<void>;
+  deleteMindmap: (id: string) => Promise<void>;
+
+  // Standard Arithmetic Calculator
+  standardHistory: StandardCalculation[];
+  addStandardRecord: (record: StandardCalculation) => Promise<void>;
+  clearStandardHistory: () => Promise<void>;
 
   importData: (data: Partial<AppStore>) => void;
 }
@@ -536,6 +551,9 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       budgetTransactionService.fetchAll(userId),
       todoProjectService.fetchAll(userId),
       todoTaskService.fetchAll(userId),
+      journalService.fetchAll(userId),
+      mindmapService.fetchAll(userId),
+      standardCalcService.fetchAll(userId),
     ]);
 
     const serviceNames = [
@@ -551,6 +569,9 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'budget transactions',
       'todo projects',
       'todo tasks',
+      'journals',
+      'mindmaps',
+      'standard calculations history',
     ];
 
     const failedServices = results
@@ -569,6 +590,9 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
     const todoProjects = results[10].status === 'fulfilled' ? results[10].value : [];
     const todoTasks = results[11].status === 'fulfilled' ? results[11].value : [];
+    const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
+    const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
+    const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -581,7 +605,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
-      budgetCategories, budgetTransactions, todoProjects, todoTasks,
+      budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory,
       dataLoaded: true
     });
   },
@@ -591,7 +615,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],
       snippets: [], budgetCategories: [], budgetTransactions: [],
-      todoProjects: [], todoTasks: [],
+      todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [],
       dataLoaded: false,
     }),
 
@@ -791,6 +815,35 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }));
     await interestService.delete(id);
     useToastStore.getState().addToast('Success', 'Record deleted', 'success');
+  },
+
+  standardHistory: [],
+  addStandardRecord: async (record) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().standardHistory;
+    const next = [record, ...previous].slice(0, 20);
+    set({ standardHistory: next });
+    try {
+      await standardCalcService.create(uid, record);
+    } catch (error) {
+      set({ standardHistory: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save calculation'), 'error');
+      throw error;
+    }
+  },
+  clearStandardHistory: async () => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().standardHistory;
+    set({ standardHistory: [] });
+    try {
+      await standardCalcService.clearAll(uid);
+    } catch (error) {
+      set({ standardHistory: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not clear history'), 'error');
+      throw error;
+    }
   },
 
   // ── Media ─────────────────────────────────────────────────────────────────
@@ -1205,53 +1258,99 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }
   },
 
-  addJournalEntry: (entry) => {
-    set((state) => {
-      const next = [entry, ...state.journals];
-      localStorage.setItem('phq_journals', JSON.stringify(next));
-      return { journals: next };
-    });
-    useToastStore.getState().addToast('Success', 'Journal entry saved', 'success');
+  addJournalEntry: async (entry) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().journals;
+    const next = [entry, ...previous];
+    localStorage.setItem('phq_journals', JSON.stringify(next));
+    set({ journals: next });
+    try {
+      await journalService.create(uid, entry);
+      useToastStore.getState().addToast('Success', 'Journal entry saved', 'success');
+    } catch (error) {
+      localStorage.setItem('phq_journals', JSON.stringify(previous));
+      set({ journals: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save journal entry'), 'error');
+      throw error;
+    }
   },
-  updateJournalEntry: (id, data) => {
-    set((state) => {
-      const next = state.journals.map((j) => (j.id === id ? { ...j, ...data } : j));
-      localStorage.setItem('phq_journals', JSON.stringify(next));
-      return { journals: next };
-    });
-    useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
+  updateJournalEntry: async (id, data) => {
+    const previous = get().journals;
+    const next = previous.map((j) => (j.id === id ? { ...j, ...data } : j));
+    localStorage.setItem('phq_journals', JSON.stringify(next));
+    set({ journals: next });
+    try {
+      await journalService.update(id, data);
+      useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
+    } catch (error) {
+      localStorage.setItem('phq_journals', JSON.stringify(previous));
+      set({ journals: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update journal entry'), 'error');
+      throw error;
+    }
   },
-  deleteJournalEntry: (id) => {
-    set((state) => {
-      const next = state.journals.filter((j) => j.id !== id);
-      localStorage.setItem('phq_journals', JSON.stringify(next));
-      return { journals: next };
-    });
-    useToastStore.getState().addToast('Success', 'Journal entry deleted', 'success');
+  deleteJournalEntry: async (id) => {
+    const previous = get().journals;
+    const next = previous.filter((j) => j.id !== id);
+    localStorage.setItem('phq_journals', JSON.stringify(next));
+    set({ journals: next });
+    try {
+      await journalService.delete(id);
+      useToastStore.getState().addToast('Success', 'Journal entry deleted', 'success');
+    } catch (error) {
+      localStorage.setItem('phq_journals', JSON.stringify(previous));
+      set({ journals: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete journal entry'), 'error');
+      throw error;
+    }
   },
 
-  addMindmap: (mindmap) => {
-    set((state) => {
-      const next = [mindmap, ...state.mindmaps];
-      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
-      return { mindmaps: next };
-    });
-    useToastStore.getState().addToast('Success', 'Mindmap created', 'success');
+  addMindmap: async (mindmap) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().mindmaps;
+    const next = [mindmap, ...previous];
+    localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+    set({ mindmaps: next });
+    try {
+      await mindmapService.create(uid, mindmap);
+      useToastStore.getState().addToast('Success', 'Mindmap created', 'success');
+    } catch (error) {
+      localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
+      set({ mindmaps: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save mindmap'), 'error');
+      throw error;
+    }
   },
-  updateMindmap: (id, data) => {
-    set((state) => {
-      const next = state.mindmaps.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
-      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
-      return { mindmaps: next };
-    });
+  updateMindmap: async (id, data) => {
+    const previous = get().mindmaps;
+    const next = previous.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
+    localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+    set({ mindmaps: next });
+    try {
+      await mindmapService.update(id, data);
+    } catch (error) {
+      localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
+      set({ mindmaps: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save mindmap edits'), 'error');
+      throw error;
+    }
   },
-  deleteMindmap: (id) => {
-    set((state) => {
-      const next = state.mindmaps.filter((m) => m.id !== id);
-      localStorage.setItem('phq_mindmaps', JSON.stringify(next));
-      return { mindmaps: next };
-    });
-    useToastStore.getState().addToast('Success', 'Mindmap deleted', 'success');
+  deleteMindmap: async (id) => {
+    const previous = get().mindmaps;
+    const next = previous.filter((m) => m.id !== id);
+    localStorage.setItem('phq_mindmaps', JSON.stringify(next));
+    set({ mindmaps: next });
+    try {
+      await mindmapService.delete(id);
+      useToastStore.getState().addToast('Success', 'Mindmap deleted', 'success');
+    } catch (error) {
+      localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
+      set({ mindmaps: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete mindmap'), 'error');
+      throw error;
+    }
   },
 
   importData: (data) =>

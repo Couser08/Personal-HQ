@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { RichTextEditor } from '../../components/ui/RichTextEditor';
 
 const JOURNAL_TEMPLATES = [
   { id: 'blank', label: 'Blank Page', icon: '📄', prompt: '' },
@@ -147,10 +148,7 @@ export default function JournalModule() {
         whatWentWell: '',
         whatCanBeBetter: ''
       },
-      focusList: [
-        { text: 'Complete daily review', checked: false },
-        { text: 'Hydrate 2L water', checked: false }
-      ],
+      focusList: [],
       attachments: [],
       pageStyle: 'default'
     };
@@ -326,25 +324,8 @@ export default function JournalModule() {
       {/* Workspace Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left Side: Entries Library and Quick Start Templates */}
+        {/* Left Side: Entries Library */}
         <div className={`lg:col-span-4 flex flex-col gap-6 ${mode === 'reflect' && activeEntryId ? 'hidden lg:flex' : 'flex'}`}>
-          {/* Quick Start Templates Grid */}
-          <div className="bg-surface border border-border rounded-2xl p-5 flex flex-col gap-3">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-text-muted">Quick Start</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {JOURNAL_TEMPLATES.map(tmpl => (
-                <button
-                  key={tmpl.id}
-                  onClick={() => handleCreateEntry(tmpl.id)}
-                  className="p-3 border border-border bg-surface-alt hover:bg-surface-hover rounded-xl flex flex-col items-center gap-1 text-center transition-all hover:scale-[1.02]"
-                >
-                  <span className="text-xl">{tmpl.icon}</span>
-                  <span className="text-[11px] font-semibold text-text-primary leading-tight">{tmpl.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Library list */}
           <div className="bg-surface border border-border rounded-2xl p-5 flex flex-col gap-4">
             <h3 className="font-bold text-xs uppercase tracking-wider text-text-muted pb-2 border-b border-border-alt">Journal Entries</h3>
@@ -460,14 +441,8 @@ export default function JournalModule() {
                       />
                     </div>
                     
-                    {/* Minimal Formatting Toolbar */}
-                    <div className="flex items-center px-8 py-2 gap-4">
-                      <div className="flex gap-1.5 items-center">
-                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors font-serif font-bold w-7 text-center">B</button>
-                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors font-serif italic w-7 text-center">I</button>
-                        <button className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors underline w-7 text-center">U</button>
-                      </div>
-                      <div className="h-4 w-px bg-border"></div>
+                    {/* Minimal Toolbar */}
+                    <div className="flex items-center px-8 py-2 gap-4 border-b border-border/40 bg-surface-alt/10">
                       <div className="flex gap-1.5 items-center">
                         <button onClick={insertRandomPrompt} className="p-1.5 rounded hover:bg-surface-hover text-amber-500 transition-colors" title="Insert Prompt">
                           <IconSparkles className="w-4 h-4" />
@@ -495,12 +470,9 @@ export default function JournalModule() {
                       </div>
                     </div>
 
-                    {/* Textarea */}
-                    <textarea
-                      value={content.replace(/<[^>]*>/g, '')}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Start writing..."
-                      className="flex-1 w-full bg-transparent border-none focus:outline-none text-base font-serif px-8 py-4 resize-none placeholder:text-text-muted/40 text-text-primary leading-relaxed"
+                    {/* Rich Text Editor */}
+                    <div 
+                      className="flex-1 p-6 overflow-y-auto rich-text-journal-editor"
                       style={
                         pageStyle === 'lines'
                           ? { backgroundImage: 'linear-gradient(rgba(0,0,0,0) 95%, var(--border-border-alt) 95%)', backgroundSize: '100% 28px', lineHeight: '28px' }
@@ -508,7 +480,17 @@ export default function JournalModule() {
                           ? { backgroundImage: 'linear-gradient(var(--border-border-alt) 1px, transparent 1px), linear-gradient(90deg, var(--border-border-alt) 1px, transparent 1px)', backgroundSize: '24px 24px', lineHeight: '24px' }
                           : {}
                       }
-                    />
+                    >
+                      <RichTextEditor
+                        key={activeEntry.id}
+                        value={content}
+                        onChange={(html: string) => {
+                          setContent(html);
+                          updateJournalEntry(activeEntry.id, { content: html });
+                        }}
+                        placeholder="Start writing..."
+                      />
+                    </div>
                   </div>
 
                   {/* Right Side: Focus & Meta */}
