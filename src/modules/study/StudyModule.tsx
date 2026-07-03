@@ -6,7 +6,7 @@ import {
   IconCode, IconLink, IconHelpCircle, IconNotes, IconEdit, IconRefresh,
   IconFileText, IconDots, IconCopy,
   IconBrandYoutube, IconExternalLink, IconBrandGithub,
-  IconChevronLeft, IconChevronRight
+  IconChevronLeft, IconChevronRight, IconArrowsShuffle
 } from '@tabler/icons-react';
 import { useAppStore, type Topic } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -1048,15 +1048,48 @@ export default function StudyModule() {
           )}
 
           {topicTab === 'flashcards' && (
-            <div className="space-y-6 max-w-4xl mx-auto pb-10">
-              <div className="flex justify-between items-center px-4">
-                <h3 className="font-bold text-base">Flashcard Deck</h3>
-                <button
-                  onClick={() => setFlashcardModal({ open: true, front: '', back: '' })}
-                  className="btn btn-primary btn-sm rounded-full"
-                >
-                  <IconPlus className="w-4 h-4" /> Add Card
-                </button>
+            <div className="space-y-6 max-w-2xl mx-auto pb-10 px-4">
+              {/* Header Info */}
+              <div className="flex justify-between items-center bg-surface-alt border border-border/40 p-4 rounded-3xl">
+                <div>
+                  <h3 className="font-extrabold text-[15px] text-text-primary">Flashcard Deck</h3>
+                  <p className="text-[10px] text-text-secondary font-medium">Review topics using active recall</p>
+                </div>
+                <div className="flex gap-2">
+                  {activeTopic.flashcards && activeTopic.flashcards.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (!activeTopic.flashcards || activeTopic.flashcards.length <= 1) return;
+                          const shuffled = [...activeTopic.flashcards].sort(() => Math.random() - 0.5);
+                          updateTopic(selectedSubjectId!, selectedTopicId!, { flashcards: shuffled });
+                          setCurrentFlashcardIndex(0);
+                          setFlashcardFlipped(false);
+                        }}
+                        className="btn btn-secondary btn-sm flex items-center gap-1 text-[11px] font-bold rounded-full px-3 py-1.5"
+                        title="Shuffle Deck"
+                      >
+                        <IconArrowsShuffle className="w-3.5 h-3.5" /> Shuffle
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentFlashcardIndex(0);
+                          setFlashcardFlipped(false);
+                        }}
+                        className="btn btn-secondary btn-sm flex items-center gap-1 text-[11px] font-bold rounded-full px-3 py-1.5"
+                        title="Restart Review"
+                      >
+                        <IconRefresh className="w-3.5 h-3.5" /> Reset
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setFlashcardModal({ open: true, front: '', back: '' })}
+                    className="btn btn-primary btn-sm flex items-center gap-1 text-[11px] font-bold rounded-full px-3.5 py-1.5"
+                  >
+                    <IconPlus className="w-3.5 h-3.5" /> Add Card
+                  </button>
+                </div>
               </div>
 
               {!activeTopic.flashcards?.length ? (
@@ -1064,23 +1097,45 @@ export default function StudyModule() {
                   icon={<IconRefresh className="w-8 h-8 text-text-muted" />}
                   title="Flashcards vault empty"
                   description="Leverage flashcards for active recall and spaced repetition memory enhancement."
+                  action={
+                    <button
+                      onClick={() => setFlashcardModal({ open: true, front: '', back: '' })}
+                      className="btn btn-primary btn-md"
+                    >
+                      Create First Card
+                    </button>
+                  }
                 />
               ) : (
-                <div className="space-y-8 flex flex-col items-center">
-                  <div className="flex items-center gap-6 w-full justify-center">
+                <div className="space-y-6 flex flex-col items-center w-full">
+                  {/* Progress Indicator */}
+                  <div className="w-full space-y-1.5">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-text-secondary tracking-wide">
+                      <span>PROGRESS</span>
+                      <span>Card {currentFlashcardIndex + 1} of {activeTopic.flashcards.length}</span>
+                    </div>
+                    <div className="w-full bg-border-alt h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-primary h-full transition-all duration-300 rounded-full" 
+                        style={{ width: `${Math.round(((currentFlashcardIndex + 1) / activeTopic.flashcards.length) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 w-full justify-center">
                     <button
                       onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.max(prev - 1, 0)); }}
                       disabled={currentFlashcardIndex === 0}
-                      className="w-12 h-12 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      className="w-10 h-10 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <IconChevronLeft className="w-6 h-6" />
+                      <IconChevronLeft className="w-5 h-5" />
                     </button>
 
                     {/* Card Container (3D Flip Effect) */}
                     <div
                       onClick={() => setFlashcardFlipped(!flashcardFlipped)}
-                      style={{ perspective: 1000 }}
-                      className="w-full max-w-2xl h-80 cursor-pointer relative"
+                      style={{ perspective: 1200 }}
+                      className="w-full h-72 cursor-pointer relative"
                     >
                       <motion.div
                         animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
@@ -1091,19 +1146,27 @@ export default function StudyModule() {
                         {/* Front Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden' }}
-                          className="absolute inset-0 bg-white dark:bg-gray-800 border-none rounded-[32px] p-8 flex flex-col items-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] justify-center relative ring-1 ring-black/5 dark:ring-white/10"
+                          className="absolute inset-0 bg-surface border border-border rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden"
                         >
-                          <span className="absolute top-8 text-[10px] text-red-500 uppercase tracking-widest font-bold">Question (Click to flip)</span>
-                          <p className="text-3xl font-medium text-text-primary text-center max-w-lg leading-relaxed">{activeTopic.flashcards[currentFlashcardIndex]?.front}</p>
+                          <span className="absolute top-6 text-[9px] font-black text-rose-500 uppercase tracking-[0.2em]">
+                            QUESTION (TAP TO FLIP)
+                          </span>
+                          <p className="text-xl font-bold text-text-primary max-w-md leading-relaxed px-2">
+                            {activeTopic.flashcards[currentFlashcardIndex]?.front}
+                          </p>
                         </div>
 
                         {/* Back Side */}
                         <div
                           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                          className="absolute inset-0 bg-gray-50 dark:bg-gray-900 border-none rounded-[32px] p-8 flex flex-col items-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] justify-center relative ring-1 ring-black/5 dark:ring-white/10"
+                          className="absolute inset-0 bg-surface border border-border rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden"
                         >
-                          <span className="absolute top-8 text-[10px] text-blue-500 uppercase tracking-widest font-bold">Answer (Click to flip)</span>
-                          <p className="text-xl font-medium text-text-secondary text-center max-w-lg leading-relaxed">{activeTopic.flashcards[currentFlashcardIndex]?.back}</p>
+                          <span className="absolute top-6 text-[9px] font-black text-blue-500 uppercase tracking-[0.2em]">
+                            ANSWER (TAP TO FLIP)
+                          </span>
+                          <p className="text-base font-semibold text-text-secondary max-w-md leading-relaxed px-2 overflow-y-auto max-h-[160px]">
+                            {activeTopic.flashcards[currentFlashcardIndex]?.back}
+                          </p>
                         </div>
                       </motion.div>
                     </div>
@@ -1111,14 +1174,14 @@ export default function StudyModule() {
                     <button
                       onClick={() => { setFlashcardFlipped(false); setCurrentFlashcardIndex(prev => Math.min(prev + 1, activeTopic.flashcards!.length - 1)); }}
                       disabled={currentFlashcardIndex === activeTopic.flashcards.length - 1}
-                      className="w-12 h-12 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      className="w-10 h-10 rounded-full bg-surface border border-border shadow-sm flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <IconChevronRight className="w-6 h-6" />
+                      <IconChevronRight className="w-5 h-5" />
                     </button>
                   </div>
 
-                  {/* Dot Pagination */}
-                  <div className="flex gap-2 items-center">
+                  {/* Dot Page Pills */}
+                  <div className="flex gap-1.5 items-center flex-wrap justify-center max-w-xs">
                     {activeTopic.flashcards.map((_, idx) => (
                       <button
                         key={idx}
@@ -1126,7 +1189,9 @@ export default function StudyModule() {
                           setFlashcardFlipped(false);
                           setCurrentFlashcardIndex(idx);
                         }}
-                        className={`transition-all rounded-full ${idx === currentFlashcardIndex ? 'w-2 h-2 bg-red-500' : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400'}`}
+                        className={`transition-all rounded-full h-1.5 ${
+                          idx === currentFlashcardIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border hover:bg-text-secondary'
+                        }`}
                         aria-label={`Go to flashcard ${idx + 1}`}
                       />
                     ))}
@@ -1134,34 +1199,30 @@ export default function StudyModule() {
                   
                   {/* Rating Actions */}
                   {flashcardFlipped && (
-                    <div className="flex flex-col items-center gap-3 mt-4 animate-fade-in">
-                      <p className="text-xs font-semibold text-text-secondary">Rate recall difficulty to schedule review:</p>
-                      <div className="flex justify-center gap-3">
+                    <div className="flex flex-col items-center gap-3.5 mt-4 w-full animate-fade-in">
+                      <p className="text-[10px] font-black tracking-wider uppercase text-text-secondary">Rate recall difficulty to schedule review:</p>
+                      <div className="flex justify-center gap-3 w-full max-w-md">
                         <button
                           onClick={() => handleRateFlashcard('easy')}
-                          className="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-green-500/20"
+                          className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
                         >
-                          Easy (4 Days)
+                          🟢 Easy (4D)
                         </button>
                         <button
                           onClick={() => handleRateFlashcard('medium')}
-                          className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-amber-500/20"
+                          className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
                         >
-                          Medium (2 Days)
+                          🟡 Medium (2D)
                         </button>
                         <button
                           onClick={() => handleRateFlashcard('hard')}
-                          className="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full transition-all shadow-sm shadow-rose-500/20"
+                          className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full transition-all shadow-md active:scale-95"
                         >
-                          Hard (1 Day)
+                          🔴 Hard (1D)
                         </button>
                       </div>
                     </div>
                   )}
-                  
-                  <div className="text-xs font-semibold text-text-muted mt-2">
-                    Card {currentFlashcardIndex + 1} of {activeTopic.flashcards.length}
-                  </div>
                 </div>
               )}
             </div>
@@ -1700,7 +1761,12 @@ export default function StudyModule() {
           )}
 
           {subjectTab === 'topics' && (
-            <div className="space-y-3">
+            <div className="space-y-4 relative pl-4 md:pl-8">
+              {/* Timeline Connector Line */}
+              {activeSubject.topics.length > 1 && (
+                <div className="absolute left-1.5 md:left-3.5 top-4 bottom-4 w-0.5 border-l-2 border-dashed border-border-alt z-0" />
+              )}
+              
               {!activeSubject.topics.length ? (
                 <EmptyState
                   icon={<IconBook className="w-8 h-8 text-text-muted" />}
@@ -1709,50 +1775,122 @@ export default function StudyModule() {
                   action={<button onClick={() => setIsTopicModalOpen(true)} className="btn btn-primary btn-md">Add First Topic</button>}
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activeSubject.topics.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setSelectedTopicId(t.id)}
-                      className="bg-surface border border-border hover:border-primary/25 rounded-2xl p-5 flex flex-col justify-between gap-4 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm"
-                    >
-                      <div className="flex justify-between items-start gap-3">
-                        <div>
-                          <h4 className="font-bold text-base text-text-primary line-clamp-1">{t.name}</h4>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-bold ${
-                              t.difficulty === 'hard' ? 'bg-rose-500/10 text-rose-500' : 'bg-green-500/10 text-green-500'
-                            }`}>
-                              {t.difficulty || 'medium'}
+                <div className="flex flex-col gap-5 relative z-10">
+                  {activeSubject.topics.map((t) => {
+                    const totalTasks = t.tasks?.length || 0;
+                    const doneTasks = t.tasks?.filter(tk => tk.done).length || 0;
+                    const progressPct = t.done ? 100 : (totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0);
+                    
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => setSelectedTopicId(t.id)}
+                        className={`group bg-surface border rounded-[24px] p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md relative ${
+                          t.done 
+                            ? 'border-green-500/20 bg-green-500/[0.01] hover:border-green-500/40' 
+                            : 'border-border hover:border-primary/30'
+                        }`}
+                      >
+                        {/* Timeline Node Ring */}
+                        <div className={`absolute -left-[23px] md:-left-[39px] w-4 h-4 rounded-full border-4 bg-background z-20 transition-all ${
+                          t.done ? 'border-green-500' : 'border-border group-hover:border-primary'
+                        }`} />
+
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          {/* Radial Progress Ring */}
+                          <div className="relative w-12 h-12 flex items-center justify-center shrink-0 bg-surface-alt rounded-full border border-border/40 shadow-inner">
+                            <svg className="w-full h-full transform -rotate-90">
+                              <circle cx="24" cy="24" r="19" stroke="var(--border-border-alt)" strokeWidth="3" fill="transparent" />
+                              <circle
+                                cx="24"
+                                cy="24"
+                                r="19"
+                                stroke={t.done ? '#10b981' : 'var(--color-primary)'}
+                                strokeWidth="3"
+                                fill="transparent"
+                                strokeDasharray={119.3}
+                                strokeDashoffset={119.3 - (119.3 * progressPct) / 100}
+                                strokeLinecap="round"
+                                className="transition-all duration-500"
+                              />
+                            </svg>
+                            <span className="absolute text-[10px] font-black text-text-primary">
+                              {t.done ? '✓' : `${progressPct}%`}
                             </span>
-                            {t.priority && (
-                              <span className="px-2 py-0.5 rounded-md text-[9px] uppercase font-bold bg-surface-alt border border-border-alt text-text-secondary">
-                                {t.priority}
+                          </div>
+
+                          <div className="min-w-0 space-y-1">
+                            <h4 className={`font-bold text-base text-text-primary group-hover:text-primary transition-colors line-clamp-1 ${
+                              t.done ? 'line-through text-text-muted decoration-green-500/30' : ''
+                            }`}>
+                              {t.name}
+                            </h4>
+                            
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-black ${
+                                t.difficulty === 'hard' 
+                                  ? 'bg-rose-500/10 text-rose-500' 
+                                  : t.difficulty === 'easy' 
+                                  ? 'bg-green-500/10 text-green-500' 
+                                  : 'bg-amber-500/10 text-amber-500'
+                              }`}>
+                                {t.difficulty || 'medium'}
                               </span>
-                            )}
+                              {t.priority && (
+                                <span className="px-2 py-0.5 rounded-md text-[9px] uppercase font-bold bg-surface-alt border border-border-alt text-text-secondary">
+                                  {t.priority}
+                                </span>
+                              )}
+                              {t.timeSpent ? (
+                                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-primary/5 text-primary">
+                                  ⏱️ {formatMinutes(t.timeSpent)}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            showConfirm('Delete Topic', 'Delete this topic permanently?', () => {
-                              deleteTopic(activeSubject.id, t.id);
-                            });
-                          }}
-                          className="btn btn-ghost btn-sm btn-square hover:text-rose-500"
-                        >
-                          <IconTrash className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
 
-                      <div className="flex justify-between items-center text-xs text-text-muted pt-3 border-t border-border-alt">
-                        <span>{t.notes?.length || 0} Notes • {t.snippets?.length || 0} Code</span>
-                        <span className={`font-semibold ${t.done ? 'text-green-500' : 'text-primary'}`}>
-                          {t.done ? '✓ Completed' : 'In Progress'}
-                        </span>
+                        {/* Right side controls */}
+                        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end pt-3 md:pt-0 border-t border-border-alt md:border-none">
+                          {/* Syllabus Stats */}
+                          <div className="text-xs text-text-muted space-x-2">
+                            <span>📝 {t.notes?.length || 0}</span>
+                            <span>•</span>
+                            <span>💻 {t.snippets?.length || 0}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            {/* Toggle Done Action */}
+                            <button
+                              onClick={e => {
+                                  e.stopPropagation();
+                                  updateTopic(activeSubject.id, t.id, { done: !t.done });
+                              }}
+                              className={`btn btn-sm btn-square rounded-full ${
+                                  t.done ? 'bg-green-500/15 text-green-500 hover:bg-green-500/25 border-none' : 'btn-secondary'
+                              }`}
+                              title={t.done ? 'Mark as In Progress' : 'Mark as Completed'}
+                            >
+                              {t.done ? '✓' : '○'}
+                            </button>
+                            
+                            {/* Delete Action */}
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                showConfirm('Delete Topic', 'Delete this topic permanently?', () => {
+                                  deleteTopic(activeSubject.id, t.id);
+                                });
+                              }}
+                              className="btn btn-ghost btn-sm btn-square hover:text-rose-500"
+                            >
+                              <IconTrash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

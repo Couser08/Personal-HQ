@@ -518,6 +518,18 @@ export const budgetTransactionService = {
     const { error } = await supabase.from('budget_transactions').delete().eq('id', id);
     if (error) throw error;
   },
+
+  async update(id: string, transaction: Partial<BudgetTransaction>) {
+    const updateData: any = {};
+    if (transaction.categoryId !== undefined) updateData.category_id = transaction.categoryId;
+    if (transaction.amount !== undefined) updateData.amount = transaction.amount;
+    if (transaction.description !== undefined) updateData.description = transaction.description;
+    if (transaction.date !== undefined) updateData.date = transaction.date;
+    if (transaction.type !== undefined) updateData.type = transaction.type;
+
+    const { error } = await supabase.from('budget_transactions').update(updateData).eq('id', id);
+    if (error) throw error;
+  },
 };
 
 // ─── To-Do Projects ────────────────────────────────────────────────────────────

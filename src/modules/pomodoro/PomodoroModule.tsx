@@ -187,8 +187,8 @@ export default function PomodoroModule() {
     }
     try {
       const pip = await (window as any).documentPictureInPicture.requestWindow({
-        width: 300,
-        height: 300,
+        width: 250,
+        height: 200,
       });
 
       // Copy stylesheet rules to PiP
@@ -619,27 +619,46 @@ function PipTimerContent({
   pomodoroTheme: string;
 }) {
   return (
-    <div className={`pomodoro-wrapper flex flex-col items-center justify-center text-center h-full w-full select-none ${pomodoroTheme} p-4`} style={{ flex: 1 }}>
-      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-secondary block mb-2 opacity-80">
-        {sessionLabel}
-      </span>
-      <div className={`text-5xl font-black tracking-tighter text-text-primary ${fontStyle} leading-none mb-6`}>
-        {display}
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={togglePlayPause}
-          className="px-4 py-2 text-white rounded-full text-[11px] font-bold transition-all shadow-sm active:scale-95"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          {isRunning ? 'Pause' : 'Start'}
-        </button>
-        <button
-          onClick={stop}
-          className="px-4 py-2 bg-surface-alt border border-border text-text-primary rounded-full text-[11px] font-bold transition-all hover:bg-surface-hover active:scale-95"
-        >
-          Stop
-        </button>
+    <div className={`pomodoro-wrapper flex flex-col items-center justify-center text-center h-full w-full select-none ${pomodoroTheme} p-4 bg-background`} style={{ boxSizing: 'border-box', flex: 1 }}>
+      {/* Apple style widget card container */}
+      <div className="w-full max-w-[210px] bg-surface/30 border border-border/40 rounded-[28px] p-4 flex flex-col items-center justify-center shadow-lg backdrop-blur-md relative overflow-hidden">
+        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-text-secondary block mb-1 opacity-70">
+          {sessionLabel}
+        </span>
+        <div className={`text-4xl font-extrabold tracking-tight text-text-primary ${fontStyle} leading-none mb-4 font-mono`}>
+          {display}
+        </div>
+        <div className="flex gap-3 justify-center">
+          {/* Play/Pause Button */}
+          <button
+            onClick={togglePlayPause}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all shadow-md active:scale-90"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+            title={isRunning ? 'Pause' : 'Start'}
+          >
+            {isRunning ? (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+          
+          {/* Stop Button */}
+          <button
+            onClick={stop}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-alt border border-border/80 text-text-primary hover:bg-surface-hover transition-all active:scale-90"
+            title="Stop Timer"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

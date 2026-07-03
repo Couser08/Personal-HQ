@@ -5,6 +5,7 @@ import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
 import { MediaEntryModal } from '../ui/MediaEntryModal';
 import { TodoProjectModal } from '../ui/TodoProjectModal';
+import { TodoTaskModal } from '../ui/TodoTaskModal';
 
 interface LayoutProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <UpdatePopup />
       <MediaEntryModal />
       <TodoProjectModal />
+      <TodoTaskModal />
     </div>
   );
 };

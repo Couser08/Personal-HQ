@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
@@ -14,7 +14,7 @@ export default function TodoModule() {
   const { 
     todoTasks, todoProjects, 
     addTodoTask, updateTodoTask, deleteTodoTask, restoreTodoTask, emptyTodoTrash,
-    deleteTodoProject, openTodoProjectModal
+    deleteTodoProject, openTodoProjectModal, openTodoTaskModal
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     todoProjects: state.todoProjects,
@@ -25,6 +25,7 @@ export default function TodoModule() {
     emptyTodoTrash: state.emptyTodoTrash,
     deleteTodoProject: state.deleteTodoProject,
     openTodoProjectModal: state.openTodoProjectModal,
+    openTodoTaskModal: state.openTodoTaskModal,
   })));
 
   const [search, setSearch] = useState('');
@@ -757,7 +758,7 @@ export default function TodoModule() {
                     strikeStyle={strikeStyle}
                     projects={todoProjects}
                     completingIds={completingIds}
-                    updateTodoTask={updateTodoTask}
+                    openTodoTaskModal={openTodoTaskModal}
                   />
                 )}
               </motion.div>
@@ -923,13 +924,13 @@ function NavItem({ icon, label, count, active, onClick }: { icon: React.ReactNod
 
 function TaskGroup({ 
   title, count, tasks, onToggle, onDelete, 
-  tickStyle, strikeStyle, projects, completingIds = [], updateTodoTask
+  tickStyle, strikeStyle, projects, completingIds = [], openTodoTaskModal
 }: { 
   title: string, count: number, tasks: TodoTask[], 
   onToggle: (id: string) => void, onDelete: (id: string) => void,
   tickStyle: string, strikeStyle: string, projects: TodoProject[],
   completingIds?: string[],
-  updateTodoTask: (id: string, data: Partial<TodoTask>) => void
+  openTodoTaskModal: (task?: TodoTask | null) => void
 }) {
   if (tasks.length === 0) return null;
   return (
@@ -954,7 +955,7 @@ function TaskGroup({
                 tickStyle={tickStyle}
                 strikeStyle={strikeStyle}
                 projects={projects}
-                updateTodoTask={updateTodoTask}
+                openTodoTaskModal={openTodoTaskModal}
               />
             );
           })}
@@ -966,7 +967,7 @@ function TaskGroup({
 
 function TaskItem({
   task, isCompleted, onToggle, onDelete,
-  tickStyle, strikeStyle, projects, updateTodoTask
+  tickStyle, strikeStyle, projects, openTodoTaskModal
 }: {
   task: TodoTask;
   isCompleted: boolean;
@@ -975,25 +976,8 @@ function TaskItem({
   tickStyle: string;
   strikeStyle: string;
   projects: TodoProject[];
-  updateTodoTask: (id: string, data: Partial<TodoTask>) => void;
+  openTodoTaskModal: (task?: TodoTask | null) => void;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-
-  useEffect(() => {
-    setEditTitle(task.title);
-  }, [task.title]);
-
-  const handleSave = () => {
-    const trimmed = editTitle.trim();
-    if (trimmed && trimmed !== task.title) {
-      updateTodoTask(task.id, { title: trimmed });
-    } else {
-      setEditTitle(task.title);
-    }
-    setIsEditing(false);
-  };
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
@@ -1029,54 +1013,36 @@ function TaskItem({
       </button>
       
       <div className="flex-1 min-w-0 relative">
-        {isEditing ? (
-          <input
-            type="text"
-            value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={e => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') {
-                setEditTitle(task.title);
-                setIsEditing(false);
-              }
+        <div className="flex flex-col gap-0.5">
+          <span 
+            onDoubleClick={() => {
+              if (!isCompleted) openTodoTaskModal(task);
             }}
-            className="w-full bg-surface-alt border border-rose-500/30 rounded-lg px-2.5 py-1 text-sm font-medium text-text-primary focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-            autoFocus
-          />
-        ) : (
-          <div className="flex flex-col gap-0.5">
-            <span 
-              onDoubleClick={() => {
-                if (!isCompleted) setIsEditing(true);
-              }}
-              className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'} cursor-pointer`}
-              style={isCompleted ? { 
-                textDecorationLine: 'line-through',
-                textDecorationStyle: strikeStyle as any,
-                textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
-                textDecorationColor: 'currentColor'
-              } : undefined}
-              title="Double click to edit"
-            >
-              {task.title}
-            </span>
-            <div className="flex flex-wrap gap-1.5 items-center">
-              {(task.startTime || task.endTime) && (
-                <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-rose-500 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
-                  <IconClock className="w-2.5 h-2.5" />
-                  {task.startTime || '??'} - {task.endTime || '??'}
-                </span>
-              )}
-              {task.pomodoroCount !== undefined && task.pomodoroCount > 0 && (
-                <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-orange-500 bg-orange-500/5 px-2 py-0.5 rounded-full border border-orange-500/10" title={`${task.pomodoroCount} focus sessions completed`}>
-                  <span>🍅</span> {task.pomodoroCount}
-                </span>
-              )}
-            </div>
+            className={`block truncate text-sm font-medium transition-all ${isCompleted ? 'text-text-muted' : 'text-text-primary'} cursor-pointer`}
+            style={isCompleted ? { 
+              textDecorationLine: 'line-through',
+              textDecorationStyle: strikeStyle as any,
+              textDecorationThickness: strikeStyle === 'double' ? '3px' : '2px',
+              textDecorationColor: 'currentColor'
+            } : undefined}
+            title="Double click to edit task details"
+          >
+            {task.title}
+          </span>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {(task.startTime || task.endTime) && (
+              <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-rose-500 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
+                <IconClock className="w-2.5 h-2.5" />
+                {task.startTime || '??'} - {task.endTime || '??'}
+              </span>
+            )}
+            {task.pomodoroCount !== undefined && task.pomodoroCount > 0 && (
+              <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold text-orange-500 bg-orange-500/5 px-2 py-0.5 rounded-full border border-orange-500/10" title={`${task.pomodoroCount} focus sessions completed`}>
+                <span>🍅</span> {task.pomodoroCount}
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
       
       {task.projectId && projects.find(p => p.id === task.projectId) && (
@@ -1100,11 +1066,11 @@ function TaskItem({
       )}
       
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0 ml-2">
-        {!isCompleted && !isEditing && (
+        {!isCompleted && (
           <button 
-            onClick={() => setIsEditing(true)} 
+            onClick={() => openTodoTaskModal(task)} 
             className="p-1.5 text-text-muted hover:text-rose-500 transition-colors"
-            title="Edit task title"
+            title="Edit task details"
           >
             <IconEdit className="w-4 h-4" />
           </button>

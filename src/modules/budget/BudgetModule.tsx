@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconPlus, IconTrash, IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
+import { 
+  IconPlus, IconTrash, IconTrendingUp, IconTrendingDown, 
+  IconEdit, IconFilter, IconWallet
+} from '@tabler/icons-react';
 import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -30,6 +33,7 @@ export default function BudgetModule() {
     updateBudgetCategory, 
     deleteBudgetCategory,
     addBudgetTransaction, 
+    updateBudgetTransaction,
     deleteBudgetTransaction,
     showConfirm,
   } = useAppStore();
@@ -38,6 +42,12 @@ export default function BudgetModule() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<BudgetTransaction | null>(null);
+
+  // Filters state
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
 
   const stats = useMemo(() => {
     const income = budgetTransactions
@@ -58,66 +68,101 @@ export default function BudgetModule() {
       const spent = budgetTransactions
         .filter(t => t.categoryId === cat.id && t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
-      const progress = Math.min((spent / cat.budget) * 100, 100);
+      const progress = Math.min((spent / (cat.budget || 1)) * 100, 100);
       return { ...cat, spent, progress };
     });
   }, [budgetCategories, budgetTransactions]);
+
+  // Extract unique transaction months for month filter dropdown
+  const uniqueMonths = useMemo(() => {
+    const monthsSet = new Set<string>();
+    budgetTransactions.forEach(t => {
+      const date = new Date(t.date);
+      const label = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      monthsSet.add(label);
+    });
+    return Array.from(monthsSet);
+  }, [budgetTransactions]);
+
+  // Filter transactions
+  const filteredTransactions = useMemo(() => {
+    return budgetTransactions.filter(t => {
+      const matchesType = filterType === 'all' || t.type === filterType;
+      const matchesCategory = filterCategory === 'all' || t.categoryId === filterCategory;
+      
+      let matchesMonth = true;
+      if (filterMonth !== 'all') {
+        const tMonthLabel = new Date(t.date).toLocaleString('default', { month: 'short', year: 'numeric' });
+        matchesMonth = tMonthLabel === filterMonth;
+      }
+      
+      return matchesType && matchesCategory && matchesMonth;
+    });
+  }, [budgetTransactions, filterType, filterCategory, filterMonth]);
 
   const hasBudgetData = budgetCategories.length > 0 || budgetTransactions.length > 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col gap-6 h-full"
+      exit={{ opacity: 0, y: -16 }}
+      className="flex flex-col gap-6 h-full pb-10"
     >
-      <div className="flex flex-col gap-4 justify-between items-start md:flex-row md:items-center">
+      {/* Header */}
+      <div className="flex flex-col gap-4 justify-between items-start md:flex-row md:items-center border-b border-border pb-4">
         <div>
           <h2 className="flex gap-2 items-center text-2xl font-bold">
-            Budget Tracker <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
+            Expense & Income Tracker <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary"></span>
           </h2>
-          <p className="text-sm text-text-secondary">Manage your income and expenses</p>
+          <p className="text-sm text-text-secondary">Track cash flow, set category budgets, and monitor balance metrics.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <button
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="btn btn-secondary btn-md"
+            onClick={() => {
+              setEditingCategory(null);
+              setIsCategoryModalOpen(true);
+            }}
+            className="btn btn-secondary btn-md rounded-full px-4"
           >
-            <IconPlus className="w-4 h-4" /> Category
+            <IconPlus className="w-4 h-4" /> Add Category
           </button>
           <button
-            onClick={() => setIsTransactionModalOpen(true)}
-            className="btn btn-primary btn-md"
+            onClick={() => {
+              setEditingTransaction(null);
+              setIsTransactionModalOpen(true);
+            }}
+            className="btn btn-primary btn-md rounded-full px-5"
           >
-            <IconPlus className="w-4 h-4" /> Transaction
+            <IconPlus className="w-4 h-4" /> Add Transaction
           </button>
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl bg-surface-alt w-fit">
+      {/* Tabs */}
+      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40 w-fit">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'overview' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+            activeTab === 'overview' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Overview
         </button>
         <button
           onClick={() => setActiveTab('transactions')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'transactions' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+            activeTab === 'transactions' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          Transactions
+          Transactions Ledger ({filteredTransactions.length})
         </button>
       </div>
 
       {!hasBudgetData ? (
         <EmptyState
-          icon={<IconTrendingUp className="w-9 h-9 text-text-muted" />}
-          title="No budget data yet"
+          icon={<IconWallet className="w-9 h-9 text-text-muted" />}
+          title="No transactions yet"
           description="Create categories and add transactions to see your balance, spending progress, and history."
           action={
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -131,168 +176,273 @@ export default function BudgetModule() {
           }
         />
       ) : (
-      <AnimatePresence mode="wait">
-        {activeTab === 'overview' ? (
-          <motion.div
-            key="overview"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-          >
-            <div className="flex flex-col col-span-1 gap-6 p-6 rounded-2xl border bg-surface border-border md:col-span-2 lg:col-span-3 md:flex-row">
-              <div className="flex-1 space-y-4">
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
-                    <IconTrendingUp className="w-6 h-6 text-green-500" />
+        <AnimatePresence mode="wait">
+          {activeTab === 'overview' ? (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+            >
+              {/* Financial Dashboard Widget */}
+              <div className="flex flex-col col-span-1 gap-6 p-6 rounded-[28px] border bg-surface/50 border-border/80 lg:col-span-3 md:flex-row items-center justify-between backdrop-blur-md">
+                <div className="space-y-4 w-full md:w-auto">
+                  <div className="flex gap-4 items-center">
+                    <div className="flex justify-center items-center w-10 h-10 bg-green-500/10 rounded-xl">
+                      <IconTrendingUp className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Total Income</p>
+                      <p className="text-2xl font-black text-green-500">${stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Total Income</p>
-                    <p className="text-3xl font-bold text-green-500">${stats.income.toLocaleString()}</p>
+                  <div className="flex gap-4 items-center">
+                    <div className="flex justify-center items-center w-10 h-10 bg-rose-500/10 rounded-xl">
+                      <IconTrendingDown className="w-5 h-5 text-rose-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Total Expenses</p>
+                      <p className="text-2xl font-black text-rose-500">${stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 bg-rose-100 rounded-xl dark:bg-rose-900/30">
-                    <IconTrendingDown className="w-6 h-6 text-rose-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Total Expenses</p>
-                    <p className="text-3xl font-bold text-rose-500">${stats.expenses.toLocaleString()}</p>
-                  </div>
+                
+                {/* Center Apple-style Net Balance display */}
+                <div className="flex flex-col items-center justify-center text-center p-6 bg-surface-alt border border-border/40 rounded-[24px] min-w-[240px]">
+                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-1">Net Balance</p>
+                  <p className={`text-3xl font-black tracking-tight ${stats.balance >= 0 ? 'text-text-primary' : 'text-rose-500'}`}>
+                    ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold mt-2 ${
+                    stats.balance >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-rose-500/10 text-rose-500'
+                  }`}>
+                    {stats.balance >= 0 ? '✓ In Surplus' : '⚠ In Deficit'}
+                  </span>
                 </div>
-              </div>
-              <div className="flex flex-1 justify-center items-center">
-                <div className="relative w-40 h-40">
+
+                {/* SVG Dial representing income to expense ratio */}
+                <div className="relative w-36 h-36 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="currentColor"
-                      className="text-border"
-                      strokeWidth="12"
+                      cx="50" cy="50" r="40"
+                      fill="none" stroke="var(--border-border-alt)"
+                      strokeWidth="10"
                     />
                     {stats.income > 0 && (
                       <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="#22c55e"
-                        strokeWidth="12"
+                        cx="50" cy="50" r="40"
+                        fill="none" stroke="#10b981"
+                        strokeWidth="10"
                         strokeDasharray={`${(stats.income / (stats.income + stats.expenses || 1)) * 251.2} 251.2`}
                         strokeLinecap="round"
+                        className="transition-all duration-700"
                       />
                     )}
                   </svg>
-                  <div className="flex absolute inset-0 flex-col justify-center items-center">
-                    <p className="text-2xl font-bold">${stats.balance.toLocaleString()}</p>
-                    <p className="text-sm text-text-secondary">Balance</p>
+                  <div className="absolute inset-0 flex flex-col justify-center items-center">
+                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Ratio</p>
+                    <p className="text-xs font-bold text-text-primary">
+                      {stats.income > 0 ? Math.round((stats.income / (stats.income + stats.expenses)) * 100) : 0}% Green
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {categorySpending.map((cat, i) => (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -4 }}
-                className="flex flex-col gap-4 p-5 rounded-2xl border bg-surface border-border"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-3 items-center">
-                    <div className={`w-10 h-10 rounded-xl ${lightBgClasses[cat.color]} flex items-center justify-center text-2xl`}>
-                      {cat.icon}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{cat.name}</p>
-                      <p className="text-sm text-text-secondary">${cat.spent.toLocaleString()} / ${cat.budget.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => showConfirm('Delete Category', 'Are you sure you want to delete this category?', () => deleteBudgetCategory(cat.id))}
-                    className="btn btn-ghost btn-sm btn-square text-text-secondary hover:text-rose-500"
-                  >
-                    <IconTrash className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="overflow-hidden relative h-2 rounded-full bg-border">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${cat.progress}%` }}
-                    transition={{ duration: 0.8, type: 'spring' }}
-                    className={`absolute inset-y-0 left-0 ${colorClasses[cat.color].split(' ')[0]} rounded-full`}
-                  />
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="transactions"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            className="space-y-3"
-          >
-            {budgetTransactions.length === 0 ? (
-              <EmptyState
-                icon="💸"
-                title="No transactions yet"
-                description="Start tracking your income and expenses by adding your first transaction."
-                action={
-                  <button
-                    onClick={() => setIsTransactionModalOpen(true)}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    Add your first transaction
-                  </button>
-                }
-              />
-            ) : (
-              budgetTransactions.map((txn, i) => {
-                const cat = budgetCategories.find(c => c.id === txn.categoryId);
-                return (
-                  <motion.div
-                    key={txn.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="flex gap-4 justify-between items-center p-4 rounded-xl border bg-surface border-border"
-                  >
-                    <div className="flex gap-4 items-center">
-                      <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color] : 'bg-surface-alt'} flex items-center justify-center text-2xl`}>
-                        {cat?.icon || '💸'}
+              {/* Categories list */}
+              {categorySpending.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex flex-col gap-4 p-5 rounded-[24px] border bg-surface border-border hover:shadow-md transition-shadow relative group"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3 items-center">
+                      <div className={`w-11 h-11 rounded-xl ${lightBgClasses[cat.color]} flex items-center justify-center text-2xl border border-border/20`}>
+                        {cat.icon}
                       </div>
                       <div>
-                        <p className="font-medium">{txn.description}</p>
-                        <p className="text-sm text-text-secondary">{cat?.name || 'Unknown'} • {new Date(txn.date).toLocaleDateString()}</p>
+                        <p className="font-bold text-text-primary text-[15px]">{cat.name}</p>
+                        <p className="text-xs text-text-muted">
+                          ${cat.spent.toLocaleString()} spent {cat.budget ? `/ $${cat.budget.toLocaleString()} limit` : ''}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex gap-3 items-center">
-                      <p className={`font-bold ${txn.type === 'income' ? 'text-green-500' : 'text-rose-500'}`}>
-                        {txn.type === 'income' ? '+' : '-'}$${txn.amount.toLocaleString()}
-                      </p>
+                    
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => showConfirm('Delete Transaction', 'Are you sure you want to delete this transaction?', () => deleteBudgetTransaction(txn.id))}
-                        className="btn btn-ghost btn-sm btn-square text-text-secondary hover:text-rose-500"
+                        onClick={() => {
+                          setEditingCategory(cat);
+                          setIsCategoryModalOpen(true);
+                        }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors"
+                        title="Edit Category"
                       >
-                        <IconTrash className="w-4 h-4" />
+                        <IconEdit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => showConfirm('Delete Category', 'Delete this category and all its transactions?', () => deleteBudgetCategory(cat.id))}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors"
+                        title="Delete Category"
+                      >
+                        <IconTrash className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  </div>
+
+                  {cat.budget > 0 && (
+                    <div className="space-y-1">
+                      <div className="overflow-hidden relative h-1.5 rounded-full bg-border-alt">
+                        <div
+                          className={`absolute inset-y-0 left-0 ${colorClasses[cat.color].split(' ')[0]} rounded-full transition-all duration-500`}
+                          style={{ width: `${cat.progress}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] font-bold text-text-secondary">
+                        <span>SPENT BUDGET</span>
+                        <span className={cat.progress >= 90 ? 'text-rose-500' : ''}>{Math.round(cat.progress)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="transactions"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="space-y-4"
+            >
+              {/* Dynamic Filter Panel */}
+              <div className="bg-surface-alt border border-border/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                  <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest mr-2 flex items-center gap-1">
+                    <IconFilter className="w-3 h-3" /> Filters
+                  </span>
+                  
+                  {/* Type Filter Buttons */}
+                  <div className="flex gap-1 bg-surface p-1 rounded-xl border border-border/50">
+                    {([
+                      { id: 'all', label: 'All' },
+                      { id: 'expense', label: 'Expenses' },
+                      { id: 'income', label: 'Income' }
+                    ] as const).map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setFilterType(t.id)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                          filterType === t.id ? 'bg-surface-alt text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 w-full md:w-auto">
+                  {/* Category Filter */}
+                  <div className="flex-1 md:w-48">
+                    <CustomSelect
+                      value={filterCategory}
+                      onChange={setFilterCategory}
+                      options={[
+                        { value: 'all', label: 'All Categories' },
+                        ...budgetCategories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))
+                      ]}
+                    />
+                  </div>
+
+                  {/* Month Filter */}
+                  <div className="flex-1 md:w-40">
+                    <CustomSelect
+                      value={filterMonth}
+                      onChange={setFilterMonth}
+                      options={[
+                        { value: 'all', label: 'All Months' },
+                        ...uniqueMonths.map(m => ({ value: m, label: m }))
+                      ]}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {filteredTransactions.length === 0 ? (
+                <EmptyState
+                  icon="💸"
+                  title="No matching transactions"
+                  description="Try adjusting your dynamic filters to view ledger records."
+                  action={
+                    <button
+                      onClick={() => {
+                        setFilterType('all');
+                        setFilterCategory('all');
+                        setFilterMonth('all');
+                      }}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Clear Filters
+                    </button>
+                  }
+                />
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {filteredTransactions.map((txn) => {
+                    const cat = budgetCategories.find(c => c.id === txn.categoryId);
+                    return (
+                      <div
+                        key={txn.id}
+                        className="flex gap-4 justify-between items-center p-4 rounded-2xl border bg-surface border-border/80 hover:border-primary/20 transition-all group"
+                      >
+                        <div className="flex gap-4 items-center min-w-0">
+                          <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color] : 'bg-surface-alt'} flex items-center justify-center text-xl shrink-0 border border-border/20`}>
+                            {cat?.icon || '💸'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-text-primary text-[14px] truncate">{txn.description}</p>
+                            <p className="text-[10px] text-text-secondary font-medium">
+                              {cat?.name || 'Unassigned'} • {new Date(txn.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-4 items-center shrink-0">
+                          <p className={`font-black text-sm tracking-tight ${txn.type === 'income' ? 'text-green-500' : 'text-rose-500'}`}>
+                            {txn.type === 'income' ? '+' : '-'}${txn.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                          
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => {
+                                setEditingTransaction(txn);
+                                setIsTransactionModalOpen(true);
+                              }}
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors"
+                              title="Edit Record"
+                            >
+                              <IconEdit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => showConfirm('Delete Record', 'Delete this ledger transaction entry?', () => deleteBudgetTransaction(txn.id))}
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors"
+                              title="Delete Record"
+                            >
+                              <IconTrash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
+      {/* Category Modal Overlay */}
       <Modal
         isOpen={isCategoryModalOpen}
         onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
@@ -309,20 +459,29 @@ export default function BudgetModule() {
             setIsCategoryModalOpen(false);
             setEditingCategory(null);
           }}
+          onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
         />
       </Modal>
 
+      {/* Transaction Modal Overlay */}
       <Modal
         isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        title="New Transaction"
+        onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
+        title={editingTransaction ? 'Edit Transaction' : 'New Transaction'}
       >
         <TransactionForm
           categories={budgetCategories}
+          transaction={editingTransaction}
           onSubmit={async (data) => {
-            await addBudgetTransaction({ ...data, id: crypto.randomUUID(), date: new Date().toISOString() });
+            if (editingTransaction) {
+              await updateBudgetTransaction(editingTransaction.id, data);
+            } else {
+              await addBudgetTransaction({ ...data, id: crypto.randomUUID(), date: new Date().toISOString() });
+            }
             setIsTransactionModalOpen(false);
+            setEditingTransaction(null);
           }}
+          onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
         />
       </Modal>
     </motion.div>
@@ -331,72 +490,75 @@ export default function BudgetModule() {
 
 function CategoryForm({ 
   category, 
-  onSubmit 
+  onSubmit,
+  onClose
 }: { 
   category: BudgetCategory | null; 
   onSubmit: (data: Omit<BudgetCategory, 'id'>) => Promise<void>;
+  onClose: () => void;
 }) {
   const [name, setName] = useState(category?.name || '');
-  const [budget, setBudget] = useState(category?.budget.toString() || '');
-  const [color, setColor] = useState(category?.color || 'rose');
+  const [budget, setBudget] = useState(category?.budget ? category.budget.toString() : '');
+  const [color, setColor] = useState<BudgetCategory['color']>(category?.color || 'rose');
   const [icon, setIcon] = useState(category?.icon || '💰');
 
-  const icons = ['💰', '🍔', '🚗', '🎮', '🛒', '💼', '🏠', '✈️', '🎓', '💊'];
+  const icons = ['💰', '🍔', '🚗', '🎮', '🛒', '💼', '🏠', '✈️', '🎓', '💊', '💅', '🍿', '💡', '🏋️', '📚'];
   const colors = ['rose', 'blue', 'green', 'amber', 'purple'] as const;
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        await onSubmit({ name, budget: parseFloat(budget), color, icon });
+        await onSubmit({ name, budget: budget ? parseFloat(budget) : 0, color, icon });
       }}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 text-left"
     >
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Category Name</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category Name</label>
         <input
           type="text"
           value={name}
+          placeholder="e.g. Dining Out, Utilities"
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
           required
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Budget</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Monthly Budget Limit (Optional)</label>
         <input
           type="number"
           value={budget}
+          placeholder="e.g. 500"
           onChange={(e) => setBudget(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-          required
+          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Color</label>
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Accent Color</label>
+        <div className="flex gap-2.5">
           {colors.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              className={`w-10 h-10 rounded-full border-2 transition-colors ${
-                colorClasses[c].split(' ')[0]} ${color === c ? 'border-border-alt scale-110' : 'border-transparent hover:scale-105'
+              className={`w-9 h-9 rounded-full border-2 transition-all ${
+                colorClasses[c].split(' ')[0]} ${color === c ? 'border-text-primary scale-110 shadow-sm' : 'border-transparent hover:scale-105'
               }`}
             />
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Icon</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Select Icon</label>
         <div className="flex flex-wrap gap-2">
           {icons.map((i) => (
             <button
               key={i}
               type="button"
               onClick={() => setIcon(i)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-colors ${
-                icon === i ? 'bg-surface-alt border-2 border-primary scale-110' : 'bg-surface border border-border hover:scale-105'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                icon === i ? 'bg-surface-alt border border-primary scale-110 shadow-sm' : 'bg-surface border border-border/80 hover:scale-105'
               }`}
             >
               {i}
@@ -404,9 +566,9 @@ function CategoryForm({
           ))}
         </div>
       </div>
-      <div className="flex gap-2 justify-end pt-2">
-        <button type="button" className="btn btn-secondary btn-md">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md">Save</button>
+      <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
+        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
+        <button type="submit" className="btn btn-primary btn-md rounded-full px-6">Save Category</button>
       </div>
     </form>
   );
@@ -414,15 +576,19 @@ function CategoryForm({
 
 function TransactionForm({ 
   categories, 
-  onSubmit 
+  transaction,
+  onSubmit,
+  onClose
 }: { 
   categories: BudgetCategory[]; 
+  transaction: BudgetTransaction | null;
   onSubmit: (data: Omit<BudgetTransaction, 'id' | 'date'>) => Promise<void>;
+  onClose: () => void;
 }) {
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [categoryId, setCategoryId] = useState(transaction?.categoryId || categories[0]?.id || '');
+  const [amount, setAmount] = useState(transaction?.amount ? transaction.amount.toString() : '');
+  const [description, setDescription] = useState(transaction?.description || '');
+  const [type, setType] = useState<'income' | 'expense'>(transaction?.type || 'expense');
 
   return (
     <form
@@ -430,14 +596,15 @@ function TransactionForm({
         e.preventDefault();
         await onSubmit({ categoryId, amount: parseFloat(amount), description, type });
       }}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 text-left"
     >
-      <div className="flex gap-1 p-1 rounded-xl bg-surface-alt">
+      {/* Type toggle */}
+      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40">
         <button
           type="button"
           onClick={() => setType('expense')}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            type === 'expense' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+            type === 'expense' ? 'bg-surface text-rose-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Expense
@@ -445,44 +612,57 @@ function TransactionForm({
         <button
           type="button"
           onClick={() => setType('income')}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            type === 'income' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+            type === 'income' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Income
         </button>
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Category</label>
+      
+      {/* Category Select */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category</label>
         <CustomSelect
           value={categoryId}
           onChange={val => setCategoryId(val)}
           options={categories.map(cat => ({ value: cat.id, label: `${cat.icon} ${cat.name}` }))}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Amount</label>
+
+      {/* Amount input */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Amount ($)</label>
         <input
           type="number"
+          step="0.01"
           value={amount}
+          placeholder="0.00"
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
           required
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-text-secondary">Description</label>
+
+      {/* Description input */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Description</label>
         <input
           type="text"
           value={description}
+          placeholder="e.g. Grocery shopping, Weekly wage"
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
           required
         />
       </div>
-      <div className="flex gap-2 justify-end pt-2">
-        <button type="button" className="btn btn-secondary btn-md">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md">Add Transaction</button>
+      
+      {/* Footer buttons */}
+      <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
+        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
+        <button type="submit" className="btn btn-primary btn-md rounded-full px-6">
+          {transaction ? 'Save Changes' : 'Add Transaction'}
+        </button>
       </div>
     </form>
   );

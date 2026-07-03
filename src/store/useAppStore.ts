@@ -273,6 +273,11 @@ export interface MediaEntryModalState {
   activeTab: 'ANIME' | 'GAME';
 }
 
+export interface TodoTaskModalState {
+  isOpen: boolean;
+  task: TodoTask | null;
+}
+
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
@@ -310,6 +315,10 @@ export interface AppStore {
   todoProjectModal: { isOpen: boolean };
   openTodoProjectModal: () => void;
   closeTodoProjectModal: () => void;
+
+  todoTaskModal: TodoTaskModalState;
+  openTodoTaskModal: (task?: TodoTask | null) => void;
+  closeTodoTaskModal: () => void;
 
   // Supabase sync
   dataLoaded: boolean;
@@ -366,6 +375,7 @@ export interface AppStore {
   deleteBudgetCategory: (id: string) => Promise<void>;
   addBudgetTransaction: (transaction: BudgetTransaction) => Promise<void>;
   deleteBudgetTransaction: (id: string) => Promise<void>;
+  updateBudgetTransaction: (id: string, data: Partial<BudgetTransaction>) => Promise<void>;
   
   // To-Do
   todoTasks: TodoTask[];
@@ -432,6 +442,10 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   todoProjectModal: { isOpen: false },
   openTodoProjectModal: () => set({ todoProjectModal: { isOpen: true } }),
   closeTodoProjectModal: () => set({ todoProjectModal: { isOpen: false } }),
+
+  todoTaskModal: { isOpen: false, task: null },
+  openTodoTaskModal: (task) => set({ todoTaskModal: { isOpen: true, task: task || null } }),
+  closeTodoTaskModal: () => set({ todoTaskModal: { isOpen: false, task: null } }),
 
   // Helper for toasts
   notifySuccess: (msg: string) => useToastStore.getState().addToast('Success', msg, 'success'),
@@ -884,6 +898,20 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set((state) => ({ budgetTransactions: state.budgetTransactions.filter(t => t.id !== id) }));
     await budgetTransactionService.delete(id);
     useToastStore.getState().addToast('Success', 'Budget transaction deleted', 'success');
+  },
+  updateBudgetTransaction: async (id, data) => {
+    const previous = get().budgetTransactions;
+    set((state) => ({
+      budgetTransactions: state.budgetTransactions.map(t => t.id === id ? { ...t, ...data } : t)
+    }));
+    try {
+      await budgetTransactionService.update(id, data);
+      useToastStore.getState().addToast('Success', 'Transaction updated', 'success');
+    } catch (error) {
+      set({ budgetTransactions: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update transaction'), 'error');
+      throw error;
+    }
   },
 
   // ── To-Do ──────────────────────────────────────────────────────────────────
