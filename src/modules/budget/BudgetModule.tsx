@@ -2,8 +2,40 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconTrendingUp, IconTrendingDown, 
-  IconEdit, IconFilter, IconWallet
+  IconEdit, IconFilter, IconWallet, IconSettings,
+  IconCoin, IconBuildingStore, IconCar, IconDeviceGamepad2,
+  IconShoppingCart, IconBriefcase, IconHome, IconPlane,
+  IconSchool, IconPill, IconShirt, IconDeviceDesktop,
+  IconBulb, IconBarbell, IconBook, IconCoffee
 } from '@tabler/icons-react';
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  '💰': IconCoin,
+  '🍔': IconBuildingStore,
+  '🚗': IconCar,
+  '🎮': IconDeviceGamepad2,
+  '🛒': IconShoppingCart,
+  '💼': IconBriefcase,
+  '🏠': IconHome,
+  '✈️': IconPlane,
+  '🎓': IconSchool,
+  '💊': IconPill,
+  '💅': IconShirt,
+  '🍿': IconDeviceDesktop,
+  '💡': IconBulb,
+  '🏋️': IconBarbell,
+  '📚': IconBook,
+  '☕': IconCoffee,
+};
+
+const renderIcon = (iconKey: string, className = "w-5 h-5") => {
+  const IconComponent = ICON_MAP[iconKey];
+  if (IconComponent) {
+    return <IconComponent className={className} />;
+  }
+  // Fallback for existing emoji icons
+  return <span className="text-lg leading-none">{iconKey}</span>;
+};
 import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -27,6 +59,8 @@ const lightBgClasses = {
 
 export default function BudgetModule() {
   const { 
+    settings,
+    updateSettings,
     budgetCategories, 
     budgetTransactions, 
     addBudgetCategory, 
@@ -41,6 +75,7 @@ export default function BudgetModule() {
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<BudgetTransaction | null>(null);
 
@@ -50,18 +85,32 @@ export default function BudgetModule() {
   const [filterMonth, setFilterMonth] = useState<string>('all');
 
   const stats = useMemo(() => {
-    const income = budgetTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const expenses = budgetTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+    let bankIncome = 0;
+    let bankExpenses = 0;
+    let cashIncome = 0;
+    let cashExpenses = 0;
+
+    budgetTransactions.forEach(t => {
+      if (t.type === 'income') {
+        if (t.paymentMethod === 'cash') cashIncome += t.amount;
+        else bankIncome += t.amount;
+      } else {
+        if (t.paymentMethod === 'cash') cashExpenses += t.amount;
+        else bankExpenses += t.amount;
+      }
+    });
+
+    const income = bankIncome + cashIncome;
+    const expenses = bankExpenses + cashExpenses;
+    
     return {
       income,
       expenses,
-      balance: income - expenses,
+      bankBalance: (settings.initialBankBalance || 0) + bankIncome - bankExpenses,
+      cashBalance: (settings.initialCashBalance || 0) + cashIncome - cashExpenses,
+      totalBalance: (settings.initialBankBalance || 0) + (settings.initialCashBalance || 0) + income - expenses,
     };
-  }, [budgetTransactions]);
+  }, [budgetTransactions, settings.initialBankBalance, settings.initialCashBalance]);
 
   const categorySpending = useMemo(() => {
     return budgetCategories.map(cat => {
@@ -119,11 +168,17 @@ export default function BudgetModule() {
         </div>
         <div className="flex gap-2.5">
           <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="btn btn-secondary btn-md rounded-full px-4"
+          >
+            <IconSettings className="w-4 h-4" /> Settings
+          </button>
+          <button
             onClick={() => {
               setEditingCategory(null);
               setIsCategoryModalOpen(true);
             }}
-            className="btn btn-secondary btn-md rounded-full px-4"
+            className="btn btn-secondary btn-md rounded-full px-4 hidden md:flex"
           >
             <IconPlus className="w-4 h-4" /> Add Category
           </button>
@@ -186,65 +241,67 @@ export default function BudgetModule() {
               className="grid grid-cols-1 gap-6 lg:grid-cols-3"
             >
               {/* Financial Dashboard Widget */}
-              <div className="flex flex-col col-span-1 gap-6 p-6 rounded-[28px] border bg-surface/50 border-border/80 lg:col-span-3 md:flex-row items-center justify-between backdrop-blur-md">
-                <div className="space-y-4 w-full md:w-auto">
-                  <div className="flex gap-4 items-center">
-                    <div className="flex justify-center items-center w-10 h-10 bg-green-500/10 rounded-xl">
-                      <IconTrendingUp className="w-5 h-5 text-green-500" />
-                    </div>
+              <div className="flex flex-col col-span-1 gap-6 p-6 rounded-[28px] border bg-surface/50 border-border/80 lg:col-span-3 lg:flex-row items-center justify-between backdrop-blur-md">
+                
+                {/* Balances */}
+                <div className="flex flex-col gap-4 w-full lg:w-1/3">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
                     <div>
-                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Total Income</p>
-                      <p className="text-2xl font-black text-green-500">${stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Bank Balance</p>
+                      <p className={`text-xl font-black ${stats.bankBalance >= 0 ? 'text-blue-500' : 'text-rose-500'}`}>${stats.bankBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                      <IconWallet className="w-5 h-5 text-blue-500" />
                     </div>
                   </div>
-                  <div className="flex gap-4 items-center">
-                    <div className="flex justify-center items-center w-10 h-10 bg-rose-500/10 rounded-xl">
-                      <IconTrendingDown className="w-5 h-5 text-rose-500" />
-                    </div>
+                  
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
                     <div>
-                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Total Expenses</p>
-                      <p className="text-2xl font-black text-rose-500">${stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Cash Balance</p>
+                      <p className={`text-xl font-black ${stats.cashBalance >= 0 ? 'text-green-500' : 'text-rose-500'}`}>${stats.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
+                      <span className="text-xl leading-none">💵</span>
                     </div>
                   </div>
                 </div>
-                
-                {/* Center Apple-style Net Balance display */}
-                <div className="flex flex-col items-center justify-center text-center p-6 bg-surface-alt border border-border/40 rounded-[24px] min-w-[240px]">
-                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-1">Net Balance</p>
-                  <p className={`text-3xl font-black tracking-tight ${stats.balance >= 0 ? 'text-text-primary' : 'text-rose-500'}`}>
-                    ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+                {/* Center Net Balance */}
+                <div className="flex flex-col items-center justify-center text-center p-6 bg-surface-alt border border-border/40 rounded-[24px] min-w-[240px] flex-1 lg:flex-none">
+                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-1">Total Net Balance</p>
+                  <p className={`text-4xl font-black tracking-tight ${stats.totalBalance >= 0 ? 'text-text-primary' : 'text-rose-500'}`}>
+                    ${stats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold mt-2 ${
-                    stats.balance >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-rose-500/10 text-rose-500'
+                    stats.totalBalance >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-rose-500/10 text-rose-500'
                   }`}>
-                    {stats.balance >= 0 ? '✓ In Surplus' : '⚠ In Deficit'}
+                    {stats.totalBalance >= 0 ? '✓ In Surplus' : '⚠ In Deficit'}
                   </span>
                 </div>
 
-                {/* SVG Dial representing income to expense ratio */}
-                <div className="relative w-36 h-36 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none" stroke="var(--border-border-alt)"
-                      strokeWidth="10"
-                    />
-                    {stats.income > 0 && (
-                      <circle
-                        cx="50" cy="50" r="40"
-                        fill="none" stroke="#10b981"
-                        strokeWidth="10"
-                        strokeDasharray={`${(stats.income / (stats.income + stats.expenses || 1)) * 251.2} 251.2`}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
-                    )}
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col justify-center items-center">
-                    <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Ratio</p>
-                    <p className="text-xs font-bold text-text-primary">
-                      {stats.income > 0 ? Math.round((stats.income / (stats.income + stats.expenses)) * 100) : 0}% Green
-                    </p>
+                {/* Income / Expense */}
+                <div className="flex flex-col gap-4 w-full lg:w-1/3">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
+                        <IconTrendingUp className="w-4 h-4 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Income</p>
+                        <p className="text-lg font-black text-text-primary">${stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-rose-500/10 rounded-lg flex items-center justify-center">
+                        <IconTrendingDown className="w-4 h-4 text-rose-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Expenses</p>
+                        <p className="text-lg font-black text-text-primary">${stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -257,8 +314,8 @@ export default function BudgetModule() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex gap-3 items-center">
-                      <div className={`w-11 h-11 rounded-xl ${lightBgClasses[cat.color]} flex items-center justify-center text-2xl border border-border/20`}>
-                        {cat.icon}
+                      <div className={`w-11 h-11 rounded-xl ${lightBgClasses[cat.color as keyof typeof lightBgClasses]} flex items-center justify-center text-2xl border border-border/20`}>
+                        {renderIcon(cat.icon, `w-6 h-6 text-${cat.color}-500`)}
                       </div>
                       <div>
                         <p className="font-bold text-text-primary text-[15px]">{cat.name}</p>
@@ -396,8 +453,8 @@ export default function BudgetModule() {
                         className="flex gap-4 justify-between items-center p-4 rounded-2xl border bg-surface border-border/80 hover:border-primary/20 transition-all group"
                       >
                         <div className="flex gap-4 items-center min-w-0">
-                          <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color] : 'bg-surface-alt'} flex items-center justify-center text-xl shrink-0 border border-border/20`}>
-                            {cat?.icon || '💸'}
+                          <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color as keyof typeof lightBgClasses] : 'bg-surface-alt'} flex items-center justify-center text-xl shrink-0 border border-border/20`}>
+                            {cat ? renderIcon(cat.icon, `w-5 h-5 text-${cat.color}-500`) : <span className="text-xl">💸</span>}
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-text-primary text-[14px] truncate">{txn.description}</p>
@@ -484,6 +541,52 @@ export default function BudgetModule() {
           onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
         />
       </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        title="Budget Settings"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const initialBankBalance = parseFloat(formData.get('initialBankBalance') as string) || 0;
+            const initialCashBalance = parseFloat(formData.get('initialCashBalance') as string) || 0;
+            updateSettings({ initialBankBalance, initialCashBalance });
+            setIsSettingsModalOpen(false);
+          }}
+          className="flex flex-col gap-4 text-left"
+        >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Bank Balance ($)</label>
+            <input
+              name="initialBankBalance"
+              type="number"
+              step="0.01"
+              defaultValue={settings.initialBankBalance || 0}
+              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Cash Balance ($)</label>
+            <input
+              name="initialCashBalance"
+              type="number"
+              step="0.01"
+              defaultValue={settings.initialCashBalance || 0}
+              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
+              required
+            />
+          </div>
+          <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
+            <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
+            <button type="submit" className="btn btn-primary btn-md rounded-full px-6">Save Settings</button>
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 }
@@ -557,11 +660,11 @@ function CategoryForm({
               key={i}
               type="button"
               onClick={() => setIcon(i)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                 icon === i ? 'bg-surface-alt border border-primary scale-110 shadow-sm' : 'bg-surface border border-border/80 hover:scale-105'
               }`}
             >
-              {i}
+              {renderIcon(i, "w-5 h-5")}
             </button>
           ))}
         </div>
@@ -589,12 +692,13 @@ function TransactionForm({
   const [amount, setAmount] = useState(transaction?.amount ? transaction.amount.toString() : '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [type, setType] = useState<'income' | 'expense'>(transaction?.type || 'expense');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>(transaction?.paymentMethod || 'online');
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        await onSubmit({ categoryId, amount: parseFloat(amount), description, type });
+        await onSubmit({ categoryId, amount: parseFloat(amount), description, type, paymentMethod });
       }}
       className="flex flex-col gap-4 text-left"
     >
@@ -617,6 +721,28 @@ function TransactionForm({
           }`}
         >
           Income
+        </button>
+      </div>
+
+      {/* Payment Method toggle */}
+      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40">
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('online')}
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+            paymentMethod === 'online' ? 'bg-surface text-blue-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Online (Bank/UPI)
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('cash')}
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+            paymentMethod === 'cash' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Cash
         </button>
       </div>
       

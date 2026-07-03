@@ -56,6 +56,7 @@ export default function JournalModule() {
   const [mode, setMode] = useState<'write' | 'reflect'>('reflect'); // reflect shows the open book, write shows editor
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Active entry state
   const [activeEntryId, setActiveEntryId] = useState<string | null>(journals[0]?.id || null);
@@ -96,6 +97,34 @@ export default function JournalModule() {
     }
   }, [activeEntryId, activeEntry]);
 
+  const forceSave = async () => {
+    if (!activeEntryId || mode !== 'write') return;
+    const currentObj = journals.find(j => j.id === activeEntryId);
+    if (!currentObj) return;
+
+    const isUnchanged =
+      currentObj.title === title &&
+      currentObj.content === content &&
+      currentObj.mood === mood &&
+      JSON.stringify(currentObj.tags) === JSON.stringify(tags) &&
+      currentObj.pageStyle === pageStyle;
+    
+    if (isUnchanged) return;
+
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    
+    setSaveStatus('saving');
+    try {
+      await updateJournalEntry(activeEntryId, {
+        title, content, mood, tags, pageStyle
+      });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (e) {
+      setSaveStatus('error');
+    }
+  };
+
   // Debounced auto-save effect
   const autoSaveTimer = useRef<any>(null);
   useEffect(() => {
@@ -117,13 +146,13 @@ export default function JournalModule() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
 
     autoSaveTimer.current = setTimeout(() => {
+      setSaveStatus('saving');
       updateJournalEntry(activeEntryId, {
-        title,
-        content,
-        mood,
-        tags,
-        pageStyle
-      });
+        title, content, mood, tags, pageStyle
+      }).then(() => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }).catch(() => setSaveStatus('error'));
     }, 1500);
 
     return () => {
@@ -431,14 +460,18 @@ export default function JournalModule() {
                   {/* Main Editor Area */}
                   <div className="flex-1 flex flex-col border-r border-border/40">
                     {/* Title */}
-                    <div className="px-8 pt-6 pb-2">
+                    <div className="px-8 pt-6 pb-2 flex items-center gap-3">
                       <input
                         type="text"
-                        placeholder="Title of this entry..."
+                        placeholder="Untitled Entry"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
+                        onBlur={forceSave}
                         className="w-full bg-transparent border-none text-3xl font-bold font-serif tracking-tight focus:outline-none placeholder:text-text-muted/50 text-text-primary"
                       />
+                      {saveStatus === 'saving' && <span className="text-xs font-semibold text-amber-500 whitespace-nowrap">Saving...</span>}
+                      {saveStatus === 'saved' && <span className="text-xs font-semibold text-green-500 whitespace-nowrap">Saved</span>}
+                      {saveStatus === 'error' && <span className="text-xs font-semibold text-red-500 whitespace-nowrap">Error</span>}
                     </div>
                     
                     {/* Minimal Toolbar */}
@@ -487,6 +520,7 @@ export default function JournalModule() {
                         onChange={(html: string) => {
                           setContent(html);
                         }}
+                        onBlur={forceSave}
                         placeholder="Start writing..."
                       />
                     </div>

@@ -25,42 +25,59 @@ const themeStyles = {
   default: '',
   'tokyo-sakura': `
     .pomodoro-wrapper {
-      --bg-surface: #fff0f3 !important;
-      --bg-surface-alt: #ffe3e8 !important;
-      --border-border: #f9cbd3 !important;
+      background: radial-gradient(circle at top right, #ffd6e0 0%, #fff0f3 100%) !important;
+      --bg-surface: rgba(255, 255, 255, 0.5) !important;
+      --bg-surface-alt: rgba(255, 255, 255, 0.7) !important;
+      --border-border: rgba(249, 203, 211, 0.8) !important;
       --text-primary: #471018 !important;
       --text-secondary: #7a3541 !important;
       --text-muted: #af6b77 !important;
       --color-primary: #ff5e7e !important;
+      border-radius: 32px !important;
+      padding: 24px !important;
+      box-shadow: 0 20px 40px rgba(255, 94, 126, 0.05), inset 0 0 80px rgba(255, 255, 255, 0.8) !important;
+      backdrop-filter: blur(12px) !important;
     }
     .dark .pomodoro-wrapper {
-      --bg-surface: #1f0f12 !important;
-      --bg-surface-alt: #30171c !important;
-      --border-border: #4a2128 !important;
+      background: radial-gradient(circle at top right, #30171c 0%, #1f0f12 100%) !important;
+      --bg-surface: rgba(20, 10, 12, 0.6) !important;
+      --bg-surface-alt: rgba(30, 15, 18, 0.6) !important;
+      --border-border: rgba(74, 33, 40, 0.6) !important;
       --text-primary: #ffdce1 !important;
       --text-secondary: #d69ca6 !important;
       --text-muted: #9c626d !important;
       --color-primary: #ff5e7e !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 0 80px rgba(255, 94, 126, 0.02) !important;
     }
   `,
   'dark-academia': `
     .pomodoro-wrapper {
-      --bg-surface: #f7edd4 !important;
-      --bg-surface-alt: #ebdcb6 !important;
-      --border-border: #dac594 !important;
+      background: #f4ecd8 url('https://www.transparenttextures.com/patterns/cream-paper.png') !important;
+      --bg-surface: rgba(235, 220, 182, 0.4) !important;
+      --bg-surface-alt: rgba(218, 197, 148, 0.3) !important;
+      --border-border: rgba(218, 197, 148, 0.6) !important;
       --text-primary: #33261a !important;
-      --text-secondary: #6e553f !important;
-      --text-muted: #a38972 !important;
-      --color-primary: #a0522d !important;
+      --text-secondary: #5c432e !important;
+      --text-muted: #8c735c !important;
+      --color-primary: #8b4513 !important;
+      border-radius: 12px !important;
+      padding: 24px !important;
+      border: 1px solid rgba(139, 69, 19, 0.1) !important;
+      box-shadow: 5px 5px 15px rgba(139, 69, 19, 0.05), -5px -5px 15px rgba(255, 255, 255, 0.5) !important;
     }
     .dark .pomodoro-wrapper {
-      --bg-surface: #1a1310 !important;
-      --bg-surface-alt: #261c18 !important;
-      --border-border: #3d2c25 !important;
+      background: #1f1815 url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
+      --bg-surface: rgba(26, 19, 16, 0.6) !important;
+      --bg-surface-alt: rgba(38, 28, 24, 0.5) !important;
+      --border-border: rgba(61, 44, 37, 0.7) !important;
       --text-primary: #ece2d5 !important;
       --text-secondary: #b09984 !important;
       --text-muted: #826e5d !important;
-      --color-primary: #b8860b !important;
+      --color-primary: #d4a373 !important;
+      border-radius: 12px !important;
+      padding: 24px !important;
+      border: 1px solid rgba(212, 163, 115, 0.1) !important;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5) !important;
     }
   `
 };

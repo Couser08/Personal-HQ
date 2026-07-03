@@ -457,29 +457,29 @@ export default function MindmapModule() {
               </div>
 
               {/* Header Action Menu tools */}
-              <div className="flex items-center gap-3">
-                <IconCloudCheck className="w-5 h-5 text-emerald-500" title="All changes saved to local space" />
+              <div className="flex items-center gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+                <IconCloudCheck className="w-5 h-5 text-emerald-500 shrink-0" title="All changes saved to local space" />
                 <button 
                   onClick={handleResetToDefault}
-                  className="w-8 h-8 rounded-lg border border-border/40 bg-surface text-text-muted hover:text-rose-500 flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-lg border border-border/40 bg-surface text-text-muted hover:text-rose-500 flex items-center justify-center transition-colors shrink-0"
                   title="Reset Mindmap data layout to default hierarchy"
                 >
                   <IconHistory className="w-4 h-4" />
                 </button>
-                <div className="flex gap-0.5 border-l border-r border-border/50 px-2.5">
-                  <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Undo"><IconArrowBackUp className="w-4.5 h-4.5" /></button>
-                  <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted" title="Redo"><IconArrowForwardUp className="w-4.5 h-4.5" /></button>
+                <div className="flex gap-0.5 border-l border-r border-border/50 px-2.5 shrink-0">
+                  <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted shrink-0" title="Undo"><IconArrowBackUp className="w-4.5 h-4.5" /></button>
+                  <button className="w-7 h-7 rounded hover:bg-surface-alt flex items-center justify-center text-text-muted shrink-0" title="Redo"><IconArrowForwardUp className="w-4.5 h-4.5" /></button>
                 </div>
                 <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportJson} className="hidden" />
                 <button 
-                  className="px-4 py-1.5 rounded-full bg-surface hover:bg-surface-alt text-text-primary border border-border font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-4 py-1.5 rounded-full bg-surface hover:bg-surface-alt text-text-primary border border-border font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
                   onClick={() => fileInputRef.current?.click()}
                   title="Import JSON Mindmap"
                 >
                   <IconDownload className="w-3.5 h-3.5 rotate-180" /> Import
                 </button>
                 <button 
-                  className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
                   onClick={() => alert("Sharing features are synced locally. Export JSON/SVG to backup.")}
                 >
                   <IconShare className="w-3.5 h-3.5" /> Share

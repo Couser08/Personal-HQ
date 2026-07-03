@@ -184,10 +184,11 @@ function detectLanguage(code: string): string {
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
 }
 
-export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thoughts...' }: RichTextEditorProps) => {
+export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write your thoughts...' }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const initRef   = useRef(false);
 
@@ -382,6 +383,7 @@ export const RichTextEditor = ({ value, onChange, placeholder = 'Write your thou
         suppressContentEditableWarning
         data-placeholder={placeholder}
         onInput={syncContent}
+        onBlur={onBlur}
         onClick={handleEditorClick}
         className="rich-editor p-4"
         role="textbox"

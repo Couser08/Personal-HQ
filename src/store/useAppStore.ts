@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   animationSpeed: 'normal',
   compactMode: false,
   soundEnabled: true,
+  initialBankBalance: 0,
+  initialCashBalance: 0,
 };
 
 const sanitizeActiveModule = (module: string) => (module === 'stocks' ? 'notes' : module);
@@ -246,6 +248,7 @@ export interface BudgetTransaction {
   description: string;
   date: string;
   type: 'income' | 'expense';
+  paymentMethod?: 'cash' | 'online';
 }
 
 export interface CodeSnippet {
@@ -328,6 +331,8 @@ export interface AppSettings {
   animationSpeed: AnimationSpeed;
   compactMode: boolean;
   soundEnabled: boolean;
+  initialBankBalance: number;
+  initialCashBalance: number;
 }
 
 export interface PomodoroStats {

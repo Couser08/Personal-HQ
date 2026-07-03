@@ -179,10 +179,10 @@ export default function TodoModule() {
   }, [todoTasks, activeList, search]);
 
   return (
-    <div className="flex h-full bg-bg-primary text-text-primary rounded-xl overflow-hidden shadow-sm border border-border">
+    <div className="flex flex-col md:flex-row h-full bg-bg-primary text-text-primary rounded-xl overflow-hidden shadow-sm border border-border">
       
       {/* Sidebar */}
-      <div className="w-64 border-r border-border bg-surface/50 p-4 flex flex-col gap-6 overflow-y-auto hidden md:flex">
+      <div className="w-full md:w-64 md:border-r border-b md:border-b-0 border-border bg-surface/50 p-4 flex flex-col gap-4 md:gap-6 overflow-y-auto shrink-0 max-h-[30vh] md:max-h-full">
         
         {/* Lists */}
         <div>
