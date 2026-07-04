@@ -22,6 +22,9 @@ const sanitizeActiveModule = (module: string) => {
   if (module === 'stocks' || module === 'notes' || module === 'journal') {
     return 'dashboard';
   }
+  if (module === 'links' || module === 'calculator' || module === 'countdown') {
+    return 'utilities';
+  }
   return module;
 };
 

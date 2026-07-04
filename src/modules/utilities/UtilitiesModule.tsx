@@ -1,5 +1,4 @@
-import { useAppStore } from '../../store/useAppStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useState } from 'react';
 import LinksModule from '../links/LinksModule';
 import CalculatorModule from '../calculator/CalculatorModule';
 import CountdownModule from '../countdowns/CountdownModule';
@@ -7,15 +6,7 @@ import { IconLink, IconCalculator, IconHourglassEmpty } from '@tabler/icons-reac
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UtilitiesModule() {
-  const { activeModule, setActiveModule } = useAppStore(useShallow(state => ({
-    activeModule: state.activeModule,
-    setActiveModule: state.setActiveModule,
-  })));
-
-  // Determine active tab
-  let currentTab: 'links' | 'calculator' | 'countdown' = 'links';
-  if (activeModule === 'calculator') currentTab = 'calculator';
-  else if (activeModule === 'countdown') currentTab = 'countdown';
+  const [currentTab, setCurrentTab] = useState<'links' | 'calculator' | 'countdown'>('links');
 
   const tabs = [
     { id: 'links', label: 'Link Vault', icon: IconLink, component: <LinksModule /> },
@@ -44,7 +35,7 @@ export default function UtilitiesModule() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveModule(tab.id)}
+                onClick={() => setCurrentTab(tab.id)}
                 className={`relative px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   isActive 
                     ? 'text-primary' 

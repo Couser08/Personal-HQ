@@ -144,10 +144,7 @@ function AppContent() {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard': return <DashboardModule />;
-      case 'links':
-      case 'calculator':
-      case 'countdown':
-        return <UtilitiesModule />;
+      case 'utilities': return <UtilitiesModule />;
       case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
       case 'media': return <MediaModule />;

@@ -12,13 +12,22 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 const COLOR_PRESETS = [
-  { id: 'rose', label: 'Pink', bg: 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400' },
-  { id: 'amber', label: 'Orange', bg: 'bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-950/20 dark:border-amber-800/40 dark:text-amber-400' },
-  { id: 'purple', label: 'Purple', bg: 'bg-purple-50 border-purple-200 text-purple-600 dark:bg-purple-950/20 dark:border-purple-800/40 dark:text-purple-400' },
-  { id: 'green', label: 'Green', bg: 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-400' },
-  { id: 'blue', label: 'Blue', bg: 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-950/20 dark:border-blue-800/40 dark:text-blue-400' },
-  { id: 'gray', label: 'Gray', bg: 'bg-surface border-border text-text-primary' }
+  { id: 'rose', label: 'Pink', bg: 'bg-rose-500/[0.04] border-rose-500/20 text-rose-600 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400 hover:bg-rose-500/[0.08] hover:border-rose-500/30' },
+  { id: 'amber', label: 'Orange', bg: 'bg-amber-500/[0.04] border-amber-500/20 text-amber-600 dark:bg-amber-950/20 dark:border-amber-800/40 dark:text-amber-400 hover:bg-amber-500/[0.08] hover:border-amber-500/30' },
+  { id: 'purple', label: 'Purple', bg: 'bg-purple-500/[0.04] border-purple-500/20 text-purple-600 dark:bg-purple-950/20 dark:border-purple-800/40 dark:text-purple-400 hover:bg-purple-500/[0.08] hover:border-purple-500/30' },
+  { id: 'green', label: 'Green', bg: 'bg-emerald-500/[0.04] border-emerald-500/20 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-400 hover:bg-emerald-500/[0.08] hover:border-emerald-500/30' },
+  { id: 'blue', label: 'Blue', bg: 'bg-blue-500/[0.04] border-blue-500/20 text-blue-600 dark:bg-blue-950/20 dark:border-blue-800/40 dark:text-blue-400 hover:bg-blue-500/[0.08] hover:border-blue-500/30' },
+  { id: 'gray', label: 'Gray', bg: 'bg-surface border-border text-text-primary hover:bg-surface-alt' }
 ] as const;
+
+const getDomainName = (urlStr: string) => {
+  try {
+    const u = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
+    return new URL(u).hostname.replace('www.', '');
+  } catch {
+    return urlStr;
+  }
+};
 
 type MindmapColor = NonNullable<MindmapNode['color']>;
 
@@ -71,6 +80,7 @@ export default function MindmapModule() {
 
   const [activeMindmapId, setActiveMindmapId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
@@ -80,21 +90,23 @@ export default function MindmapModule() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
         if (data.nodes && data.links) {
           const newId = crypto.randomUUID();
-          addMindmap({
+          await addMindmap({
             ...data,
             id: newId,
             title: data.title || 'Imported Mindmap',
             createdAt: new Date().toISOString()
           });
           setActiveMindmapId(newId);
+        } else {
+          alert("Invalid mindmap file structure (nodes or links missing).");
         }
       } catch (err) {
-        alert("Invalid JSON format");
+        alert("Invalid JSON format or import failed");
       }
     };
     reader.readAsText(file);
@@ -300,9 +312,19 @@ export default function MindmapModule() {
     }
   };
 
-  const filteredMindmaps = mindmaps.filter(m => 
-    m.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredMindmaps = useMemo(() => {
+    return mindmaps.filter(m => {
+      const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
+      if (!matchSearch) return false;
+      if (selectedTagFilter) {
+        const tagQuery = selectedTagFilter.toLowerCase();
+        const matchTitle = m.title.toLowerCase().includes(tagQuery);
+        const matchNodes = m.nodes.some(n => n.text.toLowerCase().includes(tagQuery));
+        return matchTitle || matchNodes;
+      }
+      return true;
+    });
+  }, [mindmaps, search, selectedTagFilter]);
 
   return (
     <div className="flex h-[calc(100vh-130px)] gap-0 overflow-hidden bg-background text-text-primary rounded-[32px] border border-border/60">
@@ -364,15 +386,15 @@ export default function MindmapModule() {
                 onClick={() => setActiveMindmapId(m.id)}
                 className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all border ${
                   m.id === activeMindmapId 
-                    ? 'bg-rose-500/10 border-rose-500/10 text-rose-500 font-bold' 
-                    : 'bg-transparent border-transparent hover:bg-surface-alt text-text-secondary'
+                    ? 'bg-stone-100/70 dark:bg-stone-900 border-border/50 text-text-primary font-bold shadow-sm' 
+                    : 'bg-transparent border-transparent hover:bg-surface-alt/70 text-text-secondary'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <IconFolder className={`w-4 h-4 shrink-0 ${m.id === activeMindmapId ? 'text-rose-500' : 'text-text-muted'}`} />
+                  <IconFolder className={`w-4 h-4 shrink-0 ${m.id === activeMindmapId ? 'text-primary' : 'text-text-muted'}`} />
                   <div className="text-left leading-none truncate">
-                    <p className="text-xs truncate">{m.title}</p>
-                    <p className="text-[9px] text-text-muted mt-0.5 font-medium">Just now</p>
+                    <p className="text-xs truncate font-bold">{m.title}</p>
+                    <p className="text-[9px] text-text-muted mt-0.5 font-bold uppercase">{m.nodes?.length || 0} nodes</p>
                   </div>
                 </div>
                 
@@ -415,19 +437,24 @@ export default function MindmapModule() {
           </button>
         </div>
         <div className="p-3 flex flex-wrap gap-1.5 border-b border-border/40">
-          {['Work', 'Study', 'Personal', 'Ideas', 'Goals'].map((t, idx) => (
-            <span 
-              key={idx} 
-              className={`px-2 py-0.5 rounded-full text-[9px] font-bold cursor-pointer ${
-                idx === 0 ? 'bg-rose-500/10 text-rose-500' :
-                idx === 1 ? 'bg-blue-500/10 text-blue-500' :
-                idx === 2 ? 'bg-emerald-500/10 text-emerald-500' :
-                idx === 3 ? 'bg-purple-500/10 text-purple-500' : 'bg-amber-500/10 text-amber-500'
-              }`}
-            >
-              {t}
-            </span>
-          ))}
+          {['Work', 'Study', 'Personal', 'Ideas', 'Goals'].map((t, idx) => {
+            const isActive = selectedTagFilter === t;
+            return (
+              <span 
+                key={idx} 
+                onClick={() => setSelectedTagFilter(isActive ? null : t)}
+                className={`px-2 py-0.5 rounded-full text-[9px] font-bold cursor-pointer transition-all duration-150 ${
+                  t === 'Work' ? (isActive ? 'bg-rose-500 text-white shadow-sm' : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20') :
+                  t === 'Study' ? (isActive ? 'bg-blue-500 text-white shadow-sm' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20') :
+                  t === 'Personal' ? (isActive ? 'bg-emerald-500 text-white shadow-sm' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20') :
+                  t === 'Ideas' ? (isActive ? 'bg-purple-500 text-white shadow-sm' : 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20') : 
+                  (isActive ? 'bg-amber-500 text-white shadow-sm' : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20')
+                }`}
+              >
+                {t}
+              </span>
+            );
+          })}
         </div>
 
         {/* Sidebar Footer */}
@@ -1513,16 +1540,16 @@ function MindmapCanvas({
               }
 
               const colorPreset = COLOR_PRESETS.find(c => c.id === sourceNode.color);
-              let strokeColor = 'rgba(148, 163, 184, 0.4)';
+              let strokeColor = 'rgba(148, 163, 184, 0.25)';
               if (colorPreset && colorPreset.id !== 'gray') {
-                strokeColor = colorPreset.id === 'rose' ? 'rgba(244, 63, 94, 0.45)' :
-                              colorPreset.id === 'amber' ? 'rgba(245, 158, 11, 0.45)' :
-                              colorPreset.id === 'purple' ? 'rgba(168, 85, 247, 0.45)' :
-                              colorPreset.id === 'green' ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+                strokeColor = colorPreset.id === 'rose' ? 'rgba(244, 63, 94, 0.3)' :
+                              colorPreset.id === 'amber' ? 'rgba(245, 158, 11, 0.3)' :
+                              colorPreset.id === 'purple' ? 'rgba(168, 85, 247, 0.3)' :
+                              colorPreset.id === 'green' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)';
               }
 
               const edgeStyle = mindmap.edgeStyle || 'solid';
-              const strokeDasharray = edgeStyle === 'dashed' ? '8, 8' : edgeStyle === 'dotted' ? '3, 6' : 'none';
+              const strokeDasharray = edgeStyle === 'dashed' ? '6, 6' : edgeStyle === 'dotted' ? '2, 5' : 'none';
 
               return (
                 <path
@@ -1530,7 +1557,7 @@ function MindmapCanvas({
                   d={pathData}
                   fill="none"
                   stroke={strokeColor}
-                  strokeWidth="2.5"
+                  strokeWidth="1.75"
                   strokeLinecap="round"
                   strokeDasharray={strokeDasharray}
                   className="transition-all duration-300"
@@ -1569,8 +1596,8 @@ function MindmapCanvas({
                 }}
                 className={`rounded-2xl border px-3 py-2 flex items-center justify-center text-center cursor-pointer transition-all shadow-sm font-semibold text-xs leading-tight relative group ${
                   node.isRoot 
-                    ? 'bg-surface border-border text-text-primary text-sm font-black shadow-md flex-col gap-1' 
-                    : `${colorPreset.bg} ${isSelected ? 'ring-4 ring-rose-500/10 border-rose-500 shadow-md' : 'hover:shadow'}`
+                    ? 'bg-white dark:bg-stone-900 border-stone-200/80 dark:border-stone-800 text-text-primary text-[13px] font-black shadow-lg shadow-stone-150/40 dark:shadow-none flex-col gap-1.5 hover:shadow-xl' 
+                    : `${colorPreset.bg} ${isSelected ? 'ring-4 ring-primary/15 border-primary shadow-md' : 'hover:shadow-md'}`
                 } ${isLinkingSource ? 'ring-4 ring-amber-500/20 border-amber-500 animate-pulse' : ''}`}
               >
                 {/* Node Contents */}
@@ -1837,7 +1864,7 @@ function MindmapCanvas({
         </div>
 
         {/* Floating Apple-Style Toolbar at Top Center */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 bg-surface/90 border border-border/60 p-2 sm:p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-[90vw] md:max-w-2xl w-fit z-20 overflow-x-auto scrollbar-hide hide-scrollbar">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 bg-surface/90 border border-border/60 p-2 sm:p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-[90vw] md:max-w-2xl w-fit z-20 overflow-visible">
           
           {/* Connection Link Connect Trigger */}
           <button
@@ -2051,26 +2078,34 @@ function MindmapCanvas({
 
               {/* Links list */}
               {selectedNode.links && selectedNode.links.length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-1 max-h-36 overflow-y-auto pr-1">
+                <div className="flex flex-col gap-2 mt-2 max-h-48 overflow-y-auto pr-1">
                   {selectedNode.links.map(url => (
-                    <div key={url} className="flex items-center justify-between p-2 bg-surface-alt/50 border border-border/40 rounded-xl">
+                    <div key={url} className="group flex items-center justify-between p-2.5 bg-surface border border-border/40 hover:bg-stone-50 dark:hover:bg-stone-900/40 rounded-2xl shadow-sm transition-all duration-150 relative">
                       <a
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 hover:underline text-text-secondary text-xs truncate max-w-[180px] font-medium"
+                        className="flex items-center gap-3 text-text-secondary hover:text-text-primary text-xs truncate max-w-[82%] font-medium"
                       >
-                        {getDomainFavicon(url) ? (
-                          <img src={getDomainFavicon(url)} alt="" className="w-4 h-4 rounded-sm" onError={e => (e.currentTarget.style.display = 'none')} />
-                        ) : null}
-                        {url}
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/5 text-blue-500 flex items-center justify-center shrink-0 border border-blue-500/10">
+                          {getDomainFavicon(url) ? (
+                            <img src={getDomainFavicon(url)} alt="" className="w-4.5 h-4.5 rounded-md" onError={e => (e.currentTarget.style.display = 'none')} />
+                          ) : (
+                            <IconLink className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="flex flex-col truncate leading-tight">
+                          <span className="truncate text-text-primary font-bold text-xs">{getDomainName(url)}</span>
+                          <span className="truncate text-text-muted text-[10px] mt-0.5">{url}</span>
+                        </div>
                       </a>
                       <button
                         type="button"
                         onClick={() => handleRemoveLink(url)}
-                        className="text-text-muted hover:text-red-500 transition-colors"
+                        className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg hover:bg-rose-500/10 hover:text-rose-500 flex items-center justify-center text-text-muted transition-all cursor-pointer shrink-0"
+                        title="Delete Link"
                       >
-                        &times;
+                        <IconTrash className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}

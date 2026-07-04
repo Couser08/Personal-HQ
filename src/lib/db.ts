@@ -796,7 +796,13 @@ export const mindmapService = {
       edge_style: mindmap.edgeStyle || 'solid',
       created_at: mindmap.createdAt,
     });
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation') || error.details?.includes('404')) {
+        console.warn("Supabase mindmaps table relation does not exist. Operating in local-only fallback mode.");
+        return;
+      }
+      throw error;
+    }
   },
 
   async update(id: string, data: Partial<Mindmap>) {
@@ -808,12 +814,24 @@ export const mindmapService = {
     payload.updated_at = new Date().toISOString();
 
     const { error } = await supabase.from('mindmaps').update(payload).eq('id', id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation') || error.details?.includes('404')) {
+        console.warn("Supabase mindmaps table relation does not exist. Operating in local-only fallback mode.");
+        return;
+      }
+      throw error;
+    }
   },
 
   async delete(id: string) {
     const { error } = await supabase.from('mindmaps').delete().eq('id', id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation') || error.details?.includes('404')) {
+        console.warn("Supabase mindmaps table relation does not exist. Operating in local-only fallback mode.");
+        return;
+      }
+      throw error;
+    }
   }
 };
 

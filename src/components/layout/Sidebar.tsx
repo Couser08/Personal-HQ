@@ -1,10 +1,9 @@
 import {
-  IconLink, IconBook, IconLayout,
-  IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
-  IconCode, IconSettings, IconDownload, IconUpload,
+  IconBook, IconLayout,
+  IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight
+  IconChevronLeft, IconChevronRight, IconLayoutGrid
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -24,9 +23,7 @@ const NAV_ITEMS = [
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
   { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
-  { id: 'links', label: 'Link Vault', icon: IconLink },
-  { id: 'calculator', label: 'Interest Calc', icon: IconCalculator },
-  { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty },
+  { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
 
 const NAV_ITEM_STYLE = (active: boolean) => ({
