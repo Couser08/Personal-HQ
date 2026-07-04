@@ -102,13 +102,86 @@ export default function MindmapModule() {
         
         let importedMaps: any[] = [];
         
-        const parseSingleMap = (obj: any): any => {
-          if (!obj || typeof obj !== 'object') return null;
+        // ─── Helper: Convert any JSON value into a mindmap node tree ───────────
+        // This recursively walks ANY JSON structure and builds nodes + links arrays.
+        const jsonToMindmapNodes = (
+          value: any,
+          label: string,
+          parentId: string | null,
+          nodes: any[],
+          links: any[],
+          depth: number = 0,
+          index: number = 0
+        ): string => {
+          const id = `n-${nodes.length}-${Date.now()}`;
+          const COLORS = ['blue', 'purple', 'teal', 'orange', 'pink', 'indigo', 'emerald', 'rose', 'amber'];
+          const color = depth === 0 ? 'blue' : COLORS[(depth - 1) % COLORS.length];
+
+          // Compute readable display text
+          let displayText = label;
+          if (value === null || value === undefined) displayText = `${label}: null`;
+          else if (typeof value === 'boolean') displayText = `${label}: ${value}`;
+          else if (typeof value === 'number') displayText = `${label}: ${value}`;
+          else if (typeof value === 'string') {
+            // If value is short enough, show inline; otherwise truncate
+            const safeVal = value.length > 40 ? value.slice(0, 40) + '…' : value;
+            displayText = `${label}: ${safeVal}`;
+          }
+          // For objects/arrays, label becomes the node title and children are sub-nodes
+
+          const LEVEL_SPACING_X = 200;
+          const LEVEL_SPACING_Y = 70;
+          const nodeX = 120 + depth * LEVEL_SPACING_X;
+          const nodeY = 80 + (nodes.length) * LEVEL_SPACING_Y;
+
+          nodes.push({
+            id,
+            text: displayText,
+            x: nodeX,
+            y: nodeY,
+            color,
+            isRoot: depth === 0 && parentId === null,
+            parentId: parentId ?? undefined,
+            collapsed: depth >= 3,
+          });
+
+          if (parentId) {
+            links.push({ source: parentId, target: id });
+          }
+
+          // Recurse into arrays
+          if (Array.isArray(value)) {
+            value.slice(0, 20).forEach((item, i) => {
+              const childLabel = typeof item === 'object' && item !== null
+                ? `[${i}]`
+                : `[${i}]`;
+              jsonToMindmapNodes(item, childLabel, id, nodes, links, depth + 1, i);
+            });
+            if (value.length > 20) {
+              const overflowId = `n-overflow-${nodes.length}`;
+              nodes.push({ id: overflowId, text: `… +${value.length - 20} more`, x: nodeX + LEVEL_SPACING_X, y: nodeY + LEVEL_SPACING_Y, color: 'gray', isRoot: false, parentId: id });
+              links.push({ source: id, target: overflowId });
+            }
+          } else if (typeof value === 'object' && value !== null) {
+            const keys = Object.keys(value).slice(0, 20);
+            keys.forEach((key, i) => {
+              jsonToMindmapNodes(value[key], key, id, nodes, links, depth + 1, i);
+            });
+            if (Object.keys(value).length > 20) {
+              const overflowId = `n-overflow-${nodes.length}`;
+              nodes.push({ id: overflowId, text: `… +${Object.keys(value).length - 20} more keys`, x: nodeX + LEVEL_SPACING_X, y: nodeY + LEVEL_SPACING_Y, color: 'gray', isRoot: false, parentId: id });
+              links.push({ source: id, target: overflowId });
+            }
+          }
+
+          return id;
+        };
+
+        // ─── Try parsing as native mindmap format first ────────────────────────
+        const parseSingleMap = (obj: any): any | null => {
+          if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
           
           let nodes = obj.nodes || obj.elements || obj.vertices;
-          if (!Array.isArray(nodes) && Array.isArray(obj)) {
-            nodes = obj;
-          }
           if (!Array.isArray(nodes)) return null;
           
           const formattedNodes = nodes.map((node: any, index: number) => {
@@ -132,56 +205,63 @@ export default function MindmapModule() {
           });
 
           let links = obj.links || obj.edges || obj.connections || [];
-          if (!Array.isArray(links)) {
-            links = [];
-          }
+          if (!Array.isArray(links)) links = [];
 
           const formattedLinks = links.map((link: any) => {
             const source = link.source || link.from || link.start;
             const target = link.target || link.to || link.end;
-            return {
-              source: source ? source.toString() : '',
-              target: target ? target.toString() : ''
-            };
+            return { source: source ? source.toString() : '', target: target ? target.toString() : '' };
           }).filter((l: any) => l.source && l.target);
 
           if (formattedLinks.length === 0) {
             formattedNodes.forEach(node => {
               if (node.parentId && !node.isRoot) {
-                formattedLinks.push({
-                  source: node.parentId,
-                  target: node.id
-                });
+                formattedLinks.push({ source: node.parentId, target: node.id });
               }
             });
           }
 
           return {
-            title: obj.title || obj.name || 'Imported Workspace Map',
+            title: obj.title || obj.name || 'Imported Mindmap',
             nodes: formattedNodes,
             links: formattedLinks,
             edgeStyle: obj.edgeStyle || 'solid'
           };
         };
 
-        if (Array.isArray(data)) {
-          if (data.length > 0 && (data[0].id || data[0].text)) {
-            const parsed = parseSingleMap(data);
-            if (parsed) importedMaps.push(parsed);
-          } else {
-            data.forEach(item => {
-              const parsed = parseSingleMap(item);
-              if (parsed) importedMaps.push(parsed);
-            });
-          }
-        } else if (data && data.mindmaps && Array.isArray(data.mindmaps)) {
+        // ─── Check for global backup format ────────────────────────────────────
+        if (data && data.mindmaps && Array.isArray(data.mindmaps)) {
           data.mindmaps.forEach((item: any) => {
             const parsed = parseSingleMap(item);
             if (parsed) importedMaps.push(parsed);
           });
-        } else {
+        }
+        // ─── Check for array of mindmaps ────────────────────────────────────────
+        else if (Array.isArray(data) && data.length > 0 && data[0]?.nodes) {
+          data.forEach((item: any) => {
+            const parsed = parseSingleMap(item);
+            if (parsed) importedMaps.push(parsed);
+          });
+        }
+        // ─── Try as a single native mindmap ────────────────────────────────────
+        else if (data?.nodes && Array.isArray(data.nodes)) {
           const parsed = parseSingleMap(data);
           if (parsed) importedMaps.push(parsed);
+        }
+        // ─── Universal fallback: convert ANY JSON into a mindmap tree ──────────
+        else {
+          const nodes: any[] = [];
+          const links: any[] = [];
+          const rootLabel = file.name.replace(/\.json$/i, '') || 'Imported JSON';
+          jsonToMindmapNodes(data, rootLabel, null, nodes, links, 0, 0);
+          if (nodes.length > 0) {
+            importedMaps.push({
+              title: rootLabel,
+              nodes,
+              links,
+              edgeStyle: 'solid'
+            });
+          }
         }
 
         if (importedMaps.length > 0) {
@@ -199,10 +279,10 @@ export default function MindmapModule() {
             setActiveMindmapId(lastId);
           }
         } else {
-          alert("Invalid mindmap file structure (nodes or links missing).");
+          alert('Could not parse JSON file. Please check the file format.');
         }
       } catch (err) {
-        alert("Invalid JSON format or import failed");
+        alert('Invalid JSON format. Please check the file and try again.');
       }
     };
     reader.readAsText(file);
@@ -210,6 +290,7 @@ export default function MindmapModule() {
   };
 
   // Active mindmap
+
   const activeMindmap = useMemo(() => {
     return mindmaps.find(m => m.id === activeMindmapId) || null;
   }, [mindmaps, activeMindmapId]);
@@ -906,6 +987,9 @@ function MindmapCanvas({
   const [notesModalNodeId, setNotesModalNodeId] = useState<string | null>(null);
   const [notesActiveTab, setNotesActiveTab] = useState<'view' | 'edit'>('view');
   const [canvasSearchQuery, setCanvasSearchQuery] = useState('');
+
+  // PDF Viewer Modal State
+  const [pdfViewerPdf, setPdfViewerPdf] = useState<{ name: string; base64: string } | null>(null);
 
   const notesModalNode = useMemo(() => {
     return mindmap.nodes.find(n => n.id === notesModalNodeId) || null;
@@ -2374,22 +2458,33 @@ function MindmapCanvas({
                 <div className="flex flex-col gap-1.5 mt-1">
                   {selectedNode.pdfs.map((pdf, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-surface-alt/50 border border-border/40 rounded-xl">
-                      <a
-                        href={pdf.base64}
-                        download={pdf.name}
-                        className="flex items-center gap-1.5 text-text-secondary hover:text-primary text-xs truncate max-w-[180px] font-medium"
-                        title="Click to Download PDF"
-                      >
-                        <span className="bg-red-500/10 text-red-500 px-1 py-0.5 text-[8px] font-black rounded uppercase">PDF</span>
-                        <span className="truncate">{pdf.name}</span>
-                      </a>
                       <button
                         type="button"
-                        onClick={() => handleRemovePdf(idx)}
-                        className="text-text-muted hover:text-red-500 transition-colors"
+                        onClick={() => setPdfViewerPdf(pdf)}
+                        className="flex items-center gap-1.5 text-text-secondary hover:text-primary text-xs truncate max-w-[160px] font-medium text-left"
+                        title="Click to View PDF"
                       >
-                        &times;
+                        <span className="bg-red-500/10 text-red-500 px-1 py-0.5 text-[8px] font-black rounded uppercase shrink-0">PDF</span>
+                        <span className="truncate">{pdf.name}</span>
                       </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={pdf.base64}
+                          download={pdf.name}
+                          onClick={e => e.stopPropagation()}
+                          className="text-[9px] font-bold text-text-muted hover:text-primary uppercase tracking-wider px-1.5 py-0.5 rounded hover:bg-surface-alt transition-colors"
+                          title="Download"
+                        >
+                          ↓
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePdf(idx)}
+                          className="text-text-muted hover:text-red-500 transition-colors text-sm leading-none px-1"
+                        >
+                          &times;
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2468,6 +2563,62 @@ function MindmapCanvas({
             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider z-10">
               Click outside or press Close to exit
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PDF Viewer Modal */}
+      <AnimatePresence>
+        {pdfViewerPdf && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-center p-4 md:p-8"
+            onClick={() => setPdfViewerPdf(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1c1c1e] rounded-3xl flex flex-col w-full max-w-4xl h-[90vh] shadow-2xl overflow-hidden border border-white/10"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* PDF Modal Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-3">
+                  <span className="bg-red-500/20 text-red-400 px-2 py-1 text-[10px] font-black rounded-lg uppercase tracking-wider">PDF</span>
+                  <span className="text-[13px] font-bold text-white truncate max-w-xs">{pdfViewerPdf.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={pdfViewerPdf.base64}
+                    download={pdfViewerPdf.name}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors"
+                    title="Download PDF"
+                  >
+                    Download
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setPdfViewerPdf(null)}
+                    className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/15 text-white flex items-center justify-center font-bold text-lg transition-colors cursor-pointer"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* PDF Iframe Embed */}
+              <div className="flex-1 overflow-hidden">
+                <iframe
+                  src={pdfViewerPdf.base64}
+                  title={pdfViewerPdf.name}
+                  className="w-full h-full border-0"
+                  style={{ background: '#fff' }}
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

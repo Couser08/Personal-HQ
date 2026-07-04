@@ -3,7 +3,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { 
   IconChecklist, IconClockPlay, IconSitemap, 
-  IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh
+  IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh,
+  IconCheck, IconArrowRight
 } from '@tabler/icons-react';
 
 export default function DashboardModule() {
@@ -20,7 +21,8 @@ export default function DashboardModule() {
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
-    addMindmap
+    addMindmap,
+    setActiveMindmapId,
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     mindmaps: state.mindmaps,
@@ -34,7 +36,8 @@ export default function DashboardModule() {
     pauseGlobalPomodoro: state.pauseGlobalPomodoro,
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
-    addMindmap: state.addMindmap
+    addMindmap: state.addMindmap,
+    setActiveMindmapId: state.setActiveMindmapId,
   })));
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -63,213 +66,241 @@ export default function DashboardModule() {
     setNewTaskTitle('');
   };
 
+  const handleOpenMindmap = (id: string) => {
+    setActiveMindmapId(id);
+    setActiveModule('mindmap');
+  };
+
   const handleCreateMindmap = () => {
     const newId = crypto.randomUUID();
     addMindmap({
       id: newId,
-      title: 'New Workspace Map',
+      title: 'New Mindmap',
       nodes: [
         { id: 'root', text: 'Central Idea', x: 450, y: 250, color: 'blue', isRoot: true }
       ],
       links: [],
       createdAt: new Date().toISOString()
     });
+    setActiveMindmapId(newId);
     setActiveModule('mindmap');
   };
 
-  const activeTasks = todoTasks.filter(t => !t.completed && !t.deleted).slice(0, 4);
+  const activeTasks = todoTasks.filter(t => !t.completed && !(t as any).deleted).slice(0, 5);
+  const totalTasks = todoTasks.filter(t => !(t as any).deleted).length;
+  const completedTasks = todoTasks.filter(t => t.completed && !(t as any).deleted).length;
+  const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const focusDuration = 1500;
+  const breakDuration = 300;
+  const pomodoroProgress = pomodoroSessionId === 'focus'
+    ? ((focusDuration - pomodoroSecondsLeft) / focusDuration) * 100
+    : ((breakDuration - pomodoroSecondsLeft) / breakDuration) * 100;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10 text-left">
-      {/* Header Greeting Banner with transparent background */}
-      <div className="relative overflow-hidden bg-transparent border border-border/50 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center h-auto md:h-[200px] gap-6">
-        <div className="max-w-xl text-left">
-          <span className="text-[10px] font-black uppercase text-rose-500 tracking-wider">Welcome to Personal HQ</span>
-          <h1 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight mt-2 leading-tight">
-            Focus on what matters.
+    <div className="flex flex-col gap-5 w-full max-w-5xl mx-auto pb-16 text-left">
+
+      {/* ── Hero Banner ── */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-surface shadow-sm flex flex-col md:flex-row items-center justify-between px-8 py-7 gap-6 min-h-[148px]">
+        <div className="flex flex-col gap-1 text-left z-10">
+          <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.18em]">
+            {greeting}
+          </span>
+          <h1 className="text-[28px] md:text-[32px] font-black leading-none tracking-tight text-text-primary mt-1">
+            Focus on what matters<span className="text-rose-500">.</span>
           </h1>
-          <p className="text-text-secondary text-xs mt-2 leading-relaxed">
-            Your unified workspace for brainstorming, focusing on deep sessions, and managing tasks. No clutter, just utility.
+          <p className="text-[12px] text-text-muted mt-2 leading-relaxed font-medium">
+            Brainstorm, focus, and execute — all in one place.
           </p>
         </div>
-        
-        {/* Character Image - Transparent background */}
-        <div className="w-[160px] h-[160px] md:w-[180px] md:h-[180px] select-none pointer-events-none shrink-0 flex items-center justify-center">
-          <img 
-            src="/study_illustration.png" 
-            alt="Study 3D Illustration" 
+        <div className="w-[110px] h-[110px] md:w-[130px] md:h-[130px] shrink-0 select-none pointer-events-none z-10">
+          <img
+            src="/study_illustration.png"
+            alt="Study illustration"
             className="w-full h-full object-contain"
-            onError={(e) => (e.currentTarget.style.display = 'none')}
+            onError={e => (e.currentTarget.style.display = 'none')}
           />
         </div>
+        <div className="absolute -right-12 -top-12 w-52 h-52 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
       </div>
 
-      {/* Grid of Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* 1. Mini Pomodoro Widget */}
-        <div className="bg-surface border border-border/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-[300px]">
-          <div className="flex items-center justify-between pb-3 border-b border-border/40 shrink-0">
+      {/* ── Widgets ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        {/* Pomodoro */}
+        <div className="bg-surface border border-border/40 rounded-3xl p-5 flex flex-col gap-4 shadow-sm h-[280px]">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <IconClockPlay className="w-4.5 h-4.5 text-amber-500" />
-              <span className="text-xs font-black uppercase tracking-wider text-text-primary">Focus Session</span>
+              <div className="w-7 h-7 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <IconClockPlay className="w-4 h-4 text-amber-500" />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-widest text-text-primary">Focus</span>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-              {pomodoroSessionId === 'focus' ? 'Focus' : 'Break'}
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+              pomodoroTimerState === 'running'
+                ? 'bg-green-500/8 text-green-500 border-green-500/20'
+                : pomodoroTimerState === 'paused'
+                  ? 'bg-amber-500/8 text-amber-500 border-amber-500/20'
+                  : 'bg-stone-500/8 text-text-muted border-border/30'
+            }`}>
+              {pomodoroTimerState === 'running' ? 'Active' : pomodoroTimerState === 'paused' ? 'Paused' : pomodoroSessionId === 'focus' ? 'Focus' : 'Break'}
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-4">
-            <span className="text-5xl font-light tracking-tighter text-text-primary font-mono leading-none">
-              {formatTime(pomodoroSecondsLeft)}
-            </span>
-            <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-2">
-              {pomodoroTimerState === 'running' ? 'Running' : pomodoroTimerState === 'paused' ? 'Paused' : 'Ready'}
-            </span>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="relative w-[88px] h-[88px]">
+              <svg className="w-[88px] h-[88px] -rotate-90" viewBox="0 0 88 88">
+                <circle cx="44" cy="44" r="38" fill="none" stroke="currentColor" strokeWidth="5" className="text-border/20" />
+                <circle
+                  cx="44" cy="44" r="38" fill="none" stroke="currentColor" strokeWidth="5"
+                  strokeLinecap="round"
+                  className={pomodoroTimerState !== 'idle' ? 'text-amber-500' : 'text-border/30'}
+                  strokeDasharray={`${2 * Math.PI * 38}`}
+                  strokeDashoffset={`${2 * Math.PI * 38 * (1 - pomodoroProgress / 100)}`}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[15px] font-black text-text-primary font-mono tracking-tight">
+                {formatTime(pomodoroSecondsLeft)}
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-2 shrink-0">
             {pomodoroTimerState === 'running' ? (
-              <button
-                onClick={pauseGlobalPomodoro}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 bg-stone-100 hover:bg-stone-200 dark:bg-stone-900 dark:hover:bg-stone-800 text-text-secondary rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer border border-border/40"
-              >
+              <button onClick={pauseGlobalPomodoro}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-text-secondary rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer border border-border/30">
                 <IconPlayerPause className="w-3.5 h-3.5" /> Pause
               </button>
             ) : (
-              <button
-                onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
-              >
-                <IconPlayerPlay className="w-3.5 h-3.5" /> {pomodoroTimerState === 'paused' ? 'Resume' : 'Start'}
+              <button onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-sm shadow-amber-500/20">
+                <IconPlayerPlay className="w-3.5 h-3.5" />
+                {pomodoroTimerState === 'paused' ? 'Resume' : 'Start'}
               </button>
             )}
-
-            <button
-              onClick={stopGlobalPomodoro}
-              disabled={pomodoroTimerState === 'idle'}
-              className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-900 dark:hover:bg-stone-800 text-text-muted rounded-xl transition-colors cursor-pointer border border-border/40 disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Reset Timer"
-            >
+            <button onClick={stopGlobalPomodoro} disabled={pomodoroTimerState === 'idle'} title="Reset"
+              className="w-9 h-9 rounded-2xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-text-muted flex items-center justify-center transition-colors border border-border/30 disabled:opacity-30 cursor-pointer shrink-0">
               <IconRefresh className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* 2. Quick Task Viewer & Adder */}
-        <div className="bg-surface border border-border/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-[300px]">
-          <div className="flex items-center justify-between pb-3 border-b border-border/40 shrink-0">
+        {/* Quick Tasks */}
+        <div className="bg-surface border border-border/40 rounded-3xl p-5 flex flex-col gap-3 shadow-sm h-[280px]">
+          <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <IconChecklist className="w-4.5 h-4.5 text-rose-500" />
-              <span className="text-xs font-black uppercase tracking-wider text-text-primary">Quick Tasks</span>
+              <div className="w-7 h-7 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                <IconChecklist className="w-4 h-4 text-rose-500" />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-widest text-text-primary">Tasks</span>
             </div>
-            <button 
-              onClick={() => setActiveModule('todo')}
-              className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest cursor-pointer"
-            >
-              All Tasks
+            <button onClick={() => setActiveModule('todo')}
+              className="flex items-center gap-1 text-[9px] font-black text-rose-500 hover:text-rose-400 uppercase tracking-widest cursor-pointer transition-colors">
+              All <IconArrowRight className="w-2.5 h-2.5" />
             </button>
           </div>
 
-          <form onSubmit={handleAddTask} className="flex gap-2 mt-3 shrink-0">
+          {totalTasks > 0 && (
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex-1 h-1 bg-border/25 rounded-full overflow-hidden">
+                <div className="h-full bg-rose-500 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+              </div>
+              <span className="text-[9px] font-black text-text-muted tabular-nums">{progressPct}%</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAddTask} className="flex gap-1.5 shrink-0">
             <input
               type="text"
-              placeholder="What needs to be done?"
+              placeholder="Add a task…"
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
-              className="flex-1 bg-surface-alt border border-border/50 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-rose-500/50 text-text-primary placeholder:text-text-muted"
+              className="flex-1 min-w-0 bg-surface-alt border border-border/40 rounded-2xl px-3 py-1.5 text-[11px] font-medium focus:outline-none focus:border-rose-500/50 text-text-primary placeholder:text-text-muted"
             />
-            <button
-              type="submit"
-              disabled={!newTaskTitle.trim()}
-              className="w-8 h-8 rounded-xl bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors disabled:opacity-40 cursor-pointer shadow-sm shadow-rose-500/10 shrink-0"
-            >
+            <button type="submit" disabled={!newTaskTitle.trim()}
+              className="w-8 h-8 rounded-2xl bg-rose-500 hover:bg-rose-400 text-white flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer shrink-0">
               <IconPlus className="w-4 h-4" />
             </button>
           </form>
 
-          <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto my-3 pr-1">
+          <div className="flex-1 flex flex-col gap-0.5 overflow-y-auto scrollbar-none">
             {activeTasks.length === 0 ? (
-              <div className="text-center py-8 text-xs text-text-muted italic flex items-center justify-center h-full">
-                No active tasks.
+              <div className="flex items-center justify-center h-full">
+                <p className="text-[11px] text-text-muted italic font-medium text-center">All tasks complete 🎉</p>
               </div>
             ) : (
               activeTasks.map(task => (
-                <div 
-                  key={task.id} 
-                  className="flex items-center justify-between p-2.5 bg-surface-alt/40 border border-border/20 rounded-xl shadow-inner group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <input 
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => updateTodoTask(task.id, { completed: !task.completed })}
-                      className="w-4 h-4 rounded-full border-border bg-transparent text-rose-500 focus:ring-0 cursor-pointer shrink-0"
-                    />
-                    <span className="text-xs font-semibold text-text-primary truncate">
-                      {task.title}
-                    </span>
+                <button key={task.id} onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-surface-alt text-left transition-colors w-full group cursor-pointer">
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    task.completed ? 'bg-rose-500 border-rose-500' : 'border-border/60 group-hover:border-rose-400'
+                  }`}>
+                    {task.completed && <IconCheck className="w-2 h-2 text-white" />}
                   </div>
-                  {task.priority && task.priority !== 'none' && (
-                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border shrink-0 ${
-                      task.priority === 'high' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                      task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                      'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                    }`}>
-                      {task.priority}
-                    </span>
+                  <span className="text-[11px] font-medium text-text-primary truncate flex-1">{task.title}</span>
+                  {task.priority !== 'none' && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full shrink-0 ${
+                      task.priority === 'high' ? 'text-rose-500 bg-rose-500/10' :
+                      task.priority === 'medium' ? 'text-amber-500 bg-amber-500/10' :
+                      'text-blue-500 bg-blue-500/10'
+                    }`}>{task.priority}</span>
                   )}
-                </div>
+                </button>
               ))
             )}
           </div>
         </div>
 
-        {/* 3. Mini Mindmap Widget */}
-        <div className="bg-surface border border-border/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-[300px] md:col-span-2 lg:col-span-1">
-          <div className="flex items-center justify-between pb-3 border-b border-border/40 shrink-0">
+        {/* Mindmaps */}
+        <div className="bg-surface border border-border/40 rounded-3xl p-5 flex flex-col gap-3 shadow-sm h-[280px]">
+          <div className="flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <IconSitemap className="w-4.5 h-4.5 text-purple-500" />
-              <span className="text-xs font-black uppercase tracking-wider text-text-primary">Recent Mindmaps</span>
+              <div className="w-7 h-7 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <IconSitemap className="w-4 h-4 text-purple-500" />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-widest text-text-primary">Mindmaps</span>
             </div>
-            <button 
-              onClick={handleCreateMindmap}
-              className="text-[9px] font-black text-purple-500 hover:text-purple-600 uppercase tracking-widest cursor-pointer"
-            >
-              New Map
+            <button onClick={handleCreateMindmap}
+              className="flex items-center gap-1 text-[9px] font-black text-purple-500 hover:text-purple-400 uppercase tracking-widest cursor-pointer transition-colors">
+              New <IconPlus className="w-2.5 h-2.5" />
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col gap-2.5 overflow-y-auto my-3 pr-1">
+          <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto scrollbar-none">
             {mindmaps.length === 0 ? (
-              <div className="text-center py-8 text-xs text-text-muted italic flex items-center justify-center h-full">
-                No mindmaps saved yet.
+              <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/5 border border-purple-500/10 flex items-center justify-center">
+                  <IconSitemap className="w-6 h-6 text-purple-400/40" />
+                </div>
+                <p className="text-[11px] text-text-muted italic font-medium text-center">No mindmaps yet.<br/>Create your first one!</p>
               </div>
             ) : (
-              mindmaps.slice(0, 3).map(m => (
-                <div 
-                  key={m.id} 
-                  onClick={() => setActiveModule('mindmap')}
-                  className="flex items-center gap-3 p-3 bg-surface-alt/45 hover:bg-stone-50 dark:hover:bg-stone-850 border border-border/40 hover:border-purple-500/25 rounded-2xl shadow-sm cursor-pointer transition-all hover:scale-[1.01] hover:shadow group text-left"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/5 group-hover:bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 border border-purple-500/5 transition-colors">
-                    <IconSitemap className="w-4.5 h-4.5" />
+              mindmaps.slice(0, 4).map(m => (
+                <button key={m.id} onClick={() => handleOpenMindmap(m.id)}
+                  className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-2xl hover:bg-purple-500/5 border border-transparent hover:border-purple-500/15 text-left transition-all w-full cursor-pointer group">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/8 text-purple-500 flex items-center justify-center shrink-0 border border-purple-500/10">
+                    <IconSitemap className="w-3.5 h-3.5" />
                   </div>
-                  <div className="min-w-0 leading-tight">
-                    <h4 className="text-xs font-bold text-text-primary truncate">{m.title}</h4>
-                    <span className="text-[9px] text-text-muted mt-0.5 block font-bold uppercase">{m.nodes.length} Nodes</span>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-[11px] font-bold text-text-primary truncate">{m.title}</p>
+                    <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider">{m.nodes.length} nodes</span>
                   </div>
-                </div>
+                  <IconArrowRight className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+                </button>
               ))
             )}
           </div>
 
-          <button
-            onClick={() => setActiveModule('mindmap')}
-            className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-900 dark:hover:bg-stone-800 text-text-secondary rounded-xl text-center text-[9px] font-black uppercase tracking-wider transition-colors border border-border/40 shrink-0 cursor-pointer"
-          >
-            Open Mindmap Canvas
-          </button>
+          {mindmaps.length > 0 && (
+            <button onClick={() => setActiveModule('mindmap')}
+              className="w-full py-2 bg-stone-100 dark:bg-stone-800/60 hover:bg-stone-200 dark:hover:bg-stone-800 text-text-muted rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-colors border border-border/30 cursor-pointer shrink-0">
+              Open Canvas
+            </button>
+          )}
         </div>
 
       </div>
