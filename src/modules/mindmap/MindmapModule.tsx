@@ -111,7 +111,7 @@ export default function MindmapModule() {
           nodes: any[],
           links: any[],
           depth: number = 0,
-          index: number = 0
+          _index: number = 0
         ): string => {
           const id = `n-${nodes.length}-${Date.now()}`;
           const COLORS = ['blue', 'purple', 'teal', 'orange', 'pink', 'indigo', 'emerald', 'rose', 'amber'];
@@ -295,9 +295,13 @@ export default function MindmapModule() {
     return mindmaps.find(m => m.id === activeMindmapId) || null;
   }, [mindmaps, activeMindmapId]);
 
-  // Set first mindmap active automatically
+  // Set first mindmap active automatically, or honour pendingMindmapId from Dashboard
   useEffect(() => {
-    if (mindmaps.length > 0 && !activeMindmapId) {
+    const pending = localStorage.getItem('pendingMindmapId');
+    if (pending && mindmaps.some(m => m.id === pending)) {
+      setActiveMindmapId(pending);
+      localStorage.removeItem('pendingMindmapId');
+    } else if (mindmaps.length > 0 && !activeMindmapId) {
       setActiveMindmapId(mindmaps[0].id);
     }
   }, [mindmaps, activeMindmapId]);

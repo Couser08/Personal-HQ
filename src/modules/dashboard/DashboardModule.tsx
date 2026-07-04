@@ -22,7 +22,6 @@ export default function DashboardModule() {
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
     addMindmap,
-    setActiveMindmapId,
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     mindmaps: state.mindmaps,
@@ -37,7 +36,6 @@ export default function DashboardModule() {
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
     addMindmap: state.addMindmap,
-    setActiveMindmapId: state.setActiveMindmapId,
   })));
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -67,7 +65,8 @@ export default function DashboardModule() {
   };
 
   const handleOpenMindmap = (id: string) => {
-    setActiveMindmapId(id);
+    // Signal MindmapModule to open this specific map on mount
+    localStorage.setItem('pendingMindmapId', id);
     setActiveModule('mindmap');
   };
 
@@ -82,7 +81,7 @@ export default function DashboardModule() {
       links: [],
       createdAt: new Date().toISOString()
     });
-    setActiveMindmapId(newId);
+    localStorage.setItem('pendingMindmapId', newId);
     setActiveModule('mindmap');
   };
 
