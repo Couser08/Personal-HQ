@@ -995,6 +995,16 @@ function MindmapCanvas({
   // PDF Viewer Modal State
   const [pdfViewerPdf, setPdfViewerPdf] = useState<{ name: string; base64: string } | null>(null);
 
+  // Close PDF viewer on Escape key
+  useEffect(() => {
+    if (!pdfViewerPdf) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPdfViewerPdf(null);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [pdfViewerPdf]);
+
   const notesModalNode = useMemo(() => {
     return mindmap.nodes.find(n => n.id === notesModalNodeId) || null;
   }, [mindmap.nodes, notesModalNodeId]);
@@ -2571,60 +2581,164 @@ function MindmapCanvas({
         )}
       </AnimatePresence>
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal — Premium Apple-style Document Reader */}
       <AnimatePresence>
-        {pdfViewerPdf && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-center p-4 md:p-8"
-            onClick={() => setPdfViewerPdf(null)}
-          >
+        {pdfViewerPdf && (() => {
+          const fileExt = pdfViewerPdf.name.split('.').pop()?.toUpperCase() || 'PDF';
+          const fileSizeEstimate = pdfViewerPdf.base64 ? `${(pdfViewerPdf.base64.length / 1024 / 1.37).toFixed(0)} KB` : '';
+          return (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#1c1c1e] rounded-3xl flex flex-col w-full max-w-4xl h-[90vh] shadow-2xl overflow-hidden border border-white/10"
-              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center select-none"
+              onClick={() => setPdfViewerPdf(null)}
             >
-              {/* PDF Modal Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
-                <div className="flex items-center gap-3">
-                  <span className="bg-red-500/20 text-red-400 px-2 py-1 text-[10px] font-black rounded-lg uppercase tracking-wider">PDF</span>
-                  <span className="text-[13px] font-bold text-white truncate max-w-xs">{pdfViewerPdf.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={pdfViewerPdf.base64}
-                    download={pdfViewerPdf.name}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors"
-                    title="Download PDF"
-                  >
-                    Download
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setPdfViewerPdf(null)}
-                    className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/15 text-white flex items-center justify-center font-bold text-lg transition-colors cursor-pointer"
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
+              {/* Backdrop with blur */}
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
-              {/* PDF Iframe Embed */}
-              <div className="flex-1 overflow-hidden">
-                <iframe
-                  src={pdfViewerPdf.base64}
-                  title={pdfViewerPdf.name}
-                  className="w-full h-full border-0"
-                  style={{ background: '#fff' }}
-                />
-              </div>
+              {/* Document Container */}
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0, y: 24 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.92, opacity: 0, y: 24 }}
+                transition={{ type: 'spring' as const, stiffness: 340, damping: 28 }}
+                className="relative flex flex-col w-[96vw] max-w-5xl h-[92vh] rounded-[28px] overflow-hidden shadow-2xl"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  background: 'linear-gradient(145deg, rgba(28,28,30,0.98), rgba(20,20,22,0.99))',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 40px 120px -20px rgba(0,0,0,0.7), 0 0 80px -10px rgba(239,68,68,0.05)'
+                }}
+              >
+                {/* ── Top Toolbar — Glassmorphic ── */}
+                <div 
+                  className="flex items-center justify-between px-5 py-3.5 shrink-0 relative z-10"
+                  style={{ 
+                    background: 'linear-gradient(180deg, rgba(44,44,46,0.95) 0%, rgba(34,34,36,0.9) 100%)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)'
+                  }}
+                >
+                  {/* Left: File Info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* File type badge with subtle glow */}
+                    <div className="relative">
+                      <div 
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08))',
+                          border: '1px solid rgba(239,68,68,0.15)',
+                          boxShadow: '0 0 16px -4px rgba(239,68,68,0.15)'
+                        }}
+                      >
+                        <span className="text-[10px] font-black text-red-400 uppercase tracking-wider">{fileExt}</span>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-[13px] font-bold text-white truncate max-w-[300px] leading-tight">
+                        {pdfViewerPdf.name}
+                      </h3>
+                      {fileSizeEstimate && (
+                        <span className="text-[10px] text-gray-500 font-semibold mt-0.5 block">
+                          {fileSizeEstimate} · Document
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-1.5">
+                    {/* Download Button */}
+                    <a
+                      href={pdfViewerPdf.base64}
+                      download={pdfViewerPdf.name}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-bold text-gray-300 uppercase tracking-wider transition-all hover:text-white"
+                      style={{ 
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.06)'
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
+                      }}
+                      title="Download PDF"
+                    >
+                      <IconDownload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Download</span>
+                    </a>
+
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-white/8 mx-1" />
+
+                    {/* Close Button */}
+                    <button
+                      type="button"
+                      onClick={() => setPdfViewerPdf(null)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all cursor-pointer"
+                      style={{ 
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.06)'
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.2)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.2)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
+                      }}
+                      title="Close (Esc)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M1.5 1.5L12.5 12.5M12.5 1.5L1.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Document Viewport ── */}
+                <div className="flex-1 overflow-hidden relative">
+                  {/* Subtle top shadow for depth */}
+                  <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-black/20 to-transparent z-10 pointer-events-none" />
+                  
+                  {/* PDF Iframe */}
+                  <iframe
+                    src={pdfViewerPdf.base64}
+                    title={pdfViewerPdf.name}
+                    className="w-full h-full border-0"
+                    style={{ background: '#f5f5f5' }}
+                  />
+
+                  {/* Subtle bottom shadow */}
+                  <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[rgba(20,20,22,0.8)] to-transparent z-10 pointer-events-none" />
+                </div>
+
+                {/* ── Bottom Info Bar ── */}
+                <div 
+                  className="flex items-center justify-between px-5 py-2.5 shrink-0"
+                  style={{ 
+                    background: 'rgba(30,30,32,0.95)',
+                    borderTop: '1px solid rgba(255,255,255,0.04)'
+                  }}
+                >
+                  <span className="text-[10px] text-gray-600 font-semibold">
+                    Use browser controls to navigate pages
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-gray-600 font-semibold flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 bg-white/5 rounded text-[9px] font-mono font-bold text-gray-500 border border-white/5">Esc</kbd>
+                      to close
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       {/* Apple Notes Style Modal */}
