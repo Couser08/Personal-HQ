@@ -8,6 +8,8 @@ import { TodoProjectModal } from '../ui/TodoProjectModal';
 import { TodoTaskModal } from '../ui/TodoTaskModal';
 import { PipTimerPortal } from '../ui/PipTimerPortal';
 
+import { JournalNoticeModal } from '../ui/JournalNoticeModal';
+
 interface LayoutProps {
   children: ReactNode;
 }
@@ -36,6 +38,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <TodoProjectModal />
       <TodoTaskModal />
       <PipTimerPortal />
+      <JournalNoticeModal />
     </div>
   );
 };

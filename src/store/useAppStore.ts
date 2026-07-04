@@ -18,7 +18,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   initialCashBalance: 0,
 };
 
-const sanitizeActiveModule = (module: string) => (module === 'stocks' ? 'notes' : module);
+const sanitizeActiveModule = (module: string) => {
+  if (module === 'stocks' || module === 'notes' || module === 'journal') {
+    return 'dashboard';
+  }
+  return module;
+};
 
 const loadStoredSettings = (): AppSettings => {
   const fallback = { ...DEFAULT_SETTINGS };
@@ -477,7 +482,7 @@ export interface AppStore {
 let globalPomodoroInterval: any = null;
 
 export const useAppStore = create<AppStore>()((set, get) => ({
-  activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'notes'),
+  activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'dashboard'),
   setActiveModule: (module) => {
     const nextModule = sanitizeActiveModule(module);
     localStorage.setItem('activeModule', nextModule);

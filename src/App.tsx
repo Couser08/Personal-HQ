@@ -6,18 +6,15 @@ import { useAuthStore } from './store/useAuthStore';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const NotesModule = lazy(() => import('./modules/notes/NotesModule'));
-const LinksModule = lazy(() => import('./modules/links/LinksModule'));
+const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
+const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
 const BudgetModule = lazy(() => import('./modules/budget/BudgetModule'));
 const StudyModule = lazy(() => import('./modules/study/StudyModule'));
-const CalculatorModule = lazy(() => import('./modules/calculator/CalculatorModule'));
 const MediaModule = lazy(() => import('./modules/media/MediaModule'));
-const CountdownModule = lazy(() => import('./modules/countdowns/CountdownModule'));
 const CodeSnippetModule = lazy(() => import('./modules/snippets/CodeSnippetModule'));
 const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
 const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
-const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const TodoModule = lazy(() => import('./modules/todo/TodoModule'));
 const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
 
@@ -146,21 +143,21 @@ function AppContent() {
 
   const renderModule = () => {
     switch (activeModule) {
-      case 'notes': return <NotesModule />;
-      case 'links': return <LinksModule />;
+      case 'dashboard': return <DashboardModule />;
+      case 'links':
+      case 'calculator':
+      case 'countdown':
+        return <UtilitiesModule />;
       case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
-      case 'journal': return <JournalModule />;
-      case 'calculator': return <CalculatorModule />;
       case 'media': return <MediaModule />;
-      case 'countdown': return <CountdownModule />;
       case 'snippets': return <CodeSnippetModule />;
       case 'pomodoro': return <PomodoroModule />;
       case 'todo': return <TodoModule />;
       case 'settings': return <SettingsModule />;
       case 'profile': return <ProfileModule />;
       case 'mindmap': return <MindmapModule />;
-      default: return <NotesModule />;
+      default: return <DashboardModule />;
     }
   };
 

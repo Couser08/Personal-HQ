@@ -498,6 +498,7 @@ export const budgetTransactionService = {
       description: r.description,
       date: r.date,
       type: r.type,
+      paymentMethod: r.payment_method || 'online',
     }));
   },
 
@@ -510,6 +511,7 @@ export const budgetTransactionService = {
       description: transaction.description,
       date: transaction.date,
       type: transaction.type,
+      payment_method: transaction.paymentMethod || 'online',
     });
     if (error) throw error;
   },
@@ -526,6 +528,7 @@ export const budgetTransactionService = {
     if (transaction.description !== undefined) updateData.description = transaction.description;
     if (transaction.date !== undefined) updateData.date = transaction.date;
     if (transaction.type !== undefined) updateData.type = transaction.type;
+    if (transaction.paymentMethod !== undefined) updateData.payment_method = transaction.paymentMethod;
 
     const { error } = await supabase.from('budget_transactions').update(updateData).eq('id', id);
     if (error) throw error;

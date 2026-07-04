@@ -1,9 +1,10 @@
 import {
-  IconNotes, IconLink, IconBook,
+  IconLink, IconBook, IconLayout,
   IconCalculator, IconDeviceGamepad2, IconHourglassEmpty,
   IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconWallet, IconChecklist, IconSitemap, IconDots
+  IconWallet, IconChecklist, IconSitemap, IconDots,
+  IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -15,18 +16,17 @@ import { AppLogo } from '../ui/AppLogo';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
-  { id: 'notes', label: 'Notes', icon: IconNotes },
-  { id: 'links', label: 'Link Vault', icon: IconLink },
-  { id: 'budget', label: 'Expense & Income', icon: IconWallet },
-  { id: 'study', label: 'Study Tracker', icon: IconBook },
-  { id: 'journal', label: 'Journal', icon: IconBook },
-  { id: 'calculator', label: 'Interest Calc', icon: IconCalculator },
-  { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
-  { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty },
-  { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
+  { id: 'dashboard', label: 'Home', icon: IconLayout },
   { id: 'todo', label: 'To-Do List', icon: IconChecklist },
+  { id: 'study', label: 'Study Tracker', icon: IconBook },
+  { id: 'budget', label: 'Expense & Income', icon: IconWallet },
+  { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
   { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
+  { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
+  { id: 'links', label: 'Link Vault', icon: IconLink },
+  { id: 'calculator', label: 'Interest Calc', icon: IconCalculator },
+  { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty },
 ];
 
 const NAV_ITEM_STYLE = (active: boolean) => ({
@@ -51,6 +51,16 @@ export const Sidebar = () => {
   const { user, signOut } = useAuthStore();
   const addToast = useToastStore((s) => s.addToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    const nextVal = !isCollapsed;
+    setIsCollapsed(nextVal);
+    localStorage.setItem('sidebar_collapsed', String(nextVal));
+  };
 
   const handleLogout = () => {
     showConfirm('Sign Out', 'Are you sure you want to sign out?', async () => {
@@ -78,51 +88,98 @@ export const Sidebar = () => {
     <aside
       className="sidebar-desktop"
       style={{
-        width: 250,
+        width: isCollapsed ? 72 : 250,
         height: '100dvh',
         flexShrink: 0,
         flexDirection: 'column',
         background: 'var(--bg-surface)',
         borderRight: '1px solid var(--border-border)',
-        transition: 'width 0.25s ease',
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         overflow: 'hidden',
+        display: 'flex'
       }}
     >
-      <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, flexShrink: 0 }}>
-        <AppLogo className="w-8 h-8 flex-shrink-0" />
-        <span className="sidebar-header-text" style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
-          Personal HQ
-          <span style={{ color: '#f43f5e', marginLeft: 4 }}>.</span>
-        </span>
+      <style>{`
+        ${isCollapsed ? `
+          .sidebar-label {
+            display: none !important;
+          }
+          .sidebar-header-text {
+            display: none !important;
+          }
+          .sidebar-scroll button {
+            justify-content: center !important;
+            padding: 9px 0 !important;
+            width: 44px !important;
+            height: 44px !important;
+            margin: 2px auto !important;
+            border-radius: 12px !important;
+          }
+          .sidebar-user-row {
+            justify-content: center !important;
+            padding: 4px 0 !important;
+            margin-bottom: 8px !important;
+          }
+          .sidebar-user-row .sidebar-label {
+            display: none !important;
+          }
+          .sidebar-footer-btn {
+            justify-content: center !important;
+            padding: 8px 0 !important;
+            width: 40px !important;
+            margin: 2px auto !important;
+            border-radius: 8px !important;
+          }
+        ` : ''}
+      `}</style>
+
+      {/* Sidebar Header */}
+      <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: isCollapsed ? '0 10px' : '0 20px', gap: 12, flexShrink: 0, justifyContent: isCollapsed ? 'center' : 'space-between', borderBottom: '1px solid var(--border-border-alt)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
+          <AppLogo className="w-8 h-8 flex-shrink-0" />
+          {!isCollapsed && (
+            <span className="sidebar-header-text" style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+              Personal HQ
+              <span style={{ color: '#f43f5e', marginLeft: 2 }}>.</span>
+            </span>
+          )}
+        </div>
+        <button 
+          onClick={toggleCollapse} 
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          className="w-7 h-7 rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors shadow-sm hidden md:flex"
+        >
+          {isCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
+        </button>
       </div>
 
-      <nav className="sidebar-scroll" style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
+      <nav className="sidebar-scroll" style={{ flex: 1, padding: isCollapsed ? '12px 0' : '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const active = activeModule === id;
           return (
-            <motion.button key={id} id={'tour-' + id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(active)}>
+            <motion.button key={id} id={'tour-' + id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(active)} title={isCollapsed ? label : undefined}>
               <Icon size={18} style={{ flexShrink: 0 }} />
               <span className="sidebar-label" style={{ whiteSpace: 'nowrap' }}>{label}</span>
             </motion.button>
           );
         })}
 
-        <div style={{ height: 1, background: 'var(--border-border)', margin: '12px 4px' }} />
+        <div style={{ height: 1, background: 'var(--border-border)', margin: isCollapsed ? '8px 16px' : '12px 4px' }} />
 
-        <motion.button id="tour-settings" onClick={() => setActiveModule('settings')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'settings')}>
+        <motion.button id="tour-settings" onClick={() => setActiveModule('settings')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'settings')} title={isCollapsed ? "Settings" : undefined}>
           <IconSettings size={18} style={{ flexShrink: 0 }} />
           <span className="sidebar-label">Settings</span>
         </motion.button>
 
-        <motion.button id="tour-profile" onClick={() => setActiveModule('profile')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'profile')}>
+        <motion.button id="tour-profile" onClick={() => setActiveModule('profile')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'profile')} title={isCollapsed ? "Profile" : undefined}>
           <IconUser size={18} style={{ flexShrink: 0 }} />
           <span className="sidebar-label">Profile</span>
         </motion.button>
       </nav>
 
-      <div style={{ borderTop: '1px solid var(--border-border)', padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ borderTop: '1px solid var(--border-border)', padding: isCollapsed ? '16px 0' : '16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div className="sidebar-user-row" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 6px', marginBottom: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }} title={userName}>
             {userInitial}
           </div>
           <div className="sidebar-label" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -130,27 +187,54 @@ export const Sidebar = () => {
               {userName}
             </span>
           </div>
-          <div className="sidebar-label" style={{ marginLeft: 'auto' }}>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" className="btn btn-ghost btn-sm btn-square">
-              {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
-            </button>
-          </div>
+          {!isCollapsed && (
+            <div style={{ marginLeft: 'auto' }}>
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" className="btn btn-ghost btn-sm btn-square">
+                {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+              </button>
+            </div>
+          )}
         </div>
 
-        <button onClick={() => {
-          const exported = exportData();
-          addToast(exported ? 'Success' : 'Export Failed', exported ? 'Data exported successfully!' : 'Sign in before exporting data.', exported ? 'success' : 'error');
-        }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-          <IconDownload size={16} /> <span className="sidebar-label">Export Data</span>
+        {isCollapsed && (
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+            title="Toggle theme" 
+            className="w-10 h-10 mx-auto rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-secondary flex items-center justify-center cursor-pointer transition-colors shadow-sm mb-2"
+          >
+            {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+          </button>
+        )}
+
+        <button 
+          onClick={() => {
+            const exported = exportData();
+            addToast(exported ? 'Success' : 'Export Failed', exported ? 'Data exported successfully!' : 'Sign in before exporting data.', exported ? 'success' : 'error');
+          }} 
+          className="sidebar-footer-btn"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}
+          title={isCollapsed ? "Export Data" : undefined}
+        >
+          <IconDownload size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Export Data</span>
         </button>
 
-        <button onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-          <IconUpload size={16} /> <span className="sidebar-label">Import Data</span>
+        <button 
+          onClick={() => fileInputRef.current?.click()} 
+          className="sidebar-footer-btn"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}
+          title={isCollapsed ? "Import Data" : undefined}
+        >
+          <IconUpload size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Import Data</span>
         </button>
         <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="application/json" onChange={handleFileChange} />
 
-        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: '#f43f5e', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-          <IconLogout size={16} /> <span className="sidebar-label">Logout</span>
+        <button 
+          onClick={handleLogout} 
+          className="sidebar-footer-btn"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: '#f43f5e', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', textAlign: 'left' }}
+          title={isCollapsed ? "Logout" : undefined}
+        >
+          <IconLogout size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Logout</span>
         </button>
       </div>
     </aside>

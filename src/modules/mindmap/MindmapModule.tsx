@@ -2242,18 +2242,14 @@ function MindmapCanvas({
           setIsNotesModalOpen(false);
           setNotesModalNodeId(null);
         }}
-        title=""
+        title={notesModalNode ? `Notes: ${notesModalNode.text}` : "Advanced Notes"}
       >
         {notesModalNode && (
-          <div className="flex flex-col h-[520px] -mt-6">
+          <div className="flex flex-col h-[480px]">
             {/* Header bar */}
             <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4 shrink-0">
               <div className="text-left">
-                <h3 className="font-extrabold text-sm text-text-primary flex items-center gap-1.5">
-                  <IconBook className="w-5 h-5 text-amber-500" />
-                  Notes: <span className="font-semibold text-text-secondary">{notesModalNode.text}</span>
-                </h3>
-                <p className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wider font-bold">Apple-Style Outliner</p>
+                <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">Apple-Style Outliner</span>
               </div>
               
               {/* Tab Toggles: View vs Edit */}

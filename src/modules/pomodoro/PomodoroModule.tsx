@@ -121,31 +121,31 @@ const themeStyles = {
   'dark-academia': `
     .pomodoro-wrapper {
       position: relative;
-      background: #f4ecd8 url('https://www.transparenttextures.com/patterns/cream-paper.png') !important;
-      --bg-surface: rgba(238, 224, 188, 0.55) !important;
-      --bg-surface-alt: rgba(224, 203, 155, 0.45) !important;
-      --border-border: rgba(198, 172, 122, 0.5) !important;
-      --text-primary: #3c2d1e !important;
-      --text-secondary: #654d37 !important;
-      --text-muted: #937862 !important;
-      --color-primary: #8b4513 !important;
-      border-radius: 16px !important;
+      background: #fdfbf7 url('https://www.transparenttextures.com/patterns/cream-paper.png') !important;
+      --bg-surface: #ffffff !important;
+      --bg-surface-alt: #f5f5f7 !important;
+      --border-border: #e4e4e7 !important;
+      --text-primary: #18181b !important;
+      --text-secondary: #52525b !important;
+      --text-muted: #a1a1aa !important;
+      --color-primary: #1d4ed8 !important;
+      border-radius: 24px !important;
       padding: 28px !important;
-      border: 1px solid rgba(139, 69, 19, 0.15) !important;
-      box-shadow: 8px 8px 24px rgba(139, 69, 19, 0.04), -8px -8px 24px rgba(255, 255, 255, 0.45) !important;
+      border: 1px solid #e4e4e7 !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
       overflow: hidden;
     }
     .dark .pomodoro-wrapper {
-      background: #1b1411 url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
-      --bg-surface: rgba(32, 23, 19, 0.7) !important;
-      --bg-surface-alt: rgba(46, 33, 27, 0.6) !important;
-      --border-border: rgba(82, 60, 49, 0.65) !important;
-      --text-primary: #efe5d9 !important;
-      --text-secondary: #b59e89 !important;
-      --text-muted: #877261 !important;
-      --color-primary: #d4a373 !important;
-      border: 1px solid rgba(212, 163, 115, 0.12) !important;
-      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.6), 0 15px 30px rgba(0, 0, 0, 0.4) !important;
+      background: #18181b url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
+      --bg-surface: #27272a !important;
+      --bg-surface-alt: #1f1f22 !important;
+      --border-border: #3f3f46 !important;
+      --text-primary: #f4f4f5 !important;
+      --text-secondary: #a1a1aa !important;
+      --text-muted: #71717a !important;
+      --color-primary: #3b82f6 !important;
+      border: 1px solid #3f3f46 !important;
+      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.4), 0 15px 30px rgba(0, 0, 0, 0.3) !important;
     }
     /* Font override for all children for Academia vibe */
     .pomodoro-wrapper, 

@@ -10,6 +10,24 @@ import {
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
 
+const isToday = (dateStr: string | null) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const today = new Date();
+  return d.getDate() === today.getDate() &&
+         d.getMonth() === today.getMonth() &&
+         d.getFullYear() === today.getFullYear();
+};
+
+const isUpcoming = (dateStr: string | null) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return d.getTime() > today.getTime();
+};
+
 export default function TodoModule() {
   const { 
     todoTasks, todoProjects, 
@@ -157,10 +175,10 @@ export default function TodoModule() {
     
     switch (activeList) {
       case 'today':
-        list = list.filter(t => !t.completed && t.dueDate);
+        list = list.filter(t => !t.completed && isToday(t.dueDate));
         break;
       case 'upcoming':
-        list = list.filter(t => !t.completed && t.dueDate);
+        list = list.filter(t => !t.completed && isUpcoming(t.dueDate));
         break;
       case 'completed':
         list = list.filter(t => t.completed);
@@ -193,27 +211,27 @@ export default function TodoModule() {
           <div className="flex flex-col gap-1">
             <NavItem 
               icon={<IconLayoutList className="w-4 h-4 text-rose-500" />} 
-              label="All Tasks" count={todoTasks.filter(t => !t.completed).length} 
+              label="All Tasks" count={todoTasks.filter(t => !t.completed && !t.deleted).length} 
               active={activeList === 'all'} onClick={() => setActiveList('all')} 
             />
             <NavItem 
               icon={<IconSun className="w-4 h-4 text-orange-500" />} 
-              label="Today" count={0} 
+              label="Today" count={todoTasks.filter(t => !t.completed && !t.deleted && isToday(t.dueDate)).length} 
               active={activeList === 'today'} onClick={() => setActiveList('today')} 
             />
             <NavItem 
               icon={<IconCalendarEvent className="w-4 h-4 text-text-secondary" />} 
-              label="Upcoming" count={0} 
+              label="Upcoming" count={todoTasks.filter(t => !t.completed && !t.deleted && isUpcoming(t.dueDate)).length} 
               active={activeList === 'upcoming'} onClick={() => setActiveList('upcoming')} 
             />
             <NavItem 
               icon={<IconCheck className="w-4 h-4 text-text-secondary" />} 
-              label="Completed" count={todoTasks.filter(t => t.completed).length} 
+              label="Completed" count={todoTasks.filter(t => t.completed && !t.deleted).length} 
               active={activeList === 'completed'} onClick={() => setActiveList('completed')} 
             />
             <NavItem 
               icon={<IconTrash className="w-4 h-4 text-text-secondary" />} 
-              label="Trash" 
+              label="Trash" count={todoTasks.filter(t => t.deleted).length}
               active={activeList === 'trash'} onClick={() => setActiveList('trash')} 
             />
           </div>
@@ -236,7 +254,7 @@ export default function TodoModule() {
                 <NavItem 
                   icon={<div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />} 
                   label={p.name} 
-                  count={todoTasks.filter(t => t.projectId === p.id && !t.completed).length} 
+                  count={todoTasks.filter(t => t.projectId === p.id && !t.completed && !t.deleted).length} 
                   active={activeList === p.id} onClick={() => setActiveList(p.id)} 
                 />
                 <button 
@@ -873,50 +891,93 @@ export default function TodoModule() {
             {todoView === 'board' && (
               <motion.div
                 key="board-view"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-10"
+                exit={{ opacity: 0, y: -12 }}
+                className="grid grid-cols-1 md:grid-cols-4 gap-5 pb-10"
               >
                 {([
-                  { id: 'none', title: 'No Priority', color: 'border-t-gray-400 bg-gray-400/5 text-gray-500' },
-                  { id: 'low', title: 'Low', color: 'border-t-blue-500 bg-blue-500/5 text-blue-500' },
-                  { id: 'medium', title: 'Medium', color: 'border-t-orange-500 bg-orange-500/5 text-orange-500' },
-                  { id: 'high', title: 'High', color: 'border-t-rose-500 bg-rose-500/5 text-rose-500' }
+                  { id: 'none', title: 'No Priority', dotColor: 'bg-stone-400 dark:bg-stone-500' },
+                  { id: 'low', title: 'Low', dotColor: 'bg-blue-500' },
+                  { id: 'medium', title: 'Medium', dotColor: 'bg-amber-500' },
+                  { id: 'high', title: 'High', dotColor: 'bg-rose-500' }
                 ] as const).map(col => {
                   const colTasks = filteredTasks.filter(t => t.priority === col.id);
                   return (
-                    <div key={col.id} className={`flex flex-col rounded-3xl p-4 border-t-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${col.color} min-h-[400px]`}>
-                      <div className="flex justify-between items-center mb-4 pb-2 border-b border-border/50">
-                        <span className="font-bold text-sm text-text-primary">{col.title}</span>
-                        <span className="text-[10px] font-extrabold bg-surface px-2 py-0.5 rounded-full border shadow-sm text-text-secondary">{colTasks.length}</span>
+                    <div 
+                      key={col.id} 
+                      className="flex flex-col rounded-3xl p-4 bg-stone-50/50 dark:bg-stone-900/30 border border-border/40 backdrop-blur-md min-h-[500px] flex-1 shadow-sm"
+                    >
+                      {/* Column Header */}
+                      <div className="flex justify-between items-center mb-4 pb-2.5 border-b border-border/30">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-text-primary">{col.title}</span>
+                        </div>
+                        <span className="text-[10px] font-black bg-surface text-text-secondary px-2 py-0.5 rounded-full border shadow-sm shrink-0">
+                          {colTasks.length}
+                        </span>
                       </div>
                       
-                      <div className="flex flex-col gap-2 overflow-y-auto flex-1 max-h-[350px] pr-1">
+                      {/* Tasks list */}
+                      <div className="flex flex-col gap-2.5 overflow-y-auto flex-1 max-h-[420px] pr-1 scrollbar-thin">
                         {colTasks.length === 0 ? (
-                          <div className="text-center py-10 text-[10px] text-text-muted font-medium">No tasks</div>
+                          <div className="text-center py-16 text-[10px] text-text-muted font-bold uppercase tracking-wider italic">
+                            No tasks
+                          </div>
                         ) : (
                           colTasks.map(task => (
                             <div 
                               key={task.id}
-                              className="bg-surface p-3 rounded-2xl border border-border shadow-sm flex flex-col gap-2 hover:shadow transition-shadow group cursor-pointer"
+                              className="bg-surface p-3.5 rounded-2xl border border-border/60 shadow-sm flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group cursor-pointer"
                               onClick={() => handleToggleTask(task.id)}
                             >
                               <div className="flex justify-between items-start gap-2">
-                                <span className={`text-xs font-semibold text-text-primary line-clamp-2 ${task.completed ? 'line-through text-text-muted' : ''}`}>
-                                  {task.title}
-                                </span>
+                                <div className="flex items-start gap-2.5">
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleToggleTask(task.id); }}
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors cursor-pointer ${
+                                      task.completed 
+                                        ? 'bg-rose-500 border-rose-500 text-white' 
+                                        : 'border-border hover:border-rose-400 text-transparent'
+                                    }`}
+                                  >
+                                    <IconCheck className="w-2.5 h-2.5" />
+                                  </button>
+                                  <span className={`text-xs leading-tight font-bold line-clamp-3 select-none ${task.completed ? 'line-through text-text-muted font-semibold' : 'text-text-primary'}`}>
+                                    {task.title}
+                                  </span>
+                                </div>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); deleteTodoTask(task.id); }}
-                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 hover:text-rose-500 rounded transition-all text-text-muted"
+                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 hover:text-rose-500 rounded-lg transition-all text-text-muted cursor-pointer shrink-0"
+                                  title="Delete Task"
                                 >
                                   <IconTrash className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                              {task.dueDate && (
-                                <div className="flex items-center gap-1 text-[9px] font-bold text-text-muted">
-                                  <IconCalendar className="w-3 h-3" />
-                                  {new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+
+                              {/* Footer details (due date and project badge) */}
+                              {(task.dueDate || task.projectId) && (
+                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/20">
+                                  {task.dueDate && (
+                                    <div className="flex items-center gap-1 text-[9px] font-bold text-text-muted">
+                                      <IconCalendar className="w-3 h-3 text-text-secondary" />
+                                      {new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                    </div>
+                                  )}
+                                  {task.projectId && (() => {
+                                    const proj = todoProjects.find(p => p.id === task.projectId);
+                                    if (!proj) return null;
+                                    return (
+                                      <span 
+                                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-md border bg-stone-50 dark:bg-stone-900 text-text-secondary shrink-0"
+                                        style={{ borderColor: proj.color + '40', color: proj.color }}
+                                      >
+                                        {proj.name}
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               )}
                             </div>
