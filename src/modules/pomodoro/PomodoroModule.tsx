@@ -25,60 +25,216 @@ const themeStyles = {
   default: '',
   'tokyo-sakura': `
     .pomodoro-wrapper {
+      position: relative;
       background: radial-gradient(circle at top right, #ffd6e0 0%, #fff0f3 100%) !important;
-      --bg-surface: rgba(255, 255, 255, 0.5) !important;
-      --bg-surface-alt: rgba(255, 255, 255, 0.7) !important;
-      --border-border: rgba(249, 203, 211, 0.8) !important;
+      --bg-surface: rgba(255, 255, 255, 0.45) !important;
+      --bg-surface-alt: rgba(255, 255, 255, 0.65) !important;
+      --border-border: rgba(249, 203, 211, 0.7) !important;
       --text-primary: #471018 !important;
       --text-secondary: #7a3541 !important;
       --text-muted: #af6b77 !important;
       --color-primary: #ff5e7e !important;
       border-radius: 32px !important;
-      padding: 24px !important;
-      box-shadow: 0 20px 40px rgba(255, 94, 126, 0.05), inset 0 0 80px rgba(255, 255, 255, 0.8) !important;
+      padding: 28px !important;
+      box-shadow: 0 20px 40px rgba(255, 94, 126, 0.04), inset 0 0 80px rgba(255, 255, 255, 0.6) !important;
+      border: 1px solid rgba(249, 203, 211, 0.5) !important;
       backdrop-filter: blur(12px) !important;
+      overflow: hidden;
     }
     .dark .pomodoro-wrapper {
-      background: radial-gradient(circle at top right, #30171c 0%, #1f0f12 100%) !important;
-      --bg-surface: rgba(20, 10, 12, 0.6) !important;
-      --bg-surface-alt: rgba(30, 15, 18, 0.6) !important;
-      --border-border: rgba(74, 33, 40, 0.6) !important;
+      background: radial-gradient(circle at top right, #2b1419 0%, #1a0b0e 100%) !important;
+      --bg-surface: rgba(26, 14, 17, 0.55) !important;
+      --bg-surface-alt: rgba(38, 20, 24, 0.55) !important;
+      --border-border: rgba(82, 38, 46, 0.55) !important;
       --text-primary: #ffdce1 !important;
       --text-secondary: #d69ca6 !important;
       --text-muted: #9c626d !important;
       --color-primary: #ff5e7e !important;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 0 80px rgba(255, 94, 126, 0.02) !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), inset 0 0 80px rgba(255, 94, 126, 0.01) !important;
+      border: 1px solid rgba(82, 38, 46, 0.35) !important;
     }
+    /* Force background, border, text color on internal cards */
+    .pomodoro-wrapper .bg-surface {
+      background-color: var(--bg-surface) !important;
+      border-color: var(--border-border) !important;
+      box-shadow: 0 4px 12px rgba(255, 94, 126, 0.02) !important;
+    }
+    .pomodoro-wrapper .bg-surface-alt {
+      background-color: var(--bg-surface-alt) !important;
+      border-color: var(--border-border) !important;
+    }
+    .pomodoro-wrapper select {
+      background-color: var(--bg-surface-alt) !important;
+      border-color: var(--border-border) !important;
+      color: var(--text-primary) !important;
+    }
+    .pomodoro-wrapper .border,
+    .pomodoro-wrapper .border-border,
+    .pomodoro-wrapper .border-t,
+    .pomodoro-wrapper .divide-y > * {
+      border-color: var(--border-border) !important;
+    }
+    .pomodoro-wrapper .text-text-primary {
+      color: var(--text-primary) !important;
+    }
+    .pomodoro-wrapper .text-text-secondary {
+      color: var(--text-secondary) !important;
+    }
+    .pomodoro-wrapper .text-text-muted {
+      color: var(--text-muted) !important;
+    }
+    /* Sakura petals styling */
+    @keyframes fall {
+      0% {
+        transform: translateY(-20px) rotate(0deg) translateX(0);
+        opacity: 0;
+      }
+      10% { opacity: 0.7; }
+      90% { opacity: 0.7; }
+      100% {
+        transform: translateY(600px) rotate(360deg) translateX(80px);
+        opacity: 0;
+      }
+    }
+    .sakura-petal {
+      position: absolute;
+      background: linear-gradient(135deg, #ffc0cb 0%, #ffb7c5 100%);
+      border-radius: 150% 0 150% 150%;
+      pointer-events: none;
+      transform-origin: left top;
+      box-shadow: 0 1px 3px rgba(255, 94, 126, 0.1);
+      z-index: 0;
+    }
+    .sakura-petal-1 { left: 8%; width: 11px; height: 7px; animation: fall 7s linear infinite; animation-delay: 0s; }
+    .sakura-petal-2 { left: 24%; width: 14px; height: 9px; animation: fall 9s linear infinite; animation-delay: 1.5s; }
+    .sakura-petal-3 { left: 38%; width: 9px; height: 6px; animation: fall 6s linear infinite; animation-delay: 3s; }
+    .sakura-petal-4 { left: 52%; width: 15px; height: 10px; animation: fall 11s linear infinite; animation-delay: 0.8s; }
+    .sakura-petal-5 { left: 66%; width: 12px; height: 8px; animation: fall 8s linear infinite; animation-delay: 4.2s; }
+    .sakura-petal-6 { left: 80%; width: 13px; height: 8px; animation: fall 10s linear infinite; animation-delay: 2.1s; }
+    .sakura-petal-7 { left: 16%; width: 10px; height: 7px; animation: fall 10s linear infinite; animation-delay: 5s; }
+    .sakura-petal-8 { left: 32%; width: 12px; height: 8px; animation: fall 7.5s linear infinite; animation-delay: 1.1s; }
+    .sakura-petal-9 { left: 58%; width: 14px; height: 9px; animation: fall 9.2s linear infinite; animation-delay: 6s; }
+    .sakura-petal-10 { left: 74%; width: 9px; height: 6px; animation: fall 12s linear infinite; animation-delay: 0.4s; }
+    .sakura-petal-11 { left: 88%; width: 11px; height: 7px; animation: fall 8.2s linear infinite; animation-delay: 3.5s; }
+    .sakura-petal-12 { left: 45%; width: 13px; height: 9px; animation: fall 8.8s linear infinite; animation-delay: 2.5s; }
   `,
   'dark-academia': `
     .pomodoro-wrapper {
+      position: relative;
       background: #f4ecd8 url('https://www.transparenttextures.com/patterns/cream-paper.png') !important;
-      --bg-surface: rgba(235, 220, 182, 0.4) !important;
-      --bg-surface-alt: rgba(218, 197, 148, 0.3) !important;
-      --border-border: rgba(218, 197, 148, 0.6) !important;
-      --text-primary: #33261a !important;
-      --text-secondary: #5c432e !important;
-      --text-muted: #8c735c !important;
+      --bg-surface: rgba(238, 224, 188, 0.55) !important;
+      --bg-surface-alt: rgba(224, 203, 155, 0.45) !important;
+      --border-border: rgba(198, 172, 122, 0.5) !important;
+      --text-primary: #3c2d1e !important;
+      --text-secondary: #654d37 !important;
+      --text-muted: #937862 !important;
       --color-primary: #8b4513 !important;
-      border-radius: 12px !important;
-      padding: 24px !important;
-      border: 1px solid rgba(139, 69, 19, 0.1) !important;
-      box-shadow: 5px 5px 15px rgba(139, 69, 19, 0.05), -5px -5px 15px rgba(255, 255, 255, 0.5) !important;
+      border-radius: 16px !important;
+      padding: 28px !important;
+      border: 1px solid rgba(139, 69, 19, 0.15) !important;
+      box-shadow: 8px 8px 24px rgba(139, 69, 19, 0.04), -8px -8px 24px rgba(255, 255, 255, 0.45) !important;
+      overflow: hidden;
     }
     .dark .pomodoro-wrapper {
-      background: #1f1815 url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
-      --bg-surface: rgba(26, 19, 16, 0.6) !important;
-      --bg-surface-alt: rgba(38, 28, 24, 0.5) !important;
-      --border-border: rgba(61, 44, 37, 0.7) !important;
-      --text-primary: #ece2d5 !important;
-      --text-secondary: #b09984 !important;
-      --text-muted: #826e5d !important;
+      background: #1b1411 url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
+      --bg-surface: rgba(32, 23, 19, 0.7) !important;
+      --bg-surface-alt: rgba(46, 33, 27, 0.6) !important;
+      --border-border: rgba(82, 60, 49, 0.65) !important;
+      --text-primary: #efe5d9 !important;
+      --text-secondary: #b59e89 !important;
+      --text-muted: #877261 !important;
       --color-primary: #d4a373 !important;
-      border-radius: 12px !important;
-      padding: 24px !important;
-      border: 1px solid rgba(212, 163, 115, 0.1) !important;
-      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5) !important;
+      border: 1px solid rgba(212, 163, 115, 0.12) !important;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.6), 0 15px 30px rgba(0, 0, 0, 0.4) !important;
     }
+    /* Font override for all children for Academia vibe */
+    .pomodoro-wrapper, 
+    .pomodoro-wrapper select, 
+    .pomodoro-wrapper button, 
+    .pomodoro-wrapper span, 
+    .pomodoro-wrapper p, 
+    .pomodoro-wrapper h1, 
+    .pomodoro-wrapper h2, 
+    .pomodoro-wrapper h3, 
+    .pomodoro-wrapper h4,
+    .pomodoro-wrapper select option {
+      font-family: Georgia, 'Times New Roman', Cambria, serif !important;
+    }
+    /* Force background, border, text color on internal cards */
+    .pomodoro-wrapper .bg-surface {
+      background-color: var(--bg-surface) !important;
+      border-color: var(--border-border) !important;
+      box-shadow: none !important;
+    }
+    .pomodoro-wrapper .bg-surface-alt {
+      background-color: var(--bg-surface-alt) !important;
+      border-color: var(--border-border) !important;
+    }
+    .pomodoro-wrapper select {
+      background-color: var(--bg-surface-alt) !important;
+      border-color: var(--border-border) !important;
+      color: var(--text-primary) !important;
+    }
+    .pomodoro-wrapper .border,
+    .pomodoro-wrapper .border-border,
+    .pomodoro-wrapper .border-t,
+    .pomodoro-wrapper .divide-y > * {
+      border-color: var(--border-border) !important;
+    }
+    .pomodoro-wrapper .text-text-primary {
+      color: var(--text-primary) !important;
+    }
+    .pomodoro-wrapper .text-text-secondary {
+      color: var(--text-secondary) !important;
+    }
+    .pomodoro-wrapper .text-text-muted {
+      color: var(--text-muted) !important;
+    }
+    /* Candlelight flicker effect */
+    @keyframes flicker {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.28; }
+      25% { opacity: 0.2; }
+      75% { opacity: 0.24; }
+    }
+    @keyframes float-up {
+      0% {
+        transform: translateY(600px) translateX(0) scale(0.6);
+        opacity: 0;
+      }
+      20% { opacity: 0.35; }
+      80% { opacity: 0.35; }
+      100% {
+        transform: translateY(-40px) translateX(30px) scale(1.1);
+        opacity: 0;
+      }
+    }
+    .candle-flicker-overlay {
+      background: radial-gradient(circle at 50% 50%, rgba(253, 186, 116, 0.09) 0%, transparent 65%);
+      animation: flicker 5s infinite alternate ease-in-out;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .academia-dust {
+      position: absolute;
+      background: rgba(212, 163, 115, 0.25);
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(0.5px);
+      z-index: 0;
+    }
+    .academia-dust-1 { left: 10%; width: 4px; height: 4px; animation: float-up 10s linear infinite; animation-delay: 0s; }
+    .academia-dust-2 { left: 26%; width: 3px; height: 3px; animation: float-up 12s linear infinite; animation-delay: 2.2s; }
+    .academia-dust-3 { left: 42%; width: 5px; height: 5px; animation: float-up 9s linear infinite; animation-delay: 4.5s; }
+    .academia-dust-4 { left: 58%; width: 3px; height: 3px; animation: float-up 14s linear infinite; animation-delay: 1.2s; }
+    .academia-dust-5 { left: 74%; width: 4px; height: 4px; animation: float-up 11s linear infinite; animation-delay: 5.5s; }
+    .academia-dust-6 { left: 88%; width: 3px; height: 3px; animation: float-up 13s linear infinite; animation-delay: 3.1s; }
+    .academia-dust-7 { left: 18%; width: 4px; height: 4px; animation: float-up 11s linear infinite; animation-delay: 6.5s; }
+    .academia-dust-8 { left: 34%; width: 5px; height: 5px; animation: float-up 8.5s linear infinite; animation-delay: 1.8s; }
+    .academia-dust-9 { left: 50%; width: 3px; height: 3px; animation: float-up 12.5s linear infinite; animation-delay: 7s; }
+    .academia-dust-10 { left: 66%; width: 4px; height: 4px; animation: float-up 10.5s linear infinite; animation-delay: 0.5s; }
+    .academia-dust-11 { left: 82%; width: 5px; height: 5px; animation: float-up 13.5s linear infinite; animation-delay: 3.8s; }
+    .academia-dust-12 { left: 94%; width: 3px; height: 3px; animation: float-up 9.5s linear infinite; animation-delay: 2.8s; }
   `
 };
 
@@ -280,9 +436,26 @@ export default function PomodoroModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
       transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-      className="pomodoro-wrapper flex flex-col gap-6 max-w-5xl mx-auto w-full pb-10"
+      className="pomodoro-wrapper relative flex flex-col gap-6 max-w-5xl mx-auto w-full pb-10"
     >
       <style>{themeStyles[pomodoroTheme]}</style>
+
+      {/* Immersive Theme Background Overlays */}
+      {pomodoroTheme === 'tokyo-sakura' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[32px] z-0">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className={`sakura-petal sakura-petal-${i + 1}`} />
+          ))}
+        </div>
+      )}
+      {pomodoroTheme === 'dark-academia' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[16px] z-0">
+          <div className="candle-flicker-overlay absolute inset-0" />
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className={`academia-dust academia-dust-${i + 1}`} />
+          ))}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">

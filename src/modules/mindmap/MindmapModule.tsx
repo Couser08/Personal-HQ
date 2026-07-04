@@ -543,6 +543,208 @@ export default function MindmapModule() {
   );
 }
 
+
+// Lightweight Markdown parser matching Apple UI/UX styling for ChatGPT/Gemini outputs
+function renderMarkdown(md: string): React.ReactNode {
+  if (!md) return null;
+
+  // Split by double line breaks or single line breaks with different prefixes to get blocks
+  const rawBlocks = md.split(/\n\n+/);
+  const blocks: string[] = [];
+
+  rawBlocks.forEach(b => {
+    const trimmed = b.trim();
+    if (trimmed.startsWith('```')) {
+      blocks.push(b);
+    } else if (trimmed.startsWith('|')) {
+      blocks.push(b);
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s+/.test(trimmed)) {
+      blocks.push(b);
+    } else {
+      blocks.push(b);
+    }
+  });
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, bIdx) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+
+        // Fenced code blocks
+        if (trimmed.startsWith('```')) {
+          const lines = trimmed.split('\n');
+          const code = lines.slice(1, lines.length - (lines[lines.length - 1].trim() === '```' ? 1 : 0)).join('\n');
+          return (
+            <pre key={bIdx} className="bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 overflow-x-auto text-[11px] font-mono text-stone-800 dark:text-stone-300 leading-relaxed my-2 shadow-inner">
+              <code>{code}</code>
+            </pre>
+          );
+        }
+
+        // Tables
+        if (trimmed.startsWith('|')) {
+          const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
+          if (lines.length > 0) {
+            const hasSeparator = lines[1] && lines[1].replace(/[\s\-\|]/g, '') === '';
+            const dataLines = hasSeparator ? [lines[0], ...lines.slice(2)] : lines;
+
+            const parseRow = (rowStr: string) => {
+              return rowStr.split('|').slice(1, -1).map(c => c.trim());
+            };
+
+            const headerCells = parseRow(dataLines[0]);
+            const bodyRows = dataLines.slice(1).map(parseRow);
+
+            return (
+              <div key={bIdx} className="overflow-x-auto my-3 border border-stone-200 dark:border-stone-800 rounded-xl shadow-sm bg-white dark:bg-stone-950">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-stone-100 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+                      {headerCells.map((cell, cIdx) => (
+                        <th key={cIdx} className="px-4 py-2.5 font-bold text-stone-700 dark:text-stone-300 border-r border-stone-200/50 last:border-0">
+                          {renderInlineMarkdown(cell)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200/60 dark:divide-stone-800/60">
+                    {bodyRows.map((row, rIdx) => (
+                      <tr key={rIdx} className="hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-colors">
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="px-4 py-2.5 text-stone-600 dark:text-stone-400 font-medium leading-relaxed border-r border-stone-200/40 dark:border-stone-800/40 last:border-0">
+                            {renderInlineMarkdown(cell)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+        }
+
+        // Headers
+        if (trimmed.startsWith('#')) {
+          const match = trimmed.match(/^(#{1,6})\s+(.*)$/);
+          if (match) {
+            const level = match[1].length;
+            const text = match[2];
+            const content = renderInlineMarkdown(text);
+            if (level === 1) return <h1 key={bIdx} className="text-xl font-black text-stone-800 dark:text-stone-100 tracking-tight mt-6 mb-2 border-b border-stone-200 dark:border-stone-800 pb-2">{content}</h1>;
+            if (level === 2) return <h2 key={bIdx} className="text-lg font-extrabold text-stone-800 dark:text-stone-200 tracking-tight mt-5 mb-2">{content}</h2>;
+            if (level === 3) return <h3 key={bIdx} className="text-base font-bold text-stone-750 dark:text-stone-205 mt-4 mb-1.5">{content}</h3>;
+            return <h4 key={bIdx} className="text-sm font-bold text-stone-600 dark:text-stone-400 mt-3 mb-1">{content}</h4>;
+          }
+        }
+
+        // Blockquotes
+        if (trimmed.startsWith('>')) {
+          const lines = trimmed.split('\n').map(l => l.replace(/^>\s?/, ''));
+          return (
+            <blockquote key={bIdx} className="border-l-4 border-amber-500 bg-amber-500/5 dark:bg-amber-500/2 rounded-r-xl px-4 py-3 text-xs italic text-stone-600 dark:text-stone-400 my-3 leading-relaxed">
+              {renderMarkdown(lines.join('\n\n'))}
+            </blockquote>
+          );
+        }
+
+        // Lists
+        const listLines = trimmed.split('\n');
+        const isBulletList = listLines.every(l => l.trim().startsWith('- ') || l.trim().startsWith('* ') || l.trim().startsWith('• '));
+        const isOrderedList = listLines.every(l => /^\d+\.\s+/.test(l.trim()));
+
+        if (isBulletList) {
+          return (
+            <ul key={bIdx} className="list-disc pl-5 space-y-1.5 text-xs text-stone-600 dark:text-stone-400 my-3">
+              {listLines.map((line, lIdx) => (
+                <li key={lIdx} className="font-medium leading-relaxed">
+                  {renderInlineMarkdown(line.trim().replace(/^[-*•]\s+/, ''))}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (isOrderedList) {
+          return (
+            <ol key={bIdx} className="list-decimal pl-5 space-y-1.5 text-xs text-stone-600 dark:text-stone-400 my-3">
+              {listLines.map((line, lIdx) => (
+                <li key={lIdx} className="font-medium leading-relaxed">
+                  {renderInlineMarkdown(line.trim().replace(/^\d+\.\s+/, ''))}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+
+        // Default: Paragraph with soft line breaks
+        const lines = trimmed.split('\n');
+        return (
+          <p key={bIdx} className="text-xs text-stone-650 dark:text-stone-350 font-medium leading-relaxed mb-3">
+            {lines.map((line, lIdx) => (
+              <span key={lIdx} className="block">
+                {renderInlineMarkdown(line)}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderInlineMarkdown(text: string): React.ReactNode[] {
+  let parts: Array<{ type: 'text' | 'bold' | 'italic' | 'code' | 'link'; content: string; url?: string }> = [
+    { type: 'text', content: text }
+  ];
+
+  const splitParts = (
+    regex: RegExp, 
+    type: 'bold' | 'italic' | 'code' | 'link',
+    processMatch: (match: RegExpExecArray) => { content: string; url?: string }
+  ) => {
+    let newParts: typeof parts = [];
+    for (const part of parts) {
+      if (part.type !== 'text') {
+        newParts.push(part);
+        continue;
+      }
+
+      let lastIndex = 0;
+      let match;
+      regex.lastIndex = 0;
+      while ((match = regex.exec(part.content)) !== null) {
+        if (match.index > lastIndex) {
+          newParts.push({ type: 'text', content: part.content.substring(lastIndex, match.index) });
+        }
+        const processed = processMatch(match);
+        newParts.push({ type, ...processed });
+        lastIndex = regex.lastIndex;
+      }
+      if (lastIndex < part.content.length) {
+        newParts.push({ type: 'text', content: part.content.substring(lastIndex) });
+      }
+    }
+    parts = newParts;
+  };
+
+  splitParts(/`([^`]+)`/g, 'code', (m) => ({ content: m[1] }));
+  splitParts(/\[([^\]]+)\]\(([^)]+)\)/g, 'link', (m) => ({ content: m[1], url: m[2] }));
+  splitParts(/\*\*([^*]+)\*\*/g, 'bold', (m) => ({ content: m[1] }));
+  splitParts(/\*([^*]+)\*/g, 'italic', (m) => ({ content: m[1] }));
+
+  return parts.map((part, idx) => {
+    switch (part.type) {
+      case 'bold': return <strong key={idx} className="font-extrabold text-stone-900 dark:text-white">{part.content}</strong>;
+      case 'italic': return <em key={idx} className="italic text-stone-700 dark:text-stone-300">{part.content}</em>;
+      case 'code': return <code key={idx} className="bg-stone-100 dark:bg-stone-900 px-1.5 py-0.5 rounded text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold border border-stone-200/50 dark:border-stone-850">{part.content}</code>;
+      case 'link': return <a key={idx} href={part.url} target="_blank" rel="noopener noreferrer" className="text-amber-650 dark:text-amber-450 hover:underline font-bold inline-flex items-center gap-0.5">{part.content}</a>;
+      default: return <span key={idx}>{part.content}</span>;
+    }
+  });
+}
+
 // Infinite Mindmap Canvas component
 function MindmapCanvas({ 
   mindmap, 
@@ -553,6 +755,15 @@ function MindmapCanvas({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { showConfirm } = useAppStore();
+  
+  // Apple Notes Modal State
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [notesModalNodeId, setNotesModalNodeId] = useState<string | null>(null);
+  const [notesActiveTab, setNotesActiveTab] = useState<'view' | 'edit'>('view');
+
+  const notesModalNode = useMemo(() => {
+    return mindmap.nodes.find(n => n.id === notesModalNodeId) || null;
+  }, [mindmap.nodes, notesModalNodeId]);
   
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [fullScreenImages, setFullScreenImages] = useState<string[] | null>(null);
@@ -1457,6 +1668,58 @@ function MindmapCanvas({
                       )}
                     </div>
 
+                    {/* Apple-style Hover Overlay (Only if items are available) */}
+                    {(node.notes || (node.links && node.links.length > 0) || (node.images && node.images.length > 0) || node.imageUrl) && (
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-surface/90 backdrop-blur-md border border-border/80 rounded-full px-2 py-1 shadow-lg flex items-center gap-1.5 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all z-50 pointer-events-auto shrink-0 select-none">
+                        {node.notes && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNotesModalNodeId(node.id);
+                              setNotesActiveTab('view');
+                              setIsNotesModalOpen(true);
+                            }}
+                            className="w-6.5 h-6.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center text-text-secondary hover:text-amber-500 transition-colors cursor-pointer"
+                            title="Read Advanced Notes"
+                          >
+                            <IconBook className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {node.links && node.links.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedNodeId(node.id);
+                              setIsDrawerOpen(true);
+                            }}
+                            className="w-6.5 h-6.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center text-text-secondary hover:text-blue-500 transition-colors cursor-pointer"
+                            title="View Web Links"
+                          >
+                            <IconLink className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {((node.images && node.images.length > 0) || node.imageUrl) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const imgs = node.images && node.images.length > 0 ? node.images : node.imageUrl ? [node.imageUrl] : [];
+                              if (imgs.length > 0) {
+                                setFullScreenImages(imgs);
+                                setFullScreenImageIdx(0);
+                              }
+                            }}
+                            className="w-6.5 h-6.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center text-text-secondary hover:text-emerald-500 transition-colors cursor-pointer"
+                            title="Open Image Gallery"
+                          >
+                            <IconPhoto className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     <span className={`break-words w-full truncate-3-lines ${node.isRoot ? 'font-extrabold text-[13px] tracking-tight' : 'font-bold'}`}>
                       {node.text}
                     </span>
@@ -1742,7 +2005,20 @@ function MindmapCanvas({
 
             {/* long markdown notes */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Advanced Notes</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-text-secondary uppercase tracking-wider">Advanced Notes</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotesModalNodeId(selectedNode.id);
+                    setNotesActiveTab('view');
+                    setIsNotesModalOpen(true);
+                  }}
+                  className="text-[9px] font-extrabold text-amber-500 hover:text-amber-600 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                >
+                  <IconBook className="w-3 h-3" /> Reader View
+                </button>
+              </div>
               <textarea
                 value={selectedNode.notes || ''}
                 onChange={e => handleUpdateNodeProp('notes', e.target.value)}
@@ -1958,6 +2234,101 @@ function MindmapCanvas({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Apple Notes Style Modal */}
+      <Modal
+        isOpen={isNotesModalOpen}
+        onClose={() => {
+          setIsNotesModalOpen(false);
+          setNotesModalNodeId(null);
+        }}
+        title=""
+      >
+        {notesModalNode && (
+          <div className="flex flex-col h-[520px] -mt-6">
+            {/* Header bar */}
+            <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4 shrink-0">
+              <div className="text-left">
+                <h3 className="font-extrabold text-sm text-text-primary flex items-center gap-1.5">
+                  <IconBook className="w-5 h-5 text-amber-500" />
+                  Notes: <span className="font-semibold text-text-secondary">{notesModalNode.text}</span>
+                </h3>
+                <p className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wider font-bold">Apple-Style Outliner</p>
+              </div>
+              
+              {/* Tab Toggles: View vs Edit */}
+              <div className="flex bg-surface-alt p-1 rounded-xl border border-border/50 shadow-sm shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setNotesActiveTab('view')}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                    notesActiveTab === 'view'
+                      ? 'bg-surface text-amber-600 shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  Reader
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNotesActiveTab('edit')}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                    notesActiveTab === 'edit'
+                      ? 'bg-surface text-amber-600 shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  Edit Note
+                </button>
+              </div>
+            </div>
+
+            {/* Note Area */}
+            <div 
+              className={`flex-1 overflow-y-auto rounded-2xl border border-border/30 p-5 text-left transition-all ${
+                notesActiveTab === 'view'
+                  ? 'bg-[#fcfaf2] dark:bg-[#1c1a17] text-stone-850 dark:text-stone-200 border-amber-900/10'
+                  : 'bg-surface-alt/65 text-text-primary'
+              }`}
+              style={{
+                fontFamily: notesActiveTab === 'view' ? 'Georgia, Cambria, serif' : 'inherit'
+              }}
+            >
+              {notesActiveTab === 'view' ? (
+                <div className="prose max-w-none dark:prose-invert">
+                  {notesModalNode.notes && notesModalNode.notes.trim() ? (
+                    renderMarkdown(notesModalNode.notes)
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-stone-500 gap-2">
+                      <IconBook className="w-8 h-8 opacity-40" />
+                      <p className="text-xs italic font-semibold">No notes written yet. Switch to "Edit Note" to write.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  value={notesModalNode.notes || ''}
+                  onChange={(e) => {
+                    onUpdate({
+                      nodes: mindmap.nodes.map(n => n.id === notesModalNode.id ? { ...n, notes: e.target.value } : n)
+                    });
+                  }}
+                  placeholder="Write outlines, details, paste ChatGPT tables or markdown here..."
+                  className="w-full h-full bg-transparent border-none outline-none resize-none font-mono text-[11px] leading-relaxed focus:ring-0 text-text-primary"
+                  autoFocus
+                />
+              )}
+            </div>
+
+            {/* Footer status bar */}
+            <div className="mt-3 text-right">
+              <span className="text-[10px] text-text-muted font-bold tracking-wider uppercase">
+                {notesModalNode.notes ? `${notesModalNode.notes.length} characters` : 'Empty note'}
+              </span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
