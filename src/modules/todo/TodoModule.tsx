@@ -906,7 +906,7 @@ export default function TodoModule() {
                   return (
                     <div 
                       key={col.id} 
-                      className="flex flex-col rounded-3xl p-4 bg-stone-50/50 dark:bg-stone-900/30 border border-border/40 backdrop-blur-md min-h-[500px] flex-1 shadow-sm"
+                      className="flex flex-col rounded-3xl p-4 bg-stone-50 dark:bg-stone-900/40 border border-border/40 min-h-[500px] flex-1 shadow-sm"
                     >
                       {/* Column Header */}
                       <div className="flex justify-between items-center mb-4 pb-2.5 border-b border-border/30">
@@ -920,7 +920,7 @@ export default function TodoModule() {
                       </div>
                       
                       {/* Tasks list */}
-                      <div className="flex flex-col gap-2.5 overflow-y-auto flex-1 max-h-[420px] pr-1 scrollbar-thin">
+                      <div className="flex flex-col gap-2 overflow-y-auto flex-1 max-h-[420px] pr-1 scrollbar-thin">
                         {colTasks.length === 0 ? (
                           <div className="text-center py-16 text-[10px] text-text-muted font-bold uppercase tracking-wider italic">
                             No tasks
@@ -929,28 +929,33 @@ export default function TodoModule() {
                           colTasks.map(task => (
                             <div 
                               key={task.id}
-                              className="bg-surface p-3.5 rounded-2xl border border-border/60 shadow-sm flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group cursor-pointer"
+                              className={`p-2.5 rounded-2xl border transition-all duration-200 group cursor-pointer flex flex-col gap-1.5 bg-surface ${
+                                task.priority === 'high' ? 'border-rose-500/30 hover:border-rose-500/45 bg-rose-500/[0.01]' :
+                                task.priority === 'medium' ? 'border-amber-500/30 hover:border-amber-500/45 bg-amber-500/[0.01]' :
+                                task.priority === 'low' ? 'border-blue-500/30 hover:border-blue-500/45 bg-blue-500/[0.01]' :
+                                'border-border/60 hover:border-border bg-surface'
+                              } hover:shadow-sm`}
                               onClick={() => handleToggleTask(task.id)}
                             >
-                              <div className="flex justify-between items-start gap-2">
-                                <div className="flex items-start gap-2.5">
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleToggleTask(task.id); }}
                                     className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors cursor-pointer ${
                                       task.completed 
                                         ? 'bg-rose-500 border-rose-500 text-white' 
-                                        : 'border-border hover:border-rose-400 text-transparent'
+                                        : 'border-border/80 hover:border-rose-400 text-transparent'
                                     }`}
                                   >
                                     <IconCheck className="w-2.5 h-2.5" />
                                   </button>
-                                  <span className={`text-xs leading-tight font-bold line-clamp-3 select-none ${task.completed ? 'line-through text-text-muted font-semibold' : 'text-text-primary'}`}>
+                                  <span className={`text-xs leading-tight font-bold select-none truncate ${task.completed ? 'line-through text-text-muted font-semibold' : 'text-text-primary'}`} title={task.title}>
                                     {task.title}
                                   </span>
                                 </div>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); deleteTodoTask(task.id); }}
-                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 hover:text-rose-500 rounded-lg transition-all text-text-muted cursor-pointer shrink-0"
+                                  className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-rose-500/10 hover:text-rose-500 rounded transition-all text-text-muted cursor-pointer shrink-0"
                                   title="Delete Task"
                                 >
                                   <IconTrash className="w-3.5 h-3.5" />
@@ -959,20 +964,19 @@ export default function TodoModule() {
 
                               {/* Footer details (due date and project badge) */}
                               {(task.dueDate || task.projectId) && (
-                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/20">
+                                <div className="flex items-center gap-2 pl-6.5">
                                   {task.dueDate && (
-                                    <div className="flex items-center gap-1 text-[9px] font-bold text-text-muted">
-                                      <IconCalendar className="w-3 h-3 text-text-secondary" />
+                                    <span className="text-[8px] font-black uppercase text-text-muted tracking-wider">
                                       {new Date(task.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                                    </div>
+                                    </span>
                                   )}
                                   {task.projectId && (() => {
                                     const proj = todoProjects.find(p => p.id === task.projectId);
                                     if (!proj) return null;
                                     return (
                                       <span 
-                                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-md border bg-stone-50 dark:bg-stone-900 text-text-secondary shrink-0"
-                                        style={{ borderColor: proj.color + '40', color: proj.color }}
+                                        className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-stone-50 dark:bg-stone-900 border shrink-0"
+                                        style={{ borderColor: proj.color + '30', color: proj.color }}
                                       >
                                         {proj.name}
                                       </span>

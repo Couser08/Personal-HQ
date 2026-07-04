@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconSearch, IconSitemap, IconZoomIn, 
   IconZoomOut, IconEdit, IconLink, IconFocusCentered,
-  IconArrowLeft, IconChevronDown, IconFolder, IconShare,
-  IconArrowBackUp, IconArrowForwardUp, IconCloudCheck,
-  IconLayout, IconBook, IconExternalLink, IconDownload, IconHistory, IconPhoto
+  IconArrowLeft, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight, 
+  IconFolder, IconShare, IconArrowBackUp, IconArrowForwardUp, IconCloudCheck,
+  IconLayout, IconBook, IconExternalLink, IconDownload, IconHistory, IconPhoto,
+  IconMaximize, IconMinimize
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
 import { Modal } from '../../components/ui/Modal';
@@ -84,6 +85,10 @@ export default function MindmapModule() {
   const [titleInput, setTitleInput] = useState('');
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
+  // New layout and search states
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,16 +97,107 @@ export default function MindmapModule() {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.nodes && data.links) {
-          const newId = crypto.randomUUID();
-          await addMindmap({
-            ...data,
-            id: newId,
-            title: data.title || 'Imported Mindmap',
-            createdAt: new Date().toISOString()
+        const rawContent = event.target?.result as string;
+        const data = JSON.parse(rawContent);
+        
+        let importedMaps: any[] = [];
+        
+        const parseSingleMap = (obj: any): any => {
+          if (!obj || typeof obj !== 'object') return null;
+          
+          let nodes = obj.nodes || obj.elements || obj.vertices;
+          if (!Array.isArray(nodes) && Array.isArray(obj)) {
+            nodes = obj;
+          }
+          if (!Array.isArray(nodes)) return null;
+          
+          const formattedNodes = nodes.map((node: any, index: number) => {
+            const id = node.id || node.key || node.uuid || `node-${index}`;
+            const text = node.text || node.label || node.title || node.name || 'Unnamed Node';
+            return {
+              id: id.toString(),
+              text: text.toString(),
+              x: typeof node.x === 'number' ? node.x : 450 + (index * 20),
+              y: typeof node.y === 'number' ? node.y : 250 + (index * 20),
+              color: node.color || 'gray',
+              isRoot: node.isRoot || (index === 0 && !node.parentId),
+              parentId: node.parentId ? node.parentId.toString() : undefined,
+              side: node.side || undefined,
+              collapsed: !!node.collapsed,
+              notes: node.notes || undefined,
+              links: Array.isArray(node.links) ? node.links : undefined,
+              images: Array.isArray(node.images) ? node.images : undefined,
+              pdfs: Array.isArray(node.pdfs) ? node.pdfs : undefined
+            };
           });
-          setActiveMindmapId(newId);
+
+          let links = obj.links || obj.edges || obj.connections || [];
+          if (!Array.isArray(links)) {
+            links = [];
+          }
+
+          const formattedLinks = links.map((link: any) => {
+            const source = link.source || link.from || link.start;
+            const target = link.target || link.to || link.end;
+            return {
+              source: source ? source.toString() : '',
+              target: target ? target.toString() : ''
+            };
+          }).filter((l: any) => l.source && l.target);
+
+          if (formattedLinks.length === 0) {
+            formattedNodes.forEach(node => {
+              if (node.parentId && !node.isRoot) {
+                formattedLinks.push({
+                  source: node.parentId,
+                  target: node.id
+                });
+              }
+            });
+          }
+
+          return {
+            title: obj.title || obj.name || 'Imported Workspace Map',
+            nodes: formattedNodes,
+            links: formattedLinks,
+            edgeStyle: obj.edgeStyle || 'solid'
+          };
+        };
+
+        if (Array.isArray(data)) {
+          if (data.length > 0 && (data[0].id || data[0].text)) {
+            const parsed = parseSingleMap(data);
+            if (parsed) importedMaps.push(parsed);
+          } else {
+            data.forEach(item => {
+              const parsed = parseSingleMap(item);
+              if (parsed) importedMaps.push(parsed);
+            });
+          }
+        } else if (data && data.mindmaps && Array.isArray(data.mindmaps)) {
+          data.mindmaps.forEach((item: any) => {
+            const parsed = parseSingleMap(item);
+            if (parsed) importedMaps.push(parsed);
+          });
+        } else {
+          const parsed = parseSingleMap(data);
+          if (parsed) importedMaps.push(parsed);
+        }
+
+        if (importedMaps.length > 0) {
+          let lastId = '';
+          for (const map of importedMaps) {
+            const newId = crypto.randomUUID();
+            await addMindmap({
+              ...map,
+              id: newId,
+              createdAt: new Date().toISOString()
+            });
+            lastId = newId;
+          }
+          if (lastId) {
+            setActiveMindmapId(lastId);
+          }
         } else {
           alert("Invalid mindmap file structure (nodes or links missing).");
         }
@@ -327,10 +423,20 @@ export default function MindmapModule() {
   }, [mindmaps, search, selectedTagFilter]);
 
   return (
-    <div className="flex h-[calc(100vh-130px)] gap-0 overflow-hidden bg-background text-text-primary rounded-[32px] border border-border/60">
+    <div className={`flex gap-0 overflow-hidden bg-background text-text-primary transition-all duration-300 ${
+      isFullScreen 
+        ? 'fixed inset-0 w-screen h-screen z-[150] rounded-none border-none' 
+        : 'h-[calc(100vh-130px)] rounded-[32px] border border-border/60'
+    }`}>
       
       {/* Workspace Sidebar List */}
-      <div className={`w-[260px] bg-surface/40 border-r border-border/50 flex flex-col shrink-0 ${activeMindmapId ? 'hidden md:flex' : 'flex w-full md:w-[260px]'}`}>
+      <div 
+        className={`bg-surface/40 border-r border-border/50 flex flex-col shrink-0 transition-all duration-300 ${
+          isLeftSidebarOpen 
+            ? activeMindmapId ? 'hidden md:flex w-[260px]' : 'flex w-full md:w-[260px]' 
+            : 'w-0 overflow-hidden border-r-0 hidden'
+        }`}
+      >
         
         {/* Workspace Brand Selector */}
         <div className="p-4 border-b border-border/40 flex items-center justify-between">
@@ -530,6 +636,10 @@ export default function MindmapModule() {
                   nodes: finalNodes
                 });
               }}
+              isLeftSidebarOpen={isLeftSidebarOpen}
+              setIsLeftSidebarOpen={setIsLeftSidebarOpen}
+              isFullScreen={isFullScreen}
+              setIsFullScreen={setIsFullScreen}
             />
           </>
         ) : (
@@ -775,10 +885,18 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
 // Infinite Mindmap Canvas component
 function MindmapCanvas({ 
   mindmap, 
-  onUpdate 
+  onUpdate,
+  isLeftSidebarOpen,
+  setIsLeftSidebarOpen,
+  isFullScreen,
+  setIsFullScreen
 }: { 
   mindmap: Mindmap; 
   onUpdate: (data: Partial<Mindmap>) => void; 
+  isLeftSidebarOpen: boolean;
+  setIsLeftSidebarOpen: (val: boolean) => void;
+  isFullScreen: boolean;
+  setIsFullScreen: (val: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { showConfirm } = useAppStore();
@@ -787,6 +905,7 @@ function MindmapCanvas({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [notesModalNodeId, setNotesModalNodeId] = useState<string | null>(null);
   const [notesActiveTab, setNotesActiveTab] = useState<'view' | 'edit'>('view');
+  const [canvasSearchQuery, setCanvasSearchQuery] = useState('');
 
   const notesModalNode = useMemo(() => {
     return mindmap.nodes.find(n => n.id === notesModalNodeId) || null;
@@ -1169,6 +1288,18 @@ function MindmapCanvas({
 
     onUpdate({ nodes: newNodes });
     handleCenterCamera();
+  };
+
+  const handleOpenAll = () => {
+    onUpdate({
+      nodes: mindmap.nodes.map(n => n.isRoot ? n : { ...n, collapsed: false })
+    });
+  };
+
+  const handleCloseAll = () => {
+    onUpdate({
+      nodes: mindmap.nodes.map(n => n.isRoot ? n : { ...n, collapsed: true })
+    });
   };
 
   // Toggle Collapse / Expand parent branch
@@ -1572,6 +1703,8 @@ function MindmapCanvas({
             const isLinkingSource = linkingSourceId === node.id;
             const colorPreset = COLOR_PRESETS.find(c => c.id === node.color) || COLOR_PRESETS[5];
             const hasChildren = mindmap.nodes.some(n => n.parentId === node.id);
+            const isMatch = canvasSearchQuery.trim() !== '' && 
+              node.text.toLowerCase().includes(canvasSearchQuery.toLowerCase());
 
             return (
               <div
@@ -1598,7 +1731,9 @@ function MindmapCanvas({
                   node.isRoot 
                     ? 'bg-white dark:bg-stone-900 border-stone-200/80 dark:border-stone-800 text-text-primary text-[13px] font-black shadow-lg shadow-stone-150/40 dark:shadow-none flex-col gap-1.5 hover:shadow-xl' 
                     : `${colorPreset.bg} ${isSelected ? 'ring-4 ring-primary/15 border-primary shadow-md' : 'hover:shadow-md'}`
-                } ${isLinkingSource ? 'ring-4 ring-amber-500/20 border-amber-500 animate-pulse' : ''}`}
+                } ${isLinkingSource ? 'ring-4 ring-amber-500/20 border-amber-500 animate-pulse' : ''} ${
+                  isMatch ? 'ring-4 ring-amber-400 border-amber-400 shadow-md scale-105 z-10' : ''
+                }`}
               >
                 {/* Node Contents */}
                 {editingNodeId === node.id ? (
@@ -1786,46 +1921,113 @@ function MindmapCanvas({
           })}
         </div>
 
-        {/* Floating Canvas UI Indicators (Zoom state pill) */}
-        <div className="absolute top-4 left-4 bg-surface/80 border border-border/50 px-3 py-1.5 rounded-full text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
-          {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
+        {/* Floating Canvas UI Indicators (Zoom state & Node search) */}
+        <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+          <div className="bg-surface/80 border border-border/50 px-3 py-1.5 rounded-2xl text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
+            {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
+          </div>
+          
+          <div className="relative flex items-center bg-surface/80 border border-border/50 rounded-2xl shadow-sm backdrop-blur">
+            <IconSearch className="w-3.5 h-3.5 absolute left-3 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Find node..."
+              value={canvasSearchQuery}
+              onChange={e => setCanvasSearchQuery(e.target.value)}
+              className="bg-transparent border-none pl-8 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-0 text-text-primary placeholder:text-text-muted w-28 focus:w-44 transition-all duration-300 rounded-2xl"
+            />
+            {canvasSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setCanvasSearchQuery('')}
+                className="absolute right-2 text-text-muted hover:text-text-primary text-[11px] font-bold"
+              >
+                &times;
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Zoom panel matching bottom-left controls */}
-        <div className="absolute bottom-6 left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3.5 backdrop-blur z-20">
+        {/* Zoom and layout controls */}
+        <div className="absolute bottom-6 left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur z-20">
+          {/* Collapse/Expand Left List Panel */}
           <button 
+            type="button"
+            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title={isLeftSidebarOpen ? "Collapse Left Panel" : "Expand Left Panel"}
+          >
+            {isLeftSidebarOpen ? <IconChevronLeft className="w-4 h-4" /> : <IconChevronRight className="w-4 h-4" />}
+          </button>
+
+          {/* Fullscreen Zen Mode Toggle */}
+          <button 
+            type="button"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2"
+            title={isFullScreen ? "Exit Full Screen" : "Zen Full Screen Mode"}
+          >
+            {isFullScreen ? <IconMinimize className="w-4 h-4" /> : <IconMaximize className="w-4 h-4" />}
+          </button>
+
+          <button 
+            type="button"
             onClick={() => setZoom(prev => Math.max(prev / 1.15, 0.4))}
             className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
             title="Zoom Out"
           >
             <IconZoomOut className="w-4 h-4" />
           </button>
+          
           <span className="text-xs font-black text-text-primary min-w-[36px] text-center">
             {Math.round(zoom * 100)}%
           </span>
+          
           <button 
+            type="button"
             onClick={() => setZoom(prev => Math.min(prev * 1.15, 2.5))}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2"
             title="Zoom In"
           >
             <IconZoomIn className="w-4 h-4" />
           </button>
           
           <button 
+            type="button"
             onClick={handleCenterCamera}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-l border-border/50 pl-2"
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
             title="Center Canvas"
           >
             <IconFocusCentered className="w-4 h-4" />
           </button>
 
-          {/* Symmetrical Auto-Arrange button */}
           <button 
+            type="button"
             onClick={handleAutoArrange}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
-            title="Auto-Arrange Nodes Symmetrically"
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2"
+            title="Auto-Arrange Layout"
           >
             <IconLayout className="w-4 h-4" />
+          </button>
+
+          {/* Open All (Expand all branches) */}
+          <button 
+            type="button"
+            onClick={handleOpenAll}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title="Expand All Branches"
+          >
+            <IconChevronDown className="w-4 h-4" />
+          </button>
+
+          {/* Close All (Collapse all branches) */}
+          <button 
+            type="button"
+            onClick={handleCloseAll}
+            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary"
+            title="Collapse All Branches"
+          >
+            <IconChevronUp className="w-4 h-4" />
           </button>
         </div>
 
