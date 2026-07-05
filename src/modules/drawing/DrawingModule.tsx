@@ -22,7 +22,7 @@ export default function DrawingModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="w-full h-full flex flex-col p-4 sm:p-6 lg:p-8"
+      className="w-full h-[calc(100vh-140px)] flex flex-col"
       style={{ background: 'var(--bg-background)' }}
     >
       <div className="flex-1 w-full h-full relative rounded-2xl overflow-hidden shadow-sm border border-border/40 bg-surface">
