@@ -571,6 +571,8 @@ export interface AppStore {
   addTilLog: (log: TilLog) => void;
   deleteTilLog: (id: string) => void;
   updateRoadmapNode: (roadmapId: string, nodeId: string, completed: boolean) => void;
+  addRoadmap: (roadmap: LearningRoadmap) => void;
+  deleteRoadmap: (id: string) => void;
   addResource: (res: ResourceBookmark) => void;
   updateResource: (id: string, data: Partial<ResourceBookmark>) => void;
   deleteResource: (id: string) => void;
@@ -1648,6 +1650,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       ...r,
       nodes: r.nodes.map(n => n.id === nodeId ? { ...n, completed } : n)
     } : r);
+    localStorage.setItem('phq_roadmaps', JSON.stringify(next));
+    set({ roadmaps: next });
+  },
+  addRoadmap: (roadmap) => {
+    const next = [...get().roadmaps, roadmap];
+    localStorage.setItem('phq_roadmaps', JSON.stringify(next));
+    set({ roadmaps: next });
+  },
+  deleteRoadmap: (id) => {
+    const next = get().roadmaps.filter(r => r.id !== id);
     localStorage.setItem('phq_roadmaps', JSON.stringify(next));
     set({ roadmaps: next });
   },

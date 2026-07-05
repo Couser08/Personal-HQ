@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
-import type { SprintTask, Sprint, DsaProblem, TilLog, ResourceBookmark, DevGoal } from '../../store/useAppStore';
+import type { SprintTask, Sprint, DsaProblem, ResourceBookmark, DevGoal } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { 
-  IconTerminal, IconChecklist, IconCalendar, IconChartBar, 
+  IconTerminal, IconCalendar, IconChartBar, 
   IconBook, IconPlus, IconCheck, IconTrash, 
   IconExternalLink, IconFlame, IconTarget, IconSend, 
   IconBrackets, IconEye
@@ -13,20 +13,48 @@ import { triggerDynamicIsland } from '../../components/ui/DynamicIsland';
 
 type SubTab = 'board' | 'analytics' | 'learning' | 'utilities';
 
+const ROADMAP_TEMPLATES = {
+  custom: {
+    title: '',
+    description: '',
+    nodesText: ''
+  },
+  rust: {
+    title: 'Rust Systems Developer',
+    description: 'Learn systems programming with Rust: safety, memory management, and concurrency.',
+    nodesText: 'Rust Syntax, Ownership & Borrowing, Structs & Enums, Error Handling, Smart Pointers, Concurrency'
+  },
+  python: {
+    title: 'Python AI/ML Engineer',
+    description: 'Master Python for artificial intelligence, machine learning, and deep neural networks.',
+    nodesText: 'Python Basics, NumPy, Pandas, Data Visualization, Scikit-Learn, Deep Learning'
+  },
+  sql: {
+    title: 'SQL & Databases',
+    description: 'Relational database design, query optimization, indexing, and transactions.',
+    nodesText: 'SQL Queries, Aggregations & Joins, Subqueries & CTEs, Indexing, Normalization, Transactions'
+  },
+  js_ts: {
+    title: 'JavaScript/TypeScript Developer',
+    description: 'Modern web development with JavaScript and TypeScript: fundamentals, async programming, and testing.',
+    nodesText: 'JS Fundamentals, Async JS, DOM & Event Loop, TypeScript Interfaces, Node.js, Jest Testing'
+  }
+} as const;
+
 export default function ProjectsModule() {
   const {
-    sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals,
+    sprints, dsaProblems, roadmaps, resources, devGoals,
     pomodoroStats,
     addSprint,
     addSprintTask, updateSprintTask, deleteSprintTask,
-    addDsaProblem, deleteDsaProblem,
-    addTilLog, deleteTilLog, updateRoadmapNode,
+    updateRoadmapNode,
+    addRoadmap, deleteRoadmap,
     addResource, deleteResource,
-    addDevGoal, updateDevGoal, deleteDevGoal
+    addDevGoal, updateDevGoal, deleteDevGoal,
+    showConfirm
   } = useAppStore(useShallow(state => ({
     sprints: state.sprints,
     dsaProblems: state.dsaProblems,
-    tilLogs: state.tilLogs,
     roadmaps: state.roadmaps,
     resources: state.resources,
     devGoals: state.devGoals,
@@ -35,23 +63,41 @@ export default function ProjectsModule() {
     addSprintTask: state.addSprintTask,
     updateSprintTask: state.updateSprintTask,
     deleteSprintTask: state.deleteSprintTask,
-    addDsaProblem: state.addDsaProblem,
-    deleteDsaProblem: state.deleteDsaProblem,
-    addTilLog: state.addTilLog,
-    deleteTilLog: state.deleteTilLog,
     updateRoadmapNode: state.updateRoadmapNode,
+    addRoadmap: state.addRoadmap,
+    deleteRoadmap: state.deleteRoadmap,
     addResource: state.addResource,
     deleteResource: state.deleteResource,
     addDevGoal: state.addDevGoal,
     updateDevGoal: state.updateDevGoal,
     deleteDevGoal: state.deleteDevGoal,
+    showConfirm: state.showConfirm
   })));
 
   const [activeTab, setActiveTab] = useState<SubTab>('board');
-
-  // Focus Mode local toggler
   const [isFocusMode, setIsFocusMode] = useState(() => localStorage.getItem('phq_focus_mode') === 'true');
+
+  // Modals Visibility
+  const [isCreatingSprint, setIsCreatingSprint] = useState(false);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isCreatingRoadmap, setIsCreatingRoadmap] = useState(false);
+
+  // Sprint / Task inputs
+  const [selectedSprintId, setSelectedSprintId] = useState<string>(sprints[0]?.id || '');
+  const activeSprint = sprints.find(s => s.id === selectedSprintId) || sprints[0];
+  const [newSprintTitle, setNewSprintTitle] = useState('');
   
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskPoints, setNewTaskPoints] = useState(1);
+  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+
+  // Roadmap inputs
+  const [selectedRoadmapId, setSelectedRoadmapId] = useState('roadmap-frontend');
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<keyof typeof ROADMAP_TEMPLATES>('custom');
+  const [newRoadmapTitle, setNewRoadmapTitle] = useState('');
+  const [newRoadmapDescription, setNewRoadmapDescription] = useState('');
+  const [newRoadmapNodesText, setNewRoadmapNodesText] = useState('');
+
   const toggleFocusMode = () => {
     const nextVal = !isFocusMode;
     localStorage.setItem('phq_focus_mode', String(nextVal));
@@ -63,6 +109,90 @@ export default function ProjectsModule() {
       'success',
       nextVal ? 'award' : 'confetti'
     );
+  };
+
+  const handleCreateSprint = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSprintTitle.trim()) return;
+    const newSprint: Sprint = {
+      id: `sprint-${Date.now()}`,
+      title: newSprintTitle.trim(),
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
+      status: 'planned',
+      tasks: []
+    };
+    addSprint(newSprint);
+    setSelectedSprintId(newSprint.id);
+    setNewSprintTitle('');
+    setIsCreatingSprint(false);
+    triggerDynamicIsland('Sprint Created', newSprint.title, 'success', 'confetti');
+  };
+
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim() || !activeSprint) return;
+    const newTask: SprintTask = {
+      id: `t-${Date.now()}`,
+      title: newTaskTitle.trim(),
+      storyPoints: newTaskPoints,
+      priority: newTaskPriority,
+      status: 'backlog',
+      tags: ['issue']
+    };
+    addSprintTask(activeSprint.id, newTask);
+    setNewTaskTitle('');
+    setIsAddingTask(false);
+    triggerDynamicIsland('Task Added', newTask.title, 'success', 'confetti');
+  };
+
+  const handleTemplateChange = (key: keyof typeof ROADMAP_TEMPLATES) => {
+    setSelectedTemplateKey(key);
+    const template = ROADMAP_TEMPLATES[key];
+    setNewRoadmapTitle(template.title);
+    setNewRoadmapDescription(template.description);
+    setNewRoadmapNodesText(template.nodesText);
+  };
+
+  const handleCreateRoadmap = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoadmapTitle.trim()) return;
+
+    const parsedNodes = newRoadmapNodesText
+      .split(',')
+      .map(n => n.trim())
+      .filter(n => n.length > 0)
+      .map((label, idx) => ({
+        id: `node-${Date.now()}-${idx}`,
+        label,
+        completed: false
+      }));
+
+    const newRoadmap = {
+      id: `roadmap-${Date.now()}`,
+      title: newRoadmapTitle.trim(),
+      description: newRoadmapDescription.trim(),
+      nodes: parsedNodes
+    };
+
+    addRoadmap(newRoadmap);
+    setSelectedRoadmapId(newRoadmap.id);
+    
+    // reset form
+    setNewRoadmapTitle('');
+    setNewRoadmapDescription('');
+    setNewRoadmapNodesText('');
+    setSelectedTemplateKey('custom');
+    setIsCreatingRoadmap(false);
+    triggerDynamicIsland('Roadmap Created', newRoadmap.title, 'success', 'confetti');
+  };
+
+  const handleCancelCreateRoadmap = () => {
+    setNewRoadmapTitle('');
+    setNewRoadmapDescription('');
+    setNewRoadmapNodesText('');
+    setSelectedTemplateKey('custom');
+    setIsCreatingRoadmap(false);
   };
 
   return (
@@ -122,8 +252,10 @@ export default function ProjectsModule() {
             {activeTab === 'board' && (
               <SprintBoardView 
                 sprints={sprints}
-                addSprint={addSprint}
-                addSprintTask={addSprintTask}
+                selectedSprintId={selectedSprintId}
+                setSelectedSprintId={setSelectedSprintId}
+                setIsCreatingSprint={setIsCreatingSprint}
+                setIsAddingTask={setIsAddingTask}
                 updateSprintTask={updateSprintTask}
                 deleteSprintTask={deleteSprintTask}
               />
@@ -140,17 +272,16 @@ export default function ProjectsModule() {
             )}
             {activeTab === 'learning' && (
               <LearningCenterView 
-                dsaProblems={dsaProblems}
-                tilLogs={tilLogs}
                 roadmaps={roadmaps}
                 resources={resources}
-                addDsaProblem={addDsaProblem}
-                deleteDsaProblem={deleteDsaProblem}
-                addTilLog={addTilLog}
-                deleteTilLog={deleteTilLog}
                 updateRoadmapNode={updateRoadmapNode}
                 addResource={addResource}
                 deleteResource={deleteResource}
+                selectedRoadmapId={selectedRoadmapId}
+                setSelectedRoadmapId={setSelectedRoadmapId}
+                setIsCreatingRoadmap={setIsCreatingRoadmap}
+                deleteRoadmap={deleteRoadmap}
+                showConfirm={showConfirm}
               />
             )}
             {activeTab === 'utilities' && <DeveloperUtilitiesView />}
@@ -158,64 +289,205 @@ export default function ProjectsModule() {
         </AnimatePresence>
       </div>
 
+      {/* Create Sprint Modal */}
+      {isCreatingSprint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create New Sprint</h3>
+            <form onSubmit={handleCreateSprint} className="flex flex-col gap-3 mt-4">
+              <input 
+                type="text"
+                required
+                placeholder="Sprint Title (e.g. Sprint 2: UI Overhaul)"
+                value={newSprintTitle}
+                onChange={e => setNewSprintTitle(e.target.value)}
+                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+              />
+              <div className="flex gap-2 justify-end mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreatingSprint(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Modal */}
+      {isAddingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Add Task to Sprint</h3>
+            <form onSubmit={handleAddTask} className="flex flex-col gap-3 mt-4">
+              <input 
+                type="text"
+                required
+                placeholder="Task Description"
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+              />
+
+              <div className="flex gap-4">
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Story Points</span>
+                  <select 
+                    value={newTaskPoints} 
+                    onChange={e => setNewTaskPoints(Number(e.target.value))}
+                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none cursor-pointer"
+                  >
+                    <option value={1}>1 SP (Easy)</option>
+                    <option value={2}>2 SP</option>
+                    <option value={3}>3 SP (Medium)</option>
+                    <option value={5}>5 SP (Hard)</option>
+                    <option value={8}>8 SP (Complex)</option>
+                  </select>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Priority</span>
+                  <select 
+                    value={newTaskPriority} 
+                    onChange={e => setNewTaskPriority(e.target.value as any)}
+                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none cursor-pointer"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingTask(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
+                >
+                  Add Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Custom Roadmap Modal */}
+      {isCreatingRoadmap && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+          <div className="bg-surface border border-border/40 rounded-3xl p-6 w-full max-w-md shadow-xl text-left">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create Custom Roadmap</h3>
+            
+            <form onSubmit={handleCreateRoadmap} className="flex flex-col gap-4 mt-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Choose Template</label>
+                <select
+                  value={selectedTemplateKey}
+                  onChange={e => handleTemplateChange(e.target.value as keyof typeof ROADMAP_TEMPLATES)}
+                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none cursor-pointer"
+                >
+                  <option value="custom">Custom (Blank)</option>
+                  <option value="rust">Rust Systems Developer</option>
+                  <option value="python">Python AI/ML Engineer</option>
+                  <option value="sql">SQL & Databases</option>
+                  <option value="js_ts">JavaScript/TypeScript Developer</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Path Title</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. Web3 Systems Architect"
+                  value={newRoadmapTitle}
+                  onChange={e => setNewRoadmapTitle(e.target.value)}
+                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Description</label>
+                <textarea 
+                  rows={2}
+                  required
+                  placeholder="Describe this learning path..."
+                  value={newRoadmapDescription}
+                  onChange={e => setNewRoadmapDescription(e.target.value)}
+                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Nodes (comma-separated)</label>
+                <textarea 
+                  rows={3}
+                  required
+                  placeholder="e.g. Basic Syntax, Advanced Types, Project Building"
+                  value={newRoadmapNodesText}
+                  onChange={e => setNewRoadmapNodesText(e.target.value)}
+                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end mt-2">
+                <button 
+                  type="button" 
+                  onClick={handleCancelCreateRoadmap}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
+                >
+                  Save Path
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-// ── SUB-COMPONENT 1: Sprint Kanban Board & Gantt Timeline ──
 function SprintBoardView({
-  sprints, addSprint,
-  addSprintTask, updateSprintTask, deleteSprintTask
+  sprints,
+  selectedSprintId,
+  setSelectedSprintId,
+  setIsCreatingSprint,
+  setIsAddingTask,
+  updateSprintTask,
+  deleteSprintTask
 }: {
   sprints: Sprint[];
-  addSprint: (sprint: Sprint) => void;
-  addSprintTask: (sprintId: string, task: SprintTask) => void;
+  selectedSprintId: string;
+  setSelectedSprintId: (id: string) => void;
+  setIsCreatingSprint: (v: boolean) => void;
+  setIsAddingTask: (v: boolean) => void;
   updateSprintTask: (sprintId: string, taskId: string, data: Partial<SprintTask>) => void;
   deleteSprintTask: (sprintId: string, taskId: string) => void;
 }) {
-  const [selectedSprintId, setSelectedSprintId] = useState<string>(sprints[0]?.id || '');
   const activeSprint = sprints.find(s => s.id === selectedSprintId) || sprints[0];
-  const [isAddingTask, setIsAddingTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskPoints, setNewTaskPoints] = useState(1);
-  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [isCreatingSprint, setIsCreatingSprint] = useState(false);
-  const [newSprintTitle, setNewSprintTitle] = useState('');
-
-  const handleCreateSprint = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSprintTitle.trim()) return;
-    const newSprint: Sprint = {
-      id: `sprint-${Date.now()}`,
-      title: newSprintTitle.trim(),
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
-      status: 'planned',
-      tasks: []
-    };
-    addSprint(newSprint);
-    setSelectedSprintId(newSprint.id);
-    setNewSprintTitle('');
-    setIsCreatingSprint(false);
-    triggerDynamicIsland('Sprint Created', newSprint.title, 'success', 'confetti');
-  };
-
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim() || !activeSprint) return;
-    const newTask: SprintTask = {
-      id: `t-${Date.now()}`,
-      title: newTaskTitle.trim(),
-      storyPoints: newTaskPoints,
-      priority: newTaskPriority,
-      status: 'backlog',
-      tags: ['issue']
-    };
-    addSprintTask(activeSprint.id, newTask);
-    setNewTaskTitle('');
-    setIsAddingTask(false);
-    triggerDynamicIsland('Task Added', newTask.title, 'success', 'confetti');
-  };
 
   const moveTask = (taskId: string, targetStatus: SprintTask['status']) => {
     if (!activeSprint) return;
@@ -230,12 +502,12 @@ function SprintBoardView({
     <div className="flex flex-col gap-6">
       
       {/* Sprint Header Panel */}
-      <div className="bg-surface border border-border/40 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+      <div className="bg-surface border border-border/40 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm text-left">
         <div className="flex items-center gap-3">
           <select 
             value={selectedSprintId}
             onChange={e => setSelectedSprintId(e.target.value)}
-            className="bg-surface-alt border border-border/40 text-text-primary rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none"
+            className="bg-surface-alt border border-border/40 text-text-primary rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none cursor-pointer"
           >
             {sprints.map(s => (
               <option key={s.id} value={s.id}>{s.title}</option>
@@ -262,40 +534,6 @@ function SprintBoardView({
           </div>
         )}
       </div>
-
-      {/* Create Sprint Modal */}
-      {isCreatingSprint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45">
-          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl">
-            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create New Sprint</h3>
-            <form onSubmit={handleCreateSprint} className="flex flex-col gap-3 mt-4">
-              <input 
-                type="text"
-                required
-                placeholder="Sprint Title (e.g. Sprint 2: UI Overhaul)"
-                value={newSprintTitle}
-                onChange={e => setNewSprintTitle(e.target.value)}
-                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
-              />
-              <div className="flex gap-2 justify-end mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsCreatingSprint(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Kanban Board Grid */}
       {activeSprint && (
@@ -324,41 +562,44 @@ function SprintBoardView({
                   {statusTasks.map(task => (
                     <div 
                       key={task.id}
-                      className="bg-surface border border-border/40 p-3 rounded-xl shadow-sm flex flex-col gap-2 group hover:shadow-md transition-shadow relative"
+                      className="bg-surface border border-border/40 p-2.5 rounded-xl flex items-center justify-between gap-3 group hover:shadow-sm transition-all relative pr-8 text-left"
                     >
-                      <div className="flex justify-between items-start gap-1">
-                        <h4 className="text-xs font-bold text-text-primary leading-tight">{task.title}</h4>
-                        <button
-                          onClick={() => deleteSprintTask(activeSprint.id, task.id)}
-                          className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 text-text-muted hover:text-red-500 transition-opacity cursor-pointer"
-                        >
-                          <IconTrash className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="flex justify-between items-center mt-1">
-                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                          task.priority === 'high' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                          task.priority === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                          'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                        }`}>
-                          {task.priority}
+                      {/* Left Side: Priority dot and Task title */}
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${
+                          task.priority === 'high' ? 'bg-red-500' :
+                          task.priority === 'medium' ? 'bg-amber-500' :
+                          'bg-blue-500'
+                        }`} />
+                        <span className="text-xs font-bold text-text-primary truncate" title={task.title}>
+                          {task.title}
                         </span>
-
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-bold text-text-muted">{task.storyPoints} SP</span>
-                          <select
-                            value={task.status}
-                            onChange={e => moveTask(task.id, e.target.value as SprintTask['status'])}
-                            className="bg-surface-alt border border-border/40 text-[9px] font-bold text-text-secondary rounded-lg px-1 focus:outline-none"
-                          >
-                            <option value="backlog">Backlog</option>
-                            <option value="in_progress">Active</option>
-                            <option value="review">Review</option>
-                            <option value="done">Done</option>
-                          </select>
-                        </div>
                       </div>
+
+                      {/* Right Side: SP badge and select dropdown */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[9px] font-black text-text-muted bg-surface-alt px-1.5 py-0.5 rounded-lg border border-border/30">
+                          {task.storyPoints} SP
+                        </span>
+                        <select
+                          value={task.status}
+                          onChange={e => moveTask(task.id, e.target.value as SprintTask['status'])}
+                          className="bg-surface-alt border border-border/45 text-[9px] font-bold text-text-secondary rounded-lg px-1.5 py-0.5 focus:outline-none cursor-pointer hover:bg-surface-alt/80"
+                        >
+                          <option value="backlog">Backlog</option>
+                          <option value="in_progress">Active</option>
+                          <option value="review">Review</option>
+                          <option value="done">Done</option>
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => deleteSprintTask(activeSprint.id, task.id)}
+                        className="opacity-0 group-hover:opacity-100 absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-red-500 transition-opacity cursor-pointer p-0.5"
+                        title="Delete Task"
+                      >
+                        <IconTrash className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -377,73 +618,8 @@ function SprintBoardView({
         </div>
       )}
 
-      {/* Add Task Modal */}
-      {isAddingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45">
-          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl">
-            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Add Task to Sprint</h3>
-            <form onSubmit={handleAddTask} className="flex flex-col gap-3 mt-4">
-              <input 
-                type="text"
-                required
-                placeholder="Task Description"
-                value={newTaskTitle}
-                onChange={e => setNewTaskTitle(e.target.value)}
-                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
-              />
-
-              <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Story Points</span>
-                  <select 
-                    value={newTaskPoints} 
-                    onChange={e => setNewTaskPoints(Number(e.target.value))}
-                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none"
-                  >
-                    <option value={1}>1 SP (Easy)</option>
-                    <option value={2}>2 SP</option>
-                    <option value={3}>3 SP (Medium)</option>
-                    <option value={5}>5 SP (Hard)</option>
-                    <option value={8}>8 SP (Complex)</option>
-                  </select>
-                </div>
-
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Priority</span>
-                  <select 
-                    value={newTaskPriority} 
-                    onChange={e => setNewTaskPriority(e.target.value as any)}
-                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsAddingTask(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer"
-                >
-                  Add Task
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Gantt Timeline/Milestones Widget */}
-      <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm">
+      <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm text-left">
         <div className="flex items-center gap-2 pb-3 border-b border-border/30 mb-4">
           <IconCalendar className="w-4.5 h-4.5 text-rose-500" />
           <span className="text-xs font-black uppercase tracking-wider text-text-primary">Sprint Timeline (Gantt)</span>
@@ -465,7 +641,6 @@ function SprintBoardView({
                 </div>
 
                 <div className="flex-1 max-w-xs flex items-center gap-3">
-                  {/* Timeline representation bar */}
                   <div className="flex-1 h-3 bg-border/20 rounded-full overflow-hidden relative">
                     <div 
                       className={`h-full rounded-full transition-all duration-300 ${
@@ -501,13 +676,11 @@ function DeveloperAnalyticsView({
   const [newGoalTarget, setNewGoalTarget] = useState(5);
   const [newGoalMetric, setNewGoalMetric] = useState('commits');
 
-  // Compute mock git contributions heatmap (53 columns x 7 days)
   const heatmapGrid = useMemo(() => {
     const grid: number[][] = [];
     for (let c = 0; c < 53; c++) {
       const col: number[] = [];
       for (let r = 0; r < 7; r++) {
-        // Generate pseudo-random contribution levels
         const rand = Math.sin(c * 0.15) * Math.cos(r * 0.25);
         const intensity = rand > 0.4 ? 4 : rand > 0.1 ? 2 : rand > -0.2 ? 1 : 0;
         col.push(intensity);
@@ -547,20 +720,18 @@ function DeveloperAnalyticsView({
     }
   };
 
-  // Weekly Report Score Calculation
   const productivityScore = useMemo(() => {
     const solvedDsa = dsaProblems.filter(p => p.status === 'solved').length;
     const focusHours = pomodoroStats?.totalMinutes ? (pomodoroStats.totalMinutes / 60) : 0;
     
-    // baseline 75% + adjustments
     const score = Math.min(Math.round(75 + (solvedDsa * 2) + (focusHours * 1.5)), 100);
     return score;
   }, [dsaProblems, pomodoroStats]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 text-left">
       
-      {/* 1. Contribution Heatmap */}
+      {/* Coding Contributions Heatmap */}
       <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm">
         <div className="flex items-center justify-between pb-3 border-b border-border/30 mb-4">
           <div className="flex items-center gap-2">
@@ -570,7 +741,6 @@ function DeveloperAnalyticsView({
           <span className="text-[10px] text-text-muted font-bold">142 Commits this month</span>
         </div>
 
-        {/* Heatmap grid */}
         <div className="overflow-x-auto scrollbar-none py-1">
           <div className="flex gap-[3px] min-w-[500px]">
             {heatmapGrid.map((col, cIdx) => (
@@ -600,7 +770,7 @@ function DeveloperAnalyticsView({
         </div>
       </div>
 
-      {/* 2. Language Breakdown & Productivity scorecard */}
+      {/* Language Breakdown & Productivity scorecard */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
         {/* Languages progress bar stack */}
@@ -664,7 +834,7 @@ function DeveloperAnalyticsView({
 
       </div>
 
-      {/* 3. Goal Tracker */}
+      {/* Goal Tracker */}
       <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
         <div className="flex items-center gap-2 pb-2 border-b border-border/30">
           <IconFlame className="w-4.5 h-4.5 text-rose-500" />
@@ -745,68 +915,31 @@ function DeveloperAnalyticsView({
   );
 }
 
-// ── SUB-COMPONENT 3: Learning Center ──
 function LearningCenterView({
-  dsaProblems, tilLogs, roadmaps, resources,
-  addDsaProblem, deleteDsaProblem,
-  addTilLog, deleteTilLog, updateRoadmapNode,
-  addResource, deleteResource
+  roadmaps,
+  resources,
+  updateRoadmapNode,
+  addResource,
+  deleteResource,
+  selectedRoadmapId,
+  setSelectedRoadmapId,
+  setIsCreatingRoadmap,
+  deleteRoadmap,
+  showConfirm
 }: {
-  dsaProblems: DsaProblem[];
-  tilLogs: TilLog[];
   roadmaps: any[];
   resources: ResourceBookmark[];
-  addDsaProblem: (prob: DsaProblem) => void;
-  deleteDsaProblem: (id: string) => void;
-  addTilLog: (log: TilLog) => void;
-  deleteTilLog: (id: string) => void;
   updateRoadmapNode: (roadmapId: string, nodeId: string, completed: boolean) => void;
   addResource: (res: ResourceBookmark) => void;
   deleteResource: (id: string) => void;
+  selectedRoadmapId: string;
+  setSelectedRoadmapId: (id: string) => void;
+  setIsCreatingRoadmap: (v: boolean) => void;
+  deleteRoadmap: (id: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }) {
-  const [dsaTitle, setDsaTitle] = useState('');
-  const [dsaDifficulty, setDsaDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [dsaTopic, setDsaTopic] = useState('Arrays');
-  const [selectedRoadmapId, setSelectedRoadmapId] = useState('roadmap-frontend');
-
-  const [tilTitle, setTilTitle] = useState('');
-  const [tilContent, setTilContent] = useState('');
-
   const [resTitle, setResTitle] = useState('');
   const [resUrl, setResUrl] = useState('');
-
-  const handleAddDsa = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dsaTitle.trim()) return;
-    const newProb: DsaProblem = {
-      id: `dsa-${Date.now()}`,
-      title: dsaTitle.trim(),
-      platform: 'LeetCode',
-      difficulty: dsaDifficulty,
-      topic: dsaTopic,
-      status: 'solved',
-      solvedAt: new Date().toISOString()
-    };
-    addDsaProblem(newProb);
-    setDsaTitle('');
-    triggerDynamicIsland('DSA Problem Logged', newProb.title, 'success', 'confetti');
-  };
-
-  const handleAddTil = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tilTitle.trim() || !tilContent.trim()) return;
-    const newTil: TilLog = {
-      id: `til-${Date.now()}`,
-      title: tilTitle.trim(),
-      content: tilContent.trim(),
-      tags: ['TypeScript'],
-      createdAt: new Date().toISOString()
-    };
-    addTilLog(newTil);
-    setTilTitle('');
-    setTilContent('');
-    triggerDynamicIsland('TIL Logged 🎉', newTil.title, 'achievement', 'award');
-  };
 
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
@@ -831,26 +964,56 @@ function LearningCenterView({
     : 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 text-left">
       
       {/* ── Resource Library & Roadmaps ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
         {/* Roadmaps builder */}
         <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <div className="flex items-center justify-between pb-2 border-b border-border/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/30">
             <div className="flex items-center gap-2">
               <IconBook className="w-4.5 h-4.5 text-purple-500" />
               <span className="text-xs font-black uppercase tracking-wider text-text-primary">Interactive Roadmaps</span>
             </div>
-            <select
-              value={selectedRoadmapId}
-              onChange={e => setSelectedRoadmapId(e.target.value)}
-              className="bg-surface-alt border border-border/40 text-[10px] font-bold text-text-secondary rounded-lg px-2 py-0.5 focus:outline-none"
-            >
-              <option value="roadmap-frontend">Frontend Developer</option>
-              <option value="roadmap-backend">Backend Systems</option>
-            </select>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCreatingRoadmap(true)}
+                className="flex items-center gap-1 text-[10px] font-black text-purple-500 hover:text-purple-600 uppercase tracking-wider cursor-pointer"
+              >
+                <IconPlus className="w-3.5 h-3.5" /> New Path
+              </button>
+
+              <select
+                value={selectedRoadmapId}
+                onChange={e => setSelectedRoadmapId(e.target.value)}
+                className="bg-surface-alt border border-border/40 text-[10px] font-bold text-text-secondary rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer"
+              >
+                {roadmaps.map(r => (
+                  <option key={r.id} value={r.id}>{r.title}</option>
+                ))}
+              </select>
+
+              {selectedRoadmapId !== 'roadmap-frontend' && selectedRoadmapId !== 'roadmap-backend' && (
+                <button
+                  onClick={() => {
+                    showConfirm(
+                      'Delete Roadmap',
+                      'Are you sure you want to delete this custom roadmap? This action cannot be undone.',
+                      () => {
+                        deleteRoadmap(selectedRoadmapId);
+                        setSelectedRoadmapId('roadmap-frontend');
+                      }
+                    );
+                  }}
+                  className="text-text-muted hover:text-red-500 transition-colors cursor-pointer p-0.5"
+                  title="Delete Custom Roadmap"
+                >
+                  <IconTrash className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {activeRoadmap && (
@@ -940,135 +1103,10 @@ function LearningCenterView({
 
       </div>
 
-      {/* ── DSA prep & TIL journal logs ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        
-        {/* DSA solver board */}
-        <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-            <IconTerminal className="w-4.5 h-4.5 text-emerald-500" />
-            <span className="text-xs font-black uppercase tracking-wider text-text-primary">Spaced Repetition DSA Board</span>
-          </div>
-
-          <form onSubmit={handleAddDsa} className="flex flex-col gap-2 shrink-0">
-            <input 
-              type="text"
-              required
-              placeholder="DSA Problem Title (e.g. Graph Cycle Detection)"
-              value={dsaTitle}
-              onChange={e => setDsaTitle(e.target.value)}
-              className="bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
-            />
-            <div className="flex gap-2">
-              <select
-                value={dsaDifficulty}
-                onChange={e => setDsaDifficulty(e.target.value as any)}
-                className="flex-1 bg-surface-alt border border-border/40 rounded-xl px-2 py-1.5 text-xs font-bold text-text-secondary focus:outline-none"
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-              <input 
-                type="text"
-                required
-                placeholder="Topic (e.g. Graphs)"
-                value={dsaTopic}
-                onChange={e => setDsaTopic(e.target.value)}
-                className="flex-1 bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
-              />
-              <button 
-                type="submit"
-                className="px-4 py-1.5 bg-emerald-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer"
-              >
-                Log Solved
-              </button>
-            </div>
-          </form>
-
-          <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
-            {dsaProblems.map(prob => (
-              <div key={prob.id} className="flex items-center justify-between p-2.5 bg-surface-alt/40 border border-border/20 rounded-xl">
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-text-primary truncate">{prob.title}</h4>
-                  <span className="text-[9px] text-text-muted font-bold block uppercase mt-0.5">{prob.topic}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                    prob.difficulty === 'hard' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                    prob.difficulty === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                    'bg-green-500/10 text-green-500 border-green-500/20'
-                  }`}>
-                    {prob.difficulty}
-                  </span>
-                  <button 
-                    onClick={() => deleteDsaProblem(prob.id)}
-                    className="text-text-muted hover:text-red-500 transition-colors cursor-pointer"
-                  >
-                    <IconTrash className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* TIL Log journal */}
-        <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-            <IconChecklist className="w-4.5 h-4.5 text-rose-500" />
-            <span className="text-xs font-black uppercase tracking-wider text-text-primary">Today I Learned (TIL) Log</span>
-          </div>
-
-          <form onSubmit={handleAddTil} className="flex flex-col gap-2 shrink-0">
-            <input 
-              type="text"
-              required
-              placeholder="What did you learn today?"
-              value={tilTitle}
-              onChange={e => setTilTitle(e.target.value)}
-              className="bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
-            />
-            <textarea 
-              required
-              placeholder="Describe what you learned in a few sentences..."
-              rows={2}
-              value={tilContent}
-              onChange={e => setTilContent(e.target.value)}
-              className="bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none resize-none"
-            />
-            <button 
-              type="submit"
-              className="w-full py-2 bg-rose-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer"
-            >
-              Add TIL Log
-            </button>
-          </form>
-
-          <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1">
-            {tilLogs.map(log => (
-              <div key={log.id} className="flex flex-col gap-1 p-2.5 bg-surface-alt/45 border border-border/20 rounded-xl group relative">
-                <button
-                  onClick={() => deleteTilLog(log.id)}
-                  className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 text-text-muted hover:text-red-500 transition-opacity cursor-pointer"
-                >
-                  <IconTrash className="w-3.5 h-3.5" />
-                </button>
-                <h4 className="text-xs font-bold text-text-primary leading-tight">{log.title}</h4>
-                <p className="text-[10px] text-text-secondary leading-relaxed">{log.content}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
     </div>
   );
 }
 
-// ── SUB-COMPONENT 4: REST API Client & Regex Matcher ──
 function DeveloperUtilitiesView() {
   const [apiUrl, setApiUrl] = useState('https://api.github.com/users/octocat');
   const [apiMethod, setApiMethod] = useState<'GET' | 'POST'>('GET');
@@ -1100,7 +1138,6 @@ function DeveloperUtilitiesView() {
     }
   };
 
-  // Compute Regex Highlights
   const regexMatches = useMemo(() => {
     if (!regexPattern.trim() || !regexText.trim()) return [];
     try {
@@ -1113,7 +1150,7 @@ function DeveloperUtilitiesView() {
   }, [regexPattern, regexText]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
       
       {/* REST API client */}
       <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
@@ -1127,7 +1164,7 @@ function DeveloperUtilitiesView() {
             <select
               value={apiMethod}
               onChange={e => setApiMethod(e.target.value as any)}
-              className="bg-surface-alt border border-border/40 text-xs font-bold text-text-secondary rounded-xl px-2 py-1.5 focus:outline-none"
+              className="bg-surface-alt border border-border/40 text-xs font-bold text-text-secondary rounded-xl px-2 py-1.5 focus:outline-none cursor-pointer"
             >
               <option value="GET">GET</option>
               <option value="POST">POST</option>
