@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import type { SprintTask, Sprint, DsaProblem, ResourceBookmark, DevGoal } from '../../store/useAppStore';
@@ -12,6 +11,7 @@ import {
   IconChevronDown, IconChevronUp, IconPlayerPlay, IconLock
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from '../../components/ui/DynamicIsland';
+import { Modal } from '../../components/ui/Modal';
 
 type SubTab = 'board' | 'analytics' | 'learning' | 'utilities';
 
@@ -295,184 +295,171 @@ export default function ProjectsModule() {
       </div>
 
       {/* Create Sprint Modal */}
-      {isCreatingSprint && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
-            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create New Sprint</h3>
-            <form onSubmit={handleCreateSprint} className="flex flex-col gap-3 mt-4">
-              <input 
-                type="text"
-                required
-                placeholder="Sprint Title (e.g. Sprint 2: UI Overhaul)"
-                value={newSprintTitle}
-                onChange={e => setNewSprintTitle(e.target.value)}
-                className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
-              />
-              <div className="flex gap-2 justify-end mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsCreatingSprint(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isCreatingSprint}
+        onClose={() => setIsCreatingSprint(false)}
+        title="Create New Sprint"
+        maxWidthClassName="max-w-sm"
+      >
+        <form onSubmit={handleCreateSprint} className="flex flex-col gap-4 w-full">
+          <input
+            type="text"
+            required
+            placeholder="Sprint Title (e.g. Sprint 2: UI Overhaul)"
+            value={newSprintTitle}
+            onChange={e => setNewSprintTitle(e.target.value)}
+            className="input-field"
+          />
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => setIsCreatingSprint(false)}
+              className="btn btn-secondary btn-md"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary btn-md">
+              Create
+            </button>
           </div>
-        </div>,
-        document.body
-      )}
+        </form>
+      </Modal>
 
       {/* Add Task Modal */}
-      {isAddingTask && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
-            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Add Task to Sprint</h3>
-            <form onSubmit={handleAddTask} className="flex flex-col gap-3 mt-4">
-              <input 
-                type="text"
-                required
-                placeholder="Task Description"
-                value={newTaskTitle}
-                onChange={e => setNewTaskTitle(e.target.value)}
-                className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
-              />
+      <Modal
+        isOpen={isAddingTask}
+        onClose={() => setIsAddingTask(false)}
+        title="Add Task to Sprint"
+        maxWidthClassName="max-w-sm"
+      >
+        <form onSubmit={handleAddTask} className="flex flex-col gap-4 w-full">
+          <input
+            type="text"
+            required
+            placeholder="Task Description"
+            value={newTaskTitle}
+            onChange={e => setNewTaskTitle(e.target.value)}
+            className="input-field"
+          />
 
-              <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Story Points</span>
-                  <select 
-                    value={newTaskPoints} 
-                    onChange={e => setNewTaskPoints(Number(e.target.value))}
-                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none cursor-pointer"
-                  >
-                    <option value={1}>1 SP (Easy)</option>
-                    <option value={2}>2 SP</option>
-                    <option value={3}>3 SP (Medium)</option>
-                    <option value={5}>5 SP (Hard)</option>
-                    <option value={8}>8 SP (Complex)</option>
-                  </select>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex flex-col gap-1 min-w-0">
+              <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Story Points</span>
+              <select
+                value={newTaskPoints}
+                onChange={e => setNewTaskPoints(Number(e.target.value))}
+                className="select-field"
+              >
+                <option value={1}>1 SP (Easy)</option>
+                <option value={2}>2 SP</option>
+                <option value={3}>3 SP (Medium)</option>
+                <option value={5}>5 SP (Hard)</option>
+                <option value={8}>8 SP (Complex)</option>
+              </select>
+            </label>
 
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-text-muted uppercase tracking-wider">Priority</span>
-                  <select 
-                    value={newTaskPriority} 
-                    onChange={e => setNewTaskPriority(e.target.value as any)}
-                    className="bg-surface-alt border border-border/45 rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none cursor-pointer"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsAddingTask(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
-                >
-                  Add Task
-                </button>
-              </div>
-            </form>
+            <label className="flex flex-col gap-1 min-w-0">
+              <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Priority</span>
+              <select
+                value={newTaskPriority}
+                onChange={e => setNewTaskPriority(e.target.value as any)}
+                className="select-field"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => setIsAddingTask(false)}
+              className="btn btn-secondary btn-md"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary btn-md">
+              Add Task
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Create Custom Roadmap Modal */}
-      {isCreatingRoadmap && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface border border-border/40 rounded-3xl p-6 w-full max-w-md shadow-xl text-left">
-            <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create Custom Roadmap</h3>
-            
-            <form onSubmit={handleCreateRoadmap} className="flex flex-col gap-4 mt-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Choose Template</label>
-                <select
-                  value={selectedTemplateKey}
-                  onChange={e => handleTemplateChange(e.target.value as keyof typeof ROADMAP_TEMPLATES)}
-                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none cursor-pointer"
-                >
-                  <option value="custom">Custom (Blank)</option>
-                  <option value="rust">Rust Systems Developer</option>
-                  <option value="python">Python AI/ML Engineer</option>
-                  <option value="sql">SQL & Databases</option>
-                  <option value="js_ts">JavaScript/TypeScript Developer</option>
-                </select>
-              </div>
+      <Modal
+        isOpen={isCreatingRoadmap}
+        onClose={handleCancelCreateRoadmap}
+        title="Create Custom Roadmap"
+        maxWidthClassName="max-w-md"
+      >
+        <form onSubmit={handleCreateRoadmap} className="flex flex-col gap-4 w-full">
+          <label className="flex flex-col gap-1 min-w-0">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Choose Template</span>
+            <select
+              value={selectedTemplateKey}
+              onChange={e => handleTemplateChange(e.target.value as keyof typeof ROADMAP_TEMPLATES)}
+              className="select-field"
+            >
+              <option value="custom">Custom (Blank)</option>
+              <option value="rust">Rust Systems Developer</option>
+              <option value="python">Python AI/ML Engineer</option>
+              <option value="sql">SQL & Databases</option>
+              <option value="js_ts">JavaScript/TypeScript Developer</option>
+            </select>
+          </label>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Path Title</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="e.g. Web3 Systems Architect"
-                  value={newRoadmapTitle}
-                  onChange={e => setNewRoadmapTitle(e.target.value)}
-                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
-                />
-              </div>
+          <label className="flex flex-col gap-1 min-w-0">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Path Title</span>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Web3 Systems Architect"
+              value={newRoadmapTitle}
+              onChange={e => setNewRoadmapTitle(e.target.value)}
+              className="input-field"
+            />
+          </label>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Description</label>
-                <textarea 
-                  rows={2}
-                  required
-                  placeholder="Describe this learning path..."
-                  value={newRoadmapDescription}
-                  onChange={e => setNewRoadmapDescription(e.target.value)}
-                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
-                />
-              </div>
+          <label className="flex flex-col gap-1 min-w-0">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Description</span>
+            <textarea
+              rows={2}
+              required
+              placeholder="Describe this learning path..."
+              value={newRoadmapDescription}
+              onChange={e => setNewRoadmapDescription(e.target.value)}
+              className="textarea-field min-h-[92px] resize-none"
+            />
+          </label>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Nodes (comma-separated)</label>
-                <textarea 
-                  rows={3}
-                  required
-                  placeholder="e.g. Basic Syntax, Advanced Types, Project Building"
-                  value={newRoadmapNodesText}
-                  onChange={e => setNewRoadmapNodesText(e.target.value)}
-                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
-                />
-              </div>
+          <label className="flex flex-col gap-1 min-w-0">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Nodes (comma-separated)</span>
+            <textarea
+              rows={3}
+              required
+              placeholder="e.g. Basic Syntax, Advanced Types, Project Building"
+              value={newRoadmapNodesText}
+              onChange={e => setNewRoadmapNodesText(e.target.value)}
+              className="textarea-field resize-none"
+            />
+          </label>
 
-              <div className="flex gap-2 justify-end mt-2">
-                <button 
-                  type="button" 
-                  onClick={handleCancelCreateRoadmap}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors"
-                >
-                  Save Path
-                </button>
-              </div>
-            </form>
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={handleCancelCreateRoadmap}
+              className="btn btn-secondary btn-md"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary btn-md">
+              Save Path
+            </button>
           </div>
-        </div>,
-        document.body
-      )}
+        </form>
+      </Modal>
 
     </div>
   );

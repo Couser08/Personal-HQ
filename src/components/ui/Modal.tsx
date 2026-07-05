@@ -7,9 +7,18 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  maxWidthClassName?: string;
+  bodyClassName?: string;
 }
 
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+export const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  maxWidthClassName = 'max-w-2xl',
+  bodyClassName = 'p-4'
+}: ModalProps) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -27,7 +36,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-surface text-text-primary border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col"
+              className={`bg-surface text-text-primary border border-border rounded-xl shadow-2xl w-full ${maxWidthClassName} max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col`}
             >
               <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-surface z-10 text-text-primary">
                 <h2 className="text-xl font-bold">{title}</h2>
@@ -39,7 +48,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
                   <IconX className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-4">
+              <div className={bodyClassName}>
                 {children}
               </div>
             </motion.div>
