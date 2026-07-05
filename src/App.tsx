@@ -5,6 +5,7 @@ import { useAppStore } from './store/useAppStore';
 import { useAuthStore } from './store/useAuthStore';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useShallow } from 'zustand/react/shallow';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
 const ProjectsModule = lazy(() => import('./modules/projects/ProjectsModule'));
@@ -90,7 +91,12 @@ function ModuleFallback() {
 
 function App() {
   const { user, initialized, initialize } = useAuthStore();
-  const { theme, loadAllData, clearAllData, dataLoaded } = useAppStore();
+  const { theme, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
+    theme: state.theme,
+    loadAllData: state.loadAllData,
+    clearAllData: state.clearAllData,
+    dataLoaded: state.dataLoaded
+  })));
 
   useEffect(() => {
     initialize();

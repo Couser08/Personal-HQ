@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
 import { useAppStore } from '../../store/useAppStore';
 import { motion } from 'framer-motion';
@@ -15,14 +15,6 @@ export default function DrawingModule() {
     appState: useAppStore.getState().drawingAppState || {},
   }));
 
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
-
-  useEffect(() => {
-    if (excalidrawAPI) {
-      excalidrawAPI.updateScene({ appState: { theme: theme === 'dark' ? 'dark' : 'light' } });
-    }
-  }, [theme, excalidrawAPI]);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -34,16 +26,15 @@ export default function DrawingModule() {
     >
       <div className="flex-1 w-full h-full relative rounded-2xl overflow-hidden shadow-sm border border-border/40 bg-surface">
         <Excalidraw
-          excalidrawAPI={(api) => setExcalidrawAPI(api)}
           theme={theme === 'dark' ? 'dark' : 'light'}
           initialData={{
             elements: initialData.elements as any,
             appState: initialData.appState,
           }}
-          onChange={(elements, appState) => {
+          onChange={useCallback((elements: readonly any[], appState: any) => {
             setDrawingData(elements, appState);
-          }}
-          UIOptions={{
+          }, [setDrawingData])}
+          UIOptions={useMemo(() => ({
             canvasActions: {
               changeViewBackgroundColor: true,
               clearCanvas: true,
@@ -52,7 +43,7 @@ export default function DrawingModule() {
               toggleTheme: false,
               saveAsImage: true,
             },
-          }}
+          }), [])}
         >
           <MainMenu>
             <MainMenu.DefaultItems.LoadScene />
