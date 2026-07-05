@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppStore, SprintTask, Sprint, DsaProblem, TilLog, ResourceBookmark, DevGoal } from '../../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
+import type { SprintTask, Sprint, DsaProblem, TilLog, ResourceBookmark, DevGoal } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { 
   IconTerminal, IconChecklist, IconCalendar, IconChartBar, 
-  IconBook, IconTools, IconPlus, IconCheck, IconTrash, 
+  IconBook, IconPlus, IconCheck, IconTrash, 
   IconExternalLink, IconFlame, IconTarget, IconSend, 
-  IconBrackets, IconSearch, IconEye, IconRefresh
+  IconBrackets, IconEye
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from '../../components/ui/DynamicIsland';
 
@@ -15,12 +16,12 @@ type SubTab = 'board' | 'analytics' | 'learning' | 'utilities';
 export default function ProjectsModule() {
   const {
     sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals,
-    pomodoroStats, pomodoroStreak,
-    addSprint, updateSprint, deleteSprint,
+    pomodoroStats,
+    addSprint,
     addSprintTask, updateSprintTask, deleteSprintTask,
-    addDsaProblem, updateDsaProblem, deleteDsaProblem,
+    addDsaProblem, deleteDsaProblem,
     addTilLog, deleteTilLog, updateRoadmapNode,
-    addResource, updateResource, deleteResource,
+    addResource, deleteResource,
     addDevGoal, updateDevGoal, deleteDevGoal
   } = useAppStore(useShallow(state => ({
     sprints: state.sprints,
@@ -30,21 +31,16 @@ export default function ProjectsModule() {
     resources: state.resources,
     devGoals: state.devGoals,
     pomodoroStats: state.pomodoroStats,
-    pomodoroStreak: state.pomodoroStreak,
     addSprint: state.addSprint,
-    updateSprint: state.updateSprint,
-    deleteSprint: state.deleteSprint,
     addSprintTask: state.addSprintTask,
     updateSprintTask: state.updateSprintTask,
     deleteSprintTask: state.deleteSprintTask,
     addDsaProblem: state.addDsaProblem,
-    updateDsaProblem: state.updateDsaProblem,
     deleteDsaProblem: state.deleteDsaProblem,
     addTilLog: state.addTilLog,
     deleteTilLog: state.deleteTilLog,
     updateRoadmapNode: state.updateRoadmapNode,
     addResource: state.addResource,
-    updateResource: state.updateResource,
     deleteResource: state.deleteResource,
     addDevGoal: state.addDevGoal,
     updateDevGoal: state.updateDevGoal,
@@ -127,8 +123,6 @@ export default function ProjectsModule() {
               <SprintBoardView 
                 sprints={sprints}
                 addSprint={addSprint}
-                updateSprint={updateSprint}
-                deleteSprint={deleteSprint}
                 addSprintTask={addSprintTask}
                 updateSprintTask={updateSprintTask}
                 deleteSprintTask={deleteSprintTask}
@@ -139,7 +133,6 @@ export default function ProjectsModule() {
                 dsaProblems={dsaProblems}
                 devGoals={devGoals}
                 pomodoroStats={pomodoroStats}
-                pomodoroStreak={pomodoroStreak}
                 addDevGoal={addDevGoal}
                 updateDevGoal={updateDevGoal}
                 deleteDevGoal={deleteDevGoal}
@@ -152,13 +145,11 @@ export default function ProjectsModule() {
                 roadmaps={roadmaps}
                 resources={resources}
                 addDsaProblem={addDsaProblem}
-                updateDsaProblem={updateDsaProblem}
                 deleteDsaProblem={deleteDsaProblem}
                 addTilLog={addTilLog}
                 deleteTilLog={deleteTilLog}
                 updateRoadmapNode={updateRoadmapNode}
                 addResource={addResource}
-                updateResource={updateResource}
                 deleteResource={deleteResource}
               />
             )}
@@ -173,13 +164,11 @@ export default function ProjectsModule() {
 
 // ── SUB-COMPONENT 1: Sprint Kanban Board & Gantt Timeline ──
 function SprintBoardView({
-  sprints, addSprint, updateSprint, deleteSprint,
+  sprints, addSprint,
   addSprintTask, updateSprintTask, deleteSprintTask
 }: {
   sprints: Sprint[];
   addSprint: (sprint: Sprint) => void;
-  updateSprint: (id: string, data: Partial<Sprint>) => void;
-  deleteSprint: (id: string) => void;
   addSprintTask: (sprintId: string, task: SprintTask) => void;
   updateSprintTask: (sprintId: string, taskId: string, data: Partial<SprintTask>) => void;
   deleteSprintTask: (sprintId: string, taskId: string) => void;
@@ -461,8 +450,7 @@ function SprintBoardView({
         </div>
 
         <div className="flex flex-col gap-4">
-          {sprints.map((s, idx) => {
-            const hasStarted = new Date(s.startDate) <= new Date();
+          {sprints.map((s) => {
             const progress = s.tasks.length > 0 
               ? Math.round((s.tasks.filter(t => t.status === 'done').length / s.tasks.length) * 100) 
               : 0;
@@ -498,15 +486,13 @@ function SprintBoardView({
   );
 }
 
-// ── SUB-COMPONENT 2: Developer Analytics & Heatmap ──
 function DeveloperAnalyticsView({
-  dsaProblems, devGoals, pomodoroStats, pomodoroStreak,
+  dsaProblems, devGoals, pomodoroStats,
   addDevGoal, updateDevGoal, deleteDevGoal
 }: {
   dsaProblems: DsaProblem[];
   devGoals: DevGoal[];
   pomodoroStats: any;
-  pomodoroStreak: number;
   addDevGoal: (goal: DevGoal) => void;
   updateDevGoal: (id: string, data: Partial<DevGoal>) => void;
   deleteDevGoal: (id: string) => void;
@@ -762,22 +748,20 @@ function DeveloperAnalyticsView({
 // ── SUB-COMPONENT 3: Learning Center ──
 function LearningCenterView({
   dsaProblems, tilLogs, roadmaps, resources,
-  addDsaProblem, updateDsaProblem, deleteDsaProblem,
+  addDsaProblem, deleteDsaProblem,
   addTilLog, deleteTilLog, updateRoadmapNode,
-  addResource, updateResource, deleteResource
+  addResource, deleteResource
 }: {
   dsaProblems: DsaProblem[];
   tilLogs: TilLog[];
   roadmaps: any[];
   resources: ResourceBookmark[];
   addDsaProblem: (prob: DsaProblem) => void;
-  updateDsaProblem: (id: string, data: Partial<DsaProblem>) => void;
   deleteDsaProblem: (id: string) => void;
   addTilLog: (log: TilLog) => void;
   deleteTilLog: (id: string) => void;
   updateRoadmapNode: (roadmapId: string, nodeId: string, completed: boolean) => void;
   addResource: (res: ResourceBookmark) => void;
-  updateResource: (id: string, data: Partial<ResourceBookmark>) => void;
   deleteResource: (id: string) => void;
 }) {
   const [dsaTitle, setDsaTitle] = useState('');
