@@ -3,6 +3,7 @@ import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
 import { useAppStore } from '../../store/useAppStore';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
+import "@excalidraw/excalidraw/index.css";
 
 export default function DrawingModule() {
   const { theme, setDrawingData } = useAppStore(useShallow(state => ({

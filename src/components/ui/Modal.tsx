@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { IconX } from '@tabler/icons-react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,22 +20,26 @@ export const Modal = ({
   maxWidthClassName = 'max-w-xl',
   bodyClassName = 'p-6'
 }: ModalProps) => {
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
           {/* Backer Overlay (Pure Premium Glassmorphism) */}
           <motion.div
+            key="modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md z-50 transition-all duration-300"
+            className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md z-50 transition-all duration-300 pointer-events-auto"
           />
 
           {/* Modal Centering Wrapper */}
           <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none p-4 sm:p-6">
             <motion.div
+              key="modal-content"
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -66,6 +71,7 @@ export const Modal = ({
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
