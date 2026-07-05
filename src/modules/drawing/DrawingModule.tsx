@@ -5,12 +5,15 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function DrawingModule() {
-  const { theme, drawingElements, drawingAppState, setDrawingData } = useAppStore(useShallow(state => ({
+  const { theme, setDrawingData } = useAppStore(useShallow(state => ({
     theme: state.theme,
-    drawingElements: state.drawingElements,
-    drawingAppState: state.drawingAppState,
     setDrawingData: state.setDrawingData
   })));
+
+  const [initialData] = useState(() => ({
+    elements: useAppStore.getState().drawingElements || [],
+    appState: useAppStore.getState().drawingAppState || {},
+  }));
 
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
 
@@ -34,8 +37,8 @@ export default function DrawingModule() {
           excalidrawAPI={(api) => setExcalidrawAPI(api)}
           theme={theme === 'dark' ? 'dark' : 'light'}
           initialData={{
-            elements: drawingElements as any,
-            appState: drawingAppState || {},
+            elements: initialData.elements as any,
+            appState: initialData.appState,
           }}
           onChange={(elements, appState) => {
             setDrawingData(elements, appState);
