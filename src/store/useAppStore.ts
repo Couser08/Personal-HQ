@@ -198,6 +198,78 @@ export interface Topic {
   analytics?: TopicAnalytics;
   learningStreak?: number;
 }
+export interface SprintTask {
+  id: string;
+  title: string;
+  description?: string;
+  storyPoints: number;
+  priority: 'low' | 'medium' | 'high';
+  status: 'backlog' | 'todo' | 'in_progress' | 'review' | 'done';
+  tags: string[];
+}
+
+export interface Sprint {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  tasks: SprintTask[];
+  status: 'planned' | 'active' | 'completed';
+}
+
+export interface DsaProblem {
+  id: string;
+  title: string;
+  platform: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  topic: string;
+  link?: string;
+  status: 'solved' | 'review' | 'revision';
+  notes?: string;
+  solvedAt: string;
+}
+
+export interface TilLog {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface RoadmapNode {
+  id: string;
+  label: string;
+  completed: boolean;
+  children?: string[];
+}
+
+export interface LearningRoadmap {
+  id: string;
+  title: string;
+  description: string;
+  nodes: RoadmapNode[];
+}
+
+export interface ResourceBookmark {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  tags: string[];
+  status: 'to_read' | 'reading' | 'completed';
+  savedAt: string;
+}
+
+export interface DevGoal {
+  id: string;
+  title: string;
+  target: number;
+  current: number;
+  metric: string;
+  dueDate: string;
+  completed: boolean;
+}
 
 export interface Subject {
   id: string;
@@ -478,6 +550,33 @@ export interface AppStore {
   standardHistory: StandardCalculation[];
   addStandardRecord: (record: StandardCalculation) => Promise<void>;
   clearStandardHistory: () => Promise<void>;
+  // Coder Hub / Projects State
+  sprints: Sprint[];
+  dsaProblems: DsaProblem[];
+  tilLogs: TilLog[];
+  roadmaps: LearningRoadmap[];
+  resources: ResourceBookmark[];
+  devGoals: DevGoal[];
+
+  // Coder Hub Actions
+  addSprint: (sprint: Sprint) => void;
+  updateSprint: (id: string, data: Partial<Sprint>) => void;
+  deleteSprint: (id: string) => void;
+  addSprintTask: (sprintId: string, task: SprintTask) => void;
+  updateSprintTask: (sprintId: string, taskId: string, data: Partial<SprintTask>) => void;
+  deleteSprintTask: (sprintId: string, taskId: string) => void;
+  addDsaProblem: (prob: DsaProblem) => void;
+  updateDsaProblem: (id: string, data: Partial<DsaProblem>) => void;
+  deleteDsaProblem: (id: string) => void;
+  addTilLog: (log: TilLog) => void;
+  deleteTilLog: (id: string) => void;
+  updateRoadmapNode: (roadmapId: string, nodeId: string, completed: boolean) => void;
+  addResource: (res: ResourceBookmark) => void;
+  updateResource: (id: string, data: Partial<ResourceBookmark>) => void;
+  deleteResource: (id: string) => void;
+  addDevGoal: (goal: DevGoal) => void;
+  updateDevGoal: (id: string, data: Partial<DevGoal>) => void;
+  deleteDevGoal: (id: string) => void;
 
   importData: (data: Partial<AppStore>) => void;
 }
@@ -1364,6 +1463,223 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete mindmap'), 'error');
       throw error;
     }
+  },
+
+  // ── Coder Hub / Projects State Initializations ──
+  sprints: (() => {
+    try {
+      const stored = localStorage.getItem('phq_sprints');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      {
+        id: 'sprint-1',
+        title: 'Sprint 1: Core Redesign',
+        startDate: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
+        endDate: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString(),
+        status: 'active' as const,
+        tasks: [
+          { id: 't-1', title: 'Implement Command Palette', storyPoints: 5, priority: 'high' as const, status: 'in_progress' as const, tags: ['frontend'] },
+          { id: 't-2', title: 'Design Dynamic Island notification pill', storyPoints: 3, priority: 'medium' as const, status: 'todo' as const, tags: ['design', 'animation'] },
+          { id: 't-3', title: 'API Client & Regex matching utilities', storyPoints: 2, priority: 'low' as const, status: 'done' as const, tags: ['utilities'] },
+          { id: 't-4', title: 'Setup database schema and stores', storyPoints: 3, priority: 'high' as const, status: 'done' as const, tags: ['backend'] }
+        ]
+      }
+    ];
+    localStorage.setItem('phq_sprints', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  dsaProblems: (() => {
+    try {
+      const stored = localStorage.getItem('phq_dsa_problems');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      { id: 'dsa-1', title: 'Two Sum', platform: 'LeetCode', difficulty: 'easy' as const, topic: 'Arrays', link: 'https://leetcode.com/problems/two-sum/', status: 'solved' as const, solvedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString() },
+      { id: 'dsa-2', title: 'Reverse Linked List', platform: 'LeetCode', difficulty: 'easy' as const, topic: 'Linked List', link: 'https://leetcode.com/problems/reverse-linked-list/', status: 'solved' as const, solvedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+      { id: 'dsa-3', title: 'Longest Substring Without Repeating Characters', platform: 'LeetCode', difficulty: 'medium' as const, topic: 'String', link: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/', status: 'review' as const, solvedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString() }
+    ];
+    localStorage.setItem('phq_dsa_problems', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  tilLogs: (() => {
+    try {
+      const stored = localStorage.getItem('phq_til_logs');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      { id: 'til-1', title: 'Zustand shallow comparison', content: 'Use useShallow from `zustand/react/shallow` to prevent unnecessary component re-renders when selecting multiple slices of store state.', tags: ['React', 'Zustand'], createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+      { id: 'til-2', title: 'TypeScript const assertions', content: 'Using `as const` creates read-only literal types, which is extremely helpful when mapping variants or setting string configurations in Framer Motion.', tags: ['TypeScript'], createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString() }
+    ];
+    localStorage.setItem('phq_til_logs', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  roadmaps: (() => {
+    try {
+      const stored = localStorage.getItem('phq_roadmaps');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      {
+        id: 'roadmap-frontend',
+        title: 'React Frontend Developer',
+        description: 'Master HTML, CSS, JavaScript, React, State Management, and Build Systems.',
+        nodes: [
+          { id: 'fe-1', label: 'HTML & CSS Foundations', completed: true },
+          { id: 'fe-2', label: 'JavaScript & DOM Manipulation', completed: true },
+          { id: 'fe-3', label: 'React Basics & Lifecycle', completed: true },
+          { id: 'fe-4', label: 'Zustand & State Managers', completed: false },
+          { id: 'fe-5', label: 'Tailwind CSS Layouts', completed: false },
+          { id: 'fe-6', label: 'Next.js Routing & SSR', completed: false }
+        ]
+      },
+      {
+        id: 'roadmap-backend',
+        title: 'Go Backend Systems Developer',
+        description: 'Learn Go syntax, structs, concurrency models, servers, databases, and Docker.',
+        nodes: [
+          { id: 'be-1', label: 'Go Fundamentals & Pointers', completed: true },
+          { id: 'be-2', label: 'Structs, Interfaces, & Methods', completed: false },
+          { id: 'be-3', label: 'Goroutines & Channels Concurrency', completed: false },
+          { id: 'be-4', label: 'Gin HTTP REST framework', completed: false },
+          { id: 'be-5', label: 'PostgreSQL, SQL & Migrations', completed: false },
+          { id: 'be-6', label: 'Dockerization & Cloud Deployments', completed: false }
+        ]
+      }
+    ];
+    localStorage.setItem('phq_roadmaps', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  resources: (() => {
+    try {
+      const stored = localStorage.getItem('phq_resources');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      { id: 'res-1', title: 'Zustand Documentation', url: 'https://docs.pmnd.rs/zustand/getting-started/introduction', description: 'Core guide for state management in React.', tags: ['React', 'Zustand'], status: 'reading' as const, savedAt: new Date().toISOString() },
+      { id: 'res-2', title: 'Apple Human Interface Guidelines', url: 'https://developer.apple.com/design/human-interface-guidelines/', description: 'UI/UX best practices and components.', tags: ['Design'], status: 'to_read' as const, savedAt: new Date().toISOString() }
+    ];
+    localStorage.setItem('phq_resources', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  devGoals: (() => {
+    try {
+      const stored = localStorage.getItem('phq_dev_goals');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    const initial = [
+      { id: 'g-1', title: 'Complete 3 Sprints', target: 3, current: 1, metric: 'sprints', dueDate: new Date(Date.now() + 20 * 24 * 3600 * 1000).toISOString(), completed: false },
+      { id: 'g-2', title: 'Solve 20 DSA Problems', target: 20, current: 2, metric: 'problems', dueDate: new Date(Date.now() + 25 * 24 * 3600 * 1000).toISOString(), completed: false },
+      { id: 'g-3', title: 'Log 5 TIL Journal entries', target: 5, current: 2, metric: 'TILs', dueDate: new Date(Date.now() + 15 * 24 * 3600 * 1000).toISOString(), completed: false }
+    ];
+    localStorage.setItem('phq_dev_goals', JSON.stringify(initial));
+    return initial;
+  })(),
+
+  // ── Coder Hub Actions ──
+  addSprint: (sprint) => {
+    const next = [...get().sprints, sprint];
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  updateSprint: (id, data) => {
+    const next = get().sprints.map(s => s.id === id ? { ...s, ...data } : s);
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  deleteSprint: (id) => {
+    const next = get().sprints.filter(s => s.id !== id);
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  addSprintTask: (sprintId, task) => {
+    const next = get().sprints.map(s => s.id === sprintId ? { ...s, tasks: [...s.tasks, task] } : s);
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  updateSprintTask: (sprintId, taskId, data) => {
+    const next = get().sprints.map(s => s.id === sprintId ? {
+      ...s,
+      tasks: s.tasks.map(t => t.id === taskId ? { ...t, ...data } : t)
+    } : s);
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  deleteSprintTask: (sprintId, taskId) => {
+    const next = get().sprints.map(s => s.id === sprintId ? {
+      ...s,
+      tasks: s.tasks.filter(t => t.id !== taskId)
+    } : s);
+    localStorage.setItem('phq_sprints', JSON.stringify(next));
+    set({ sprints: next });
+  },
+  addDsaProblem: (prob) => {
+    const next = [...get().dsaProblems, prob];
+    localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
+    set({ dsaProblems: next });
+  },
+  updateDsaProblem: (id, data) => {
+    const next = get().dsaProblems.map(p => p.id === id ? { ...p, ...data } : p);
+    localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
+    set({ dsaProblems: next });
+  },
+  deleteDsaProblem: (id) => {
+    const next = get().dsaProblems.filter(p => p.id !== id);
+    localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
+    set({ dsaProblems: next });
+  },
+  addTilLog: (log) => {
+    const next = [...get().tilLogs, log];
+    localStorage.setItem('phq_til_logs', JSON.stringify(next));
+    set({ tilLogs: next });
+  },
+  deleteTilLog: (id) => {
+    const next = get().tilLogs.filter(l => l.id !== id);
+    localStorage.setItem('phq_til_logs', JSON.stringify(next));
+    set({ tilLogs: next });
+  },
+  updateRoadmapNode: (roadmapId, nodeId, completed) => {
+    const next = get().roadmaps.map(r => r.id === roadmapId ? {
+      ...r,
+      nodes: r.nodes.map(n => n.id === nodeId ? { ...n, completed } : n)
+    } : r);
+    localStorage.setItem('phq_roadmaps', JSON.stringify(next));
+    set({ roadmaps: next });
+  },
+  addResource: (res) => {
+    const next = [...get().resources, res];
+    localStorage.setItem('phq_resources', JSON.stringify(next));
+    set({ resources: next });
+  },
+  updateResource: (id, data) => {
+    const next = get().resources.map(r => r.id === id ? { ...r, ...data } : r);
+    localStorage.setItem('phq_resources', JSON.stringify(next));
+    set({ resources: next });
+  },
+  deleteResource: (id) => {
+    const next = get().resources.filter(r => r.id !== id);
+    localStorage.setItem('phq_resources', JSON.stringify(next));
+    set({ resources: next });
+  },
+  addDevGoal: (goal) => {
+    const next = [...get().devGoals, goal];
+    localStorage.setItem('phq_dev_goals', JSON.stringify(next));
+    set({ devGoals: next });
+  },
+  updateDevGoal: (id, data) => {
+    const next = get().devGoals.map(g => g.id === id ? { ...g, ...data } : g);
+    localStorage.setItem('phq_dev_goals', JSON.stringify(next));
+    set({ devGoals: next });
+  },
+  deleteDevGoal: (id) => {
+    const next = get().devGoals.filter(g => g.id !== id);
+    localStorage.setItem('phq_dev_goals', JSON.stringify(next));
+    set({ devGoals: next });
   },
 
   importData: (data) =>

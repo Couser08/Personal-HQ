@@ -3,7 +3,7 @@ import {
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight, IconLayoutGrid
+  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Home', icon: IconLayout },
+  { id: 'projects', label: 'Projects', icon: IconFolder },
   { id: 'todo', label: 'To-Do List', icon: IconChecklist },
   { id: 'study', label: 'Study Tracker', icon: IconBook },
   { id: 'budget', label: 'Expense & Income', icon: IconWallet },

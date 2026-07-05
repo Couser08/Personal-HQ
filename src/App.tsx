@@ -7,6 +7,7 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
+const ProjectsModule = lazy(() => import('./modules/projects/ProjectsModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
 const BudgetModule = lazy(() => import('./modules/budget/BudgetModule'));
 const StudyModule = lazy(() => import('./modules/study/StudyModule'));
@@ -144,6 +145,7 @@ function AppContent() {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard': return <DashboardModule />;
+      case 'projects': return <ProjectsModule />;
       case 'utilities': return <UtilitiesModule />;
       case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
