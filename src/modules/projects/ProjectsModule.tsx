@@ -299,7 +299,7 @@ export default function ProjectsModule() {
         isOpen={isCreatingSprint}
         onClose={() => setIsCreatingSprint(false)}
         title="Create New Sprint"
-        maxWidthClassName="max-w-sm"
+        maxWidthClassName="max-w-lg"
       >
         <form onSubmit={handleCreateSprint} className="flex flex-col gap-4 w-full">
           <input
@@ -330,7 +330,7 @@ export default function ProjectsModule() {
         isOpen={isAddingTask}
         onClose={() => setIsAddingTask(false)}
         title="Add Task to Sprint"
-        maxWidthClassName="max-w-sm"
+        maxWidthClassName="max-w-lg"
       >
         <form onSubmit={handleAddTask} className="flex flex-col gap-4 w-full">
           <input
@@ -392,7 +392,7 @@ export default function ProjectsModule() {
         isOpen={isCreatingRoadmap}
         onClose={handleCancelCreateRoadmap}
         title="Create Custom Roadmap"
-        maxWidthClassName="max-w-md"
+        maxWidthClassName="max-w-lg"
       >
         <form onSubmit={handleCreateRoadmap} className="flex flex-col gap-4 w-full">
           <label className="flex flex-col gap-1 min-w-0">

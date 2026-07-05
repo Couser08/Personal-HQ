@@ -36,7 +36,7 @@ export const Modal = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className={`bg-surface text-text-primary border border-border rounded-xl shadow-2xl w-full ${maxWidthClassName} max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col`}
+              className={`bg-surface text-text-primary border border-border rounded-xl shadow-2xl w-[94vw] sm:w-full min-w-[320px] sm:min-w-[400px] ${maxWidthClassName} max-h-[90vh] overflow-y-auto pointer-events-auto flex flex-col`}
             >
               <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-surface z-10 text-text-primary">
                 <h2 className="text-xl font-bold">{title}</h2>
