@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import type { SprintTask, Sprint, DsaProblem, ResourceBookmark, DevGoal } from '../../store/useAppStore';
@@ -290,8 +291,8 @@ export default function ProjectsModule() {
       </div>
 
       {/* Create Sprint Modal */}
-      {isCreatingSprint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+      {isCreatingSprint && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
             <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create New Sprint</h3>
             <form onSubmit={handleCreateSprint} className="flex flex-col gap-3 mt-4">
@@ -320,12 +321,13 @@ export default function ProjectsModule() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Add Task Modal */}
-      {isAddingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+      {isAddingTask && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface border border-border/40 rounded-3xl p-5 w-full max-w-sm shadow-xl text-left">
             <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Add Task to Sprint</h3>
             <form onSubmit={handleAddTask} className="flex flex-col gap-3 mt-4">
@@ -385,12 +387,13 @@ export default function ProjectsModule() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Create Custom Roadmap Modal */}
-      {isCreatingRoadmap && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
+      {isCreatingRoadmap && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface border border-border/40 rounded-3xl p-6 w-full max-w-md shadow-xl text-left">
             <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">Create Custom Roadmap</h3>
             
@@ -463,7 +466,8 @@ export default function ProjectsModule() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
@@ -562,23 +566,23 @@ function SprintBoardView({
                   {statusTasks.map(task => (
                     <div 
                       key={task.id}
-                      className="bg-surface border border-border/40 p-2.5 rounded-xl flex items-center justify-between gap-3 group hover:shadow-sm transition-all relative pr-8 text-left"
+                      className="bg-surface border border-border/40 p-2.5 rounded-xl flex flex-col gap-2 group hover:shadow-sm transition-all relative pr-8 text-left"
                     >
-                      {/* Left Side: Priority dot and Task title */}
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      {/* Line 1 (Top): Priority dot and Task title */}
+                      <div className="flex items-start gap-2 min-w-0">
+                        <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${
                           task.priority === 'high' ? 'bg-red-500' :
                           task.priority === 'medium' ? 'bg-amber-500' :
                           'bg-blue-500'
                         }`} />
-                        <span className="text-xs font-bold text-text-primary truncate" title={task.title}>
+                        <span className="text-xs font-bold text-text-primary leading-tight" title={task.title}>
                           {task.title}
                         </span>
                       </div>
 
-                      {/* Right Side: SP badge and select dropdown */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[9px] font-black text-text-muted bg-surface-alt px-1.5 py-0.5 rounded-lg border border-border/30">
+                      {/* Line 2 (Bottom): Separator, SP badge left, select dropdown right */}
+                      <div className="border-t border-border/20 pt-2 mt-1 flex items-center justify-between gap-2">
+                        <span className="text-[9px] font-black text-text-muted bg-surface-alt px-1.5 py-0.5 rounded-lg border border-border/30 shrink-0">
                           {task.storyPoints} SP
                         </span>
                         <select
@@ -595,7 +599,7 @@ function SprintBoardView({
 
                       <button
                         onClick={() => deleteSprintTask(activeSprint.id, task.id)}
-                        className="opacity-0 group-hover:opacity-100 absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-red-500 transition-opacity cursor-pointer p-0.5"
+                        className="opacity-0 group-hover:opacity-100 absolute right-2.5 top-2.5 text-text-muted hover:text-red-500 transition-opacity cursor-pointer p-0.5"
                         title="Delete Task"
                       >
                         <IconTrash className="w-3.5 h-3.5" />
