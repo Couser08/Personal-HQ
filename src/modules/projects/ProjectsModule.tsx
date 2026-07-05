@@ -8,7 +8,8 @@ import {
   IconTerminal, IconCalendar, IconChartBar, 
   IconBook, IconPlus, IconCheck, IconTrash, 
   IconExternalLink, IconFlame, IconTarget, IconSend, 
-  IconBrackets, IconEye
+  IconBrackets, IconEye, IconRocket, IconGlobe,
+  IconChevronDown, IconChevronUp, IconPlayerPlay, IconLock
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from '../../components/ui/DynamicIsland';
 
@@ -283,6 +284,9 @@ export default function ProjectsModule() {
                 setIsCreatingRoadmap={setIsCreatingRoadmap}
                 deleteRoadmap={deleteRoadmap}
                 showConfirm={showConfirm}
+                isFocusMode={isFocusMode}
+                toggleFocusMode={toggleFocusMode}
+                pomodoroStats={pomodoroStats}
               />
             )}
             {activeTab === 'utilities' && <DeveloperUtilitiesView />}
@@ -302,7 +306,7 @@ export default function ProjectsModule() {
                 placeholder="Sprint Title (e.g. Sprint 2: UI Overhaul)"
                 value={newSprintTitle}
                 onChange={e => setNewSprintTitle(e.target.value)}
-                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+                className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
               />
               <div className="flex gap-2 justify-end mt-2">
                 <button 
@@ -337,7 +341,7 @@ export default function ProjectsModule() {
                 placeholder="Task Description"
                 value={newTaskTitle}
                 onChange={e => setNewTaskTitle(e.target.value)}
-                className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+                className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
               />
 
               <div className="flex gap-4">
@@ -421,7 +425,7 @@ export default function ProjectsModule() {
                   placeholder="e.g. Web3 Systems Architect"
                   value={newRoadmapTitle}
                   onChange={e => setNewRoadmapTitle(e.target.value)}
-                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
+                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none"
                 />
               </div>
 
@@ -433,7 +437,7 @@ export default function ProjectsModule() {
                   placeholder="Describe this learning path..."
                   value={newRoadmapDescription}
                   onChange={e => setNewRoadmapDescription(e.target.value)}
-                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
+                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
                 />
               </div>
 
@@ -445,7 +449,7 @@ export default function ProjectsModule() {
                   placeholder="e.g. Basic Syntax, Advanced Types, Project Building"
                   value={newRoadmapNodesText}
                   onChange={e => setNewRoadmapNodesText(e.target.value)}
-                  className="bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
+                  className="w-full bg-surface-alt border border-border/45 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none resize-none"
                 />
               </div>
 
@@ -929,7 +933,10 @@ function LearningCenterView({
   setSelectedRoadmapId,
   setIsCreatingRoadmap,
   deleteRoadmap,
-  showConfirm
+  showConfirm,
+  isFocusMode,
+  toggleFocusMode,
+  pomodoroStats
 }: {
   roadmaps: any[];
   resources: ResourceBookmark[];
@@ -941,9 +948,21 @@ function LearningCenterView({
   setIsCreatingRoadmap: (v: boolean) => void;
   deleteRoadmap: (id: string) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  isFocusMode: boolean;
+  toggleFocusMode: () => void;
+  pomodoroStats: any;
 }) {
   const [resTitle, setResTitle] = useState('');
   const [resUrl, setResUrl] = useState('');
+
+  // Streak Days State: S M T W T F S
+  const [streakDays, setStreakDays] = useState<boolean[]>(() => {
+    const today = new Date().getDay();
+    // Default: check off days before today to simulate a streak, leave today/future unchecked
+    return Array.from({ length: 7 }, (_, i) => i < today);
+  });
+
+  const todayIdx = new Date().getDay(); // 0 is Sunday, 1 is Monday, etc.
 
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
@@ -963,145 +982,470 @@ function LearningCenterView({
   };
 
   const activeRoadmap = roadmaps.find(r => r.id === selectedRoadmapId) || roadmaps[0];
-  const roadmapProgress = activeRoadmap 
-    ? Math.round((activeRoadmap.nodes.filter((n: any) => n.completed).length / activeRoadmap.nodes.length) * 100)
+  const activeNodes = activeRoadmap?.nodes || [];
+  const totalNodes = activeNodes.length;
+  const completedNodesCount = activeNodes.filter((n: any) => n.completed).length;
+  
+  const roadmapProgress = totalNodes > 0 
+    ? Math.round((completedNodesCount / totalNodes) * 100)
     : 0;
 
+  // Distribute active roadmap's nodes dynamically among the 4 phases
+  const getPhaseNodes = (nodes: any[]) => {
+    const total = nodes.length;
+    if (total === 0) return [[], [], [], []];
+    
+    if (total < 4) {
+      const result: any[][] = [[], [], [], []];
+      nodes.forEach((node, i) => {
+        result[i % 4].push(node);
+      });
+      return result;
+    }
+    
+    // Phase 1 gets first 25% of nodes, Phase 2 gets next 35% of nodes, Phase 3 gets next 20%, Phase 4 gets the rest.
+    const p1Count = Math.max(1, Math.floor(total * 0.25)) || 1;
+    const p2Count = Math.max(1, Math.floor(total * 0.35)) || 1;
+    const p3Count = Math.max(1, Math.floor(total * 0.20)) || 1;
+    
+    const p1 = nodes.slice(0, p1Count);
+    const p2 = nodes.slice(p1Count, p1Count + p2Count);
+    const p3 = nodes.slice(p1Count + p2Count, p1Count + p2Count + p3Count);
+    const p4 = nodes.slice(p1Count + p2Count + p3Count);
+    
+    return [p1, p2, p3, p4];
+  };
+
+  const [phase1Nodes, phase2Nodes, phase3Nodes, phase4Nodes] = getPhaseNodes(activeNodes);
+
+  const firstUncompletedNode = activeNodes.find((n: any) => !n.completed);
+
+  const getMockDuration = (nodeId: string) => {
+    const hash = nodeId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const options = ['15 min', '30 min', '45 min', '60 min'];
+    return options[hash % options.length];
+  };
+
+  const getPhaseProgress = (phaseNodes: any[]) => {
+    if (phaseNodes.length === 0) return 0;
+    const completed = phaseNodes.filter(n => n.completed).length;
+    return Math.round((completed / phaseNodes.length) * 100);
+  };
+
+  const phasesConfig = [
+    {
+      index: 0,
+      title: 'Foundations',
+      description: 'Start your journey with the basics.',
+      icon: IconRocket,
+      nodes: phase1Nodes,
+    },
+    {
+      index: 1,
+      title: 'Build & Practice',
+      description: 'Learn by doing and building.',
+      icon: IconBook,
+      nodes: phase2Nodes,
+    },
+    {
+      index: 2,
+      title: 'Advanced Topics',
+      description: 'Deep dive into advanced concepts.',
+      icon: IconFlame,
+      nodes: phase3Nodes,
+    },
+    {
+      index: 3,
+      title: 'Mastery & Real World',
+      description: 'Apply your skills in real world scenarios.',
+      icon: IconGlobe,
+      nodes: phase4Nodes,
+    },
+  ];
+
+  const [expandedPhases, setExpandedPhases] = useState<Record<number, boolean>>({
+    0: true,
+    1: true,
+    2: true,
+    3: true
+  });
+
+  const togglePhase = (index: number) => {
+    setExpandedPhases(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  // Stats computation for Right Column
+  const pomodoroMinutes = pomodoroStats?.totalMinutes || 0;
+  const focusHours = pomodoroMinutes > 0 
+    ? `${Math.floor(pomodoroMinutes / 60)}h ${pomodoroMinutes % 60}m` 
+    : '8h 30m';
+
+  const completedRoadmapsCount = roadmaps.filter(
+    r => r.nodes && r.nodes.length > 0 && r.nodes.every((n: any) => n.completed)
+  ).length;
+
   return (
-    <div className="flex flex-col gap-6 text-left">
+    <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 text-left">
       
-      {/* ── Resource Library & Roadmaps ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* ── Left Column (70% width) ── */}
+      <div className="lg:col-span-7 flex flex-col gap-6">
         
-        {/* Roadmaps builder */}
+        {/* Header Section */}
+        <div>
+          <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">Learning Path</h2>
+          <p className="text-text-secondary text-xs mt-1">Your personalized journey to grow every day.</p>
+        </div>
+
+        {/* Actions Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface border border-border/40 rounded-3xl p-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-text-secondary">Current Path:</span>
+            <select
+              value={selectedRoadmapId}
+              onChange={e => setSelectedRoadmapId(e.target.value)}
+              className="bg-surface-alt border border-border/40 text-xs font-bold text-text-primary rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer"
+            >
+              {roadmaps.map(r => (
+                <option key={r.id} value={r.id}>{r.title}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCreatingRoadmap(true)}
+              className="flex items-center gap-1 px-3.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              <IconPlus className="w-3.5 h-3.5" /> New Path
+            </button>
+
+            {selectedRoadmapId !== 'roadmap-frontend' && selectedRoadmapId !== 'roadmap-backend' && (
+              <button
+                type="button"
+                onClick={() => {
+                  showConfirm(
+                    'Delete Roadmap',
+                    'Are you sure you want to delete this custom roadmap? This action cannot be undone.',
+                    () => {
+                      deleteRoadmap(selectedRoadmapId);
+                      setSelectedRoadmapId('roadmap-frontend');
+                    }
+                  );
+                }}
+                className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all cursor-pointer border border-transparent hover:border-red-500/20"
+                title="Delete Custom Roadmap"
+              >
+                <IconTrash className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Timeline Track with Phase Cards */}
+        <div className="relative border-l-2 border-dashed border-border/30 pl-8 ml-4 flex flex-col gap-6">
+          {phasesConfig.map((phase) => {
+            const phaseProgress = getPhaseProgress(phase.nodes);
+            const isExpanded = expandedPhases[phase.index];
+            const Icon = phase.icon;
+
+            return (
+              <div key={phase.index} className="relative">
+                
+                {/* Floating circle with step number */}
+                <div className="absolute -left-[46px] top-5 w-7 h-7 rounded-full bg-surface border-2 border-border/40 flex items-center justify-center text-xs font-black text-text-primary z-10 shadow-sm">
+                  {phase.index + 1}
+                </div>
+
+                {/* Expandable Phase Card */}
+                <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm">
+                  
+                  {/* Header */}
+                  <div 
+                    onClick={() => togglePhase(phase.index)}
+                    className="flex items-center justify-between cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-xs font-black text-text-primary uppercase tracking-wider">{phase.title}</h4>
+                        <p className="text-text-secondary text-[11px] mt-0.5 font-medium">{phase.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black px-2 py-0.5 bg-surface-alt border border-border/40 rounded-full text-text-secondary">
+                        {phaseProgress}%
+                      </span>
+                      {isExpanded ? (
+                        <IconChevronUp className="w-4 h-4 text-text-muted" />
+                      ) : (
+                        <IconChevronDown className="w-4 h-4 text-text-muted" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step Rows */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-border/20 flex flex-col gap-2">
+                      {phase.nodes.length === 0 ? (
+                        <p className="text-[11px] text-text-muted italic py-1">No lessons in this phase.</p>
+                      ) : (
+                        phase.nodes.map((node: any) => {
+                          const isCompleted = node.completed;
+                          const isFirstUncompleted = firstUncompletedNode && node.id === firstUncompletedNode.id;
+                          const isLocked = !isCompleted && !isFirstUncompleted;
+                          const duration = getMockDuration(node.id);
+
+                          return (
+                            <div 
+                              key={node.id}
+                              className="flex items-center justify-between p-2 hover:bg-surface-alt rounded-xl transition-colors group"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => updateRoadmapNode(activeRoadmap.id, node.id, !node.completed)}
+                                  className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center cursor-pointer transition-colors shrink-0 ${
+                                    isCompleted 
+                                      ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                      : 'border-border/60 hover:border-emerald-400 bg-surface'
+                                  }`}
+                                >
+                                  {isCompleted && <IconCheck className="w-3 h-3 stroke-[3]" />}
+                                </button>
+                                <div className="flex flex-col min-w-0">
+                                  <span className={`text-xs font-bold text-text-primary truncate ${isCompleted ? 'line-through text-text-muted' : ''}`}>
+                                    {node.label}
+                                  </span>
+                                  <span className="text-[9px] text-text-muted font-semibold mt-0.5">{duration}</span>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 ml-3">
+                                {isCompleted && (
+                                  <IconCheck className="w-4 h-4 text-emerald-500 stroke-[3]" />
+                                )}
+                                {isFirstUncompleted && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!isFocusMode) {
+                                        toggleFocusMode();
+                                      } else {
+                                        triggerDynamicIsland('Already in Focus Mode', 'Your timer is running', 'success', 'award');
+                                      }
+                                    }}
+                                    className="text-rose-500 hover:text-rose-600 transition-colors p-1 hover:bg-rose-500/10 rounded-lg cursor-pointer"
+                                    title="Start Focus Mode (Up Next)"
+                                  >
+                                    <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
+                                  </button>
+                                )}
+                                {isLocked && (
+                                  <IconLock className="w-4 h-4 text-text-muted/65" />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Right Column (30% width) ── */}
+      <div className="lg:col-span-3 flex flex-col gap-6">
+        
+        {/* Your Progress Card */}
         <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/30">
-            <div className="flex items-center gap-2">
-              <IconBook className="w-4.5 h-4.5 text-purple-500" />
-              <span className="text-xs font-black uppercase tracking-wider text-text-primary">Interactive Roadmaps</span>
+          <h3 className="text-xs font-black uppercase tracking-wider text-text-primary">Your Progress</h3>
+          
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 shrink-0 relative flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="32" cy="32" r="26" stroke="var(--border-border)" strokeWidth="4.5" fill="transparent" className="opacity-20" />
+                <circle 
+                  cx="32" cy="32" r="26" 
+                  stroke="#a855f7" 
+                  strokeWidth="4.5" 
+                  fill="transparent" 
+                  strokeDasharray={2 * Math.PI * 26}
+                  strokeDashoffset={2 * Math.PI * 26 * (1 - roadmapProgress / 100)}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+              </svg>
+              <span className="absolute text-xs font-black text-text-primary">{roadmapProgress}%</span>
             </div>
             
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsCreatingRoadmap(true)}
-                className="flex items-center gap-1 text-[10px] font-black text-purple-500 hover:text-purple-600 uppercase tracking-wider cursor-pointer"
-              >
-                <IconPlus className="w-3.5 h-3.5" /> New Path
-              </button>
-
-              <select
-                value={selectedRoadmapId}
-                onChange={e => setSelectedRoadmapId(e.target.value)}
-                className="bg-surface-alt border border-border/40 text-[10px] font-bold text-text-secondary rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer"
-              >
-                {roadmaps.map(r => (
-                  <option key={r.id} value={r.id}>{r.title}</option>
-                ))}
-              </select>
-
-              {selectedRoadmapId !== 'roadmap-frontend' && selectedRoadmapId !== 'roadmap-backend' && (
-                <button
-                  onClick={() => {
-                    showConfirm(
-                      'Delete Roadmap',
-                      'Are you sure you want to delete this custom roadmap? This action cannot be undone.',
-                      () => {
-                        deleteRoadmap(selectedRoadmapId);
-                        setSelectedRoadmapId('roadmap-frontend');
-                      }
-                    );
-                  }}
-                  className="text-text-muted hover:text-red-500 transition-colors cursor-pointer p-0.5"
-                  title="Delete Custom Roadmap"
-                >
-                  <IconTrash className="w-3.5 h-3.5" />
-                </button>
-              )}
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-bold text-text-primary truncate">{completedNodesCount} / {totalNodes} Lessons</span>
+              <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider">Completed</span>
             </div>
           </div>
 
-          {activeRoadmap && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between text-[10px] font-bold text-text-muted">
-                <span>ROADMAP PROGRESS</span>
-                <span>{roadmapProgress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-border/20 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${roadmapProgress}%` }} />
-              </div>
+          <div className="border-t border-border/20 pt-3 flex flex-col gap-2 text-xs font-bold text-text-secondary">
+            <div className="flex justify-between items-center">
+              <span className="text-text-muted font-semibold">Time Spent:</span>
+              <span>{focusHours}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-text-muted font-semibold">Paths Finished:</span>
+              <span>{completedRoadmapsCount}</span>
+            </div>
+          </div>
+        </div>
 
-              <div className="flex flex-col gap-1.5 mt-2">
-                {activeRoadmap.nodes.map((node: any) => (
-                  <div key={node.id} className="flex items-center gap-3">
-                    <button
-                      onClick={() => updateRoadmapNode(activeRoadmap.id, node.id, !node.completed)}
-                      className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
-                        node.completed ? 'bg-purple-500 border-purple-500 text-white' : 'border-border/60 hover:border-purple-400'
-                      }`}
-                    >
-                      {node.completed && <IconCheck className="w-3.5 h-3.5" />}
-                    </button>
-                    <span className={`text-xs font-medium text-text-primary ${node.completed ? 'line-through text-text-muted' : ''}`}>
-                      {node.label}
-                    </span>
-                  </div>
-                ))}
+        {/* Current Streak Card */}
+        <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-wider text-text-primary">Current Streak</h3>
+            <div className="flex items-center gap-1 text-rose-500 font-black text-xs uppercase tracking-wider">
+              <IconFlame className="w-4 h-4 fill-current" />
+              <span>7 days</span>
+            </div>
+          </div>
+          
+          <p className="text-[10px] text-text-secondary font-semibold">Keep the momentum going by completing a step today!</p>
+          
+          <div className="flex justify-between items-center mt-2">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => {
+              const isToday = idx === todayIdx;
+              return (
+                <div key={idx} className="flex flex-col items-center gap-1.5">
+                  <span className={`text-[10px] font-black ${isToday ? 'text-rose-500' : 'text-text-muted'}`}>
+                    {day}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...streakDays];
+                      next[idx] = !next[idx];
+                      setStreakDays(next);
+                    }}
+                    className={`w-6.5 h-6.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                      streakDays[idx]
+                        ? 'bg-rose-500 border-rose-500 text-white' 
+                        : isToday
+                          ? 'border-rose-500 bg-rose-500/10 hover:border-rose-600'
+                          : 'border-border/60 hover:border-rose-400 bg-surface-alt'
+                    }`}
+                  >
+                    {streakDays[idx] && <IconCheck className="w-3.5 h-3.5 stroke-[3]" />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Up Next Card */}
+        <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-text-primary">Up Next</h3>
+          
+          {firstUncompletedNode ? (
+            <div className="flex items-center justify-between gap-3 p-3 bg-surface-alt/55 border border-border/20 rounded-2xl">
+              <div className="min-w-0 flex-1 text-left">
+                <h4 className="text-xs font-bold text-text-primary truncate" title={firstUncompletedNode.label}>
+                  {firstUncompletedNode.label}
+                </h4>
+                <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block mt-0.5">
+                  Ready to focus
+                </span>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isFocusMode) {
+                    toggleFocusMode();
+                  } else {
+                    triggerDynamicIsland('Already in Focus Mode', 'Your timer is running', 'success', 'award');
+                  }
+                }}
+                className="w-8 h-8 rounded-xl bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer shadow-sm"
+                title="Start Focus Session"
+              >
+                <IconPlayerPlay className="w-4 h-4 fill-current" />
+              </button>
+            </div>
+          ) : (
+            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block uppercase tracking-wider">All caught up! 🎉</span>
+              <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-semibold block mt-1">You've completed this roadmap!</span>
             </div>
           )}
         </div>
 
-        {/* Resources bookmarks */}
+        {/* Saved Resources Card */}
         <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-            <IconExternalLink className="w-4.5 h-4.5 text-blue-500" />
-            <span className="text-xs font-black uppercase tracking-wider text-text-primary">Resource Library</span>
+          <div className="flex items-center justify-between pb-2 border-b border-border/30">
+            <h3 className="text-xs font-black uppercase tracking-wider text-text-primary">Saved Resources</h3>
+            <IconExternalLink className="w-4 h-4 text-purple-500" />
           </div>
 
-          <form onSubmit={handleAddResource} className="flex gap-2">
+          <form onSubmit={handleAddResource} className="flex flex-col gap-2">
             <input 
               type="text"
               required
               placeholder="Resource Name"
               value={resTitle}
               onChange={e => setResTitle(e.target.value)}
-              className="flex-1 bg-surface-alt border border-border/40 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-text-primary focus:outline-none"
+              className="w-full bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
             />
-            <input 
-              type="url"
-              required
-              placeholder="https://..."
-              value={resUrl}
-              onChange={e => setResUrl(e.target.value)}
-              className="flex-1 bg-surface-alt border border-border/40 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-text-primary focus:outline-none"
-            />
-            <button 
-              type="submit"
-              className="px-3 bg-blue-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer shrink-0"
-            >
-              Add
-            </button>
+            <div className="flex gap-2">
+              <input 
+                type="url"
+                required
+                placeholder="https://..."
+                value={resUrl}
+                onChange={e => setResUrl(e.target.value)}
+                className="flex-1 bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
+              />
+              <button 
+                type="submit"
+                className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
+              >
+                Add
+              </button>
+            </div>
           </form>
 
-          <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
-            {resources.map(res => (
-              <div key={res.id} className="flex items-center justify-between p-2.5 bg-surface-alt/40 border border-border/20 rounded-xl">
-                <a 
-                  href={res.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs font-semibold text-text-primary hover:text-blue-500 truncate flex-1 hover:underline"
-                >
-                  {res.title}
-                </a>
-                <button
-                  onClick={() => deleteResource(res.id)}
-                  className="text-text-muted hover:text-red-500 transition-colors ml-2 cursor-pointer"
-                >
-                  <IconTrash className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+            {resources.length === 0 ? (
+              <p className="text-[11px] text-text-muted italic text-center py-4">No saved resources.</p>
+            ) : (
+              resources.map(res => (
+                <div key={res.id} className="flex items-center justify-between p-2 bg-surface-alt/40 border border-border/20 rounded-xl">
+                  <a 
+                    href={res.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-text-primary hover:text-purple-500 truncate flex-1 hover:underline text-left"
+                  >
+                    {res.title}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => deleteResource(res.id)}
+                    className="text-text-muted hover:text-red-500 transition-colors ml-2 cursor-pointer p-0.5"
+                    title="Delete Resource"
+                  >
+                    <IconTrash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
