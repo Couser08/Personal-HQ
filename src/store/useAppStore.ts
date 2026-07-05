@@ -413,6 +413,7 @@ export interface AppSettings {
   soundEnabled: boolean;
   initialBankBalance: number;
   initialCashBalance: number;
+  currencySymbol?: string;
 }
 
 export interface PomodoroStats {
@@ -453,7 +454,7 @@ export interface AppStore {
 
   notes: Note[];
   addNote: (note: Note, userId?: string) => Promise<void>;
-  updateNote: (id: string, data: Partial<Note>, userId?: string) => Promise<void>;
+  updateNote: (id: string, data: Partial<Note>, silent?: boolean) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
 
   links: Link[];
@@ -756,17 +757,21 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       throw error;
     }
   },
-  updateNote: async (id, data) => {
+  updateNote: async (id, data, silent = false) => {
     const previous = get().notes;
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
     }));
     try {
       await noteService.update(id, data);
-      useToastStore.getState().addToast('Success', 'Note updated', 'success');
+      if (!silent) {
+        useToastStore.getState().addToast('Success', 'Note updated', 'success');
+      }
     } catch (error) {
       set({ notes: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update note'), 'error');
+      if (!silent) {
+        useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update note'), 'error');
+      }
       throw error;
     }
   },

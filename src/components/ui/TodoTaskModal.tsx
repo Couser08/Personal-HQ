@@ -233,15 +233,12 @@ export function TodoTaskModal() {
               <button
                 onClick={handleSave}
                 disabled={!title.trim()}
-                style={{
-                  padding: '10px 20px', borderRadius: '999px', border: 'none',
-                  background: title.trim() ? 'var(--primary)' : 'var(--bg-surface-alt)',
-                  color: title.trim() ? '#fff' : 'var(--text-muted)',
-                  fontWeight: 700, fontSize: '14px',
-                  cursor: title.trim() ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit',
-                }}
+                className={`btn btn-md rounded-full px-6 font-bold transition-all duration-200 ${
+                  title.trim()
+                    ? 'btn-primary cursor-pointer hover:brightness-105 active:scale-98'
+                    : 'bg-zinc-200/70 dark:bg-zinc-800/70 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50'
+                }`}
+                style={{ fontFamily: 'inherit' }}
               >
                 Save Changes
               </button>

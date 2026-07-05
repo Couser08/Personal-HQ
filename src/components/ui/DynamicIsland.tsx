@@ -23,7 +23,8 @@ export function DynamicIsland() {
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
-    startGlobalPomodoro
+    startGlobalPomodoro,
+    theme
   } = useAppStore(useShallow(state => ({
     pomodoroSecondsLeft: state.pomodoroSecondsLeft,
     pomodoroTimerState: state.pomodoroTimerState,
@@ -32,10 +33,12 @@ export function DynamicIsland() {
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
     startGlobalPomodoro: state.startGlobalPomodoro,
+    theme: state.theme,
   })));
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [notification, setNotification] = useState<DynamicIslandNotification | null>(null);
+  const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Format time
   const formatTime = (secs: number) => {
@@ -85,7 +88,11 @@ export function DynamicIsland() {
             setIsExpanded(!isExpanded);
           }
         }}
-        className="bg-black text-white shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] flex items-center justify-between border border-neutral-800/40 cursor-pointer overflow-hidden origin-top"
+        className={`shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] flex items-center justify-between border cursor-pointer overflow-hidden origin-top transition-colors duration-350 ${
+          isDark 
+            ? 'bg-[#0b0b0d] text-white border-neutral-800/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)]' 
+            : 'bg-white text-zinc-900 border-zinc-200/80'
+        }`}
         style={{
           height: isExpanded ? '100px' : '44px',
           width: isExpanded 
@@ -108,17 +115,23 @@ export function DynamicIsland() {
               transition={{ duration: 0.2, ease: 'easeInOut' }}
               className="flex items-center gap-4 w-full text-left"
             >
-              <div className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-amber-400 shrink-0 shadow-inner border ${
+                isDark ? 'bg-neutral-900 border-neutral-850' : 'bg-neutral-50 border-neutral-200'
+              }`}>
                 {notification.icon === 'award' && <IconAward className="w-5 h-5 stroke-[2]" />}
                 {notification.icon === 'confetti' && <IconConfetti className="w-5 h-5 stroke-[2]" />}
-                {notification.icon === 'alert' && <IconAlertCircle className="w-5 h-5 stroke-[2] text-rose-400" />}
+                {notification.icon === 'alert' && <IconAlertCircle className="w-5 h-5 stroke-[2] text-rose-500 dark:text-rose-400" />}
               </div>
               <div className="min-w-0 flex-1 py-1">
-                <p className="text-[13px] font-bold text-neutral-100 tracking-tight truncate leading-snug">
+                <p className={`text-[13px] font-bold tracking-tight truncate leading-snug ${
+                  isDark ? 'text-neutral-100' : 'text-neutral-900'
+                }`}>
                   {notification.title}
                 </p>
                 {notification.subtitle && (
-                  <p className="text-[11px] text-neutral-400 font-medium truncate mt-0.5 tracking-tight">
+                  <p className={`text-[11px] font-medium truncate mt-0.5 tracking-tight ${
+                    isDark ? 'text-neutral-400' : 'text-neutral-500'
+                  }`}>
                     {notification.subtitle}
                   </p>
                 )}
@@ -139,7 +152,9 @@ export function DynamicIsland() {
                 <span className="text-[10px] font-extrabold uppercase text-amber-500 tracking-widest leading-none">
                   {pomodoroSessionId === 'focus' ? 'Focus Session' : 'Break'}
                 </span>
-                <span className="text-2xl font-bold text-neutral-50 font-mono tracking-tighter leading-none mt-2">
+                <span className={`text-2xl font-bold font-mono tracking-tighter leading-none mt-2 ${
+                  isDark ? 'text-neutral-50' : 'text-neutral-800'
+                }`}>
                   {formatTime(pomodoroSecondsLeft)}
                 </span>
               </div>
@@ -149,9 +164,13 @@ export function DynamicIsland() {
                 {pomodoroTimerState === 'running' ? (
                   <button
                     onClick={pauseGlobalPomodoro}
-                    className="w-10 h-10 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 flex items-center justify-center text-neutral-200 transition-colors cursor-pointer active:scale-90"
+                    className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer active:scale-90 ${
+                      isDark 
+                        ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-neutral-200' 
+                        : 'bg-neutral-100 hover:bg-neutral-200 border-neutral-200 text-neutral-800'
+                    }`}
                   >
-                    <IconPlayerPause className="w-4.5 h-4.5 fill-neutral-200 stroke-[1.5]" />
+                    <IconPlayerPause className={`w-4.5 h-4.5 stroke-[1.5] ${isDark ? 'fill-neutral-200' : 'fill-neutral-800'}`} />
                   </button>
                 ) : (
                   <button
@@ -164,14 +183,22 @@ export function DynamicIsland() {
                 
                 <button
                   onClick={stopGlobalPomodoro}
-                  className="w-10 h-10 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer active:scale-90"
+                  className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer active:scale-90 ${
+                    isDark 
+                      ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-neutral-400 hover:text-neutral-200' 
+                      : 'bg-neutral-100 hover:bg-neutral-200 border-neutral-200 text-neutral-500 hover:text-neutral-800'
+                  }`}
                 >
                   <IconRefresh className="w-4.5 h-4.5 stroke-[2]" />
                 </button>
 
                 <button
                   onClick={() => setIsExpanded(false)}
-                  className="h-10 px-4 text-xs font-bold tracking-tight rounded-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer active:scale-90"
+                  className={`h-10 px-4 text-xs font-bold tracking-tight rounded-full border transition-colors cursor-pointer active:scale-90 ${
+                    isDark 
+                      ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-neutral-400 hover:text-neutral-200' 
+                      : 'bg-neutral-100 hover:bg-neutral-200 border-neutral-200 text-neutral-500 hover:text-neutral-850'
+                  }`}
                 >
                   Collapse
                 </button>
@@ -201,7 +228,9 @@ export function DynamicIsland() {
                 }`} />
               </div>
 
-              <span className="text-[14px] font-bold text-neutral-100 font-mono leading-none tracking-tight">
+              <span className={`text-[14px] font-bold font-mono leading-none tracking-tight ${
+                isDark ? 'text-neutral-100' : 'text-neutral-800'
+              }`}>
                 {formatTime(pomodoroSecondsLeft)}
               </span>
             </motion.div>

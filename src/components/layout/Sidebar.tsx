@@ -243,7 +243,10 @@ export const Sidebar = () => {
 const BOTTOM_NAV = NAV_ITEMS.slice(0, 4);
 
 export const MobileBottomNav = () => {
-  const { activeModule, setActiveModule } = useAppStore();
+  const { activeModule, setActiveModule } = useAppStore(useShallow(state => ({
+    activeModule: state.activeModule,
+    setActiveModule: state.setActiveModule
+  })));
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const MORE_NAV = NAV_ITEMS.slice(4);

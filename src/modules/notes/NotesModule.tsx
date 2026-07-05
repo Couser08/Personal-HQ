@@ -124,7 +124,7 @@ export default function NotesModule() {
         content,
         tags,
         updatedAt: new Date().toISOString()
-      });
+      }, true);
       setAutoSaveStatus('saved');
     }, 1200);
 

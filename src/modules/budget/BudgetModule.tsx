@@ -8,6 +8,10 @@ import {
   IconSchool, IconPill, IconShirt, IconDeviceDesktop,
   IconBulb, IconBarbell, IconBook, IconCoffee
 } from '@tabler/icons-react';
+import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
+import { Modal } from '../../components/ui/Modal';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   '💰': IconCoin,
@@ -33,13 +37,8 @@ const renderIcon = (iconKey: string, className = "w-5 h-5") => {
   if (IconComponent) {
     return <IconComponent className={className} />;
   }
-  // Fallback for existing emoji icons
   return <span className="text-lg leading-none">{iconKey}</span>;
 };
-import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
-import { Modal } from '../../components/ui/Modal';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { CustomSelect } from '../../components/ui/CustomSelect';
 
 const colorClasses = {
   rose: 'bg-rose-500 text-rose-500 border-rose-200',
@@ -56,6 +55,78 @@ const lightBgClasses = {
   amber: 'bg-amber-100 dark:bg-amber-900/30',
   purple: 'bg-purple-100 dark:bg-purple-900/30',
 };
+
+const PREDEFINED_CATEGORIES = [
+  // Transportation
+  { name: 'Petrol', icon: '🚗', color: 'amber', budget: 100 },
+  { name: 'Porter/Delivery', icon: '🚚', color: 'amber', budget: 50 },
+  { name: 'Taxi/Cab', icon: '🚖', color: 'amber', budget: 80 },
+  { name: 'Bus/Train', icon: '🚇', color: 'blue', budget: 40 },
+  { name: 'Parking', icon: '🅿️', color: 'purple', budget: 20 },
+  { name: 'Car Wash', icon: '🧽', color: 'blue', budget: 20 },
+  { name: 'Bicycle/Scooter', icon: '🚲', color: 'amber', budget: 15 },
+  // Entertainment
+  { name: 'Movies', icon: '🍿', color: 'rose', budget: 60 },
+  { name: 'Games', icon: '🎮', color: 'purple', budget: 50 },
+  { name: 'Concerts/Events', icon: '🎟️', color: 'rose', budget: 100 },
+  { name: 'Books', icon: '📚', color: 'amber', budget: 30 },
+  { name: 'Subscriptions', icon: '📺', color: 'rose', budget: 40 },
+  { name: 'Cinema', icon: '🎬', color: 'rose', budget: 40 },
+  { name: 'Music Streams', icon: '🎵', color: 'purple', budget: 15 },
+  // Food & Drinks
+  { name: 'Groceries', icon: '🛒', color: 'green', budget: 300 },
+  { name: 'Dining Out', icon: '🍔', color: 'rose', budget: 150 },
+  { name: 'Cafe/Coffee', icon: '☕', color: 'amber', budget: 50 },
+  { name: 'Snacks', icon: '🍩', color: 'amber', budget: 30 },
+  { name: 'Fast Food', icon: '🍕', color: 'rose', budget: 80 },
+  { name: 'Bar/Drinks', icon: '🍺', color: 'purple', budget: 100 },
+  // Housing & Bills
+  { name: 'Rent', icon: '🏠', color: 'blue', budget: 1000 },
+  { name: 'Electricity', icon: '💡', color: 'amber', budget: 100 },
+  { name: 'Water Bill', icon: '💧', color: 'blue', budget: 30 },
+  { name: 'Internet', icon: '🌐', color: 'blue', budget: 60 },
+  { name: 'Mobile Recharge', icon: '📱', color: 'blue', budget: 40 },
+  { name: 'Gas/Heating', icon: '🔥', color: 'amber', budget: 50 },
+  { name: 'Laundry', icon: '🧺', color: 'blue', budget: 30 },
+  { name: 'Cleaning Supplies', icon: '🧹', color: 'green', budget: 25 },
+  // Shopping
+  { name: 'Clothes', icon: '👕', color: 'purple', budget: 150 },
+  { name: 'Shoes', icon: '👟', color: 'purple', budget: 100 },
+  { name: 'Electronics', icon: '💻', color: 'blue', budget: 200 },
+  { name: 'Furniture', icon: '🛋️', color: 'amber', budget: 150 },
+  { name: 'Home Decor', icon: '🖼️', color: 'amber', budget: 80 },
+  { name: 'Cosmetics', icon: '💄', color: 'rose', budget: 60 },
+  // Health & Wellness
+  { name: 'Medicine', icon: '💊', color: 'rose', budget: 50 },
+  { name: 'Doctor/Clinic', icon: '🏥', color: 'rose', budget: 100 },
+  { name: 'Gym/Fitness', icon: '🏋️', color: 'green', budget: 50 },
+  { name: 'Insurance', icon: '🛡️', color: 'blue', budget: 150 },
+  { name: 'Barber/Salon', icon: '💈', color: 'purple', budget: 40 },
+  // Education
+  { name: 'School Fees', icon: '🎓', color: 'blue', budget: 500 },
+  { name: 'Online Courses', icon: '📖', color: 'blue', budget: 100 },
+  { name: 'Stationery', icon: '✏️', color: 'amber', budget: 20 },
+  // Travel
+  { name: 'Flights', icon: '✈️', color: 'blue', budget: 300 },
+  { name: 'Hotels', icon: '🏨', color: 'blue', budget: 250 },
+  { name: 'Sightseeing', icon: '🗺️', color: 'blue', budget: 100 },
+  // Income Sources
+  { name: 'Salary', icon: '💼', color: 'green', budget: 0 },
+  { name: 'Freelance', icon: '💻', color: 'blue', budget: 0 },
+  { name: 'Investments', icon: '📈', color: 'green', budget: 0 },
+  { name: 'Gifts Received', icon: '🎁', color: 'rose', budget: 0 },
+  { name: 'Refunds', icon: '💰', color: 'green', budget: 0 },
+  // Others
+  { name: 'Charity/Donation', icon: '❤️', color: 'rose', budget: 50 },
+  { name: 'Pet Care', icon: '🐱', color: 'amber', budget: 80 },
+  { name: 'Taxes', icon: '📄', color: 'rose', budget: 200 },
+  { name: 'Miscellaneous', icon: '⚙️', color: 'blue', budget: 100 },
+  { name: 'Golf/Sports', icon: '🏌️', color: 'green', budget: 50 },
+  { name: 'Courier/Porter', icon: '📦', color: 'amber', budget: 20 },
+  { name: 'Gifts Sent', icon: '🎁', color: 'rose', budget: 50 },
+  { name: 'Childcare', icon: '👶', color: 'rose', budget: 150 },
+  { name: 'Office Supplies', icon: '📁', color: 'blue', budget: 30 }
+];
 
 export default function BudgetModule() {
   const { 
@@ -84,6 +155,8 @@ export default function BudgetModule() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
 
+  const currencySymbol = settings.currencySymbol || '$';
+
   const stats = useMemo(() => {
     let bankIncome = 0;
     let bankExpenses = 0;
@@ -91,12 +164,14 @@ export default function BudgetModule() {
     let cashExpenses = 0;
 
     budgetTransactions.forEach(t => {
+      // Force conversion to number to prevent string concatenation bugs
+      const amt = Number(t.amount) || 0;
       if (t.type === 'income') {
-        if (t.paymentMethod === 'cash') cashIncome += t.amount;
-        else bankIncome += t.amount;
+        if (t.paymentMethod === 'cash') cashIncome += amt;
+        else bankIncome += amt;
       } else {
-        if (t.paymentMethod === 'cash') cashExpenses += t.amount;
-        else bankExpenses += t.amount;
+        if (t.paymentMethod === 'cash') cashExpenses += amt;
+        else bankExpenses += amt;
       }
     });
 
@@ -116,7 +191,7 @@ export default function BudgetModule() {
     return budgetCategories.map(cat => {
       const spent = budgetTransactions
         .filter(t => t.categoryId === cat.id && t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
       const progress = Math.min((spent / (cat.budget || 1)) * 100, 100);
       return { ...cat, spent, progress };
     });
@@ -151,6 +226,18 @@ export default function BudgetModule() {
 
   const hasBudgetData = budgetCategories.length > 0 || budgetTransactions.length > 0;
 
+  const seedPredefinedCategories = async () => {
+    for (const cat of PREDEFINED_CATEGORIES) {
+      await addBudgetCategory({
+        id: crypto.randomUUID(),
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color as any,
+        budget: cat.budget
+      });
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -169,7 +256,7 @@ export default function BudgetModule() {
         <div className="flex gap-2.5">
           <button
             onClick={() => setIsSettingsModalOpen(true)}
-            className="btn btn-secondary btn-md rounded-full px-4"
+            className="btn btn-secondary btn-md rounded-full px-4 cursor-pointer"
           >
             <IconSettings className="w-4 h-4" /> Settings
           </button>
@@ -178,7 +265,7 @@ export default function BudgetModule() {
               setEditingCategory(null);
               setIsCategoryModalOpen(true);
             }}
-            className="btn btn-secondary btn-md rounded-full px-4 hidden md:flex"
+            className="btn btn-secondary btn-md rounded-full px-4 hidden md:flex cursor-pointer"
           >
             <IconPlus className="w-4 h-4" /> Add Category
           </button>
@@ -187,7 +274,7 @@ export default function BudgetModule() {
               setEditingTransaction(null);
               setIsTransactionModalOpen(true);
             }}
-            className="btn btn-primary btn-md rounded-full px-5"
+            className="btn btn-primary btn-md rounded-full px-5 cursor-pointer"
           >
             <IconPlus className="w-4 h-4" /> Add Transaction
           </button>
@@ -198,7 +285,7 @@ export default function BudgetModule() {
       <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40 w-fit">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeTab === 'overview' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -206,7 +293,7 @@ export default function BudgetModule() {
         </button>
         <button
           onClick={() => setActiveTab('transactions')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeTab === 'transactions' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -220,12 +307,20 @@ export default function BudgetModule() {
           title="No transactions yet"
           description="Create categories and add transactions to see your balance, spending progress, and history."
           action={
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <button onClick={() => setIsCategoryModalOpen(true)} className="btn btn-secondary btn-md">
-                <IconPlus className="w-4 h-4" /> Add Category
-              </button>
-              <button onClick={() => setIsTransactionModalOpen(true)} className="btn btn-primary btn-md">
-                <IconPlus className="w-4 h-4" /> Add Transaction
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button onClick={() => setIsCategoryModalOpen(true)} className="btn btn-secondary btn-md cursor-pointer">
+                  <IconPlus className="w-4 h-4" /> Add Category
+                </button>
+                <button onClick={() => setIsTransactionModalOpen(true)} className="btn btn-primary btn-md cursor-pointer">
+                  <IconPlus className="w-4 h-4" /> Add Transaction
+                </button>
+              </div>
+              <button 
+                onClick={seedPredefinedCategories} 
+                className="mt-3 text-xs font-bold text-primary hover:underline cursor-pointer"
+              >
+                ⚡ Initialize 60 Predefined Categories (Groceries, Petrol, Salary, Porter, etc.)
               </button>
             </div>
           }
@@ -240,25 +335,38 @@ export default function BudgetModule() {
               exit={{ opacity: 0, scale: 0.98 }}
               className="grid grid-cols-1 gap-6 lg:grid-cols-3"
             >
+              {/* Seeding offer banner if categories are empty */}
+              {budgetCategories.length === 0 && (
+                <div className="col-span-1 lg:col-span-3 p-5 rounded-3xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-left animate-fade-in">
+                  <div>
+                    <h4 className="text-sm font-black text-text-primary">Seed Predefined Categories?</h4>
+                    <p className="text-xs text-text-secondary mt-1">Get started instantly with 60 comprehensive category limits (Petrol, Groceries, Rent, Salary, Porter, etc.).</p>
+                  </div>
+                  <button onClick={seedPredefinedCategories} className="btn btn-primary btn-sm rounded-full shrink-0 cursor-pointer">
+                    ⚡ Seeding 60 Categories
+                  </button>
+                </div>
+              )}
+
               {/* Financial Dashboard Widget */}
               <div className="flex flex-col col-span-1 gap-6 p-6 rounded-[28px] border bg-surface/50 border-border/80 lg:col-span-3 lg:flex-row items-center justify-between backdrop-blur-md">
                 
                 {/* Balances */}
                 <div className="flex flex-col gap-4 w-full lg:w-1/3">
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
                     <div>
                       <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Bank Balance</p>
-                      <p className={`text-xl font-black ${stats.bankBalance >= 0 ? 'text-blue-500' : 'text-rose-500'}`}>${stats.bankBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className={`text-xl font-black ${stats.bankBalance >= 0 ? 'text-blue-500' : 'text-rose-500'}`}>{currencySymbol}{stats.bankBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
                       <IconWallet className="w-5 h-5 text-blue-500" />
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
                     <div>
                       <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Cash Balance</p>
-                      <p className={`text-xl font-black ${stats.cashBalance >= 0 ? 'text-green-500' : 'text-rose-500'}`}>${stats.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className={`text-xl font-black ${stats.cashBalance >= 0 ? 'text-green-500' : 'text-rose-500'}`}>{currencySymbol}{stats.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
                       <span className="text-xl leading-none">💵</span>
@@ -270,7 +378,7 @@ export default function BudgetModule() {
                 <div className="flex flex-col items-center justify-center text-center p-6 bg-surface-alt border border-border/40 rounded-[24px] min-w-[240px] flex-1 lg:flex-none">
                   <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-1">Total Net Balance</p>
                   <p className={`text-4xl font-black tracking-tight ${stats.totalBalance >= 0 ? 'text-text-primary' : 'text-rose-500'}`}>
-                    ${stats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {currencySymbol}{stats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold mt-2 ${
                     stats.totalBalance >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-rose-500/10 text-rose-500'
@@ -281,25 +389,25 @@ export default function BudgetModule() {
 
                 {/* Income / Expense */}
                 <div className="flex flex-col gap-4 w-full lg:w-1/3">
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
                         <IconTrendingUp className="w-4 h-4 text-green-500" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Income</p>
-                        <p className="text-lg font-black text-text-primary">${stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-lg font-black text-text-primary">{currencySymbol}{stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl">
+                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-rose-500/10 rounded-lg flex items-center justify-center">
                         <IconTrendingDown className="w-4 h-4 text-rose-500" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Expenses</p>
-                        <p className="text-lg font-black text-text-primary">${stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-lg font-black text-text-primary">{currencySymbol}{stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                     </div>
                   </div>
@@ -310,7 +418,7 @@ export default function BudgetModule() {
               {categorySpending.map((cat) => (
                 <div
                   key={cat.id}
-                  className="flex flex-col gap-4 p-5 rounded-[24px] border bg-surface border-border hover:shadow-md transition-shadow relative group"
+                  className="flex flex-col gap-4 p-5 rounded-[24px] border bg-surface border-border hover:shadow-md transition-shadow relative group text-left animate-fade-in"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex gap-3 items-center">
@@ -320,7 +428,7 @@ export default function BudgetModule() {
                       <div>
                         <p className="font-bold text-text-primary text-[15px]">{cat.name}</p>
                         <p className="text-xs text-text-muted">
-                          ${cat.spent.toLocaleString()} spent {cat.budget ? `/ $${cat.budget.toLocaleString()} limit` : ''}
+                          {currencySymbol}{cat.spent.toLocaleString()} spent {cat.budget ? `/ ${currencySymbol}${cat.budget.toLocaleString()} limit` : ''}
                         </p>
                       </div>
                     </div>
@@ -331,14 +439,14 @@ export default function BudgetModule() {
                           setEditingCategory(cat);
                           setIsCategoryModalOpen(true);
                         }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors cursor-pointer"
                         title="Edit Category"
                       >
                         <IconEdit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => showConfirm('Delete Category', 'Delete this category and all its transactions?', () => deleteBudgetCategory(cat.id))}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors cursor-pointer"
                         title="Delete Category"
                       >
                         <IconTrash className="w-3.5 h-3.5" />
@@ -372,7 +480,7 @@ export default function BudgetModule() {
               className="space-y-4"
             >
               {/* Dynamic Filter Panel */}
-              <div className="bg-surface-alt border border-border/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="bg-surface-alt border border-border/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between text-left">
                 <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                   <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest mr-2 flex items-center gap-1">
                     <IconFilter className="w-3 h-3" /> Filters
@@ -388,7 +496,7 @@ export default function BudgetModule() {
                       <button
                         key={t.id}
                         onClick={() => setFilterType(t.id)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
                           filterType === t.id ? 'bg-surface-alt text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
                         }`}
                       >
@@ -437,7 +545,7 @@ export default function BudgetModule() {
                         setFilterCategory('all');
                         setFilterMonth('all');
                       }}
-                      className="btn btn-secondary btn-sm"
+                      className="btn btn-secondary btn-sm cursor-pointer"
                     >
                       Clear Filters
                     </button>
@@ -450,7 +558,7 @@ export default function BudgetModule() {
                     return (
                       <div
                         key={txn.id}
-                        className="flex gap-4 justify-between items-center p-4 rounded-2xl border bg-surface border-border/80 hover:border-primary/20 transition-all group"
+                        className="flex gap-4 justify-between items-center p-4 rounded-2xl border bg-surface border-border/80 hover:border-primary/20 transition-all group text-left animate-fade-in"
                       >
                         <div className="flex gap-4 items-center min-w-0">
                           <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color as keyof typeof lightBgClasses] : 'bg-surface-alt'} flex items-center justify-center text-xl shrink-0 border border-border/20`}>
@@ -466,7 +574,7 @@ export default function BudgetModule() {
                         
                         <div className="flex gap-4 items-center shrink-0">
                           <p className={`font-black text-sm tracking-tight ${txn.type === 'income' ? 'text-green-500' : 'text-rose-500'}`}>
-                            {txn.type === 'income' ? '+' : '-'}${txn.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {txn.type === 'income' ? '+' : '-'}{currencySymbol}{Number(txn.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </p>
                           
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -475,14 +583,14 @@ export default function BudgetModule() {
                                 setEditingTransaction(txn);
                                 setIsTransactionModalOpen(true);
                               }}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors"
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors cursor-pointer"
                               title="Edit Record"
                             >
                               <IconEdit className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => showConfirm('Delete Record', 'Delete this ledger transaction entry?', () => deleteBudgetTransaction(txn.id))}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors"
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors cursor-pointer"
                               title="Delete Record"
                             >
                               <IconTrash className="w-3.5 h-3.5" />
@@ -554,13 +662,30 @@ export default function BudgetModule() {
             const formData = new FormData(e.currentTarget);
             const initialBankBalance = parseFloat(formData.get('initialBankBalance') as string) || 0;
             const initialCashBalance = parseFloat(formData.get('initialCashBalance') as string) || 0;
-            updateSettings({ initialBankBalance, initialCashBalance });
+            const currencySymbol = formData.get('currencySymbol') as string || '$';
+            updateSettings({ initialBankBalance, initialCashBalance, currencySymbol });
             setIsSettingsModalOpen(false);
           }}
           className="flex flex-col gap-4 text-left"
         >
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Bank Balance ($)</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Currency Symbol</label>
+            <select
+              name="currencySymbol"
+              defaultValue={settings.currencySymbol || '$'}
+              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-semibold"
+            >
+              <option value="$">USD ($)</option>
+              <option value="₹">INR (₹)</option>
+              <option value="€">EUR (€)</option>
+              <option value="£">GBP (£)</option>
+              <option value="¥">JPY/CNY (¥)</option>
+              <option value="C$">CAD (C$)</option>
+              <option value="A$">AUD (A$)</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Bank Balance ({currencySymbol})</label>
             <input
               name="initialBankBalance"
               type="number"
@@ -571,7 +696,7 @@ export default function BudgetModule() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Cash Balance ($)</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Cash Balance ({currencySymbol})</label>
             <input
               name="initialCashBalance"
               type="number"
@@ -582,8 +707,8 @@ export default function BudgetModule() {
             />
           </div>
           <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-            <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
-            <button type="submit" className="btn btn-primary btn-md rounded-full px-6">Save Settings</button>
+            <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
+            <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">Save Settings</button>
           </div>
         </form>
       </Modal>
@@ -605,7 +730,12 @@ function CategoryForm({
   const [color, setColor] = useState<BudgetCategory['color']>(category?.color || 'rose');
   const [icon, setIcon] = useState(category?.icon || '💰');
 
-  const icons = ['💰', '🍔', '🚗', '🎮', '🛒', '💼', '🏠', '✈️', '🎓', '💊', '💅', '🍿', '💡', '🏋️', '📚'];
+  const icons = [
+    '💰', '🍔', '🚗', '🎮', '🛒', '💼', '🏠', '✈️', '🎓', '💊', '💅', '🍿', '💡', '🏋️', '📚', '☕',
+    '🚚', '🚖', '🚇', '🅿️', '🎟️', '📺', '🍩', '🍕', '🍺', '💧', '🌐', '📱', '🔥', '👕', '👟', '💻',
+    '🛋️', '🖼️', '💄', '🏥', '🛡️', '💈', '🎒', '📖', '✏️', '🏨', '🗺️', '📈', '🎁', '❤️', '🐱', '📄',
+    '⚙️', '🏌️', '🎬', '🎵', '🧺', '📦', '🧽', '🚲', '👶', '🧹', '📁'
+  ];
   const colors = ['rose', 'blue', 'green', 'amber', 'purple'] as const;
 
   return (
@@ -645,7 +775,7 @@ function CategoryForm({
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              className={`w-9 h-9 rounded-full border-2 transition-all ${
+              className={`w-9 h-9 rounded-full border-2 transition-all cursor-pointer ${
                 colorClasses[c].split(' ')[0]} ${color === c ? 'border-text-primary scale-110 shadow-sm' : 'border-transparent hover:scale-105'
               }`}
             />
@@ -654,13 +784,13 @@ function CategoryForm({
       </div>
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Select Icon</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto custom-scrollbar p-1">
           {icons.map((i) => (
             <button
               key={i}
               type="button"
               onClick={() => setIcon(i)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                 icon === i ? 'bg-surface-alt border border-primary scale-110 shadow-sm' : 'bg-surface border border-border/80 hover:scale-105'
               }`}
             >
@@ -670,8 +800,8 @@ function CategoryForm({
         </div>
       </div>
       <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md rounded-full px-6">Save Category</button>
+        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
+        <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">Save Category</button>
       </div>
     </form>
   );
@@ -688,11 +818,14 @@ function TransactionForm({
   onSubmit: (data: Omit<BudgetTransaction, 'id' | 'date'>) => Promise<void>;
   onClose: () => void;
 }) {
+  const { settings } = useAppStore();
   const [categoryId, setCategoryId] = useState(transaction?.categoryId || categories[0]?.id || '');
   const [amount, setAmount] = useState(transaction?.amount ? transaction.amount.toString() : '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [type, setType] = useState<'income' | 'expense'>(transaction?.type || 'expense');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>(transaction?.paymentMethod || 'online');
+
+  const currencySymbol = settings.currencySymbol || '$';
 
   return (
     <form
@@ -707,7 +840,7 @@ function TransactionForm({
         <button
           type="button"
           onClick={() => setType('expense')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             type === 'expense' ? 'bg-surface text-rose-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -716,7 +849,7 @@ function TransactionForm({
         <button
           type="button"
           onClick={() => setType('income')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             type === 'income' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -729,7 +862,7 @@ function TransactionForm({
         <button
           type="button"
           onClick={() => setPaymentMethod('online')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             paymentMethod === 'online' ? 'bg-surface text-blue-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -738,7 +871,7 @@ function TransactionForm({
         <button
           type="button"
           onClick={() => setPaymentMethod('cash')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             paymentMethod === 'cash' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -749,16 +882,20 @@ function TransactionForm({
       {/* Category Select */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category</label>
-        <CustomSelect
-          value={categoryId}
-          onChange={val => setCategoryId(val)}
-          options={categories.map(cat => ({ value: cat.id, label: `${cat.icon} ${cat.name}` }))}
-        />
+        {categories.length === 0 ? (
+          <p className="text-xs text-rose-500 font-bold">Please add or seed categories first!</p>
+        ) : (
+          <CustomSelect
+            value={categoryId}
+            onChange={val => setCategoryId(val)}
+            options={categories.map(cat => ({ value: cat.id, label: `${cat.icon} ${cat.name}` }))}
+          />
+        )}
       </div>
 
       {/* Amount input */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Amount ($)</label>
+        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Amount ({currencySymbol})</label>
         <input
           type="number"
           step="0.01"
@@ -785,8 +922,8 @@ function TransactionForm({
       
       {/* Footer buttons */}
       <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md rounded-full px-6">
+        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
+        <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">
           {transaction ? 'Save Changes' : 'Add Transaction'}
         </button>
       </div>

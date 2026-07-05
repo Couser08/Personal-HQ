@@ -1,8 +1,12 @@
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from './Modal';
 
 export const ConfirmDialog = () => {
-  const { confirmDialog, closeConfirm } = useAppStore();
+  const { confirmDialog, closeConfirm } = useAppStore(useShallow(state => ({
+    confirmDialog: state.confirmDialog,
+    closeConfirm: state.closeConfirm
+  })));
 
   const handleConfirm = () => {
     confirmDialog.onConfirm();

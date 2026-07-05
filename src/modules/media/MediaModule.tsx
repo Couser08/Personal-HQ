@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconMovie, IconDeviceGamepad2, 
-  IconStarFilled, IconEdit
+  IconStarFilled, IconEdit, IconArrowLeft
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -33,15 +33,19 @@ function getRatingGradientColor(rating: number): string {
 }
 
 export default function MediaModule() {
-  const { mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal } = useAppStore();
+  const { theme, mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal, updateMediaLog } = useAppStore();
   
   const [activeTab, setActiveTab] = useState<'ANIME' | 'GAME'>('ANIME');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  
+  // Dedicated anime detailed page tracking
+  const [selectedAnimeId, setSelectedAnimeId] = useState<string | null>(null);
 
   const handleTabChange = (tab: 'ANIME' | 'GAME') => {
     if (tab !== activeTab) {
       setActiveTab(tab);
       setFilterStatus(null);
+      setSelectedAnimeId(null);
     }
   };
 
@@ -75,6 +79,340 @@ export default function MediaModule() {
   // Brand accent per tab
   const accent = activeTab === 'ANIME' ? '#007AFF' : '#a855f7';
 
+  // Find selected anime
+  const selectedAnime = useMemo(() => {
+    if (!selectedAnimeId) return null;
+    return mediaLogs.find(m => m.id === selectedAnimeId && m.type === 'ANIME') || null;
+  }, [mediaLogs, selectedAnimeId]);
+
+  // Render Detailed Anime Sub-Page
+  if (selectedAnime) {
+    let notesText = selectedAnime.notes || '';
+    let season = (selectedAnime as any).season || 1;
+    let watchedEpisodes: number[] = [];
+    let timestamps: Record<number, string> = {};
+    let lastWatchedEp = '';
+    let lastWatchedTimestamp = '';
+
+    try {
+      if (selectedAnime.notes && selectedAnime.notes.trim().startsWith('{')) {
+        const meta = JSON.parse(selectedAnime.notes);
+        notesText = meta.notesText ?? '';
+        season = meta.season ?? 1;
+        watchedEpisodes = meta.watchedEpisodes ?? [];
+        timestamps = meta.timestamps ?? {};
+        lastWatchedEp = meta.lastWatchedEp?.toString() || '';
+        lastWatchedTimestamp = meta.lastWatchedTimestamp ?? '';
+      }
+    } catch (e) {}
+
+    const saveAnimeMeta = (updates: {
+      notesText?: string;
+      season?: number;
+      watchedEpisodes?: number[];
+      timestamps?: Record<number, string>;
+      lastWatchedEp?: number | null;
+      lastWatchedTimestamp?: string;
+    }) => {
+      const meta = {
+        notesText: updates.notesText !== undefined ? updates.notesText : notesText,
+        season: updates.season !== undefined ? updates.season : season,
+        watchedEpisodes: updates.watchedEpisodes !== undefined ? updates.watchedEpisodes : watchedEpisodes,
+        timestamps: updates.timestamps !== undefined ? updates.timestamps : timestamps,
+        lastWatchedEp: updates.lastWatchedEp !== undefined ? updates.lastWatchedEp : (lastWatchedEp ? parseInt(lastWatchedEp) : null),
+        lastWatchedTimestamp: updates.lastWatchedTimestamp !== undefined ? updates.lastWatchedTimestamp : lastWatchedTimestamp
+      };
+      updateMediaLog(selectedAnime.id, {
+        notes: JSON.stringify(meta)
+      });
+    };
+
+    const epCount = selectedAnime.episodes || 0;
+    const progressPercent = epCount > 0 ? Math.min(100, Math.round((watchedEpisodes.length / epCount) * 100)) : 0;
+    const ratingColor = selectedAnime.rating ? getRatingGradientColor(selectedAnime.rating) : null;
+    const statusStyle = getStatusStyle(selectedAnime.status);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        className="flex flex-col w-full min-h-screen text-left bg-background font-sans pb-16"
+      >
+        <style>{`
+          .anime-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid #F43F5E;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+          }
+          .anime-checkbox:checked {
+            background-color: #F43F5E;
+            box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+          }
+          .anime-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            font-weight: 900;
+            font-size: 11px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--bg-surface-alt);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+          }
+        `}</style>
+
+        {/* Hero Banner Area */}
+        <div className="relative w-full h-[280px] md:h-[340px] shrink-0 overflow-hidden bg-surface">
+          <img 
+            src="/anime_hero_banner_1783275383433.png" 
+            alt="Hero Banner" 
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          
+          <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => setSelectedAnimeId(null)}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-border bg-surface/40 backdrop-blur-md hover:bg-surface/80 transition-colors cursor-pointer text-text-primary"
+              >
+                <IconArrowLeft size={16} />
+                <span className="text-xs font-bold">Back to Catalogue</span>
+              </button>
+              
+              <div className="mt-4">
+                <p className="text-3xl md:text-4xl font-serif italic text-text-primary drop-shadow-md tracking-wide">
+                  " Outdo your yesterday. "
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Title positioned at bottom of banner */}
+          <div className="absolute bottom-0 left-6 md:left-8 right-6 md:right-8 translate-y-1/3 flex flex-col md:flex-row md:items-end justify-between z-10 gap-4">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-text-primary drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+              {selectedAnime.title}
+            </h2>
+            <div className="flex items-center gap-3 shrink-0">
+              {selectedAnime.rating ? (
+                <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-alt border border-border shadow-xl">
+                  <IconStarFilled className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm font-black text-text-primary">
+                    {selectedAnime.rating}<span className="text-xs font-bold text-text-muted">/10</span>
+                  </span>
+                </div>
+              ) : null}
+              <button
+                onClick={() => openMediaEntryModal('ANIME', selectedAnime)}
+                className="px-5 py-2 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-xs font-bold shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all cursor-pointer"
+              >
+                Edit Details
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Layout */}
+        <div className="max-w-7xl mx-auto w-full px-6 md:px-8 pt-16 md:pt-12 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+          
+          {/* Left Column: Episode Tracker */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-surface rounded-[24px] border border-border p-6 shadow-2xl relative overflow-hidden flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <IconMovie size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-primary">Episode Progress Tracker</h3>
+                    <p className="text-[10px] text-text-muted mt-0.5">Track anime episodes you've watched</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-sm font-black text-text-primary">{watchedEpisodes.length} / {epCount}</span>
+                  <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md">{progressPercent}%</span>
+                </div>
+              </div>
+
+              {/* Grid List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                {epCount === 0 ? (
+                  <p className="text-xs text-text-muted italic col-span-2 py-10 text-center">No episodes found. Update total episodes.</p>
+                ) : (
+                  Array.from({ length: epCount }, (_, i) => i + 1).map(epNum => {
+                    const checked = watchedEpisodes.includes(epNum);
+                    return (
+                      <div
+                        key={epNum}
+                        className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                          checked 
+                            ? 'bg-surface-alt border-rose-500/30 shadow-[0_4px_20px_rgba(244,63,94,0.05)]' 
+                            : 'bg-surface-alt border-transparent hover:border-border'
+                        }`}
+                      >
+                        <div className="w-6 shrink-0 flex justify-center">
+                          <span className="text-[10px] font-black text-text-muted">{epNum.toString().padStart(2, '0')}</span>
+                        </div>
+                        
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            let updated;
+                            if (checked) {
+                              updated = watchedEpisodes.filter(e => e !== epNum);
+                            } else {
+                              updated = [...watchedEpisodes, epNum];
+                            }
+                            saveAnimeMeta({ watchedEpisodes: updated });
+                          }}
+                          className="anime-checkbox shrink-0"
+                        />
+
+                        <img 
+                          src="/anime_episode_thumb_1783275399662.png" 
+                          alt="Thumb" 
+                          className={`w-12 h-8 rounded-md object-cover shrink-0 ml-1 transition-all ${!checked && 'opacity-40 grayscale'}`}
+                        />
+
+                        <div className="flex flex-col ml-1 min-w-0 flex-1">
+                          <span className="text-[11px] font-bold text-text-primary truncate">Episode {epNum}</span>
+                          <span className={`text-[8px] font-black uppercase tracking-wider ${checked ? 'text-rose-500' : 'text-text-muted'}`}>
+                            {checked ? 'Watched' : 'Not Watched'}
+                          </span>
+                        </div>
+                        
+                        {checked && (
+                          <div className="shrink-0">
+                            <input
+                              type="text"
+                              placeholder="00:00"
+                              value={timestamps[epNum] || ''}
+                              onChange={e => {
+                                const updatedTime = { ...timestamps, [epNum]: e.target.value };
+                                saveAnimeMeta({ timestamps: updatedTime });
+                              }}
+                              className="w-12 bg-background border border-border rounded-md px-1 py-1 text-[9px] font-mono text-text-secondary outline-none focus:border-rose-500 text-center"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t border-border text-center">
+                <span className="text-[10px] text-text-muted tracking-widest uppercase">Every episode is a step forward.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Widgets */}
+          <div className="flex flex-col gap-4">
+            
+            {/* Resume Watch Point */}
+            <div className="bg-surface rounded-[24px] border border-border p-6 relative overflow-hidden">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-4 flex items-center gap-2">
+                <IconMovie size={14} /> Resume Watch Point
+              </h4>
+              
+              <div className="flex flex-col gap-4 relative z-10">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">Last Ep Watched</label>
+                  <div className="flex items-center gap-3 bg-surface-alt rounded-xl p-2 border border-border">
+                    <img src="/anime_episode_thumb_1783275399662.png" alt="Thumb" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <input
+                      type="number"
+                      min={1}
+                      max={epCount || undefined}
+                      placeholder="e.g. 5"
+                      value={lastWatchedEp}
+                      onChange={e => saveAnimeMeta({ lastWatchedEp: e.target.value ? parseInt(e.target.value) : null })}
+                      className="bg-transparent border-none text-xs font-bold text-text-primary focus:outline-none w-full min-w-0"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">Exact Timestamp</label>
+                  <div className="flex items-center gap-3 bg-surface-alt rounded-xl p-3 border border-border">
+                    <IconStarFilled size={14} className="text-text-muted shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="e.g. 15:20"
+                      value={lastWatchedTimestamp}
+                      onChange={e => saveAnimeMeta({ lastWatchedTimestamp: e.target.value })}
+                      className="bg-transparent border-none text-xs font-bold text-text-primary focus:outline-none w-full min-w-0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div className="bg-surface rounded-[24px] border border-border p-6 relative overflow-hidden flex items-center justify-between">
+              <div className="relative z-10">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-1 flex items-center gap-2">
+                  <IconStarFilled size={12} /> Progress
+                </h4>
+                <p className="text-[10px] text-text-secondary leading-relaxed mt-2 max-w-[100px]">
+                  {watchedEpisodes.length} of {epCount} episodes watched
+                </p>
+              </div>
+              <div className="relative w-16 h-16 flex items-center justify-center shrink-0 z-10">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path className="text-border" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path className="text-rose-500" strokeDasharray={`${progressPercent}, 100`} strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <span className="absolute text-[11px] font-black text-text-primary">{progressPercent}%</span>
+              </div>
+            </div>
+
+            {/* Review & Notes */}
+            <div className="bg-surface rounded-[24px] border border-border p-6 relative overflow-hidden flex flex-col flex-grow min-h-[220px]">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3 flex items-center gap-2 relative z-10">
+                Review & Notes
+              </h4>
+              <textarea
+                placeholder="Write your thoughts, reviews, or key takeaways..."
+                value={notesText}
+                onChange={e => saveAnimeMeta({ notesText: e.target.value })}
+                className="w-full bg-surface-alt border border-border rounded-xl p-3 text-[11px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-rose-500/50 resize-none flex-grow relative z-10"
+              />
+              <img 
+                src="/anime_chibi_mascot_1783275415079.png" 
+                alt="Mascot" 
+                className={`absolute -bottom-4 -right-4 w-32 h-32 object-contain opacity-90 z-0 pointer-events-none ${theme === 'dark' ? '' : 'brightness-90'}`}
+              />
+            </div>
+
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -93,7 +431,7 @@ export default function MediaModule() {
         <button
           onClick={() => openMediaEntryModal(activeTab)}
           style={{ background: accent, boxShadow: `0 4px 16px ${accent}44` }}
-          className="flex gap-2 items-center px-6 py-3 text-white rounded-full font-bold text-[14px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90"
+          className="flex gap-2 items-center px-6 py-3 text-white rounded-full font-bold text-[14px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90 cursor-pointer animate-fade-in"
         >
           <IconPlus className="w-5 h-5" /> New Entry
         </button>
@@ -106,7 +444,7 @@ export default function MediaModule() {
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`flex-1 py-2.5 font-bold text-[13px] flex items-center justify-center gap-2 rounded-[14px] transition-all ${
+              className={`flex-1 py-2.5 font-bold text-[13px] flex items-center justify-center gap-2 rounded-[14px] transition-all cursor-pointer ${
                 activeTab === tab ? 'bg-surface shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'
               }`}
             >
@@ -160,7 +498,7 @@ export default function MediaModule() {
 
           {/* ── Content ── */}
           {filteredLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 px-4 bg-surface rounded-[32px] border border-border">
+            <div className="flex flex-col items-center justify-center py-24 px-4 bg-surface rounded-[32px] border border-border animate-fade-in">
               <div className="w-20 h-20 rounded-[24px] flex items-center justify-center text-text-muted mb-6 border border-border" style={{ background: 'var(--bg-surface-alt)' }}>
                 {activeTab === 'ANIME' ? <IconMovie className="w-9 h-9" /> : <IconDeviceGamepad2 className="w-9 h-9" />}
               </div>
@@ -171,17 +509,36 @@ export default function MediaModule() {
               <button
                 onClick={() => openMediaEntryModal(activeTab)}
                 style={{ background: `${accent}18`, color: accent }}
-                className="px-6 py-3 rounded-full font-bold text-[14px] transition-colors hover:opacity-80"
+                className="px-6 py-3 rounded-full font-bold text-[14px] transition-colors hover:opacity-80 cursor-pointer animate-fade-in"
               >
                 Add your first {activeTab === 'ANIME' ? 'anime' : 'game'}
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-left">
               <AnimatePresence>
                 {filteredLogs.map(log => {
                   const statusStyle = getStatusStyle(log.status);
                   const ratingColor = log.rating ? getRatingGradientColor(log.rating) : null;
+                  
+                  // Parse JSON notes
+                  let displayNotes = log.notes;
+                  let lastWatchedEp = 0;
+                  let lastWatchedTimestamp = '';
+                  let parsedSeason = (log as any).season || 0;
+
+                  if (log.type === 'ANIME' && log.notes && log.notes.trim().startsWith('{')) {
+                    try {
+                      const meta = JSON.parse(log.notes);
+                      if (meta && typeof meta === 'object') {
+                        displayNotes = meta.notesText ?? '';
+                        if (meta.season) parsedSeason = meta.season;
+                        lastWatchedEp = meta.lastWatchedEp ?? 0;
+                        lastWatchedTimestamp = meta.lastWatchedTimestamp ?? '';
+                      }
+                    } catch (e) {}
+                  }
+
                   return (
                     <motion.div
                       layout
@@ -189,7 +546,14 @@ export default function MediaModule() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       key={log.id}
-                      className="bg-surface border border-border rounded-[24px] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col gap-3"
+                      onClick={() => {
+                        if (log.type === 'ANIME') {
+                          setSelectedAnimeId(log.id);
+                        } else {
+                          openMediaEntryModal('GAME', log);
+                        }
+                      }}
+                      className="bg-surface border border-border rounded-[24px] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col gap-3 cursor-pointer"
                     >
                       {/* Title row */}
                       <div className="flex justify-between items-start gap-3">
@@ -198,14 +562,20 @@ export default function MediaModule() {
                         </h3>
                         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <button
-                            onClick={() => openMediaEntryModal(activeTab, log)}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openMediaEntryModal(activeTab, log);
+                            }}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover transition-colors cursor-pointer"
                           >
                             <IconEdit className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => showConfirm('Delete Entry', 'Delete this media log?', () => deleteMediaLog(log.id))}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showConfirm('Delete Entry', 'Delete this media log?', () => deleteMediaLog(log.id));
+                            }}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10 transition-colors cursor-pointer"
                           >
                             <IconTrash className="w-3.5 h-3.5" />
                           </button>
@@ -220,9 +590,9 @@ export default function MediaModule() {
                         >
                           {log.status}
                         </span>
-                        {log.type === 'ANIME' && (log as any).season && (
+                        {log.type === 'ANIME' && parsedSeason > 0 && (
                           <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-surface-alt text-text-muted tracking-wider">
-                            S{(log as any).season}
+                            S{parsedSeason}
                           </span>
                         )}
                         {log.type === 'ANIME' && log.episodes && log.episodes > 0 && (
@@ -250,10 +620,25 @@ export default function MediaModule() {
                         <span className="text-[11px] font-medium text-text-muted">Unrated</span>
                       )}
 
+                      {/* Resume Watch tracker on Card */}
+                      {log.type === 'ANIME' && lastWatchedEp > 0 && (
+                        <div className="mt-1 p-2.5 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 flex items-center justify-between gap-3 text-left">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[8.5px] font-extrabold text-blue-500 dark:text-blue-400 uppercase tracking-widest leading-none">Last Watched</span>
+                            <span className="text-[11.5px] font-black text-text-primary truncate">
+                              Ep {lastWatchedEp} {lastWatchedTimestamp && `• ${lastWatchedTimestamp}`}
+                            </span>
+                          </div>
+                          <div className="px-2.5 py-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold text-[10px] shadow-sm transition-all select-none shrink-0">
+                            Resume
+                          </div>
+                        </div>
+                      )}
+
                       {/* Notes */}
-                      {log.notes ? (
+                      {displayNotes ? (
                         <p className="text-[13px] text-text-secondary leading-relaxed line-clamp-2 italic border-t border-border/50 pt-3 mt-auto">
-                          "{log.notes}"
+                          "{displayNotes}"
                         </p>
                       ) : (
                         <div className="mt-auto" />
@@ -280,7 +665,7 @@ export default function MediaModule() {
 function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
     <div
-      className="rounded-[20px] p-5 border border-border flex flex-col justify-between h-[110px] shadow-sm"
+      className="rounded-[20px] p-5 border border-border flex flex-col justify-between h-[110px] shadow-sm text-left animate-fade-in"
       style={{ background: 'var(--bg-surface)' }}
     >
       <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{label}</span>
@@ -294,7 +679,7 @@ function FilterPill({ label, active, onClick, accent }: { label: string; active:
     <button
       onClick={onClick}
       style={active ? { background: `${accent}18`, color: accent, borderColor: `${accent}40` } : {}}
-      className={`px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
+      className={`px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border cursor-pointer ${
         active ? 'shadow-sm' : 'border-border bg-surface text-text-secondary hover:bg-surface-alt'
       }`}
     >

@@ -41,6 +41,12 @@ export function MediaEntryModal() {
   const [season,   setSeason]   = useState('');
   const [notes,    setNotes]    = useState('');
 
+  // Anime tracking state
+  const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
+  const [episodeTimestamps, setEpisodeTimestamps] = useState<Record<number, string>>({});
+  const [lastWatchedEp, setLastWatchedEp] = useState('');
+  const [lastWatchedTimestamp, setLastWatchedTimestamp] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       if (editingLog) {
@@ -48,8 +54,36 @@ export function MediaEntryModal() {
         setStatus(editingLog.status);
         setRating(editingLog.rating || 0);
         setEpisodes(editingLog.episodes?.toString() || '');
-        setSeason((editingLog as any).season?.toString() || '');
-        setNotes(editingLog.notes);
+        
+        let parsedNotes = editingLog.notes;
+        let parsedSeason = '';
+        let parsedWatched: number[] = [];
+        let parsedTimestamps: Record<number, string> = {};
+        let parsedLastEp = '';
+        let parsedLastTime = '';
+
+        try {
+          if (editingLog.notes && editingLog.notes.trim().startsWith('{')) {
+            const meta = JSON.parse(editingLog.notes);
+            if (meta && typeof meta === 'object') {
+              parsedNotes = meta.notesText ?? '';
+              parsedSeason = meta.season?.toString() || '';
+              parsedWatched = meta.watchedEpisodes ?? [];
+              parsedTimestamps = meta.timestamps ?? {};
+              parsedLastEp = meta.lastWatchedEp?.toString() || '';
+              parsedLastTime = meta.lastWatchedTimestamp ?? '';
+            }
+          }
+        } catch (e) {
+          // Fallback if not JSON
+        }
+
+        setNotes(parsedNotes);
+        setSeason(parsedSeason);
+        setWatchedEpisodes(parsedWatched);
+        setEpisodeTimestamps(parsedTimestamps);
+        setLastWatchedEp(parsedLastEp);
+        setLastWatchedTimestamp(parsedLastTime);
       } else {
         setTitle('');
         setStatus(activeTab === 'ANIME' ? 'WATCHING' : 'PLAYING');
@@ -57,6 +91,10 @@ export function MediaEntryModal() {
         setEpisodes('');
         setSeason('');
         setNotes('');
+        setWatchedEpisodes([]);
+        setEpisodeTimestamps({});
+        setLastWatchedEp('');
+        setLastWatchedTimestamp('');
       }
     }
   }, [isOpen, editingLog, activeTab]);
@@ -64,13 +102,46 @@ export function MediaEntryModal() {
   const handleSave = () => {
     if (!title.trim()) return;
 
+    const isAnime = activeTab === 'ANIME';
+    let finalNotes = notes;
+
+    if (isAnime) {
+      // Preserve existing checklist/resume data when editing via modal
+      let existingWatched: number[] = [];
+      let existingTimestamps: Record<number, string> = {};
+      let existingLastEp: number | null = null;
+      let existingLastTime = '';
+
+      if (editingLog) {
+        try {
+          if (editingLog.notes && editingLog.notes.trim().startsWith('{')) {
+            const meta = JSON.parse(editingLog.notes);
+            existingWatched = meta.watchedEpisodes ?? [];
+            existingTimestamps = meta.timestamps ?? {};
+            existingLastEp = meta.lastWatchedEp ?? null;
+            existingLastTime = meta.lastWatchedTimestamp ?? '';
+          }
+        } catch (e) {}
+      }
+
+      const meta = {
+        notesText: notes,
+        season: parseInt(season) || 1,
+        watchedEpisodes: existingWatched,
+        timestamps: existingTimestamps,
+        lastWatchedEp: existingLastEp,
+        lastWatchedTimestamp: existingLastTime
+      };
+      finalNotes = JSON.stringify(meta);
+    }
+
     const payload = {
       title,
       status: status as any,
       rating: rating > 0 ? rating : null,
-      episodes: activeTab === 'ANIME' ? (parseInt(episodes) || undefined) : undefined,
-      season:   activeTab === 'ANIME' ? (parseInt(season)   || undefined) : undefined,
-      notes,
+      episodes: isAnime ? (parseInt(episodes) || undefined) : undefined,
+      season:   isAnime ? (parseInt(season)   || undefined) : undefined,
+      notes: finalNotes,
     };
 
     if (editingLog) {
@@ -120,7 +191,7 @@ export function MediaEntryModal() {
             <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-900">
               <div>
                 <p className={`text-[10px] font-extrabold uppercase tracking-widest ${accentTextClass} m-0`}>
-                  {isAnime ? 'Anime' : 'Game'} Workspace
+                  {isAnime ? 'Anime' : 'Game'} Tracker Workspace
                 </p>
                 <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight m-0 mt-0.5">
                   {editingLog ? 'Edit Entry' : 'Add New'}
@@ -158,26 +229,26 @@ export function MediaEntryModal() {
 
             {/* Meta Attributes Layer (Anime only) */}
             {isAnime && (
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className={labelClassName}>Episodes</label>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="24"
-                    value={episodes}
-                    onChange={e => setEpisodes(e.target.value)}
-                    className={inputClassName}
-                  />
-                </div>
-                <div className="flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className={labelClassName}>Season</label>
                   <input
                     type="number"
                     min={1}
-                    placeholder="1"
+                    placeholder="e.g. 1"
                     value={season}
                     onChange={e => setSeason(e.target.value)}
+                    className={inputClassName}
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName}>Total Episodes</label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 12"
+                    value={episodes}
+                    onChange={e => setEpisodes(e.target.value)}
                     className={inputClassName}
                   />
                 </div>

@@ -1,298 +1,160 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
 import { useAppStore } from '../../store/useAppStore';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
-  IconPencil, IconSquare, IconCircle, IconMinus, 
-  IconTrash, IconDownload, IconArrowBackUp, IconArrowForwardUp,
-  IconGridPattern, IconPalette, IconLayoutGrid
+  IconPlus, IconTrash, IconFolder, IconFileText 
 } from '@tabler/icons-react';
+import "@excalidraw/excalidraw/index.css";
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface DrawingShape {
-  id: string;
-  type: 'pen' | 'rect' | 'circle' | 'line';
-  points: Point[];
-  color: string;
-  strokeWidth: number;
-}
-
-const PRESET_COLORS = [
-  '#000000', // Black (adapts in dark mode)
-  '#f43f5e', // Rose
-  '#3b82f6', // Blue
-  '#10b981', // Green
-  '#f59e0b', // Amber
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-];
+const sanitizeElements = (elements: readonly any[]) => {
+  if (!Array.isArray(elements)) return [];
+  return elements.map(el => {
+    if (el && el.type === 'arrow') {
+      return {
+        ...el,
+        endArrowhead: el.endArrowhead || 'arrow',
+        startArrowhead: el.startArrowhead || null,
+      };
+    }
+    return el;
+  });
+};
 
 export default function DrawingModule() {
-  const { theme, drawingElements, setDrawingData } = useAppStore(useShallow(state => ({
+  const { theme, setDrawingData, notes, addNote, updateNote, deleteNote } = useAppStore(useShallow(state => ({
     theme: state.theme,
-    drawingElements: state.drawingElements,
-    setDrawingData: state.setDrawingData
+    setDrawingData: state.setDrawingData,
+    notes: state.notes,
+    addNote: state.addNote,
+    updateNote: state.updateNote,
+    deleteNote: state.deleteNote,
   })));
 
-  // Core Canvas State
-  const [tool, setTool] = useState<'pen' | 'rect' | 'circle' | 'line'>('pen');
-  const [color, setColor] = useState('#f43f5e');
-  const [strokeWidth, setStrokeWidth] = useState(4);
-  const [shapes, setShapes] = useState<DrawingShape[]>(() => (drawingElements as DrawingShape[]) || []);
-  const [history, setHistory] = useState<DrawingShape[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [gridType, setGridType] = useState<'dots' | 'grid' | 'none'>('dots');
+  const excalidrawRef = useRef<any>(null);
+  const debounceTimer = useRef<any>(null);
 
-  // Drawing coordinates state
-  const isDrawing = useRef(false);
-  const currentShape = useRef<DrawingShape | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeSketchId, setActiveSketchId] = useState<string>(() => {
+    const lastActive = localStorage.getItem('phq_active_sketch_id');
+    return lastActive || 'default';
+  });
 
-  // Sync state to Zustand
-  const syncToStore = useCallback((updatedShapes: DrawingShape[]) => {
-    setDrawingData(updatedShapes, {});
-  }, [setDrawingData]);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameTitle, setRenameTitle] = useState('');
+  const [isoGrid, setIsoGrid] = useState(false);
 
-  // Handle Resize and Canvas Setup
-  const resizeCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
+  // Sync active sketch ID to local storage for quick reload defaults
+  useEffect(() => {
+    localStorage.setItem('phq_active_sketch_id', activeSketchId);
+  }, [activeSketchId]);
 
-    const rect = container.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-    }
-  }, []);
-
-  // Redraw Canvas on change
-  const drawCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Grid
-    const width = canvas.width / window.devicePixelRatio;
-    const height = canvas.height / window.devicePixelRatio;
-    
-    if (gridType === 'dots') {
-      ctx.fillStyle = theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
-      const gap = 20;
-      for (let x = 0; x < width; x += gap) {
-        for (let y = 0; y < height; y += gap) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    } else if (gridType === 'grid') {
-      ctx.strokeStyle = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-      ctx.lineWidth = 1;
-      const gap = 30;
-      for (let x = 0; x < width; x += gap) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += gap) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-    }
-
-    // Adjust theme color for default black
-    const resolveColor = (c: string) => {
-      if (c === '#000000') {
-        return theme === 'dark' ? '#ffffff' : '#18181b';
-      }
-      return c;
-    };
-
-    // Draw Shapes
-    shapes.forEach((shape) => {
-      ctx.strokeStyle = resolveColor(shape.color);
-      ctx.lineWidth = shape.strokeWidth;
-      ctx.beginPath();
-
-      if (shape.type === 'pen') {
-        if (shape.points.length < 2) return;
-        ctx.moveTo(shape.points[0].x, shape.points[0].y);
-        for (let i = 1; i < shape.points.length; i++) {
-          ctx.lineTo(shape.points[i].x, shape.points[i].y);
-        }
-        ctx.stroke();
-      } else if (shape.type === 'rect') {
-        const start = shape.points[0];
-        const end = shape.points[shape.points.length - 1];
-        ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
-      } else if (shape.type === 'circle') {
-        const start = shape.points[0];
-        const end = shape.points[shape.points.length - 1];
-        const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-        ctx.beginPath();
-        ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
-        ctx.stroke();
-      } else if (shape.type === 'line') {
-        const start = shape.points[0];
-        const end = shape.points[shape.points.length - 1];
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
-      }
+  // Map notes containing the 'sketch' tag to sketch entries
+  const sketches = useMemo(() => {
+    const list = notes.filter(n => n.tags && n.tags.includes('sketch'));
+    return list.map(n => {
+      let elements: any[] = [];
+      let appState: any = {};
+      try {
+        const parsed = JSON.parse(n.content);
+        elements = sanitizeElements(parsed.elements || []);
+        appState = parsed.appState || {};
+      } catch (e) {}
+      return {
+        id: n.id,
+        title: n.title,
+        elements,
+        appState,
+        createdAt: new Date(n.createdAt).toLocaleDateString(),
+      };
     });
-  }, [shapes, gridType, theme]);
+  }, [notes]);
 
-  // Initial Setup & Event binding
+  // Seed default drawing sketch note if list is loaded but no sketches exist
   useEffect(() => {
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
-  }, [resizeCanvas]);
+    const list = notes.filter(n => n.tags && n.tags.includes('sketch'));
+    if (list.length === 0) {
+      addNote({
+        id: 'default',
+        title: 'First Sketch',
+        content: JSON.stringify({ elements: [], appState: {} }),
+        isPinned: false,
+        color: 'default',
+        tags: ['sketch'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }, [notes, addNote]);
 
+  // Load the current active sketch elements
+  const activeSketch = useMemo(() => {
+    const found = sketches.find(s => s.id === activeSketchId) || sketches[0];
+    return found;
+  }, [sketches, activeSketchId]);
+
+  // Prepare initialData for the current active sketch (used only on remount)
+  const initialData = useMemo(() => {
+    if (activeSketch) {
+      const cleanApp = { ...(activeSketch.appState || {}) };
+      delete cleanApp.collaborators;
+      return { elements: activeSketch.elements, appState: cleanApp };
+    }
+    return { elements: [], appState: {} };
+  }, [activeSketch]);
+
+  // Sync canvas theme changes dynamically
   useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
+    if (excalidrawRef.current) {
+      excalidrawRef.current.updateScene({
+        appState: { 
+          theme: theme === 'dark' ? 'dark' : 'light',
+          viewBackgroundColor: isoGrid ? 'transparent' : (theme === 'dark' ? '#121214' : '#ffffff'),
+          gridModeEnabled: isoGrid,
+        }
+      });
+    }
+  }, [theme, isoGrid]);
 
-  // Get relative mouse position on canvas
-  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>): Point => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
+  const handleCreateNewSketch = () => {
+    const id = crypto.randomUUID();
+    addNote({
+      id,
+      title: `Sketch ${sketches.length + 1}`,
+      content: JSON.stringify({ elements: [], appState: {} }),
+      isPinned: false,
+      color: 'default',
+      tags: ['sketch'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    setActiveSketchId(id);
+  };
 
-    if ('touches' in e) {
-      if (e.touches.length === 0) return { x: 0, y: 0 };
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      };
-    } else {
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
+  const handleDeleteSketch = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (sketches.length <= 1) return;
+
+    deleteNote(id);
+    if (activeSketchId === id) {
+      const remaining = sketches.filter(s => s.id !== id);
+      if (remaining.length > 0) {
+        setActiveSketchId(remaining[0].id);
+      }
     }
   };
 
-  // Drawing controls
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    isDrawing.current = true;
-    const pos = getMousePos(e);
-    
-    currentShape.current = {
-      id: Math.random().toString(36).substr(2, 9),
-      type: tool,
-      points: [pos],
-      color,
-      strokeWidth,
-    };
-
-    setShapes((prev) => [...prev, currentShape.current as DrawingShape]);
+  const startRename = (id: string, currentTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenameId(id);
+    setRenameTitle(currentTitle);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing.current || !currentShape.current) return;
-    const pos = getMousePos(e);
-
-    if (tool === 'pen') {
-      currentShape.current.points.push(pos);
-      setShapes((prev) => 
-        prev.map((s) => s.id === currentShape.current?.id ? { ...s, points: [...s.points, pos] } : s)
-      );
-    } else {
-      // Shape update (rectangle, circle, line)
-      currentShape.current.points[1] = pos;
-      setShapes((prev) =>
-        prev.map((s) => s.id === currentShape.current?.id ? { ...s, points: [s.points[0], pos] } : s)
-      );
+  const finishRename = () => {
+    if (renameTitle.trim() && renameId) {
+      updateNote(renameId, { title: renameTitle.trim() });
     }
-  };
-
-  const endDrawing = () => {
-    if (!isDrawing.current) return;
-    isDrawing.current = false;
-    
-    // Save to history for Undo/Redo
-    const newHistory = history.slice(0, historyIndex + 1);
-    const updatedShapes = [...shapes];
-    
-    setHistory([...newHistory, updatedShapes]);
-    setHistoryIndex(newHistory.length);
-    syncToStore(updatedShapes);
-    currentShape.current = null;
-  };
-
-  // Actions
-  const handleUndo = () => {
-    if (historyIndex >= 0) {
-      const prevIndex = historyIndex - 1;
-      const prevShapes = prevIndex >= 0 ? history[prevIndex] : [];
-      setShapes(prevShapes);
-      setHistoryIndex(prevIndex);
-      syncToStore(prevShapes);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const nextIndex = historyIndex + 1;
-      const nextShapes = history[nextIndex];
-      setShapes(nextShapes);
-      setHistoryIndex(nextIndex);
-      syncToStore(nextShapes);
-    }
-  };
-
-  const handleClear = () => {
-    setShapes([]);
-    const newHistory = history.slice(0, historyIndex + 1);
-    setHistory([...newHistory, []]);
-    setHistoryIndex(newHistory.length);
-    syncToStore([]);
-  };
-
-  const handleExport = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Create a temporary canvas with actual background applied to export it
-    const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = canvas.width;
-    exportCanvas.height = canvas.height;
-    const exportCtx = exportCanvas.getContext('2d');
-    if (!exportCtx) return;
-
-    // Draw background color
-    exportCtx.fillStyle = theme === 'dark' ? '#18181b' : '#ffffff';
-    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-    // Draw original canvas content on top
-    exportCtx.drawImage(canvas, 0, 0);
-
-    const url = exportCanvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = 'personal-hq-drawing.png';
-    link.href = url;
-    link.click();
+    setRenameId(null);
   };
 
   return (
@@ -301,195 +163,222 @@ export default function DrawingModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="w-full h-[calc(100vh-140px)] flex gap-4 p-2 relative select-none"
+      className="w-full h-[calc(100vh-140px)] flex gap-4 p-2 relative"
+      style={{ background: 'var(--bg-background)' }}
     >
-      {/* ── Main Canvas Viewport ── */}
-      <div 
-        ref={containerRef}
-        className="flex-1 h-full relative rounded-3xl overflow-hidden border border-border/50 bg-surface/50 backdrop-blur-sm cursor-crosshair shadow-sm"
-      >
-        <canvas
-          ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={endDrawing}
-          onMouseLeave={endDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={endDrawing}
-          className="absolute inset-0 w-full h-full block"
-        />
+      {/* Scope premium glass CSS overrides for Excalidraw controls */}
+      <style>{`
+        .excalidraw {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          --color-primary: #f43f5e !important;
+          --color-primary-darker: #e11d48 !important;
+          --color-primary-light: rgba(244, 63, 94, 0.1) !important;
+          --border-radius-lg: 20px !important;
+          --border-radius-md: 14px !important;
+          --border-radius-sm: 8px !important;
+        }
+        .excalidraw .Island, 
+        .excalidraw .context-menu, 
+        .excalidraw .dropdown-menu {
+          background-color: ${theme === 'dark' ? 'rgba(20, 20, 22, 0.85)' : 'rgba(255, 255, 255, 0.85)'} !important;
+          backdrop-filter: blur(16px) saturate(180%) !important;
+          -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+          border: 1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(24, 24, 27, 0.08)'} !important;
+          box-shadow: 0 20px 40px -15px rgba(0, 0, 0, ${theme === 'dark' ? '0.6' : '0.1'}) !important;
+        }
+        .excalidraw .ToolIcon__keybutton,
+        .excalidraw .buttonList button,
+        .excalidraw .dropdown-menu-item {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .excalidraw .ToolIcon__keybutton:hover,
+        .excalidraw .buttonList button:hover {
+          transform: translateY(-1px) scale(1.03) !important;
+        }
+        .excalidraw .ToolIcon__keybutton:active,
+        .excalidraw .buttonList button:active {
+          transform: scale(0.96) !important;
+        }
+        .iso-grid-active .excalidraw,
+        .iso-grid-active .excalidraw .excalidraw-container,
+        .iso-grid-active .excalidraw .InteractiveCanvas,
+        .iso-grid-active .excalidraw .excalidraw-container canvas {
+          background: transparent !important;
+        }
+        .iso-grid-active {
+          background-color: ${theme === 'dark' ? '#121214' : '#ffffff'} !important;
+          background-image: 
+            linear-gradient(30deg, ${theme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px),
+            linear-gradient(150deg, ${theme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px) !important;
+          background-size: 30px 51.96px !important;
+        }
+      `}</style>
 
-        {/* Floating Controls Top Bar */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-          <div className="px-4 py-2 rounded-2xl bg-surface/90 border border-border/60 shadow-lg pointer-events-auto flex items-center gap-3 backdrop-blur-md">
-            <span className="text-xs font-bold text-text-primary tracking-tight">Drawing Canvas</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      {/* ── Left Sidebar (Sketch Library & DB Status) ── */}
+      <div className="w-[250px] h-full flex flex-col gap-4 p-4.5 rounded-3xl border border-border/50 bg-surface/40 backdrop-blur-md shadow-sm shrink-0 text-left overflow-y-auto custom-scrollbar">
+        {/* Slot Library Header */}
+        <div className="flex items-center justify-between pb-2 border-b border-border/40">
+          <div className="flex flex-col">
+            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Sketchbook</span>
+            <span className="text-[10px] text-text-secondary mt-0.5">Manage draw files</span>
           </div>
-
-          <div className="flex gap-2 pointer-events-auto">
-            {/* Undo/Redo & Actions bar */}
-            <div className="flex p-1 rounded-2xl bg-surface/90 border border-border/60 shadow-lg backdrop-blur-md gap-0.5">
-              <button 
-                onClick={handleUndo}
-                disabled={historyIndex < 0}
-                className="p-2 rounded-xl text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-secondary hover:bg-surface-alt transition-all cursor-pointer"
-                title="Undo"
-              >
-                <IconArrowBackUp size={16} />
-              </button>
-              <button 
-                onClick={handleRedo}
-                disabled={historyIndex >= history.length - 1}
-                className="p-2 rounded-xl text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-secondary hover:bg-surface-alt transition-all cursor-pointer"
-                title="Redo"
-              >
-                <IconArrowForwardUp size={16} />
-              </button>
-              <div className="w-px h-5 bg-border/60 my-auto mx-1" />
-              <button 
-                onClick={handleClear}
-                className="p-2 rounded-xl text-text-secondary hover:text-red-500 hover:bg-red-500/5 transition-all cursor-pointer"
-                title="Clear Canvas"
-              >
-                <IconTrash size={16} />
-              </button>
-              <button 
-                onClick={handleExport}
-                className="p-2 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer"
-                title="Export Image"
-              >
-                <IconDownload size={16} />
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={handleCreateNewSketch}
+            className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
+            title="Create New Canvas"
+          >
+            <IconPlus size={15} />
+          </button>
         </div>
 
-        {/* Floating Tools Toolbar (Apple-style pill at bottom center) */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center p-1.5 bg-surface/90 border border-border/60 rounded-3xl shadow-xl backdrop-blur-md gap-1">
-          {(['pen', 'rect', 'circle', 'line'] as const).map((t) => {
-            const active = tool === t;
-            let Icon = IconPencil;
-            if (t === 'rect') Icon = IconSquare;
-            if (t === 'circle') Icon = IconCircle;
-            if (t === 'line') Icon = IconMinus;
+        {/* List of Save Slots */}
+        <div className="flex flex-col gap-1.5 flex-grow overflow-y-auto custom-scrollbar">
+          {sketches.map((sk) => {
+            const active = sk.id === activeSketchId;
+            const isRenaming = renameId === sk.id;
 
             return (
-              <button
-                key={t}
-                onClick={() => setTool(t)}
-                className={`p-3 rounded-2xl transition-all cursor-pointer flex items-center justify-center ${
+              <div
+                key={sk.id}
+                onClick={() => setActiveSketchId(sk.id)}
+                className={`group flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${
                   active 
-                    ? 'bg-primary text-white scale-105 shadow-md shadow-primary/20' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-alt'
+                    ? 'bg-surface border-border shadow-sm text-primary' 
+                    : 'bg-transparent border-transparent hover:bg-surface-alt/45 text-text-secondary hover:text-text-primary'
                 }`}
-                title={t.toUpperCase()}
               >
-                <Icon size={18} />
-              </button>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <IconFileText size={15} className={active ? 'text-primary' : 'text-text-muted'} />
+                  {isRenaming ? (
+                    <input
+                      type="text"
+                      value={renameTitle}
+                      onChange={(e) => setRenameTitle(e.target.value)}
+                      onBlur={finishRename}
+                      onKeyDown={(e) => e.key === 'Enter' && finishRename()}
+                      className="bg-transparent border-none outline-none font-semibold text-xs text-text-primary flex-1 py-0 min-w-0"
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      onDoubleClick={(e) => startRename(sk.id, sk.title, e)}
+                      className="text-xs font-bold truncate leading-none"
+                    >
+                      {sk.title}
+                    </span>
+                  )}
+                </div>
+
+                {!isRenaming && sketches.length > 1 && (
+                  <button
+                    onClick={(e) => handleDeleteSketch(sk.id, e)}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 text-text-muted hover:text-red-500 rounded-lg transition-all"
+                  >
+                    <IconTrash size={12} />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
-      </div>
 
-      {/* ── Apple-Style Floating Styling Panel (Right Sidebar) ── */}
-      <div className="w-72 h-full flex flex-col gap-4 p-5 rounded-3xl border border-border/50 bg-surface/40 backdrop-blur-md shadow-sm text-left">
-        <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Style Panel</h3>
-          <p className="text-[10px] text-text-secondary mt-0.5">Customize properties & strokes</p>
-        </div>
-
-        {/* Color Palette Selection */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black text-text-muted uppercase tracking-wider flex items-center gap-1.5">
-            <IconPalette size={12} /> Brush Color
-          </label>
-          <div className="grid grid-cols-5 gap-2 mt-1">
-            {PRESET_COLORS.map((c) => {
-              const active = color === c;
-              return (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className="w-10 h-10 rounded-xl relative flex items-center justify-center border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
-                  style={{ backgroundColor: c === '#000000' && theme === 'dark' ? '#ffffff' : c }}
-                >
-                  {active && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-white dark:bg-black border border-black/10 shadow-sm" />
-                  )}
-                </button>
-              );
-            })}
+        {/* Isometric grid snap toggle options */}
+        <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Isometric Grid</span>
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                checked={isoGrid} 
+                onChange={(e) => setIsoGrid(e.target.checked)} 
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+            </label>
           </div>
+          <span className="text-[9px] text-text-secondary leading-normal">
+            Snaps lines to 30-degree angles for technical drawing.
+          </span>
         </div>
 
-        <div className="w-full h-px bg-border/40 my-1" />
-
-        {/* Stroke Width Slider */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">
-            Stroke Width ({strokeWidth}px)
-          </label>
-          <div className="flex items-center gap-3 mt-1">
-            <input 
-              type="range"
-              min={2}
-              max={24}
-              step={1}
-              value={strokeWidth}
-              onChange={(e) => setStrokeWidth(Number(e.target.value))}
-              className="flex-1 accent-primary h-1 bg-surface-alt rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center border border-border/60 text-[10px] font-bold text-text-primary shadow-sm">
-              {strokeWidth}
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full h-px bg-border/40 my-1" />
-
-        {/* Grid Type Selector */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black text-text-muted uppercase tracking-wider flex items-center gap-1.5">
-            <IconGridPattern size={12} /> Canvas Grid
-          </label>
-          <div className="grid grid-cols-3 gap-1.5 mt-1 bg-surface-alt p-1 rounded-xl border border-border/50">
-            {(['dots', 'grid', 'none'] as const).map((g) => {
-              const active = gridType === g;
-              return (
-                <button
-                  key={g}
-                  onClick={() => setGridType(g)}
-                  className={`py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                    active 
-                      ? 'bg-surface text-primary shadow-sm border border-border/30' 
-                      : 'text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  {g}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Extra Apple styling metadata details */}
-        <div className="mt-auto p-4.5 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2">
+        {/* Sidebar Info Banner */}
+        <div className="mt-auto p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
           <div className="flex items-center gap-2">
-            <IconLayoutGrid size={14} className="text-text-muted" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Status</span>
+            <IconFolder size={14} className="text-text-muted" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Cloud Storage</span>
           </div>
-          <div className="text-[11px] font-semibold text-text-secondary flex flex-col gap-1.5 mt-1">
+          <div className="text-[11px] font-semibold text-text-secondary flex flex-col gap-1 mt-0.5">
             <div className="flex justify-between">
-              <span>Canvas Objects:</span>
-              <span className="font-mono text-text-primary">{shapes.length}</span>
+              <span>Saved Slots:</span>
+              <span className="font-mono text-text-primary">{sketches.length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Autosave:</span>
+              <span>Supabase Sync:</span>
               <span className="text-emerald-500 font-extrabold uppercase text-[9px] tracking-wider">Active</span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Main Canvas Viewport Area ── */}
+      <div 
+        key={activeSketchId} 
+        className={`flex-grow h-full relative rounded-[32px] overflow-hidden border border-border/50 bg-surface shadow-[0_15px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ${isoGrid ? 'iso-grid-active' : ''}`}
+      >
+        <Excalidraw
+          theme={theme === 'dark' ? 'dark' : 'light'}
+          initialData={{
+            ...initialData,
+            appState: {
+              ...initialData.appState,
+              viewBackgroundColor: isoGrid ? 'transparent' : (theme === 'dark' ? '#121214' : '#ffffff'),
+              gridModeEnabled: isoGrid,
+            }
+          }}
+          excalidrawAPI={(api) => {
+            excalidrawRef.current = api;
+          }}
+          onChange={(elements, appState) => {
+            if (debounceTimer.current) {
+              clearTimeout(debounceTimer.current);
+            }
+            
+            debounceTimer.current = setTimeout(() => {
+              const cleanApp: any = { ...appState };
+              delete cleanApp.collaborators;
+              
+              if (activeSketch) {
+                updateNote(activeSketch.id, {
+                  content: JSON.stringify({ elements: sanitizeElements(elements), appState: cleanApp })
+                }, true);
+                setDrawingData(elements as any[], cleanApp);
+              }
+            }, 500);
+          }}
+        >
+          <MainMenu>
+            <MainMenu.DefaultItems.LoadScene />
+            <MainMenu.DefaultItems.SaveAsImage />
+            <MainMenu.DefaultItems.ClearCanvas />
+            <MainMenu.Separator />
+            <MainMenu.DefaultItems.ToggleTheme />
+            <MainMenu.DefaultItems.ChangeCanvasBackground />
+          </MainMenu>
+          <WelcomeScreen>
+            <WelcomeScreen.Hints.MenuHint />
+            <WelcomeScreen.Hints.ToolbarHint />
+            <WelcomeScreen.Hints.HelpHint />
+            <WelcomeScreen.Center>
+              <WelcomeScreen.Center.Heading>
+                Personal HQ Whiteboard
+              </WelcomeScreen.Center.Heading>
+              <WelcomeScreen.Center.Menu>
+                <WelcomeScreen.Center.MenuItemLoadScene />
+                <WelcomeScreen.Center.MenuItemHelp />
+              </WelcomeScreen.Center.Menu>
+            </WelcomeScreen.Center>
+          </WelcomeScreen>
+        </Excalidraw>
       </div>
     </motion.div>
   );
