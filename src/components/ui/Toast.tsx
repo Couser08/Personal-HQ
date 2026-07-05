@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToastStore, type ToastType } from '../../store/useToastStore';
-import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle, IconLoader2 } from '@tabler/icons-react';
+import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 
 const getToastConfig = (type: ToastType) => {
   switch (type) {
@@ -33,7 +33,7 @@ export const ToastContainer = () => {
 
   // Island Springs physics for zero-latency snapping
   const islandTransition = {
-    type: 'spring',
+    type: 'spring' as const,
     stiffness: 450,
     damping: 28,
     mass: 0.6
