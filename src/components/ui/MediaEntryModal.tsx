@@ -41,11 +41,7 @@ export function MediaEntryModal() {
   const [season,   setSeason]   = useState('');
   const [notes,    setNotes]    = useState('');
 
-  // Anime tracking state
-  const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
-  const [episodeTimestamps, setEpisodeTimestamps] = useState<Record<number, string>>({});
-  const [lastWatchedEp, setLastWatchedEp] = useState('');
-  const [lastWatchedTimestamp, setLastWatchedTimestamp] = useState('');
+
 
   useEffect(() => {
     if (isOpen) {
@@ -57,21 +53,12 @@ export function MediaEntryModal() {
         
         let parsedNotes = editingLog.notes;
         let parsedSeason = '';
-        let parsedWatched: number[] = [];
-        let parsedTimestamps: Record<number, string> = {};
-        let parsedLastEp = '';
-        let parsedLastTime = '';
-
         try {
           if (editingLog.notes && editingLog.notes.trim().startsWith('{')) {
             const meta = JSON.parse(editingLog.notes);
             if (meta && typeof meta === 'object') {
               parsedNotes = meta.notesText ?? '';
               parsedSeason = meta.season?.toString() || '';
-              parsedWatched = meta.watchedEpisodes ?? [];
-              parsedTimestamps = meta.timestamps ?? {};
-              parsedLastEp = meta.lastWatchedEp?.toString() || '';
-              parsedLastTime = meta.lastWatchedTimestamp ?? '';
             }
           }
         } catch (e) {
@@ -80,10 +67,6 @@ export function MediaEntryModal() {
 
         setNotes(parsedNotes);
         setSeason(parsedSeason);
-        setWatchedEpisodes(parsedWatched);
-        setEpisodeTimestamps(parsedTimestamps);
-        setLastWatchedEp(parsedLastEp);
-        setLastWatchedTimestamp(parsedLastTime);
       } else {
         setTitle('');
         setStatus(activeTab === 'ANIME' ? 'WATCHING' : 'PLAYING');
@@ -91,10 +74,6 @@ export function MediaEntryModal() {
         setEpisodes('');
         setSeason('');
         setNotes('');
-        setWatchedEpisodes([]);
-        setEpisodeTimestamps({});
-        setLastWatchedEp('');
-        setLastWatchedTimestamp('');
       }
     }
   }, [isOpen, editingLog, activeTab]);

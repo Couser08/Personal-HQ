@@ -78,8 +78,8 @@ export default function DrawingModule() {
         id: 'default',
         title: 'First Sketch',
         content: JSON.stringify({ elements: [], appState: {} }),
-        isPinned: false,
-        color: 'default',
+        pinned: false,
+
         tags: ['sketch'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -122,8 +122,8 @@ export default function DrawingModule() {
       id,
       title: `Sketch ${sketches.length + 1}`,
       content: JSON.stringify({ elements: [], appState: {} }),
-      isPinned: false,
-      color: 'default',
+      pinned: false,
+
       tags: ['sketch'],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

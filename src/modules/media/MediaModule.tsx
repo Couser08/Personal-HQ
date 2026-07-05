@@ -129,8 +129,6 @@ export default function MediaModule() {
 
     const epCount = selectedAnime.episodes || 0;
     const progressPercent = epCount > 0 ? Math.min(100, Math.round((watchedEpisodes.length / epCount) * 100)) : 0;
-    const ratingColor = selectedAnime.rating ? getRatingGradientColor(selectedAnime.rating) : null;
-    const statusStyle = getStatusStyle(selectedAnime.status);
 
     return (
       <motion.div
