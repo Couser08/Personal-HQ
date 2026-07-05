@@ -26,58 +26,58 @@ export const JournalNoticeModal = () => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop blur */}
+          {/* Backdrop blur - Darker tint for high contrast premium pop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-md z-[10000]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[10000]"
           />
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-5 pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-              className="bg-white/80 dark:bg-stone-900/80 border border-white/20 dark:border-stone-800/40 rounded-3xl p-6 shadow-2xl w-full max-w-sm pointer-events-auto text-center backdrop-blur-xl flex flex-col items-center gap-5 relative overflow-hidden"
+              exit={{ opacity: 0, scale: 0.94, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
+              className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/50 dark:border-stone-800/60 rounded-[28px] p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-[360px] pointer-events-auto text-center backdrop-blur-2xl flex flex-col items-center gap-6 relative overflow-hidden antialiased"
             >
-              {/* Radial warm lighting background */}
-              <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+              {/* Radial premium gradient bloom background */}
+              <div className="absolute -top-16 -left-16 w-40 h-40 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
-              {/* Header Close button */}
+              {/* Header Close button - Refined alignment */}
               <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-stone-100 dark:bg-stone-850 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center justify-center transition-colors cursor-pointer"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 border border-stone-200/20 dark:border-stone-700/30"
                 aria-label="Close"
               >
-                <IconX size={14} />
+                <IconX size={15} className="stroke-[2.5]" />
               </button>
 
-              {/* Icon Container */}
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner mt-2">
-                <IconBook className="w-7 h-7" />
+              {/* Icon Container - Squircle geometry with realistic drop shadow */}
+              <div className="w-16 h-16 rounded-[22px] bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm border border-amber-500/10 mt-3 shrink-0">
+                <IconBook className="w-8 h-8 stroke-[1.75]" />
               </div>
 
-              {/* Content */}
-              <div className="space-y-2">
-                <h3 className="text-base font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+              {/* Content Block - Fixed layouts to take full component width evenly */}
+              <div className="w-full flex flex-col gap-2.5 px-1">
+                <h3 className="text-[17px] font-bold text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
                   Journal Redesign In Progress
                 </h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium">
+                <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium">
                   We are rewriting our Journal feature from the ground up to bring you a premium, Apple-style rich-text notebook. The module has been temporarily removed during this phase. 
                 </p>
-                <p className="text-[10px] text-amber-600 dark:text-amber-450 font-bold uppercase tracking-wider mt-1">
+                <p className="text-[10px] text-amber-600 dark:text-amber-500 font-extrabold uppercase tracking-widest mt-2 leading-none">
                   Thank you for your patience!
                 </p>
               </div>
 
-              {/* Button */}
+              {/* Primary Call-to-action Button - Fluid width fix with active micro-scaling */}
               <button
                 onClick={handleClose}
-                className="w-full py-2.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-md cursor-pointer mt-1"
+                className="w-full py-3 bg-stone-950 dark:bg-stone-50 text-white dark:text-stone-950 rounded-2xl text-xs font-bold hover:opacity-95 active:scale-[0.97] transition-all duration-200 shadow-md shadow-stone-950/10 dark:shadow-stone-50/5 cursor-pointer"
               >
                 Understood
               </button>

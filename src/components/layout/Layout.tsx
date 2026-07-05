@@ -7,7 +7,6 @@ import { UpdatePopup } from '../ui/UpdatePopup';
 import { MediaEntryModal } from '../ui/MediaEntryModal';
 import { TodoProjectModal } from '../ui/TodoProjectModal';
 import { TodoTaskModal } from '../ui/TodoTaskModal';
-import { PipTimerPortal } from '../ui/PipTimerPortal';
 import { JournalNoticeModal } from '../ui/JournalNoticeModal';
 import { DynamicIsland, triggerDynamicIsland } from '../ui/DynamicIsland';
 import { CommandPalette } from '../ui/CommandPalette';
@@ -36,7 +35,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative">
         {/* Toggle focus mode banner if active so user can exit */}
         {isFocusMode && (
-          <div className="fixed bottom-4 right-4 z-[9997]">
+          <div className="fixed bottom-4 right-4 z-9997">
             <button
               onClick={() => {
                 localStorage.setItem('phq_focus_mode', 'false');
@@ -68,7 +67,6 @@ export const Layout = ({ children }: LayoutProps) => {
       <MediaEntryModal />
       <TodoProjectModal />
       <TodoTaskModal />
-      <PipTimerPortal />
       <JournalNoticeModal />
     </div>
   );

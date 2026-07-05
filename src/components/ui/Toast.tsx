@@ -1,108 +1,107 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToastStore, type ToastType } from '../../store/useToastStore';
-import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle, IconDots } from '@tabler/icons-react';
+import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle, IconLoader2 } from '@tabler/icons-react';
 
 const getToastConfig = (type: ToastType) => {
   switch (type) {
     case 'success':
       return {
-        icon: <IconCheck className="w-5 h-5 text-green-500" />,
-        borderColor: 'border-l-green-500',
-        iconBg: 'bg-green-500/10'
+        icon: <IconCheck className="w-[15px] h-[15px] text-emerald-400" />,
+        glowColor: 'rgba(16, 185, 129, 0.2)'
       };
     case 'error':
       return {
-        icon: <IconX className="w-5 h-5 text-rose-500" />,
-        borderColor: 'border-l-rose-500',
-        iconBg: 'bg-rose-500/10'
+        icon: <IconX className="w-[15px] h-[15px] text-rose-400" />,
+        glowColor: 'rgba(244, 63, 94, 0.2)'
       };
     case 'warning':
       return {
-        icon: <IconAlertTriangle className="w-5 h-5 text-amber-500" />,
-        borderColor: 'border-l-amber-500',
-        iconBg: 'bg-amber-500/10'
+        icon: <IconAlertTriangle className="w-[15px] h-[15px] text-amber-400" />,
+        glowColor: 'rgba(245, 158, 11, 0.2)'
       };
     case 'info':
-      return {
-        icon: <IconInfoCircle className="w-5 h-5 text-blue-500" />,
-        borderColor: 'border-l-blue-500',
-        iconBg: 'bg-blue-500/10'
-      };
-    case 'update':
-      return {
-        icon: <IconDots className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />,
-        borderColor: 'border-l-zinc-700 dark:border-l-zinc-500',
-        iconBg: 'bg-zinc-500/10'
-      };
     default:
       return {
-        icon: <IconInfoCircle className="w-5 h-5 text-blue-500" />,
-        borderColor: 'border-l-blue-500',
-        iconBg: 'bg-blue-500/10'
+        icon: <IconInfoCircle className="w-[15px] h-[15px] text-blue-400" />,
+        glowColor: 'rgba(59, 130, 246, 0.2)'
       };
   }
 };
 
 export const ToastContainer = () => {
-  const { toasts, removeToast, position } = useToastStore();
+  const { toasts, removeToast } = useToastStore();
 
-  const getPositionClasses = () => {
-    switch (position) {
-      case 'top-left': return 'top-4 left-4 items-start';
-      case 'top-center': return 'top-4 left-1/2 -translate-x-1/2 items-center';
-      case 'bottom-right': return 'bottom-4 right-4 items-end';
-      case 'bottom-left': return 'bottom-4 left-4 items-start';
-      case 'bottom-center': return 'bottom-4 left-1/2 -translate-x-1/2 items-center';
-      case 'top-right':
-      default:
-        return 'top-4 right-4 items-end';
-    }
+  // Island Springs physics for zero-latency snapping
+  const islandTransition = {
+    type: 'spring',
+    stiffness: 450,
+    damping: 28,
+    mass: 0.6
   };
 
-  const getAnimationProps = () => {
-    const isTop = position.startsWith('top');
-    return {
-      initial: { opacity: 0, y: isTop ? -50 : 50, scale: 0.95 },
-      animate: { opacity: 1, y: 0, scale: 1 },
-      exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
-    };
-  };
+  // Hamesha latest toast active status frame hold karega
+  const activeToast = toasts[toasts.length - 1];
+  const config = activeToast ? getToastConfig(activeToast.type) : null;
 
   return (
-    <div className={`fixed z-[9999] flex flex-col gap-3 pointer-events-none ${getPositionClasses()}`}>
-      <AnimatePresence>
-        {toasts.map((toast) => {
-          const config = getToastConfig(toast.type);
-          const anim = getAnimationProps();
-          return (
-            <motion.div
-              key={toast.id}
-              initial={anim.initial}
-              animate={anim.animate}
-              exit={anim.exit}
-              layout
-              className={`pointer-events-auto flex items-start gap-4 p-4 pr-10 bg-surface rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-border min-w-[320px] max-w-[400px] border-l-4 ${config.borderColor} relative`}
-            >
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 ${config.iconBg}`}>
-                {config.icon}
-              </div>
-              <div className="flex flex-col gap-1 flex-1 min-w-0">
-                <h4 className="text-sm font-bold text-text-primary m-0 leading-tight">
-                  {toast.title}
-                </h4>
-                <p className="text-[13px] text-text-secondary m-0 leading-relaxed font-medium">
-                  {toast.message}
+    // Fixed container flush to the very top edge of viewport
+    <div className="fixed top-0 left-0 right-0 z-[99999] flex justify-center pointer-events-none select-none">
+      <AnimatePresence mode="wait">
+        {activeToast ? (
+          <motion.div
+            key={activeToast.id} // Forces clean re-morph on content swaps
+            initial={{ opacity: 0, y: -40, scaleX: 0.7 }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scaleX: 1,
+              boxShadow: `0 20px 40px -10px ${config?.glowColor}, 0 10px 20px -5px rgba(0,0,0,0.7)` 
+            }}
+            exit={{ opacity: 0, y: -30, scaleX: 0.8, transition: { duration: 0.15 } }}
+            transition={islandTransition}
+            className="pointer-events-auto flex items-center gap-3 px-5 py-3 bg-[#000000] text-white rounded-b-[22px] border-x border-b border-zinc-800/40 min-w-[280px] max-w-[400px]"
+            style={{
+              // Subtle top bar intersection blending shadow
+              borderTop: 'none'
+            }}
+          >
+            {/* Minimal Icon Core */}
+            <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800/70">
+              {config?.icon}
+            </div>
+
+            {/* Tight Inline Content Meta Layout */}
+            <div className="flex flex-col flex-1 min-w-0 pr-2">
+              <span className="text-[13px] font-semibold text-zinc-100 leading-none tracking-[-0.15px]">
+                {activeToast.title}
+              </span>
+              {activeToast.message && (
+                <p className="text-[11.5px] text-zinc-400 mt-1.5 leading-tight font-normal truncate">
+                  {activeToast.message}
                 </p>
-              </div>
-              <button
-                onClick={() => removeToast(toast.id)}
-                className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-              >
-                <IconX className="w-4 h-4" />
-              </button>
-            </motion.div>
-          );
-        })}
+              )}
+            </div>
+
+            {/* Smart Edge Cross Dismiss Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removeToast(activeToast.id);
+              }}
+              className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-zinc-900/60 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200 border border-zinc-800/50 transition-colors cursor-pointer"
+            >
+              <IconX className="w-2.5 h-2.5" />
+            </button>
+          </motion.div>
+        ) : (
+          /* Idle State Tiny Invisible Sensor Anchor */
+          <motion.div 
+            key="idle-notch"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-28 h-0 bg-black rounded-b-[12px]"
+          />
+        )}
       </AnimatePresence>
     </div>
   );

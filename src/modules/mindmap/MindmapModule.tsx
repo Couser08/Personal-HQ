@@ -221,6 +221,40 @@ export default function MindmapModule() {
             });
           }
 
+          // Create parent node by default if there are disjoint root nodes
+          const targets = new Set(formattedLinks.map((l: any) => l.target));
+          const actualRoots = formattedNodes.filter((n: any) => !n.parentId && !targets.has(n.id));
+
+          if (actualRoots.length > 1 || (actualRoots.length === 0 && formattedNodes.length > 0)) {
+            const masterRootId = `n-root-${Date.now()}`;
+            const masterTitle = obj.title || obj.name || (typeof file !== 'undefined' ? file.name.replace(/\.json$/i, '') : 'Imported Mindmap');
+            
+            formattedNodes.forEach((n: any) => { n.isRoot = false; });
+            
+            formattedNodes.unshift({
+              id: masterRootId,
+              text: masterTitle,
+              x: 450,
+              y: 250,
+              color: 'gray',
+              isRoot: true,
+              parentId: undefined,
+              side: undefined,
+              collapsed: false,
+              notes: undefined,
+              links: undefined,
+              images: undefined,
+              pdfs: undefined
+            });
+
+            actualRoots.forEach((r: any, i: number) => {
+              r.parentId = masterRootId;
+              r.x = 450 + (i % 2 === 0 ? 200 : -200);
+              r.y = 350 + (i * 80);
+              formattedLinks.push({ source: masterRootId, target: r.id });
+            });
+          }
+
           return {
             title: obj.title || obj.name || 'Imported Mindmap',
             nodes: formattedNodes,
@@ -1038,17 +1072,12 @@ function MindmapCanvas({
     if (mindmap.nodes.length === 0) return;
     if (!containerRef.current) return;
     
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    mindmap.nodes.forEach(n => {
-      if (n.x < minX) minX = n.x;
-      if (n.x > maxX) maxX = n.x;
-      if (n.y < minY) minY = n.y;
-      if (n.y > maxY) maxY = n.y;
-    });
-
+    // Find the center (root) node
+    const rootNode = mindmap.nodes.find(n => n.isRoot) || mindmap.nodes[0];
+    
     const rect = containerRef.current.getBoundingClientRect();
-    const centerX = minX + (maxX - minX) / 2 + 80;
-    const centerY = minY + (maxY - minY) / 2 + 22;
+    const centerX = rootNode.x + 80;
+    const centerY = rootNode.y + 25;
 
     setPan({
       x: rect.width / 2 - centerX,

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   IconPlayerPlay, IconPlayerPause, IconEdit, IconCheck,
-  IconFlame, IconClock, IconTarget, IconDeviceDesktop
+  IconFlame, IconClock, IconTarget
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -248,14 +248,10 @@ export default function PomodoroModule() {
     pomodoroSessionId,
     pomodoroStreak,
     pomodoroAssociatedTaskId,
-    pomodoroPipWindow,
-    pomodoroPipEnabled,
     setPomodoroSecondsLeft,
     setPomodoroTotalSeconds,
     setPomodoroSessionId,
     setPomodoroAssociatedTaskId,
-    setPomodoroPipWindow,
-    setPomodoroPipEnabled,
     startGlobalPomodoro,
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
@@ -269,14 +265,10 @@ export default function PomodoroModule() {
     pomodoroSessionId: state.pomodoroSessionId,
     pomodoroStreak: state.pomodoroStreak,
     pomodoroAssociatedTaskId: state.pomodoroAssociatedTaskId,
-    pomodoroPipWindow: state.pomodoroPipWindow,
-    pomodoroPipEnabled: state.pomodoroPipEnabled,
     setPomodoroSecondsLeft: state.setPomodoroSecondsLeft,
     setPomodoroTotalSeconds: state.setPomodoroTotalSeconds,
     setPomodoroSessionId: state.setPomodoroSessionId,
     setPomodoroAssociatedTaskId: state.setPomodoroAssociatedTaskId,
-    setPomodoroPipWindow: state.setPomodoroPipWindow,
-    setPomodoroPipEnabled: state.setPomodoroPipEnabled,
     startGlobalPomodoro: state.startGlobalPomodoro,
     pauseGlobalPomodoro: state.pauseGlobalPomodoro,
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
@@ -326,15 +318,6 @@ export default function PomodoroModule() {
     localStorage.setItem('pomodoro_theme', t);
   };
 
-  const handlePipToggle = (val: boolean) => {
-    setPomodoroPipEnabled(val);
-    localStorage.setItem('pomodoro_pip_enabled', String(val));
-    if (!val && pomodoroPipWindow) {
-      pomodoroPipWindow.close();
-      setPomodoroPipWindow(null);
-    }
-  };
-
   const handleAssociatedTaskChange = (id: string | null) => {
     setPomodoroAssociatedTaskId(id);
     if (id) {
@@ -363,66 +346,6 @@ export default function PomodoroModule() {
     else resumeGlobalPomodoro();
   };
 
-  // Picture-in-Picture setup
-  const openPiP = async () => {
-    if (!('documentPictureInPicture' in window)) {
-      addToast('PiP Unsupported', 'Your browser does not support Document Picture-in-Picture.', 'info');
-      return;
-    }
-    if (pomodoroPipWindow) {
-      pomodoroPipWindow.close();
-      setPomodoroPipWindow(null);
-      return;
-    }
-    try {
-      const pip = await (window as any).documentPictureInPicture.requestWindow({
-        width: 260,
-        height: 220,
-      });
-
-      // Inject theme configurations
-      pip.document.documentElement.className = document.documentElement.className;
-      pip.document.body.className = 'm-0 p-0 h-full overflow-hidden bg-background text-text-primary';
-
-      // Copy stylesheets
-      [...document.styleSheets].forEach((sheet) => {
-        try {
-          const cssRules = [...sheet.cssRules].map((rule) => rule.cssText).join('');
-          const style = pip.document.createElement('style');
-          style.textContent = cssRules;
-          pip.document.head.appendChild(style);
-        } catch (e) {
-          if (sheet.href) {
-            const link = pip.document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = sheet.href;
-            pip.document.head.appendChild(link);
-          }
-        }
-      });
-
-      // Inject outline resets
-      const resetStyle = pip.document.createElement('style');
-      resetStyle.textContent = '* { outline: none !important; box-sizing: border-box; } button:focus, button:active { outline: none !important; } body { font-family: "DM Sans", system-ui, sans-serif; }';
-      pip.document.head.appendChild(resetStyle);
-
-      setPomodoroPipWindow(pip);
-    } catch (err) {
-      console.warn("PiP Launch Error:", err);
-    }
-  };
-
-  // Handle PiP automation based on settings state
-  useEffect(() => {
-    if (pomodoroPipEnabled && pomodoroTimerState === 'running' && !pomodoroPipWindow) {
-      openPiP();
-    }
-    if (pomodoroTimerState === 'idle' && pomodoroPipWindow) {
-      pomodoroPipWindow.close();
-      setPomodoroPipWindow(null);
-    }
-  }, [pomodoroTimerState, pomodoroPipEnabled, pomodoroPipWindow]);
-
   const saveGoal = () => {
     setDailyGoal(tempGoal);
     setIsEditingGoal(false);
@@ -442,7 +365,7 @@ export default function PomodoroModule() {
 
       {/* Immersive Theme Background Overlays */}
       {pomodoroTheme === 'tokyo-sakura' && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[32px] z-0">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-4xl z-0">
           {[...Array(12)].map((_, i) => (
             <div key={i} className={`sakura-petal sakura-petal-${i + 1}`} />
           ))}
@@ -466,19 +389,6 @@ export default function PomodoroModule() {
           <p className="text-text-secondary text-sm mt-1">Deep work, one session at a time.</p>
         </div>
         <div className="flex items-center gap-2">
-          {'documentPictureInPicture' in window && (
-            <button 
-              onClick={openPiP}
-              className={`flex items-center justify-center w-10 h-10 rounded-full border transition-colors ${
-                pomodoroPipWindow 
-                  ? 'bg-primary border-primary/20 text-white' 
-                  : 'border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary'
-              }`}
-              title="Toggle PiP overlay window"
-            >
-              <IconDeviceDesktop className="w-5 h-5" />
-            </button>
-          )}
           <button 
             onClick={togglePlayPause} 
             className="flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm hover:opacity-90 cursor-pointer"
@@ -506,7 +416,7 @@ export default function PomodoroModule() {
           <select
             value={pomodoroAssociatedTaskId || ''}
             onChange={e => handleAssociatedTaskChange(e.target.value || null)}
-            className="bg-surface-alt border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none focus:border-primary cursor-pointer min-w-[220px]"
+            className="bg-surface-alt border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none focus:border-primary cursor-pointer min-w-55"
           >
             <option value="">No Associated Task</option>
             {todoTasks.filter(t => !t.completed && !t.deleted).map(task => (
@@ -707,28 +617,9 @@ export default function PomodoroModule() {
               <button onClick={() => setRingStyle('double')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${ringStyle === 'double' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Double</button>
             </div>
           </div>
-
-          {'documentPictureInPicture' in window && (
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <div>
-                <span className="text-xs font-bold text-text-primary block">Picture-in-Picture (PiP)</span>
-                <span className="text-[9px] text-text-muted">Always-on-top timer overlay</span>
-              </div>
-              <button
-                onClick={() => handlePipToggle(!pomodoroPipEnabled)}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  pomodoroPipEnabled ? 'bg-rose-500' : 'bg-surface-alt border-border'
-                }`}
-                style={pomodoroPipEnabled ? { backgroundColor: 'var(--color-primary)' } : {}}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    pomodoroPipEnabled ? 'translate-x-4' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          )}
+          <div className="rounded-2xl border border-border bg-surface-alt px-3 py-2 text-[11px] text-text-secondary">
+            Dashboard dynamic island now handles the compact timer overlay while Pomodoro stays in-page.
+          </div>
         </div>
       </div>
     </motion.div>

@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      zIndex: {
+        9997: '9997',
+      },
       colors: {
         background: '#0a0a0a',
         surface: '#111111',
