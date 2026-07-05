@@ -1911,15 +1911,17 @@ function MindmapCanvas({
 
                       {/* PDF attachments indicator */}
                       {node.pdfs && node.pdfs.length > 0 && (
-                        <a
-                          href={node.pdfs[0].base64}
-                          download={node.pdfs[0].name}
-                          onClick={e => e.stopPropagation()}
-                          className="text-red-500 hover:text-red-600 p-0.5 cursor-pointer flex items-center justify-center font-bold text-[8px] border border-red-500/20 px-1 rounded bg-red-500/5 leading-none"
-                          title={`Download ${node.pdfs[0].name}`}
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setPdfViewerPdf(node.pdfs![0]);
+                          }}
+                          className="text-red-500 hover:text-red-600 p-0.5 cursor-pointer flex items-center justify-center font-bold text-[8px] border border-red-500/20 px-1 rounded bg-red-500/5 leading-none pointer-events-auto"
+                          title={`View ${node.pdfs[0].name}`}
                         >
                           PDF
-                        </a>
+                        </button>
                       )}
 
                       {/* Notes indicator badge */}
@@ -1929,7 +1931,7 @@ function MindmapCanvas({
                     </div>
 
                     {/* Apple-style Hover Overlay (Only if items are available) */}
-                    {(node.notes || (node.links && node.links.length > 0) || (node.images && node.images.length > 0) || node.imageUrl) && (
+                    {(node.notes || (node.links && node.links.length > 0) || (node.images && node.images.length > 0) || node.imageUrl || (node.pdfs && node.pdfs.length > 0)) && (
                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-surface/90 backdrop-blur-md border border-border/80 rounded-full px-2 py-1 shadow-lg flex items-center gap-1.5 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all z-50 pointer-events-auto shrink-0 select-none">
                         {node.notes && (
                           <button
@@ -1977,6 +1979,21 @@ function MindmapCanvas({
                             <IconPhoto className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        {node.pdfs && node.pdfs.length > 0 && node.pdfs.map((pdf, pdfIdx) => (
+                          <button
+                            key={pdfIdx}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfViewerPdf(pdf);
+                            }}
+                            className="h-6.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-1 px-1.5 text-text-secondary hover:text-red-500 transition-colors cursor-pointer pointer-events-auto"
+                            title={pdf.name}
+                          >
+                            <span className="text-[8px] font-bold text-red-500 border border-red-500/20 px-1 rounded bg-red-500/5 leading-none">PDF</span>
+                            <span className="text-[10px] max-w-[60px] truncate">{pdf.name}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
 
