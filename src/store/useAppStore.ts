@@ -546,6 +546,11 @@ export interface AppStore {
   updateMindmap: (id: string, data: Partial<Mindmap>) => Promise<void>;
   deleteMindmap: (id: string) => Promise<void>;
 
+  // Drawing Module
+  drawingElements: readonly any[];
+  drawingAppState: any;
+  setDrawingData: (elements: readonly any[], appState: any) => void;
+
   // Standard Arithmetic Calculator
   standardHistory: StandardCalculation[];
   addStandardRecord: (record: StandardCalculation) => Promise<void>;
@@ -1419,6 +1424,11 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       throw error;
     }
   },
+
+  // Drawing Actions
+  drawingElements: [],
+  drawingAppState: {},
+  setDrawingData: (elements, appState) => set({ drawingElements: elements, drawingAppState: appState }),
 
   addMindmap: async (mindmap) => {
     const uid = useAuthStore.getState().user?.id;

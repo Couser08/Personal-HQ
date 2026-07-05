@@ -3,7 +3,7 @@ import {
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder
+  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
   { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
+  { id: 'drawing', label: 'Drawing', icon: IconPencil },
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
