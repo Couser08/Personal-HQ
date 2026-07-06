@@ -23,7 +23,6 @@ import {
 } from '@tabler/icons-react';
 import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
-import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
@@ -96,7 +95,6 @@ const PAGE_STYLE_OPTIONS: Array<{ value: EntryPageStyle; label: string }> = [
   { value: 'cornell', label: 'Cornell' },
 ];
 
-const DEFAULT_DATE_FORMAT = { month: 'short', day: 'numeric', year: 'numeric' } as const;
 
 const buildBlankEntry = (title = 'New Journal Entry'): JournalEntry => ({
   id: crypto.randomUUID(),
@@ -122,8 +120,6 @@ const wordCount = (value: string) => {
   const cleaned = stripHtml(value);
   return cleaned ? cleaned.split(' ').length : 0;
 };
-
-const formatDate = (value: string) => new Date(value).toLocaleDateString(undefined, DEFAULT_DATE_FORMAT);
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString(undefined, {
@@ -196,8 +192,7 @@ export default function JournalModule() {
   const [search, setSearch] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [activeEntryId, setActiveEntryId] = useState<string | null>(journals[0]?.id ?? null);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(true);
+  const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
   const [title, setTitle] = useState('');
@@ -219,13 +214,8 @@ export default function JournalModule() {
   );
 
   useEffect(() => {
-    if (journals.length === 0) {
+    if (activeEntryId && !journals.some((entry) => entry.id === activeEntryId)) {
       setActiveEntryId(null);
-      return;
-    }
-
-    if (!activeEntryId || !journals.some((entry) => entry.id === activeEntryId)) {
-      setActiveEntryId(journals[0].id);
     }
   }, [journals, activeEntryId]);
 
@@ -316,6 +306,11 @@ export default function JournalModule() {
     } catch {
       setSaveStatus('error');
     }
+  };
+
+  const forceSaveAndClose = async () => {
+    await forceSave();
+    setActiveEntryId(null);
   };
 
   useEffect(() => {
@@ -432,14 +427,181 @@ export default function JournalModule() {
       : { backgroundColor: currentStyle.paperBg };
 
   const gridColsClass = `grid min-h-[calc(100vh-2rem)] gap-4 transition-all duration-300 ${
-    isLibraryOpen && isSettingsOpen
-      ? 'xl:grid-cols-[280px_1fr_320px]'
-      : isLibraryOpen
-      ? 'xl:grid-cols-[280px_1fr]'
-      : isSettingsOpen
+    isSettingsOpen
       ? 'xl:grid-cols-[1fr_320px]'
       : 'xl:grid-cols-1'
   }`;
+
+  if (!activeEntryId || !activeEntry) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+        className="flex min-h-[calc(100vh-2rem)] flex-col gap-6 text-left"
+      >
+        {/* Welcome Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-6">
+          <div>
+            <h2 className="text-3xl font-black tracking-tight text-text-primary">Journal Workspace</h2>
+            <p className="text-xs text-text-secondary mt-1">Capture your thoughts, track daily goals, and review your reflection logs.</p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={createEntry} className="btn btn-primary btn-md flex items-center gap-2">
+              <IconPlus size={16} />
+              <span>New Journal Entry</span>
+            </button>
+            <button onClick={() => setActiveModule('dashboard')} className="btn btn-secondary btn-md flex items-center gap-2">
+              <IconArrowLeft size={16} />
+              <span>Back Home</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-surface rounded-3xl border border-border/70 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+              <IconBook2 size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-text-primary">{journals.length}</p>
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mt-0.5">Total Entries</p>
+            </div>
+          </div>
+          <div className="bg-surface rounded-3xl border border-border/70 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+              <IconSparkles size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-text-primary">{streakDays} days</p>
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mt-0.5">Current Streak</p>
+            </div>
+          </div>
+          <div className="bg-surface rounded-3xl border border-border/70 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+              <IconNotebook size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-text-primary">{totalWords}</p>
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mt-0.5">Total Words Written</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-grow">
+            <IconSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search journal entries..."
+              className="input-field w-full pl-10 bg-surface"
+            />
+          </div>
+          <div className="flex bg-surface p-1 rounded-xl border border-border shrink-0">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'all' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            >
+              All Entries
+            </button>
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'favorites' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            >
+              Favorites
+            </button>
+          </div>
+        </div>
+
+        {/* Catalog Grid */}
+        {filteredEntries.length === 0 ? (
+          <div className="bg-surface border border-border/70 rounded-3xl p-12 text-center shadow-sm">
+            <EmptyState
+              title="No journal entries found"
+              description="Create a new journal entry or clear the search filter to get started."
+              action={
+                <button onClick={createEntry} className="btn btn-primary btn-md">
+                  Create First Entry
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEntries.map((entry) => {
+              const cleanContent = (entry.content || '').replace(/<[^>]*>/g, '').trim();
+              const snippet = cleanContent ? (cleanContent.length > 90 ? cleanContent.slice(0, 90) + '...' : cleanContent) : 'Nothing written yet.';
+
+              return (
+                <div
+                  key={entry.id}
+                  onClick={() => {
+                    setActiveEntryId(entry.id);
+                  }}
+                  className="group relative bg-surface border border-border/70 hover:border-primary/40 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between min-h-[190px] overflow-hidden"
+                >
+                  <div className="absolute w-24 h-24 rounded-full pointer-events-none -top-10 -left-10 bg-primary/5 blur-xl group-hover:bg-primary/10 transition-colors" />
+                  
+                  <div className="relative z-10 flex-1 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{formatDateTime(entry.date)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-surface-alt text-text-primary border border-border/50">
+                          {entry.mood}
+                        </span>
+                        {entry.pinned && (
+                          <span className="text-rose-500 font-extrabold text-[9px] tracking-wider bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-full">PINNED</span>
+                        )}
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-text-primary group-hover:text-primary transition-colors leading-tight mt-1">
+                      {entry.title || 'Untitled Entry'}
+                    </h4>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-3 mt-1">
+                      {snippet}
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 flex items-center justify-between border-t border-border/40 pt-4 mt-4">
+                    <div className="flex flex-wrap gap-1 max-w-[70%]">
+                      {entry.tags.slice(0, 2).map((t) => (
+                        <span key={t} className="text-[9px] font-semibold text-text-muted bg-surface-alt px-1.5 py-0.5 rounded">
+                          #{t}
+                        </span>
+                      ))}
+                      {entry.tags.length > 2 && (
+                        <span className="text-[9px] font-semibold text-text-muted">
+                          +{entry.tags.length - 2}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showConfirm(
+                          'Delete Journal Entry',
+                          `Are you sure you want to delete "${entry.title || 'Untitled Entry'}"? This action cannot be undone.`,
+                          () => deleteJournalEntry(entry.id)
+                        );
+                      }}
+                      className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Delete Entry"
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -450,148 +612,9 @@ export default function JournalModule() {
       className="flex min-h-[calc(100vh-2rem)] flex-col gap-4"
     >
       <div className={gridColsClass}>
-        {/* Left Sidebar (Library) */}
-        {isLibraryOpen && (
-          <aside className="relative group/sidebar flex flex-col gap-4 rounded-[28px] border border-border/70 bg-surface/90 p-4 shadow-[0_16px_45px_-24px_rgba(0,0,0,0.28)] backdrop-blur-xl transition-all duration-300">
-            {/* Hover Collapse Slider Handle */}
-            <div className="absolute top-1/2 -right-3 -translate-y-1/2 z-20 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => setIsLibraryOpen(false)}
-                className="w-5 h-10 rounded-full border border-border bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover flex items-center justify-center shadow-md cursor-pointer"
-                title="Collapse Library"
-              >
-                <IconChevronRight size={12} className="rotate-180" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-text-muted">Journal Library</p>
-                <p className="mt-1 text-xs text-text-secondary">Your entries, templates, and favorites.</p>
-              </div>
-              <button
-                onClick={createEntry}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
-                title="Create new entry"
-              >
-                <IconPlus size={16} />
-              </button>
-            </div>
-
-            <div className="relative">
-              <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search entries"
-                className="input-field w-full pl-9"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${activeTab === 'all' ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'}`}
-              >
-                All Entries
-              </button>
-              <button
-                onClick={() => setActiveTab('favorites')}
-                className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${activeTab === 'favorites' ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'}`}
-              >
-                Favorites
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-              {filteredEntries.length === 0 ? (
-                <div className="rounded-2xl border border-border/60 bg-surface-alt/40 p-4">
-                  <EmptyState
-                    title="No journal entries"
-                    description="Create a new journal entry or clear the search to reveal your saved pages."
-                    action={
-                      <button onClick={createEntry} className="btn btn-primary btn-md">
-                        Create Entry
-                      </button>
-                    }
-                  />
-                </div>
-              ) : (
-                filteredEntries.map((entry) => {
-                  const active = entry.id === activeEntryId;
-                  return (
-                    <button
-                      key={entry.id}
-                      onClick={() => {
-                        setActiveEntryId(entry.id);
-                        setPreviewMode(false);
-                      }}
-                      className={`group w-full rounded-2xl border p-3 text-left transition-all ${active ? 'border-primary/60 bg-primary/5 shadow-sm' : 'border-border/60 bg-surface hover:bg-surface-hover'}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <IconNotebook size={14} className={active ? 'text-primary' : 'text-text-muted'} />
-                            <span className="truncate text-sm font-semibold text-text-primary">{entry.title || 'Untitled Entry'}</span>
-                          </div>
-                          <p className="mt-1 text-[11px] text-text-muted">{formatDate(entry.date)} · {wordCount(entry.content)} words</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {entry.pinned && <IconHeartFilled size={14} className="text-red-500" />}
-                          <span className="rounded-full bg-surface-alt px-2 py-1 text-[10px] font-semibold text-text-secondary">{entry.pageStyle}</span>
-                        </div>
-                      </div>
-                      <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-text-secondary">
-                        {stripHtml(entry.content) || 'Blank page ready for thoughts.'}
-                      </p>
-                      {entry.tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {entry.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} className="bg-surface-alt text-[10px] text-text-secondary">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-border/60 bg-surface-alt/35 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted">Journal Stats</p>
-                <IconSparkles size={14} className="text-primary" />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-                <div className="rounded-2xl border border-border/60 bg-surface p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Entries</p>
-                  <p className="mt-1 text-xl font-bold text-text-primary">{journals.length}</p>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-surface p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Words</p>
-                  <p className="mt-1 text-xl font-bold text-text-primary">{totalWords}</p>
-                </div>
-              </div>
-            </div>
-          </aside>
-        )}
-
         {/* Center column (Workspace) */}
         <section className="relative group/workspace flex min-h-0 flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-300">
-          {/* Hover Expand Left Slider Handle */}
-          {!isLibraryOpen && (
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 z-20 opacity-0 group-hover/workspace:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => setIsLibraryOpen(true)}
-                className="w-5 h-10 rounded-r-full border-y border-r border-border bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover flex items-center justify-center shadow-md cursor-pointer"
-                title="Expand Library"
-              >
-                <IconChevronRight size={12} />
-              </button>
-            </div>
-          )}
-
+          
           {/* Hover Expand Right Slider Handle */}
           {!isSettingsOpen && activeEntry && (
             <div className="absolute top-1/2 right-0 -translate-y-1/2 z-20 opacity-0 group-hover/workspace:opacity-100 transition-opacity duration-200">
@@ -607,19 +630,10 @@ export default function JournalModule() {
           {/* Header Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-border/60 bg-surface px-5 py-3 shadow-sm">
             <div className="flex items-center gap-2">
-              {/* Library Toggle button */}
               <button
-                onClick={() => setIsLibraryOpen(open => !open)}
-                className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition-all ${isLibraryOpen ? 'border-primary/30 bg-primary/5 text-primary' : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'}`}
-                title="Toggle Library"
-              >
-                <IconNotebook size={18} />
-              </button>
-
-              <button
-                onClick={() => setActiveModule('dashboard')}
+                onClick={forceSaveAndClose}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-surface-alt text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
-                title="Back to dashboard"
+                title="Back to Journal Catalog"
               >
                 <IconArrowLeft size={18} />
               </button>

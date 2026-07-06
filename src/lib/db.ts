@@ -788,15 +788,39 @@ export const journalService = {
     if (error) throw error;
   },
 
-  async update(id: string, data: Partial<JournalEntry>) {
+  async update(id: string, data: Partial<JournalEntry>, userId?: string) {
     const basePayload = buildJournalUpdateBasePayload(data);
     const primaryPayload = { ...basePayload, ...buildJournalUpdateOptionalPayload(data), updated_at: new Date().toISOString() };
 
-    let { error } = await supabase.from('journals').update(primaryPayload).eq('id', id);
+    let error;
+    if (userId) {
+      const upsertPayload = {
+        id,
+        user_id: userId,
+        ...primaryPayload
+      };
+      const response = await supabase.from('journals').upsert(upsertPayload);
+      error = response.error;
 
-    if (error && isMissingJournalColumnError(error)) {
-      const fallbackPayload = { ...basePayload, updated_at: new Date().toISOString() };
-      ({ error } = await supabase.from('journals').update(fallbackPayload).eq('id', id));
+      if (error && isMissingJournalColumnError(error)) {
+        const fallbackUpsert = {
+          id,
+          user_id: userId,
+          ...basePayload,
+          updated_at: new Date().toISOString()
+        };
+        const fallbackResponse = await supabase.from('journals').upsert(fallbackUpsert);
+        error = fallbackResponse.error;
+      }
+    } else {
+      const response = await supabase.from('journals').update(primaryPayload).eq('id', id);
+      error = response.error;
+
+      if (error && isMissingJournalColumnError(error)) {
+        const fallbackPayload = { ...basePayload, updated_at: new Date().toISOString() };
+        const fallbackResponse = await supabase.from('journals').update(fallbackPayload).eq('id', id);
+        error = fallbackResponse.error;
+      }
     }
 
     if (error) throw error;
@@ -918,6 +942,31 @@ export const standardCalcService = {
       .from('standard_calculations')
       .delete()
       .eq('user_id', userId);
+    if (error) throw error;
+  }
+};
+
+// ─── User Settings ────────────────────────────────────────────────────────────
+
+export const settingsService = {
+  async fetch(userId: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async upsert(userId: string, settings: any) {
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: userId,
+        ...settings,
+        updated_at: new Date().toISOString(),
+      });
     if (error) throw error;
   }
 };

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import {
   IconBold, IconItalic, IconUnderline, IconStrikethrough,
   IconList, IconListNumbers, IconH1,
@@ -211,6 +211,25 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
   const syncContent = useCallback(() => {
     if (editorRef.current) onChange(editorRef.current.innerHTML);
   }, [onChange]);
+
+  useEffect(() => {
+    const node = editorRef.current;
+    if (!node || document.activeElement === node) return;
+
+    let cancelled = false;
+    const isDark = document.documentElement.classList.contains('dark');
+
+    highlightAllCodeBlocksInHtml(value, isDark).then((html) => {
+      if (cancelled || !editorRef.current || document.activeElement === editorRef.current) return;
+      if (editorRef.current.innerHTML !== html) {
+        editorRef.current.innerHTML = html;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
 
   const exec = useCallback((command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -425,7 +444,7 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
               }}
               placeholder="// Paste or write your code here..."
               spellCheck={false}
-              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[180px]"
+              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-45"
             />
           </div>
           <div className="flex justify-end gap-2 pt-3 border-t border-border-alt">

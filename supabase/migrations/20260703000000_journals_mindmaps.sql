@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.journals (
 -- Enable RLS for Journals
 ALTER TABLE public.journals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own journals" ON public.journals;
 CREATE POLICY "Users can manage their own journals"
     ON public.journals
     FOR ALL
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.mindmaps (
 -- Enable RLS for Mindmaps
 ALTER TABLE public.mindmaps ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own mindmaps" ON public.mindmaps;
 CREATE POLICY "Users can manage their own mindmaps"
     ON public.mindmaps
     FOR ALL
@@ -64,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.standard_calculations (
 -- Enable RLS for Standard Calculations
 ALTER TABLE public.standard_calculations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own standard calculations" ON public.standard_calculations;
 CREATE POLICY "Users can manage their own standard calculations"
     ON public.standard_calculations
     FOR ALL

@@ -96,6 +96,8 @@ export function MediaEntryModal() {
       let existingTimestamps: Record<number, string> = {};
       let existingLastEp: number | null = null;
       let existingLastTime = '';
+      let existingBanner = '';
+      let existingThumb = '';
 
       if (editingLog) {
         try {
@@ -105,6 +107,8 @@ export function MediaEntryModal() {
             existingTimestamps = meta.timestamps ?? {};
             existingLastEp = meta.lastWatchedEp ?? null;
             existingLastTime = meta.lastWatchedTimestamp ?? '';
+            existingBanner = meta.bannerImage ?? '';
+            existingThumb = meta.episodeThumb ?? '';
           }
         } catch (e) {}
       }
@@ -115,7 +119,9 @@ export function MediaEntryModal() {
         watchedEpisodes: existingWatched,
         timestamps: existingTimestamps,
         lastWatchedEp: existingLastEp,
-        lastWatchedTimestamp: existingLastTime
+        lastWatchedTimestamp: existingLastTime,
+        bannerImage: existingBanner,
+        episodeThumb: existingThumb,
       };
       finalNotes = JSON.stringify(meta);
     }

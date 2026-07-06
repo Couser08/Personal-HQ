@@ -34,13 +34,15 @@ function getRatingGradientColor(rating: number): string {
 }
 
 export default function MediaModule() {
-  const { theme, mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal, updateMediaLog } = useAppStore(useShallow(state => ({
+  const { theme, mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal, updateMediaLog, settings, updateSettings } = useAppStore(useShallow(state => ({
     theme: state.theme,
     mediaLogs: state.mediaLogs,
     deleteMediaLog: state.deleteMediaLog,
     showConfirm: state.showConfirm,
     openMediaEntryModal: state.openMediaEntryModal,
     updateMediaLog: state.updateMediaLog,
+    settings: state.settings,
+    updateSettings: state.updateSettings,
   })));
   
   const [activeTab, setActiveTab] = useState<'ANIME' | 'GAME'>('ANIME');
@@ -48,6 +50,9 @@ export default function MediaModule() {
   
   // Dedicated anime detailed page tracking
   const [selectedAnimeId, setSelectedAnimeId] = useState<string | null>(null);
+
+  const [isEditingQuote, setIsEditingQuote] = useState(false);
+  const [quoteInput, setQuoteInput] = useState('');
 
   const handleTabChange = (tab: 'ANIME' | 'GAME') => {
     if (tab !== activeTab) {
@@ -225,33 +230,62 @@ export default function MediaModule() {
               />
               <label
                 htmlFor="banner-image-upload"
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-border bg-surface/40 backdrop-blur-md hover:bg-surface/80 hover:scale-105 active:scale-95 transition-all cursor-pointer text-text-primary text-xs font-bold"
-                title="Upload Custom Banner Image"
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 hover:scale-105 active:scale-95 transition-all cursor-pointer text-white text-xs font-bold shadow-lg"
+                title="Upload Widescreen Banner (16:9 ratio recommended)"
               >
                 <IconPlus size={14} />
-                <span>Upload Banner</span>
+                <span>Upload Banner (16:9)</span>
               </label>
             </div>
-            <div className="flex flex-col items-start gap-4">
+            <div className="flex flex-col items-start gap-4 flex-1 max-w-xl md:max-w-2xl mr-24">
               <button
                 onClick={() => setSelectedAnimeId(null)}
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-border bg-surface/40 backdrop-blur-md hover:bg-surface/80 transition-colors cursor-pointer text-text-primary"
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 transition-colors cursor-pointer text-white shadow-lg"
               >
                 <IconArrowLeft size={16} />
                 <span className="text-xs font-bold">Back to Catalogue</span>
               </button>
               
-              <div className="mt-4">
-                <p className="text-3xl md:text-4xl font-serif italic text-text-primary drop-shadow-md tracking-wide">
-                  " Outdo your yesterday. "
-                </p>
+              <div className="mt-4 w-full">
+                {isEditingQuote ? (
+                  <input
+                    type="text"
+                    value={quoteInput}
+                    onChange={(e) => setQuoteInput(e.target.value)}
+                    onBlur={() => {
+                      setIsEditingQuote(false);
+                      updateSettings({ mediaQuote: quoteInput });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setIsEditingQuote(false);
+                        updateSettings({ mediaQuote: quoteInput });
+                      } else if (e.key === 'Escape') {
+                        setIsEditingQuote(false);
+                      }
+                    }}
+                    className="bg-black/60 backdrop-blur-md border border-white/20 text-xl md:text-2xl font-bold tracking-tight text-white focus:outline-none w-full max-w-xl px-4 py-2 rounded-2xl shadow-2xl focus:border-rose-500 transition-all"
+                    autoFocus
+                  />
+                ) : (
+                  <p 
+                    onDoubleClick={() => {
+                      setQuoteInput(settings.mediaQuote || "Outdo your yesterday.");
+                      setIsEditingQuote(true);
+                    }}
+                    className="text-xl md:text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] cursor-pointer hover:text-rose-400 transition-colors select-none max-w-xl"
+                    title="Double-click to edit quote"
+                  >
+                    "{settings.mediaQuote || "Outdo your yesterday."}"
+                  </p>
+                )}
               </div>
             </div>
           </div>
           
           {/* Title positioned inside the banner */}
           <div className="absolute bottom-6 left-6 md:left-8 right-6 md:right-8 flex flex-col md:flex-row md:items-end justify-between z-10 gap-4">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-text-primary drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
               {selectedAnime.title}
             </h2>
             <div className="flex items-center gap-3 shrink-0">
@@ -310,10 +344,10 @@ export default function MediaModule() {
                   <label
                     htmlFor="episode-thumb-upload"
                     className="text-[10px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-md cursor-pointer transition-colors flex items-center gap-1"
-                    title="Upload Episode Card Thumbnail"
+                    title="Upload Square Thumbnail (1:1 ratio recommended)"
                   >
                     <IconPlus size={10} />
-                    <span>Upload Thumb</span>
+                    <span>Upload Thumb (1:1)</span>
                   </label>
                   <span className="text-sm font-black text-text-primary">{watchedEpisodes.length} / {epCount}</span>
                   <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md">{progressPercent}%</span>

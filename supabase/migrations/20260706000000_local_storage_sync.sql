@@ -101,12 +101,25 @@ ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dev_goals ENABLE ROW LEVEL SECURITY;
 
 -- Enable standard CRUD policies based on auth.uid()
+DROP POLICY IF EXISTS "Manage user_settings policy" ON public.user_settings;
 CREATE POLICY "Manage user_settings policy" ON public.user_settings FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage sprints policy" ON public.sprints;
 CREATE POLICY "Manage sprints policy" ON public.sprints FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage dsa_problems policy" ON public.dsa_problems;
 CREATE POLICY "Manage dsa_problems policy" ON public.dsa_problems FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage til_logs policy" ON public.til_logs;
 CREATE POLICY "Manage til_logs policy" ON public.til_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage roadmaps policy" ON public.roadmaps;
 CREATE POLICY "Manage roadmaps policy" ON public.roadmaps FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage resources policy" ON public.resources;
 CREATE POLICY "Manage resources policy" ON public.resources FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Manage dev_goals policy" ON public.dev_goals;
 CREATE POLICY "Manage dev_goals policy" ON public.dev_goals FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Create Indexes for performance

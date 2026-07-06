@@ -3,7 +3,7 @@ import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
   budgetCategoryService, budgetTransactionService,
-  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService
+  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -435,6 +435,7 @@ export interface AppSettings {
   initialBankBalance: number;
   initialCashBalance: number;
   currencySymbol?: string;
+  mediaQuote?: string;
 }
 
 export interface PomodoroStats {
@@ -672,6 +673,10 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   setTheme: (theme) => {
     localStorage.setItem('theme', theme);
     set({ theme });
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      settingsService.upsert(uid, { theme }).catch((e) => console.error('Failed to sync theme:', e));
+    }
   },
 
   settings: loadStoredSettings(),
@@ -696,6 +701,20 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set((state) => {
       const settings = { ...state.settings, ...newSettings };
       localStorage.setItem('settings', JSON.stringify(settings));
+      const uid = useAuthStore.getState().user?.id;
+      if (uid) {
+        settingsService.upsert(uid, {
+          countdown_template: settings.countdownTemplate,
+          accent_color: settings.accentColor,
+          animation_speed: settings.animationSpeed,
+          compact_mode: settings.compactMode,
+          sound_enabled: settings.soundEnabled,
+          initial_bank_balance: settings.initialBankBalance,
+          initial_cash_balance: settings.initialCashBalance,
+          currency_symbol: settings.currencySymbol || '$',
+          media_quote: settings.mediaQuote || '',
+        }).catch((e) => console.error('Failed to sync settings:', e));
+      }
       return { settings };
     }),
 
@@ -744,6 +763,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       journalService.fetchAll(userId),
       mindmapService.fetchAll(userId),
       standardCalcService.fetchAll(userId),
+      settingsService.fetch(userId),
     ]);
 
     const serviceNames = [
@@ -762,6 +782,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'journals',
       'mindmaps',
       'standard calculations history',
+      'user settings',
     ];
 
     const failedServices = results
@@ -783,6 +804,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
     const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
     const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
+    const settingsResult = results[15].status === 'fulfilled' ? results[15].value : null;
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -793,9 +815,52 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       );
     }
 
+    let dbSettings = get().settings;
+    let dbTheme = get().theme;
+
+    if (settingsResult) {
+      dbTheme = (settingsResult.theme as Theme) || dbTheme;
+      dbSettings = {
+        countdownTemplate: settingsResult.countdown_template || dbSettings.countdownTemplate,
+        accentColor: settingsResult.accent_color || dbSettings.accentColor,
+        animationSpeed: settingsResult.animation_speed || dbSettings.animationSpeed,
+        compactMode: settingsResult.compact_mode !== undefined ? settingsResult.compact_mode : dbSettings.compactMode,
+        soundEnabled: settingsResult.sound_enabled !== undefined ? settingsResult.sound_enabled : dbSettings.soundEnabled,
+        initialBankBalance: settingsResult.initial_bank_balance !== undefined ? Number(settingsResult.initial_bank_balance) : dbSettings.initialBankBalance,
+        initialCashBalance: settingsResult.initial_cash_balance !== undefined ? Number(settingsResult.initial_cash_balance) : dbSettings.initialCashBalance,
+        currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
+        mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
+      };
+      
+      localStorage.setItem('theme', dbTheme);
+      localStorage.setItem('settings', JSON.stringify(dbSettings));
+    } else {
+      settingsService.upsert(userId, {
+        theme: dbTheme,
+        countdown_template: dbSettings.countdownTemplate,
+        accent_color: dbSettings.accentColor,
+        animation_speed: dbSettings.animationSpeed,
+        compact_mode: dbSettings.compactMode,
+        sound_enabled: dbSettings.soundEnabled,
+        initial_bank_balance: dbSettings.initialBankBalance,
+        initial_cash_balance: dbSettings.initialCashBalance,
+        currency_symbol: dbSettings.currencySymbol || '$',
+        media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
+      }).catch((e) => console.error('Failed to initialize settings:', e));
+    }
+
+    if (results[12].status === 'fulfilled') {
+      localStorage.setItem('phq_journals', JSON.stringify(journals));
+    }
+    if (results[13].status === 'fulfilled') {
+      localStorage.setItem('phq_mindmaps', JSON.stringify(mindmaps));
+    }
+
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
       budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory,
+      theme: dbTheme,
+      settings: dbSettings,
       dataLoaded: true
     });
   },
@@ -1478,7 +1543,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     localStorage.setItem('phq_journals', JSON.stringify(next));
     set({ journals: next });
     try {
-      await journalService.update(id, data);
+      const uid = useAuthStore.getState().user?.id;
+      await journalService.update(id, data, uid);
       useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
     } catch (error) {
       localStorage.setItem('phq_journals', JSON.stringify(previous));

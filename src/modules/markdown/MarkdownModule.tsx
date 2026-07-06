@@ -186,6 +186,17 @@ interface CanvasElement {
 `
 };
 
+const SLASH_COMMANDS = [
+  { label: 'Heading 1', syntax: '# ', desc: 'Large title heading' },
+  { label: 'Heading 2', syntax: '## ', desc: 'Medium section heading' },
+  { label: 'Heading 3', syntax: '### ', desc: 'Small subsection heading' },
+  { label: 'Checklist Item', syntax: '- [ ] ', desc: 'To-do list item' },
+  { label: 'Bullet List', syntax: '- ', desc: 'Simple bullet point' },
+  { label: 'Code Block', syntax: '```javascript\n\n```', desc: 'Code block syntax' },
+  { label: 'Alert Note', syntax: '> [!NOTE]\n> ', desc: 'Blue notice box' },
+  { label: 'Alert Warning', syntax: '> [!WARNING]\n> ', desc: 'Yellow warning box' },
+];
+
 export default function MarkdownModule() {
   const { theme } = useAppStore(useShallow(state => ({ theme: state.theme })));
   
@@ -207,10 +218,32 @@ export default function MarkdownModule() {
   const [isEditorOpen, setIsEditorOpen] = useState(true);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
 
+  // Slash commands popup state
+  const [slashMenu, setSlashMenu] = useState<{
+    isOpen: boolean;
+    triggerIndex: number;
+    searchQuery: string;
+  }>({
+    isOpen: false,
+    triggerIndex: -1,
+    searchQuery: '',
+  });
+  const [activeCommandIndex, setActiveCommandIndex] = useState(0);
+
   // Autosave draft
   useEffect(() => {
     localStorage.setItem('phq_markdown_draft', content);
   }, [content]);
+
+  // Scroll active slash command into view
+  useEffect(() => {
+    if (slashMenu.isOpen) {
+      const activeEl = document.getElementById(`slash-cmd-item-${activeCommandIndex}`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeCommandIndex, slashMenu.isOpen]);
 
   // Load a template
   const handleLoadTemplate = (key: keyof typeof TEMPLATES) => {
@@ -236,6 +269,79 @@ export default function MarkdownModule() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {}
+  };
+
+  const filteredCommands = useMemo(() => {
+    const q = slashMenu.searchQuery.toLowerCase();
+    return SLASH_COMMANDS.filter(cmd => 
+      cmd.label.toLowerCase().includes(q) || 
+      cmd.desc.toLowerCase().includes(q)
+    );
+  }, [slashMenu.searchQuery]);
+
+  const handleSelectSlashCommand = (syntax: string) => {
+    if (slashMenu.triggerIndex === -1) return;
+    
+    const before = content.slice(0, slashMenu.triggerIndex);
+    const after = content.slice(slashMenu.triggerIndex + 1);
+    
+    const newContent = before + syntax + after;
+    setContent(newContent);
+    setSlashMenu({ isOpen: false, triggerIndex: -1, searchQuery: '' });
+    setActiveCommandIndex(0);
+    
+    setTimeout(() => {
+      const textarea = document.getElementById('markdown-editor-textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+        const newCursorPos = slashMenu.triggerIndex + syntax.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 50);
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setContent(value);
+    
+    const selectionStart = e.target.selectionStart;
+    const textBeforeCursor = value.slice(0, selectionStart);
+    
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+    if (lastSlashIndex !== -1 && (lastSlashIndex === 0 || textBeforeCursor[lastSlashIndex - 1] === ' ' || textBeforeCursor[lastSlashIndex - 1] === '\n')) {
+      const query = textBeforeCursor.slice(lastSlashIndex + 1);
+      if (!query.includes(' ') && !query.includes('\n')) {
+        setSlashMenu({
+          isOpen: true,
+          triggerIndex: lastSlashIndex,
+          searchQuery: query,
+        });
+        setActiveCommandIndex(0);
+        return;
+      }
+    }
+    
+    setSlashMenu({ isOpen: false, triggerIndex: -1, searchQuery: '' });
+  };
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (slashMenu.isOpen && filteredCommands.length > 0) {
+      if (e.key === 'ArrowDown' || e.code === 'ArrowDown') {
+        e.preventDefault();
+        setActiveCommandIndex(prev => (prev + 1) % filteredCommands.length);
+      } else if (e.key === 'ArrowUp' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        setActiveCommandIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+      } else if (e.key === 'Enter' || e.code === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[activeCommandIndex]) {
+          handleSelectSlashCommand(filteredCommands[activeCommandIndex].syntax);
+        }
+      } else if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        setSlashMenu({ isOpen: false, triggerIndex: -1, searchQuery: '' });
+      }
+    }
   };
 
   const parsedHtml = useMemo(() => parseMarkdown(content), [content]);
@@ -314,14 +420,37 @@ export default function MarkdownModule() {
             />
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 relative">
             <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Markdown Source</label>
             <textarea
+              id="markdown-editor-textarea"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full flex-1 bg-surface-alt text-text-primary border border-border/60 rounded-2xl p-4 focus:outline-none focus:border-primary font-mono text-sm leading-relaxed custom-scrollbar resize-none"
-              placeholder="# Document Title..."
+              onChange={handleTextareaChange}
+              onKeyDown={handleTextareaKeyDown}
+              className="w-full flex-grow bg-surface-alt text-text-primary border border-border/60 rounded-2xl p-4 focus:outline-none focus:border-primary font-mono text-sm leading-relaxed custom-scrollbar resize-none"
+              placeholder="Type / for commands..."
             />
+            {/* Notion-style Slash Menu */}
+            {slashMenu.isOpen && filteredCommands.length > 0 && (
+              <div className="absolute z-50 left-4 bottom-6 w-64 bg-surface border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 max-h-56 overflow-y-auto custom-scrollbar">
+                <div className="text-[9px] font-black tracking-widest text-text-muted px-2.5 py-1.5 uppercase border-b border-border/40 mb-1">
+                  Basic Blocks
+                </div>
+                {filteredCommands.map((cmd, idx) => (
+                  <button
+                    key={cmd.label}
+                    id={`slash-cmd-item-${idx}`}
+                    onClick={() => handleSelectSlashCommand(cmd.syntax)}
+                    className={`flex flex-col items-start px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer w-full ${
+                      idx === activeCommandIndex ? 'bg-primary/10 text-primary' : 'hover:bg-surface-alt text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{cmd.label}</span>
+                    <span className="text-[9px] opacity-80 mt-0.5">{cmd.desc}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -358,7 +487,7 @@ export default function MarkdownModule() {
                 }`}
               >
                 <IconSitemap size={14} />
-                <span>Mermaid Guide</span>
+                <span>Pro Guide</span>
               </button>
             </div>
 
@@ -392,6 +521,37 @@ export default function MarkdownModule() {
 
           {activeTab === 'mermaid' && (
             <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-4">
+              {/* Markdown Pro Tips */}
+              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Markdown Pro Tips</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-secondary leading-relaxed">
+                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                    <span className="font-bold text-text-primary">✨ Alerts & Callouts</span>
+                    <p>Github-style alerts:</p>
+                    <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+{`> [!NOTE]
+> This is a callout box`}
+                    </pre>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                    <span className="font-bold text-text-primary">⚡ Slash Commands</span>
+                    <p>Type <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">/</code> in the editor to quickly insert headers, lists, code blocks, or callouts.</p>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                    <span className="font-bold text-text-primary">✓ Checklists</span>
+                    <p>Track tasks easily:</p>
+                    <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+{`- [ ] Task to do
+- [x] Task completed`}
+                    </pre>
+                  </div>
+                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                    <span className="font-bold text-text-primary">📊 LaTeX Math</span>
+                    <p>Render inline math with <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$E=mc^2$</code> or block-level math using <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$$...$$</code>.</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Mermaid Code Diagrams</span>
                 <p className="text-xs text-text-secondary leading-relaxed">

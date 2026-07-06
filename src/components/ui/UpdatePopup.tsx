@@ -4,12 +4,11 @@ import {
   IconX, 
   IconSparkles, 
   IconFileText,
-  IconClock,
   IconMovie,
   IconActivity
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -17,38 +16,39 @@ const FEATURES = [
     icon: <IconFileText className="w-5 h-5 stroke-[2]" />,
     color: '#FF9500', 
     bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Markdown Module & Daily Log',
-    desc: 'Write daily summaries or notes with a full-featured markdown workspace, rendering real-time styles, templates, and seamless document integration.',
-  },
-  {
-    icon: <IconClock className="w-5 h-5 stroke-[2]" />,
-    color: '#34C759', 
-    bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Background Pomodoro Engine',
-    desc: 'Never drop a session. Implemented HTML5 Web Workers + Visibility tab synchronizations to keep the Pomodoro clock running accurately in the background.',
-  },
-  {
-    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
-    color: '#FF2D55', 
-    bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Anime Tracker Redesign',
-    desc: 'Redesigned detailed media views featuring beautiful AI-generated widescreen banners, custom square checkboxes, and responsive notes with chibi character art.',
+    title: 'Media Metadata Protection',
+    desc: 'Edit title and details of logs without losing custom widescreen banner images or episode thumbnails. base64 cache is fully preserved.',
   },
   {
     icon: <IconActivity className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', 
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Zustand Render Optimization',
-    desc: 'Migrated global state selectors to use shallow comparisons (`useShallow`), decreasing component re-render loops and optimizing app performance.',
+    title: 'Idempotent DB Migrations',
+    desc: 'Schema migrations automatically check and drop duplicate RLS policies, resolving table out-of-sync warnings cleanly.',
+  },
+  {
+    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
+    color: '#FF2D55', 
+    bg: 'rgba(255, 45, 85, 0.08)',
+    title: 'Banner Quote Visibility',
+    desc: 'Widescreen quotes feature static white typography with deep drop-shadows and blurred edit backdrops for 100% legibility on any image.',
+  },
+  {
+    icon: <IconSparkles className="w-5 h-5 stroke-[2]" />,
+    color: '#34C759', 
+    bg: 'rgba(52, 199, 89, 0.08)',
+    title: 'Local Sync & Cache Caching',
+    desc: 'Journal entries and sketches cache locally on fetch, fixing empty data loading states and refresh loss.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Added full-featured Markdown document workspace with Daily Log support',
-  'Web Worker powered Pomodoro background timer with focus/visibility sync API',
-  'Anime detailed tracker page design revamp (banner, checkboxes, mascot)',
-  'Shallow selectors optimization across modules to reduce re-renders',
-  'Cleaned up unused variables and solved various TypeScript compilation errors',
+  'Fixed Media Log edit modal to preserve custom uploaded banner and episode thumbnail images on save',
+  'Added DROP POLICY IF EXISTS checks to Supabase migration files to resolve database setup conflicts',
+  'Polished banner quotes to be white with deep drop-shadows and blurred edit backdrops for perfect legibility',
+  'Optimized loadAllData to cache successfully fetched journals and sketches locally, fixing refresh issues',
+  'Created Markdown Creator page with collapsible split-pane layouts for distraction-free full-screen writing',
+  'Added Element Grounding locks in the drawing whiteboard module to lock annotations to the canvas background',
 ];
 
 interface UpdatePopupProps {
@@ -140,11 +140,14 @@ function FullModal({ onClose }: { onClose: () => void }) {
                 <IconSparkles className="w-6 h-6 text-white stroke-[2]" />
               </div>
               <div>
-                <h2 className="text-[18px] font-bold text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
-                  Personal HQ {APP_VERSION}
+                <h2 className="text-[18px] font-black text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
+                  Personal HQ Patch {APP_VERSION}
                 </h2>
-                <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-1">
-                  Our biggest upgrade yet. We've added robust workspaces, designer whiteboards, and developer command suites for a unified premium ecosystem.
+                <p className="text-[11px] font-black tracking-widest text-rose-500 uppercase mt-1">
+                  Major Issue Fixes
+                </p>
+                <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-2">
+                  A critical updates patch resolving database sync issues, media metadata deletion bugs, quote legibility overlays, and document caching.
                 </p>
               </div>
             </div>
