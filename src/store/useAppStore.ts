@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const sanitizeActiveModule = (module: string) => {
-  if (module === 'stocks' || module === 'notes' || module === 'journal') {
+  if (module === 'stocks' || module === 'notes') {
     return 'dashboard';
   }
   if (module === 'links' || module === 'calculator' || module === 'countdown') {
@@ -70,7 +70,28 @@ export interface JournalEntry {
   focusList: { text: string; checked: boolean }[];
   attachments: { name: string; size: string }[];
   pageStyle: 'default' | 'lines' | 'dotted' | 'grid' | 'cornell';
+  location: string;
+  reminder: string;
+  stylePreset: 'calm' | 'warm' | 'evergreen' | 'ocean';
 }
+
+const normalizeJournalEntry = (entry: Partial<JournalEntry>): JournalEntry => ({
+  id: entry.id ?? crypto.randomUUID(),
+  title: entry.title ?? '',
+  content: entry.content ?? '',
+  date: entry.date ?? new Date().toISOString(),
+  mood: entry.mood ?? 'good',
+  tags: entry.tags ?? [],
+  images: entry.images ?? [],
+  pinned: entry.pinned ?? false,
+  reflection: entry.reflection ?? { whatWentWell: '', whatCanBeBetter: '' },
+  focusList: entry.focusList ?? [],
+  attachments: entry.attachments ?? [],
+  pageStyle: entry.pageStyle ?? 'default',
+  location: entry.location ?? '',
+  reminder: entry.reminder ?? '',
+  stylePreset: entry.stylePreset ?? 'calm',
+});
 
 export interface Note {
   id: string;
@@ -609,7 +630,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   journals: (() => {
     try {
       const raw = localStorage.getItem('phq_journals');
-      return raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.map((entry) => normalizeJournalEntry(entry)) : [];
     } catch {
       return [];
     }

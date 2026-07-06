@@ -19,6 +19,7 @@ const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
 const TodoModule = lazy(() => import('./modules/todo/TodoModule'));
 const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
+const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 
 function LoadingSplash() {
@@ -68,7 +69,7 @@ function LoadingSplash() {
 
 function ModuleFallback() {
   return (
-    <div className="min-h-[320px] flex flex-col items-center justify-center gap-4">
+    <div className="min-h-80 flex flex-col items-center justify-center gap-4">
       <div className="relative w-12 h-12">
         <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.2s' }} viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="42" stroke="var(--border-border-alt)" strokeWidth="6" fill="none" opacity="0.3" />
@@ -152,6 +153,7 @@ function AppContent() {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard': return <DashboardModule />;
+      case 'journal': return <JournalModule />;
       case 'projects': return <ProjectsModule />;
       case 'utilities': return <UtilitiesModule />;
       case 'budget': return <BudgetModule />;

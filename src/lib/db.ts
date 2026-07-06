@@ -363,6 +363,60 @@ const buildSnippetUpdateOptionalPayload = (data: Partial<CodeSnippet>) => ({
   updated_at: data.updatedAt ?? new Date().toISOString(),
 });
 
+const JOURNAL_OPTIONAL_COLUMNS = ['location', 'reminder', 'style_preset'];
+
+const isMissingJournalColumnError = (error: unknown) => {
+  const text = [
+    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message ?? '') : '',
+    typeof error === 'object' && error !== null && 'details' in error ? String((error as { details?: unknown }).details ?? '') : '',
+    typeof error === 'object' && error !== null && 'hint' in error ? String((error as { hint?: unknown }).hint ?? '') : '',
+  ].join(' ').toLowerCase();
+
+  return JOURNAL_OPTIONAL_COLUMNS.some((column) => text.includes(column));
+};
+
+const buildJournalBasePayload = (userId: string, entry: JournalEntry) => ({
+  id: entry.id,
+  user_id: userId,
+  title: entry.title,
+  content: entry.content,
+  date: entry.date,
+  mood: entry.mood,
+  tags: entry.tags,
+  pinned: entry.pinned,
+  focus_list: entry.focusList,
+  page_style: entry.pageStyle,
+  images: entry.images,
+  reflection: entry.reflection,
+  attachments: entry.attachments,
+});
+
+const buildJournalOptionalPayload = (entry: JournalEntry) => ({
+  location: entry.location,
+  reminder: entry.reminder,
+  style_preset: entry.stylePreset,
+});
+
+const buildJournalUpdateBasePayload = (data: Partial<JournalEntry>) => ({
+  ...(data.title !== undefined && { title: data.title }),
+  ...(data.content !== undefined && { content: data.content }),
+  ...(data.date !== undefined && { date: data.date }),
+  ...(data.mood !== undefined && { mood: data.mood }),
+  ...(data.tags !== undefined && { tags: data.tags }),
+  ...(data.pinned !== undefined && { pinned: data.pinned }),
+  ...(data.focusList !== undefined && { focus_list: data.focusList }),
+  ...(data.pageStyle !== undefined && { page_style: data.pageStyle }),
+  ...(data.images !== undefined && { images: data.images }),
+  ...(data.reflection !== undefined && { reflection: data.reflection }),
+  ...(data.attachments !== undefined && { attachments: data.attachments }),
+});
+
+const buildJournalUpdateOptionalPayload = (data: Partial<JournalEntry>) => ({
+  ...(data.location !== undefined && { location: data.location }),
+  ...(data.reminder !== undefined && { reminder: data.reminder }),
+  ...(data.stylePreset !== undefined && { style_preset: data.stylePreset }),
+});
+
 export const snippetService = {
   async fetchAll(userId: string): Promise<CodeSnippet[]> {
     const { data, error } = await supabase
@@ -715,44 +769,36 @@ export const journalService = {
       images: r.images ?? [],
       reflection: r.reflection ?? { whatWentWell: '', whatCanBeBetter: '' },
       attachments: r.attachments ?? [],
+      location: r.location ?? '',
+      reminder: r.reminder ?? '',
+      stylePreset: r.style_preset ?? 'calm',
     }));
   },
 
   async create(userId: string, entry: JournalEntry) {
-    const { error } = await supabase.from('journals').insert({
-      id: entry.id,
-      user_id: userId,
-      title: entry.title,
-      content: entry.content,
-      date: entry.date,
-      mood: entry.mood,
-      tags: entry.tags,
-      pinned: entry.pinned,
-      focus_list: entry.focusList,
-      page_style: entry.pageStyle,
-      images: entry.images,
-      reflection: entry.reflection,
-      attachments: entry.attachments,
-    });
+    const basePayload = buildJournalBasePayload(userId, entry);
+    const primaryPayload = { ...basePayload, ...buildJournalOptionalPayload(entry) };
+
+    let { error } = await supabase.from('journals').insert(primaryPayload);
+
+    if (error && isMissingJournalColumnError(error)) {
+      ({ error } = await supabase.from('journals').insert(basePayload));
+    }
+
     if (error) throw error;
   },
 
   async update(id: string, data: Partial<JournalEntry>) {
-    const payload: any = {};
-    if (data.title !== undefined) payload.title = data.title;
-    if (data.content !== undefined) payload.content = data.content;
-    if (data.date !== undefined) payload.date = data.date;
-    if (data.mood !== undefined) payload.mood = data.mood;
-    if (data.tags !== undefined) payload.tags = data.tags;
-    if (data.pinned !== undefined) payload.pinned = data.pinned;
-    if (data.focusList !== undefined) payload.focus_list = data.focusList;
-    if (data.pageStyle !== undefined) payload.page_style = data.pageStyle;
-    if (data.images !== undefined) payload.images = data.images;
-    if (data.reflection !== undefined) payload.reflection = data.reflection;
-    if (data.attachments !== undefined) payload.attachments = data.attachments;
-    payload.updated_at = new Date().toISOString();
+    const basePayload = buildJournalUpdateBasePayload(data);
+    const primaryPayload = { ...basePayload, ...buildJournalUpdateOptionalPayload(data), updated_at: new Date().toISOString() };
 
-    const { error } = await supabase.from('journals').update(payload).eq('id', id);
+    let { error } = await supabase.from('journals').update(primaryPayload).eq('id', id);
+
+    if (error && isMissingJournalColumnError(error)) {
+      const fallbackPayload = { ...basePayload, updated_at: new Date().toISOString() };
+      ({ error } = await supabase.from('journals').update(fallbackPayload).eq('id', id));
+    }
+
     if (error) throw error;
   },
 

@@ -1,8 +1,24 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  IconPlus, IconSearch, IconHeart, IconHeartFilled,
-  IconBook, IconTrash, IconSparkles, IconMicrophone
+  IconArrowLeft,
+  IconBell,
+  IconBook2,
+  IconCheck,
+  IconChevronRight,
+  IconDownload,
+  IconEye,
+  IconHeart,
+  IconHeartFilled,
+  IconMapPin,
+  IconMoodSmile,
+  IconNotebook,
+  IconPencil,
+  IconPlus,
+  IconSearch,
+  IconSparkles,
+  IconTag,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -10,75 +26,179 @@ import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
+import { TagInput } from '../../components/ui/TagInput';
 
-const JOURNAL_TEMPLATES = [
-  { id: 'blank', label: 'Blank Page', icon: '📄', prompt: '' },
+type EntryMood = JournalEntry['mood'];
+type EntryPageStyle = JournalEntry['pageStyle'];
+type EntryStylePreset = JournalEntry['stylePreset'];
+
+const STYLE_PRESETS: Array<{
+  id: EntryStylePreset;
+  label: string;
+  caption: string;
+  accent: string;
+  glow: string;
+  surface: string;
+}> = [
   {
-    id: 'daily',
-    label: 'Daily Journal',
-    icon: '☀️',
-    prompt: `<h3>Today's Highlights</h3><p>Write about what happened today...</p><h3>Gratitude</h3><ul><li>List things you are grateful for...</li></ul>`
+    id: 'calm',
+    label: 'Calm',
+    caption: 'Soft neutral paper',
+    accent: '#fb7185',
+    glow: 'rgba(251, 113, 133, 0.16)',
+    surface: 'linear-gradient(135deg, rgba(255, 247, 248, 0.95), rgba(255, 255, 255, 0.98))',
   },
   {
-    id: 'reflection',
-    label: 'Reflection',
-    icon: '🧘',
-    prompt: `<h3>Deep Reflection</h3><p>What is on your mind? How did you respond to today's events?</p><h3>Key Learnings</h3><ul><li>Point 1...</li></ul>`
+    id: 'warm',
+    label: 'Warm',
+    caption: 'Amber note card',
+    accent: '#f59e0b',
+    glow: 'rgba(245, 158, 11, 0.16)',
+    surface: 'linear-gradient(135deg, rgba(255, 250, 242, 0.95), rgba(255, 255, 255, 0.98))',
   },
   {
-    id: 'goals',
-    label: 'Goals & Plan',
-    icon: '🎯',
-    prompt: `<h3>Top Priorities</h3><ol><li>Priority 1</li><li>Priority 2</li></ol><h3>Action Steps</h3><ul><li>Step A</li><li>Step B</li></ul>`
-  }
+    id: 'evergreen',
+    label: 'Evergreen',
+    caption: 'Quiet editorial green',
+    accent: '#22c55e',
+    glow: 'rgba(34, 197, 94, 0.16)',
+    surface: 'linear-gradient(135deg, rgba(244, 250, 245, 0.95), rgba(255, 255, 255, 0.98))',
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    caption: 'Cool glass paper',
+    accent: '#3b82f6',
+    glow: 'rgba(59, 130, 246, 0.16)',
+    surface: 'linear-gradient(135deg, rgba(243, 248, 255, 0.95), rgba(255, 255, 255, 0.98))',
+  },
 ];
 
-const DAILY_PROMPTS = [
-  "What are three things you are grateful for today?",
-  "What was the highlight of your day, and why?",
-  "What is one challenge you overcame today?",
-  "What did you learn today that you can apply tomorrow?",
-  "Describe a small win that made you smile today.",
-  "How did you practice self-care or mindfulness today?"
+const MOOD_OPTIONS: Array<{ value: EntryMood; label: string }> = [
+  { value: 'great', label: 'Great' },
+  { value: 'good', label: 'Good' },
+  { value: 'meh', label: 'Meh' },
+  { value: 'bad', label: 'Bad' },
+  { value: 'terrible', label: 'Terrible' },
 ];
+
+const PAGE_STYLE_OPTIONS: Array<{ value: EntryPageStyle; label: string }> = [
+  { value: 'default', label: 'Default' },
+  { value: 'lines', label: 'Lines' },
+  { value: 'dotted', label: 'Dotted' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'cornell', label: 'Cornell' },
+];
+
+const DEFAULT_DATE_FORMAT = { month: 'short', day: 'numeric', year: 'numeric' } as const;
+
+const buildBlankEntry = (title = 'New Journal Entry'): JournalEntry => ({
+  id: crypto.randomUUID(),
+  title,
+  content: '',
+  date: new Date().toISOString(),
+  mood: 'good',
+  tags: [],
+  images: [],
+  pinned: false,
+  reflection: { whatWentWell: '', whatCanBeBetter: '' },
+  focusList: [],
+  attachments: [],
+  pageStyle: 'default',
+  location: '',
+  reminder: '',
+  stylePreset: 'calm',
+});
+
+const stripHtml = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const wordCount = (value: string) => {
+  const cleaned = stripHtml(value);
+  return cleaned ? cleaned.split(' ').length : 0;
+};
+
+const formatDate = (value: string) => new Date(value).toLocaleDateString(undefined, DEFAULT_DATE_FORMAT);
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+const isDirty = (entry: JournalEntry | null, state: Record<string, unknown>) => {
+  if (!entry) return false;
+  return (
+    entry.title !== state.title ||
+    entry.content !== state.content ||
+    entry.mood !== state.mood ||
+    JSON.stringify(entry.tags) !== JSON.stringify(state.tags) ||
+    entry.pageStyle !== state.pageStyle ||
+    entry.location !== state.location ||
+    entry.reminder !== state.reminder ||
+    entry.stylePreset !== state.stylePreset ||
+    JSON.stringify(entry.focusList) !== JSON.stringify(state.focusList)
+  );
+};
+
+const exportJson = (filename: string, payload: unknown) => {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
 
 export default function JournalModule() {
-  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm } = useAppStore(useShallow(state => ({
-    journals: state.journals,
-    addJournalEntry: state.addJournalEntry,
-    updateJournalEntry: state.updateJournalEntry,
-    deleteJournalEntry: state.deleteJournalEntry,
-    showConfirm: state.showConfirm
-  })));
+  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm, setActiveModule } = useAppStore(
+    useShallow((state) => ({
+      journals: state.journals,
+      addJournalEntry: state.addJournalEntry,
+      updateJournalEntry: state.updateJournalEntry,
+      deleteJournalEntry: state.deleteJournalEntry,
+      showConfirm: state.showConfirm,
+      setActiveModule: state.setActiveModule,
+    })),
+  );
 
-  // Navigation states
-  const [activeTab, setActiveTab] = useState<'entries' | 'favorites' | 'timeline'>('entries');
-  const [mode, setMode] = useState<'write' | 'reflect'>('reflect'); // reflect shows the open book, write shows editor
+  const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
   const [search, setSearch] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [activeEntryId, setActiveEntryId] = useState<string | null>(journals[0]?.id ?? null);
 
-  // Active entry state
-  const [activeEntryId, setActiveEntryId] = useState<string | null>(journals[0]?.id || null);
-
-  // Editor fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [mood, setMood] = useState<JournalEntry['mood']>('good');
+  const [mood, setMood] = useState<EntryMood>('good');
   const [tags, setTags] = useState<string[]>([]);
-  const [pageStyle, setPageStyle] = useState<JournalEntry['pageStyle']>('default');
-
-  // Reflections and sticky note focus items (saved in active entry)
+  const [pageStyle, setPageStyle] = useState<EntryPageStyle>('default');
+  const [location, setLocation] = useState('');
+  const [reminder, setReminder] = useState('');
+  const [stylePreset, setStylePreset] = useState<EntryStylePreset>('calm');
   const [focusItems, setFocusItems] = useState<{ text: string; checked: boolean }[]>([]);
   const [newFocusText, setNewFocusText] = useState('');
 
-  // Audio / Speech reflection (Voice log demo helper)
-  const [isRecording, setIsRecording] = useState(false);
+  const autoSaveTimer = useRef<number | null>(null);
 
-  // Active entry object reference
-  const activeEntry = useMemo(() => journals.find(j => j.id === activeEntryId) || null, [journals, activeEntryId]);
+  const activeEntry = useMemo(
+    () => journals.find((entry) => entry.id === activeEntryId) || null,
+    [journals, activeEntryId],
+  );
 
-  // Sync editor fields when activeEntry changes
+  useEffect(() => {
+    if (journals.length === 0) {
+      setActiveEntryId(null);
+      return;
+    }
+
+    if (!activeEntryId || !journals.some((entry) => entry.id === activeEntryId)) {
+      setActiveEntryId(journals[0].id);
+    }
+  }, [journals, activeEntryId]);
+
   useEffect(() => {
     if (activeEntry) {
       setTitle(activeEntry.title);
@@ -86,503 +206,648 @@ export default function JournalModule() {
       setMood(activeEntry.mood);
       setTags(activeEntry.tags);
       setPageStyle(activeEntry.pageStyle);
+      setLocation(activeEntry.location || '');
+      setReminder(activeEntry.reminder || '');
+      setStylePreset(activeEntry.stylePreset || 'calm');
       setFocusItems(activeEntry.focusList || []);
+      setPreviewMode(false);
     } else {
       setTitle('');
       setContent('');
       setMood('good');
       setTags([]);
       setPageStyle('default');
+      setLocation('');
+      setReminder('');
+      setStylePreset('calm');
       setFocusItems([]);
     }
-  }, [activeEntryId, activeEntry]);
+  }, [activeEntry]);
+
+  const currentStyle = STYLE_PRESETS.find((preset) => preset.id === stylePreset) ?? STYLE_PRESETS[0];
+
+  const filteredEntries = useMemo(() => {
+    return journals.filter((entry) => {
+      const searchValue = search.trim().toLowerCase();
+      const matchesSearch = !searchValue || [entry.title, entry.content, entry.tags.join(' ')].join(' ').toLowerCase().includes(searchValue);
+      const matchesTab = activeTab === 'all' ? true : entry.pinned;
+      return matchesSearch && matchesTab;
+    });
+  }, [journals, search, activeTab]);
+
+  const totalWords = useMemo(() => journals.reduce((count, entry) => count + wordCount(entry.content), 0), [journals]);
+  const streakDays = useMemo(() => (journals.length === 0 ? 0 : Math.min(30, journals.length + 2)), [journals]);
+  const checkedFocusItems = focusItems.filter((item) => item.checked).length;
+  const focusCompletion = focusItems.length === 0 ? 0 : Math.round((checkedFocusItems / focusItems.length) * 100);
 
   const forceSave = async () => {
-    if (!activeEntryId || mode !== 'write') return;
-    const currentObj = journals.find(j => j.id === activeEntryId);
-    if (!currentObj) return;
+    if (!activeEntryId || !activeEntry) return;
 
-    const isUnchanged =
-      currentObj.title === title &&
-      currentObj.content === content &&
-      currentObj.mood === mood &&
-      JSON.stringify(currentObj.tags) === JSON.stringify(tags) &&
-      currentObj.pageStyle === pageStyle;
-    
-    if (isUnchanged) return;
+    const nextState = { title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusList: focusItems };
+    if (!isDirty(activeEntry, nextState)) return;
 
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    
+    if (autoSaveTimer.current) {
+      window.clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+
     setSaveStatus('saving');
     try {
-      await updateJournalEntry(activeEntryId, {
-        title, content, mood, tags, pageStyle
-      });
+      await updateJournalEntry(activeEntryId, nextState as Partial<JournalEntry>);
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (e) {
+      window.setTimeout(() => setSaveStatus('idle'), 2400);
+    } catch {
       setSaveStatus('error');
     }
   };
 
-  // Debounced auto-save effect
-  const autoSaveTimer = useRef<any>(null);
   useEffect(() => {
-    if (!activeEntryId || mode !== 'write') return;
+    if (!activeEntryId || !activeEntry) return;
 
-    const currentObj = journals.find(j => j.id === activeEntryId);
-    if (!currentObj) return;
+    const nextState = { title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusList: focusItems };
+    if (!isDirty(activeEntry, nextState)) return;
 
-    // Check if edits exist
-    const isUnchanged =
-      currentObj.title === title &&
-      currentObj.content === content &&
-      currentObj.mood === mood &&
-      JSON.stringify(currentObj.tags) === JSON.stringify(tags) &&
-      currentObj.pageStyle === pageStyle;
+    if (autoSaveTimer.current) {
+      window.clearTimeout(autoSaveTimer.current);
+    }
 
-    if (isUnchanged) return;
-
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-
-    autoSaveTimer.current = setTimeout(() => {
-      setSaveStatus('saving');
-      updateJournalEntry(activeEntryId, {
-        title, content, mood, tags, pageStyle
-      }).then(() => {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      }).catch(() => setSaveStatus('error'));
-    }, 1500);
+    setSaveStatus('saving');
+    autoSaveTimer.current = window.setTimeout(() => {
+      updateJournalEntry(activeEntryId, nextState as Partial<JournalEntry>)
+        .then(() => {
+          setSaveStatus('saved');
+          window.setTimeout(() => setSaveStatus('idle'), 2400);
+        })
+        .catch(() => setSaveStatus('error'));
+    }, 1200);
 
     return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      if (autoSaveTimer.current) {
+        window.clearTimeout(autoSaveTimer.current);
+      }
     };
-  }, [title, content, mood, tags, pageStyle, activeEntryId, mode, journals, updateJournalEntry]);
+  }, [title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusItems, activeEntryId, activeEntry, updateJournalEntry]);
 
-  // Start new blank entry or from template
-  const handleCreateEntry = (templateId = 'blank') => {
-    const tmpl = JOURNAL_TEMPLATES.find(t => t.id === templateId);
-    const newId = crypto.randomUUID();
-    const newEntry: JournalEntry = {
-      id: newId,
-      title: tmpl ? `${tmpl.label} - ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'Untitled Entry',
-      content: tmpl ? tmpl.prompt : '',
-      date: new Date().toISOString(),
-      mood: 'good',
-      tags: tmpl?.id !== 'blank' ? [tmpl?.label || ''] : [],
-      images: [],
-      pinned: false,
-      reflection: {
-        whatWentWell: '',
-        whatCanBeBetter: ''
-      },
-      focusList: [],
-      attachments: [],
-      pageStyle: 'default'
-    };
-    addJournalEntry(newEntry);
-    setActiveEntryId(newId);
-    setMode('write');
+  const createEntry = () => {
+    const entry = buildBlankEntry();
+    addJournalEntry(entry);
+    setActiveEntryId(entry.id);
+    setPreviewMode(false);
   };
 
-  // Sticky note focus checklist toggle
-  const toggleFocusItem = (idx: number) => {
-    const updated = focusItems.map((item, i) => i === idx ? { ...item, checked: !item.checked } : item);
-    setFocusItems(updated);
-    if (activeEntryId) {
-      updateJournalEntry(activeEntryId, { focusList: updated });
-    }
+  const saveAsTemplate = () => {
+    if (!activeEntry) return;
+    const entry = {
+      ...activeEntry,
+      id: crypto.randomUUID(),
+      title: `${activeEntry.title || 'Journal Entry'} Template`,
+      date: new Date().toISOString(),
+      pinned: false,
+    };
+    addJournalEntry(entry);
+    setActiveEntryId(entry.id);
+    setPreviewMode(false);
+  };
+
+  const exportEntry = () => {
+    if (!activeEntry) return;
+    exportJson(`${activeEntry.title || 'journal-entry'}.json`, activeEntry);
+  };
+
+  const deleteCurrentEntry = () => {
+    if (!activeEntry) return;
+    showConfirm('Delete Entry', 'Are you sure you want to delete this journal entry?', async () => {
+      await deleteJournalEntry(activeEntry.id);
+      const remaining = journals.filter((entry) => entry.id !== activeEntry.id);
+      setActiveEntryId(remaining[0]?.id ?? null);
+    });
+  };
+
+  const togglePinned = () => {
+    if (!activeEntry) return;
+    updateJournalEntry(activeEntry.id, { pinned: !activeEntry.pinned });
   };
 
   const addFocusItem = () => {
-    if (!newFocusText.trim()) return;
-    const updated = [...focusItems, { text: newFocusText.trim(), checked: false }];
-    setFocusItems(updated);
+    const nextText = newFocusText.trim();
+    if (!nextText) return;
+    const next = [...focusItems, { text: nextText, checked: false }];
+    setFocusItems(next);
     setNewFocusText('');
-    if (activeEntryId) {
-      updateJournalEntry(activeEntryId, { focusList: updated });
-    }
   };
 
-
-  // Words count helper
-  const wordCount = (text: string) => {
-    const stripped = text.replace(/<[^>]*>/g, '').trim();
-    return stripped ? stripped.split(/\s+/).length : 0;
+  const toggleFocusItem = (index: number) => {
+    const next = focusItems.map((item, itemIndex) => (itemIndex === index ? { ...item, checked: !item.checked } : item));
+    setFocusItems(next);
   };
 
-  // Filter entries
-  const filteredEntries = useMemo(() => {
-    let list = journals;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(j => j.title.toLowerCase().includes(q) || j.content.toLowerCase().includes(q));
-    }
-    if (selectedTag) {
-      list = list.filter(j => j.tags.includes(selectedTag));
-    }
-    if (activeTab === 'favorites') {
-      list = list.filter(j => j.pinned);
-    }
-    return list;
-  }, [journals, search, selectedTag, activeTab]);
-
-  // Aggregate stats
-  const totalWords = useMemo(() => journals.reduce((acc, j) => acc + wordCount(j.content), 0), [journals]);
-  const streakDays = useMemo(() => journals.length > 0 ? 7 : 0, [journals]); // simulated streak
-  const reflectionCount = useMemo(() => journals.filter(j => j.reflection?.whatWentWell).length, [journals]);
-
-  const allTags = useMemo(() => {
-    const s = new Set<string>();
-    journals.forEach(j => j.tags.forEach(t => s.add(t)));
-    return Array.from(s);
-  }, [journals]);
-
-  // Random Daily Prompt Picker
-  const insertRandomPrompt = () => {
-    const rand = DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)];
-    setContent(prev => prev + `<blockquote><strong>Prompt:</strong> ${rand}</blockquote><p></p>`);
-    if (activeEntryId) {
-      updateJournalEntry(activeEntryId, { content: content + `<blockquote><strong>Prompt:</strong> ${rand}</blockquote><p></p>` });
-    }
+  const removeFocusItem = (index: number) => {
+    setFocusItems(focusItems.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  // Voice recording mock helper
-  const toggleVoiceRecording = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setContent(prev => prev + `<p><em>🎙️ Voice transcript recorded: Today was centered around wrapping up core system visual modules...</em></p>`);
-    } else {
-      setIsRecording(true);
-    }
-  };
+  const editorPaperStyle =
+    pageStyle === 'lines'
+      ? {
+          backgroundImage: 'linear-gradient(to bottom, rgba(148, 163, 184, 0.20) 1px, transparent 1px)',
+          backgroundSize: '100% 28px',
+          backgroundColor: '#fffdf8',
+        }
+      : pageStyle === 'grid'
+      ? {
+          backgroundImage:
+            'linear-gradient(to right, rgba(148, 163, 184, 0.16) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.16) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          backgroundColor: '#fffdf8',
+        }
+      : pageStyle === 'dotted'
+      ? {
+          backgroundImage: 'radial-gradient(circle, rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
+          backgroundSize: '18px 18px',
+          backgroundColor: '#fffdf8',
+        }
+      : pageStyle === 'cornell'
+      ? {
+          backgroundImage:
+            'linear-gradient(to right, rgba(148, 163, 184, 0.12) 72px, transparent 72px), linear-gradient(to bottom, rgba(148, 163, 184, 0.18) 1px, transparent 1px)',
+          backgroundSize: '100% 30px, 100% 30px',
+          backgroundColor: '#fffdf8',
+        }
+      : { backgroundColor: '#fffdf8' };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -16 }}
+      exit={{ opacity: 0, y: -12 }}
       transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-      className="flex flex-col gap-6"
+      className="flex min-h-[calc(100vh-2rem)] flex-col gap-4"
     >
-      {/* Redesigned Journal Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            Journal <span className="w-2.5 h-2.5 rounded-full bg-[#a855f7] inline-block" />
-          </h1>
-          <p className="text-text-secondary text-sm">Capture thoughts, track growth, and reflect daily.</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input
-              type="search"
-              placeholder="Search journal..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field pl-10 w-full"
-            />
-          </div>
-
-          <button
-            onClick={() => handleCreateEntry('blank')}
-            className="btn btn-primary btn-md flex items-center gap-1.5 shrink-0 bg-[#a855f7] hover:bg-[#9333ea]"
-          >
-            <IconPlus className="w-4 h-4" /> New Entry
-          </button>
-        </div>
-      </div>
-
-      {/* Aggregate Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface border border-border p-4 rounded-2xl">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Total Entries</p>
-          <p className="text-2xl font-extrabold text-text-primary mt-1">{journals.length}</p>
-          <span className="text-[9px] text-green-500 font-semibold">+2 this week</span>
-        </div>
-        <div className="bg-surface border border-border p-4 rounded-2xl">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Current Streak</p>
-          <p className="text-2xl font-extrabold text-text-primary mt-1">{streakDays} Days</p>
-          <span className="text-[9px] text-text-muted">consecutive entries</span>
-        </div>
-        <div className="bg-surface border border-border p-4 rounded-2xl">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Total Words</p>
-          <p className="text-2xl font-extrabold text-text-primary mt-1">{totalWords.toLocaleString()}</p>
-          <span className="text-[9px] text-[#a855f7] font-semibold">avg 150 words/entry</span>
-        </div>
-        <div className="bg-surface border border-border p-4 rounded-2xl">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Reflections</p>
-          <p className="text-2xl font-extrabold text-text-primary mt-1">{reflectionCount}</p>
-          <span className="text-[9px] text-text-muted">completed deep logs</span>
-        </div>
-      </div>
-
-      {/* Filter and Tab Selectors */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-alt pb-4">
-        <div className="flex gap-2">
-          {['entries', 'favorites'].map(t => (
+      <div className="grid min-h-[calc(100vh-2rem)] gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+        <aside className="flex flex-col gap-4 rounded-[28px] border border-border/70 bg-surface/90 p-4 shadow-[0_16px_45px_-24px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-text-muted">Journal Library</p>
+              <p className="mt-1 text-xs text-text-secondary">Your entries, templates, and favorites.</p>
+            </div>
             <button
-              key={t}
-              onClick={() => setActiveTab(t as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                activeTab === t
-                  ? 'bg-text-primary text-background border-text-primary'
-                  : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'
-              }`}
+              onClick={createEntry}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+              title="Create new entry"
             >
-              {t === 'entries' ? 'All Entries' : 'Favorites'}
+              <IconPlus size={16} />
             </button>
-          ))}
-        </div>
+          </div>
 
-        {allTags.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-bold text-text-muted uppercase">Filter Tag:</span>
-            <CustomSelect
-              value={selectedTag || 'all'}
-              onChange={val => setSelectedTag(val === 'all' ? null : val)}
-              options={[{ value: 'all', label: 'All Tags' }, ...allTags.map(t => ({ value: t, label: t }))]}
+          <div className="relative">
+            <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search entries"
+              className="input-field w-full pl-9"
             />
           </div>
-        )}
-      </div>
 
-      {/* Workspace Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Left Side: Entries Library */}
-        <div className={`lg:col-span-4 flex flex-col gap-6 ${mode === 'reflect' && activeEntryId ? 'hidden lg:flex' : 'flex'}`}>
-          {/* Library list */}
-          <div className="bg-surface border border-border rounded-2xl p-5 flex flex-col gap-4">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-text-muted pb-2 border-b border-border-alt">Journal Entries</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${activeTab === 'all' ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'}`}
+            >
+              All Entries
+            </button>
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${activeTab === 'favorites' ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'}`}
+            >
+              Favorites
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-2 overflow-y-auto pr-1">
             {filteredEntries.length === 0 ? (
-              <div className="text-center py-10 text-text-muted text-xs">No entries cataloged.</div>
-            ) : (
-              <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto pr-1">
-                {filteredEntries.map(entry => {
-                  const isSel = entry.id === activeEntryId;
-                  const wordCountNum = wordCount(entry.content);
-                  return (
-                    <div
-                      key={entry.id}
-                      onClick={() => {
-                        setActiveEntryId(entry.id);
-                        setMode('reflect'); // open the book view for selected entry
-                      }}
-                      className={`p-3 border rounded-xl cursor-pointer transition-all flex flex-col gap-1.5 ${
-                        isSel
-                          ? 'border-[#a855f7] bg-[#a855f7]/5'
-                          : 'border-border bg-surface-alt hover:bg-surface-hover'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center text-[10px] text-text-muted font-bold">
-                        <span>{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                        <span>{wordCountNum} words</span>
-                      </div>
-                      <h4 className="font-bold text-xs text-text-primary truncate">{entry.title || 'Untitled Entry'}</h4>
-                      <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed">
-                        {entry.content.replace(/<[^>]*>/g, '') || <span className="italic opacity-60">Blank content</span>}
-                      </p>
-                      {entry.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {entry.tags.map(t => (
-                            <Badge key={t} className="text-[9px] py-0 px-2 bg-[#a855f7]/10 text-[#a855f7]">{t}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="rounded-2xl border border-border/60 bg-surface-alt/40 p-4">
+                <EmptyState
+                  title="No journal entries"
+                  description="Create a new journal entry or clear the search to reveal your saved pages."
+                  action={
+                    <button onClick={createEntry} className="btn btn-primary btn-md">
+                      Create Entry
+                    </button>
+                  }
+                />
               </div>
+            ) : (
+              filteredEntries.map((entry) => {
+                const active = entry.id === activeEntryId;
+                return (
+                  <button
+                    key={entry.id}
+                    onClick={() => {
+                      setActiveEntryId(entry.id);
+                      setPreviewMode(false);
+                    }}
+                    className={`group w-full rounded-2xl border p-3 text-left transition-all ${active ? 'border-primary/60 bg-primary/5 shadow-sm' : 'border-border/60 bg-surface hover:bg-surface-hover'}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <IconNotebook size={14} className={active ? 'text-primary' : 'text-text-muted'} />
+                          <span className="truncate text-sm font-semibold text-text-primary">{entry.title || 'Untitled Entry'}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-text-muted">{formatDate(entry.date)} · {wordCount(entry.content)} words</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {entry.pinned && <IconHeartFilled size={14} className="text-red-500" />}
+                        <span className="rounded-full bg-surface-alt px-2 py-1 text-[10px] font-semibold text-text-secondary">{entry.pageStyle}</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-text-secondary">
+                      {stripHtml(entry.content) || 'Blank page ready for thoughts.'}
+                    </p>
+                    {entry.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {entry.tags.slice(0, 3).map((tag) => (
+                          <Badge key={tag} className="bg-surface-alt text-[10px] text-text-secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
-        </div>
 
-        {/* Right Side: The immersive Editor / Reflection book */}
-        <div className="lg:col-span-8 flex flex-col gap-4 w-full">
-          
-          {/* Active Worksite Card */}
-          {activeEntryId && activeEntry ? (
-            <div>
-              {/* 📖 MINIMAL APPLE-STYLE JOURNAL EDITOR */}
-              <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm flex flex-col h-full min-h-[650px] relative">
-                
-                {/* Header: Date, Mood & Actions */}
-                <div className="flex justify-between items-center px-8 py-5 border-b border-border/40 bg-surface-alt/30">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[11px] uppercase font-bold tracking-widest text-text-muted font-mono">
-                      {new Date(activeEntry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      {['great', 'good', 'meh', 'bad', 'terrible'].map(m => {
-                        const emojis: Record<string, string> = { great: '😄', good: '🙂', meh: '😐', bad: '🙁', terrible: '😫' };
-                        const isSel = activeEntry.mood === m;
+          <div className="rounded-2xl border border-border/60 bg-surface-alt/35 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted">Journal Stats</p>
+              <IconSparkles size={14} className="text-primary" />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-left">
+              <div className="rounded-2xl border border-border/60 bg-surface p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Entries</p>
+                <p className="mt-1 text-xl font-bold text-text-primary">{journals.length}</p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-surface p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Words</p>
+                <p className="mt-1 text-xl font-bold text-text-primary">{totalWords}</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-[28px] border border-border/60 bg-surface px-5 py-4 shadow-sm">
+            <div className="flex min-w-0 items-start gap-3">
+              <button
+                onClick={() => setActiveModule('dashboard')}
+                className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-surface-alt text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+                title="Back to dashboard"
+              >
+                <IconArrowLeft size={18} />
+              </button>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-text-muted">New Journal Entry</p>
+                <p className="mt-1 text-xs text-text-secondary">{activeEntry ? formatDateTime(activeEntry.date) : 'Create a new page to begin writing.'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-full border border-border/60 bg-surface-alt px-3 py-2 text-xs font-semibold text-text-secondary">
+                {saveStatus === 'saved' ? <IconCheck size={14} className="text-emerald-500" /> : <span className="h-2 w-2 rounded-full bg-primary" />}
+                <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Auto-saved' : saveStatus === 'error' ? 'Save error' : 'Auto-save ready'}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setPreviewMode((value) => !value);
+                  void forceSave();
+                }}
+                className={`btn btn-secondary btn-md ${previewMode ? 'border-primary text-primary' : ''}`}
+              >
+                <IconEye size={16} />
+                {previewMode ? 'Edit' : 'Preview'}
+              </button>
+              <button onClick={togglePinned} className="btn btn-ghost btn-md btn-square" title="Pin entry">
+                {activeEntry?.pinned ? <IconHeartFilled size={18} className="text-red-500" /> : <IconHeart size={18} />}
+              </button>
+              <button onClick={deleteCurrentEntry} className="btn btn-ghost btn-md btn-square text-red-500" title="Delete entry">
+                <IconTrash size={18} />
+              </button>
+            </div>
+          </div>
+
+          {activeEntry ? (
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <div className="rounded-[28px] border border-border/60 px-6 py-5 shadow-sm" style={{ background: currentStyle.surface, boxShadow: `0 20px 45px -30px ${currentStyle.glow}` }}>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.3em] text-text-muted">
+                      <span>{activeEntry.title || 'Journal Entry'}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>{formatDate(activeEntry.date)}</span>
+                    </div>
+                    <input
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      onBlur={forceSave}
+                      placeholder="What’s on your mind?"
+                      className="mt-3 w-full border-none bg-transparent text-3xl font-bold tracking-tight text-text-primary outline-none placeholder:text-text-muted/60 sm:text-[2.35rem]"
+                    />
+                    <p className="mt-3 text-sm text-text-secondary">Start writing your thoughts, notes, ideas, or reflections here.</p>
+                  </div>
+
+                  <div className="flex min-w-52.5 flex-col gap-2 rounded-3xl border border-border/60 bg-surface/85 p-3">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">
+                      <span>{currentStyle.label} style</span>
+                      <IconPencil size={14} />
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: currentStyle.accent }} />
+                      <span>{pageStyle} page paper</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                      <IconCheck size={14} className="text-emerald-500" />
+                      <span>{focusCompletion}% focus complete</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-border/60 bg-surface px-4 py-3 shadow-sm">
+                {PAGE_STYLE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setPageStyle(option.value)}
+                    className={`rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] transition-all ${pageStyle === option.value ? 'border-primary bg-primary text-white' : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+                <div className="ml-auto flex items-center gap-2 text-xs text-text-secondary">
+                  <span className="rounded-full bg-surface-alt px-3 py-2 font-semibold">{mood}</span>
+                  <span className="rounded-full bg-surface-alt px-3 py-2 font-semibold">{tags.length} tags</span>
+                  <span className="rounded-full bg-surface-alt px-3 py-2 font-semibold">{wordCount(content)} words</span>
+                </div>
+              </div>
+
+              <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="flex min-h-0 flex-col rounded-[28px] border border-border/60 bg-surface p-4 shadow-sm">
+                  <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-surface-alt/40 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">
+                      <IconBook2 size={14} />
+                      <span>Writing Space</span>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        onClick={() => setFocusItems([])}
+                        className="rounded-full border border-border px-3 py-2 text-[11px] font-semibold text-text-secondary transition-colors hover:bg-surface"
+                      >
+                        Clear Focus
+                      </button>
+                      <button
+                        onClick={saveAsTemplate}
+                        className="rounded-full border border-border px-3 py-2 text-[11px] font-semibold text-text-secondary transition-colors hover:bg-surface"
+                      >
+                        Save as Template
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-border/60" style={editorPaperStyle}>
+                    <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3 text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">
+                      <IconSparkles size={14} className="text-primary" />
+                      <span>{previewMode ? 'Preview Mode' : 'Rich Text Editor'}</span>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                      {previewMode ? (
+                        <article className="max-w-none text-text-primary">
+                          <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-primary">{title || 'Untitled Entry'}</h2>
+                          <div
+                            className="min-h-80 rounded-[24px] border border-border/60 bg-surface/80 p-5 text-[15px] leading-7"
+                            dangerouslySetInnerHTML={{ __html: content || '<p class="text-text-muted">Nothing written yet.</p>' }}
+                          />
+                        </article>
+                      ) : (
+                        <RichTextEditor
+                          key={activeEntry.id}
+                          value={content}
+                          onChange={(nextValue) => setContent(nextValue)}
+                          onBlur={forceSave}
+                          placeholder="Start writing your thoughts..."
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex min-h-0 flex-col gap-4 rounded-[28px] border border-border/60 bg-surface p-4 shadow-sm">
+                  <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">Choose a style</p>
+                        <p className="mt-1 text-xs text-text-secondary">Match the paper and accent to your mood.</p>
+                      </div>
+                      <IconPencil size={14} className="text-text-muted" />
+                    </div>
+                    <div className="mt-4 grid gap-3">
+                      {STYLE_PRESETS.map((preset) => {
+                        const selected = preset.id === stylePreset;
                         return (
                           <button
-                            key={m}
-                            onClick={() => { setMood(m as any); updateJournalEntry(activeEntry.id, { mood: m as any }); }}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all border ${isSel ? 'border-[#a855f7] bg-[#a855f7]/10 scale-110 shadow-sm' : 'border-transparent hover:bg-border'}`}
-                            title={m}
+                            key={preset.id}
+                            onClick={() => setStylePreset(preset.id)}
+                            className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition-all ${selected ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-surface hover:bg-surface-hover'}`}
                           >
-                            {emojis[m]}
+                            <span className="h-12 w-12 rounded-2xl border border-border/60" style={{ background: preset.surface, boxShadow: `inset 0 0 0 1px ${preset.glow}` }} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-text-primary">{preset.label}</span>
+                              <span className="block text-[11px] text-text-muted">{preset.caption}</span>
+                            </span>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60" style={{ backgroundColor: selected ? preset.glow : 'transparent' }}>
+                              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: preset.accent }} />
+                            </span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => updateJournalEntry(activeEntry.id, { pinned: !activeEntry.pinned })}
-                      className="btn btn-ghost btn-sm btn-square hover:bg-border transition-colors"
-                      title="Pin Entry"
-                    >
-                      {activeEntry.pinned ? <IconHeartFilled className="w-4.5 h-4.5 text-red-500" /> : <IconHeart className="w-4.5 h-4.5" />}
-                    </button>
-                    <button
-                      onClick={() => {
-                        showConfirm('Delete Entry', 'Are you sure you want to delete this journal entry?', () => {
-                          deleteJournalEntry(activeEntry.id);
-                          setActiveEntryId(journals[0]?.id || null);
-                        });
-                      }}
-                      className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                    >
-                      <IconTrash className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="flex flex-1 overflow-hidden">
-                  {/* Main Editor Area */}
-                  <div className="flex-1 flex flex-col border-r border-border/40">
-                    {/* Title */}
-                    <div className="px-8 pt-6 pb-2 flex items-center gap-3">
-                      <input
-                        type="text"
-                        placeholder="Untitled Entry"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        onBlur={forceSave}
-                        className="w-full bg-transparent border-none text-3xl font-bold font-serif tracking-tight focus:outline-none placeholder:text-text-muted/50 text-text-primary"
-                      />
-                      {saveStatus === 'saving' && <span className="text-xs font-semibold text-amber-500 whitespace-nowrap">Saving...</span>}
-                      {saveStatus === 'saved' && <span className="text-xs font-semibold text-green-500 whitespace-nowrap">Saved</span>}
-                      {saveStatus === 'error' && <span className="text-xs font-semibold text-red-500 whitespace-nowrap">Error</span>}
-                    </div>
-                    
-                    {/* Minimal Toolbar */}
-                    <div className="flex items-center px-8 py-2 gap-4 border-b border-border/40 bg-surface-alt/10">
-                      <div className="flex gap-1.5 items-center">
-                        <button onClick={insertRandomPrompt} className="p-1.5 rounded hover:bg-surface-hover text-amber-500 transition-colors" title="Insert Prompt">
-                          <IconSparkles className="w-4 h-4" />
-                        </button>
-                        <button onClick={toggleVoiceRecording} className={`p-1.5 rounded transition-colors ${isRecording ? 'bg-red-500/10 text-red-500 animate-pulse' : 'hover:bg-surface-hover text-text-secondary'}`} title="Record Voice">
-                          <IconMicrophone className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="flex-1"></div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-text-muted uppercase">Page:</span>
-                        {['default', 'lines', 'grid'].map(style => (
-                          <button
-                            key={style}
-                            onClick={() => setPageStyle(style as any)}
-                            className={`px-2 py-0.5 rounded text-[10px] border transition-all ${
-                              pageStyle === style
-                                ? 'bg-[#a855f7] text-white border-[#a855f7]'
-                                : 'border-transparent hover:bg-surface-hover text-text-secondary'
-                            }`}
-                          >
-                            {style}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">
+                      <IconMoodSmile size={14} className="text-primary" />
+                      <span>Journal Settings</span>
                     </div>
 
-                    {/* Rich Text Editor */}
-                    <div 
-                      className="flex-1 p-6 overflow-y-auto rich-text-journal-editor"
-                      style={
-                        pageStyle === 'lines'
-                          ? { backgroundImage: 'linear-gradient(rgba(0,0,0,0) 95%, var(--border-border-alt) 95%)', backgroundSize: '100% 28px', lineHeight: '28px' }
-                          : pageStyle === 'grid'
-                          ? { backgroundImage: 'linear-gradient(var(--border-border-alt) 1px, transparent 1px), linear-gradient(90deg, var(--border-border-alt) 1px, transparent 1px)', backgroundSize: '24px 24px', lineHeight: '24px' }
-                          : {}
-                      }
-                    >
-                      <RichTextEditor
-                        key={activeEntry.id}
-                        value={content}
-                        onChange={(html: string) => {
-                          setContent(html);
-                        }}
-                        onBlur={forceSave}
-                        placeholder="Start writing..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Right Side: Focus & Meta */}
-                  <div className="w-72 bg-surface-alt/20 p-6 flex flex-col gap-8 overflow-y-auto">
-                    {/* Today's Focus Widget */}
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2 text-amber-500 mb-1">
-                        <IconSparkles className="w-4 h-4" />
-                        <h4 className="text-xs uppercase font-extrabold tracking-widest font-mono">Today's Focus</h4>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {focusItems.map((item, idx) => (
-                          <label key={idx} className="flex items-start gap-2.5 text-sm text-text-secondary cursor-pointer group">
-                            <input
-                              type="checkbox"
-                              checked={item.checked}
-                              onChange={() => toggleFocusItem(idx)}
-                              className="w-4 h-4 mt-0.5 rounded accent-[#a855f7] border-border bg-surface shrink-0 cursor-pointer"
-                            />
-                            <span className={`leading-snug transition-all ${item.checked ? 'line-through opacity-50' : 'group-hover:text-text-primary'}`}>{item.text}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <div className="flex gap-2 mt-2 pt-3 border-t border-border/40">
-                        <input
-                          type="text"
-                          placeholder="Add new focus..."
-                          value={newFocusText}
-                          onChange={(e) => setNewFocusText(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && addFocusItem()}
-                          className="bg-transparent border-none focus:outline-none text-sm flex-1 text-text-primary placeholder:text-text-muted"
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Mood</label>
+                        <CustomSelect
+                          value={mood}
+                          onChange={(value) => setMood(value as EntryMood)}
+                          options={MOOD_OPTIONS}
                         />
-                        <button onClick={addFocusItem} className="text-[#a855f7] hover:text-[#9333ea] font-bold text-sm">+</button>
                       </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Tags</label>
+                        <TagInput tags={tags} onChange={setTags} placeholder="Add a tag and press Enter" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Location</label>
+                        <div className="relative">
+                          <IconMapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                          <input
+                            value={location}
+                            onChange={(event) => setLocation(event.target.value)}
+                            onBlur={forceSave}
+                            placeholder="Add location"
+                            className="input-field w-full pl-9"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Reminder</label>
+                        <div className="relative">
+                          <IconBell className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                          <input
+                            value={reminder}
+                            onChange={(event) => setReminder(event.target.value)}
+                            onBlur={forceSave}
+                            placeholder="Set reminder"
+                            className="input-field w-full pl-9"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">Focus Streak</p>
+                        <p className="mt-1 text-xs text-text-secondary">Keep the habit alive with short daily reflections.</p>
+                      </div>
+                      <IconSparkles size={14} className="text-primary" />
+                    </div>
+
+                    <div className="mt-4 rounded-[24px] border border-border/60 bg-surface p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">{streakDays}</span>
+                        <span>{streakDays} day streak</span>
+                      </div>
+                      <p className="mt-2 text-xs text-text-secondary">
+                        {checkedFocusItems} of {focusItems.length || 0} focus items complete.
+                      </p>
+                      <div className="mt-4 flex items-end gap-2">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                          <div key={`${day}-${index}`} className="flex flex-1 flex-col items-center gap-2">
+                            <span className="text-[10px] font-semibold text-text-muted">{day}</span>
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-bold ${index <= (streakDays % 7) ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-muted'}`}>
+                              {index < (streakDays % 7) ? <IconCheck size={12} /> : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-text-muted">
+                      <IconTag size={14} className="text-primary" />
+                      <span>Quick Actions</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <button onClick={saveAsTemplate} className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-hover">
+                        <span className="text-sm font-semibold text-text-primary">Save as Template</span>
+                        <IconChevronRight size={16} className="text-text-muted" />
+                      </button>
+                      <button onClick={exportEntry} className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-hover">
+                        <span className="text-sm font-semibold text-text-primary">Export</span>
+                        <IconDownload size={16} className="text-text-muted" />
+                      </button>
+                      <button onClick={createEntry} className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-hover">
+                        <span className="text-sm font-semibold text-text-primary">New Entry</span>
+                        <IconPlus size={16} className="text-text-muted" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
+                    <div className="flex items-center justify-between text-xs text-text-secondary">
+                      <span>{title || 'Untitled Entry'}</span>
+                      <span>{wordCount(content)} words</span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <div className="rounded-[24px] border border-border/60 bg-surface px-4 py-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  {focusItems.length > 0 ? (
+                    focusItems.map((item, index) => (
+                      <div
+                        key={`${item.text}-${index}`}
+                        className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${item.checked ? 'border-primary bg-primary text-white' : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'}`}
+                      >
+                        <button type="button" onClick={() => toggleFocusItem(index)} className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${item.checked ? 'bg-white' : 'bg-primary'}`} />
+                          <span>{item.text}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFocusItem(index)}
+                          className="ml-1 rounded-full p-0.5 text-current/70 hover:text-current"
+                        >
+                          <IconTrash size={12} />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-xs text-text-muted">No focus items yet. Add one in the right rail.</span>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    value={newFocusText}
+                    onChange={(event) => setNewFocusText(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addFocusItem();
+                      }
+                    }}
+                    placeholder="Add a focus item"
+                    className="input-field flex-1"
+                  />
+                  <button onClick={addFocusItem} className="btn btn-primary btn-md">
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="bg-surface border border-border rounded-2xl flex items-center justify-center min-h-[460px]">
+            <div className="flex min-h-145 items-center justify-center rounded-[28px] border border-border/60 bg-surface p-6 shadow-sm">
               <EmptyState
-                icon={<IconBook className="w-9 h-9 text-text-muted" />}
+                icon={<IconBook2 className="h-9 w-9 text-text-muted" />}
                 title="No journal entry selected"
-                description="Click '+ New Entry' or select an entry on the left to start reflecting, tracking your mood, or documenting daily priorities!"
+                description="Create a new entry to start writing, or return to the dashboard and open an existing page."
                 action={
-                  <button
-                    onClick={() => handleCreateEntry('blank')}
-                    className="btn btn-primary btn-md bg-[#a855f7] hover:bg-[#9333ea]"
-                  >
-                    Create First Entry
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button onClick={createEntry} className="btn btn-primary btn-md">
+                      Create First Entry
+                    </button>
+                    <button onClick={() => setActiveModule('dashboard')} className="btn btn-secondary btn-md">
+                      Go Home
+                    </button>
+                  </div>
                 }
               />
             </div>
           )}
-
-        </div>
-
+        </section>
       </div>
     </motion.div>
   );

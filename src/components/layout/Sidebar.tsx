@@ -1,5 +1,5 @@
 import {
-  IconBook, IconLayout,
+  IconBook, IconBook2, IconLayout,
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Home', icon: IconLayout },
+  { id: 'journal', label: 'Journal', icon: IconBook2 },
   { id: 'projects', label: 'Projects', icon: IconFolder },
   { id: 'todo', label: 'To-Do List', icon: IconChecklist },
   { id: 'study', label: 'Study Tracker', icon: IconBook },
@@ -135,7 +136,7 @@ export const Sidebar = () => {
       {/* Sidebar Header */}
       <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: isCollapsed ? '0 10px' : '0 20px', gap: 12, flexShrink: 0, justifyContent: isCollapsed ? 'center' : 'space-between', borderBottom: '1px solid var(--border-border-alt)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
-          <AppLogo className="w-8 h-8 flex-shrink-0" />
+          <AppLogo className="w-8 h-8 shrink-0" />
           {!isCollapsed && (
             <span className="sidebar-header-text" style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
               Personal HQ
@@ -146,7 +147,7 @@ export const Sidebar = () => {
         <button 
           onClick={toggleCollapse} 
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          className="w-7 h-7 rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors shadow-sm hidden md:flex"
+          className="w-7 h-7 rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors shadow-sm"
         >
           {isCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
         </button>

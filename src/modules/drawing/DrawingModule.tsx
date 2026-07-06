@@ -32,8 +32,30 @@ export default function DrawingModule() {
     deleteNote: state.deleteNote,
   })));
 
-  const excalidrawRef = useRef<any>(null);
+  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const debounceTimer = useRef<any>(null);
+
+  // Resolve theme to 'dark' or 'light' supporting 'system' preference
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(() => {
+    if (theme === 'system') {
+      return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return theme === 'dark' ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = (e: MediaQueryListEvent) => {
+        setResolvedTheme(e.matches ? 'dark' : 'light');
+      };
+      media.addEventListener('change', listener);
+      setResolvedTheme(media.matches ? 'dark' : 'light');
+      return () => media.removeEventListener('change', listener);
+    } else {
+      setResolvedTheme(theme === 'dark' ? 'dark' : 'light');
+    }
+  }, [theme]);
 
   const [activeSketchId, setActiveSketchId] = useState<string>(() => {
     const lastActive = localStorage.getItem('phq_active_sketch_id');
@@ -43,6 +65,8 @@ export default function DrawingModule() {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
   const [isoGrid, setIsoGrid] = useState(false);
+  const canvasBackground = resolvedTheme === 'dark' ? '#121214' : '#ffffff';
+  const panelBackground = resolvedTheme === 'dark' ? 'rgba(17, 17, 19, 0.92)' : 'rgba(255, 255, 255, 0.92)';
 
   // Sync active sketch ID to local storage for quick reload defaults
   useEffect(() => {
@@ -98,23 +122,26 @@ export default function DrawingModule() {
     if (activeSketch) {
       const cleanApp = { ...(activeSketch.appState || {}) };
       delete cleanApp.collaborators;
+      cleanApp.theme = resolvedTheme;
+      cleanApp.viewBackgroundColor = isoGrid ? 'transparent' : (resolvedTheme === 'dark' ? '#121214' : '#ffffff');
+      cleanApp.gridModeEnabled = isoGrid;
       return { elements: activeSketch.elements, appState: cleanApp };
     }
     return { elements: [], appState: {} };
-  }, [activeSketch]);
+  }, [activeSketch, resolvedTheme, isoGrid]);
 
   // Sync canvas theme changes dynamically
   useEffect(() => {
-    if (excalidrawRef.current) {
-      excalidrawRef.current.updateScene({
+    if (excalidrawAPI) {
+      excalidrawAPI.updateScene({
         appState: { 
-          theme: theme === 'dark' ? 'dark' : 'light',
-          viewBackgroundColor: isoGrid ? 'transparent' : (theme === 'dark' ? '#121214' : '#ffffff'),
+          theme: resolvedTheme,
+          viewBackgroundColor: isoGrid ? 'transparent' : (resolvedTheme === 'dark' ? '#121214' : '#ffffff'),
           gridModeEnabled: isoGrid,
         }
       });
     }
-  }, [theme, isoGrid]);
+  }, [excalidrawAPI, resolvedTheme, isoGrid]);
 
   const handleCreateNewSketch = () => {
     const id = crypto.randomUUID();
@@ -176,15 +203,26 @@ export default function DrawingModule() {
           --border-radius-lg: 20px !important;
           --border-radius-md: 14px !important;
           --border-radius-sm: 8px !important;
+          background-color: ${canvasBackground} !important;
+        }
+        .excalidraw .excalidraw-container {
+          background-color: ${canvasBackground} !important;
+        }
+        .excalidraw .layer-ui__wrapper,
+        .excalidraw .App-menu__left,
+        .excalidraw .App-menu__right,
+        .excalidraw .Island--has-radius,
+        .excalidraw .layer-ui__wrapper__top-right {
+          background-color: transparent !important;
         }
         .excalidraw .Island, 
         .excalidraw .context-menu, 
         .excalidraw .dropdown-menu {
-          background-color: ${theme === 'dark' ? 'rgba(20, 20, 22, 0.85)' : 'rgba(255, 255, 255, 0.85)'} !important;
+          background-color: ${panelBackground} !important;
           backdrop-filter: blur(16px) saturate(180%) !important;
           -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-          border: 1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(24, 24, 27, 0.08)'} !important;
-          box-shadow: 0 20px 40px -15px rgba(0, 0, 0, ${theme === 'dark' ? '0.6' : '0.1'}) !important;
+          border: 1px solid ${resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(24, 24, 27, 0.08)'} !important;
+          box-shadow: 0 20px 40px -15px rgba(0, 0, 0, ${resolvedTheme === 'dark' ? '0.6' : '0.1'}) !important;
         }
         .excalidraw .ToolIcon__keybutton,
         .excalidraw .buttonList button,
@@ -206,10 +244,10 @@ export default function DrawingModule() {
           background: transparent !important;
         }
         .iso-grid-active {
-          background-color: ${theme === 'dark' ? '#121214' : '#ffffff'} !important;
+          background-color: ${canvasBackground} !important;
           background-image: 
-            linear-gradient(30deg, ${theme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px),
-            linear-gradient(150deg, ${theme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px) !important;
+            linear-gradient(30deg, ${resolvedTheme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px),
+            linear-gradient(150deg, ${resolvedTheme === 'dark' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)'} 1px, transparent 1px) !important;
           background-size: 30px 51.96px !important;
         }
       `}</style>
@@ -326,18 +364,16 @@ export default function DrawingModule() {
         className={`flex-grow h-full relative rounded-[32px] overflow-hidden border border-border/50 bg-surface shadow-[0_15px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ${isoGrid ? 'iso-grid-active' : ''}`}
       >
         <Excalidraw
-          theme={theme === 'dark' ? 'dark' : 'light'}
+          theme={resolvedTheme}
           initialData={{
             ...initialData,
             appState: {
               ...initialData.appState,
-              viewBackgroundColor: isoGrid ? 'transparent' : (theme === 'dark' ? '#121214' : '#ffffff'),
+              viewBackgroundColor: isoGrid ? 'transparent' : canvasBackground,
               gridModeEnabled: isoGrid,
             }
           }}
-          excalidrawAPI={(api) => {
-            excalidrawRef.current = api;
-          }}
+          excalidrawAPI={setExcalidrawAPI}
           onChange={(elements, appState) => {
             if (debounceTimer.current) {
               clearTimeout(debounceTimer.current);

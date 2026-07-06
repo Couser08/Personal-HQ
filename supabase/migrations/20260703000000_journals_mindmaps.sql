@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS public.journals (
     images TEXT[] NOT NULL DEFAULT '{}',
     reflection JSONB NOT NULL DEFAULT '{"whatWentWell": "", "whatCanBeBetter": ""}'::jsonb,
     attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
+    location TEXT NOT NULL DEFAULT '',
+    reminder TEXT NOT NULL DEFAULT '',
+    style_preset TEXT NOT NULL DEFAULT 'calm',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
