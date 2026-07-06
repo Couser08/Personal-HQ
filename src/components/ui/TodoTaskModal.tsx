@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { CustomSelect } from './CustomSelect';
 import { TagInput } from './TagInput';
 import { IconX } from '@tabler/icons-react';
@@ -34,7 +35,12 @@ export function TodoTaskModal() {
     closeTodoTaskModal, 
     updateTodoTask, 
     todoProjects 
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    todoTaskModal: state.todoTaskModal,
+    closeTodoTaskModal: state.closeTodoTaskModal,
+    updateTodoTask: state.updateTodoTask,
+    todoProjects: state.todoProjects,
+  })));
   
   const { isOpen, task } = todoTaskModal;
 

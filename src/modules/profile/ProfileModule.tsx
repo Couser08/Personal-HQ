@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { supabase } from '../../lib/supabase';
 import {
@@ -24,7 +25,12 @@ const cardStyle = {
 
 export default function ProfileModule() {
   const { user } = useAuthStore();
-  const { notes, links, subjects, showConfirm } = useAppStore();
+  const { notes, links, subjects, showConfirm } = useAppStore(useShallow(state => ({
+    notes: state.notes,
+    links: state.links,
+    subjects: state.subjects,
+    showConfirm: state.showConfirm,
+  })));
   const { addToast } = useToastStore();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);

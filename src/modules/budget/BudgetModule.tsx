@@ -9,6 +9,7 @@ import {
   IconBulb, IconBarbell, IconBook, IconCoffee
 } from '@tabler/icons-react';
 import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { CustomSelect } from '../../components/ui/CustomSelect';
@@ -141,7 +142,19 @@ export default function BudgetModule() {
     updateBudgetTransaction,
     deleteBudgetTransaction,
     showConfirm,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    settings: state.settings,
+    updateSettings: state.updateSettings,
+    budgetCategories: state.budgetCategories,
+    budgetTransactions: state.budgetTransactions,
+    addBudgetCategory: state.addBudgetCategory,
+    updateBudgetCategory: state.updateBudgetCategory,
+    deleteBudgetCategory: state.deleteBudgetCategory,
+    addBudgetTransaction: state.addBudgetTransaction,
+    updateBudgetTransaction: state.updateBudgetTransaction,
+    deleteBudgetTransaction: state.deleteBudgetTransaction,
+    showConfirm: state.showConfirm,
+  })));
 
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -818,7 +831,7 @@ function TransactionForm({
   onSubmit: (data: Omit<BudgetTransaction, 'id' | 'date'>) => Promise<void>;
   onClose: () => void;
 }) {
-  const { settings } = useAppStore();
+  const settings = useAppStore(state => state.settings);
   const [categoryId, setCategoryId] = useState(transaction?.categoryId || categories[0]?.id || '');
   const [amount, setAmount] = useState(transaction?.amount ? transaction.amount.toString() : '');
   const [description, setDescription] = useState(transaction?.description || '');

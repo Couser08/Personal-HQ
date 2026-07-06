@@ -5,6 +5,7 @@ import {
   IconStarFilled, IconEdit, IconArrowLeft
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const STATUS_OPTIONS = {
   ANIME: ['WATCHING', 'COMPLETED', 'DROPPED', 'PLANNING'],
@@ -33,7 +34,14 @@ function getRatingGradientColor(rating: number): string {
 }
 
 export default function MediaModule() {
-  const { theme, mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal, updateMediaLog } = useAppStore();
+  const { theme, mediaLogs, deleteMediaLog, showConfirm, openMediaEntryModal, updateMediaLog } = useAppStore(useShallow(state => ({
+    theme: state.theme,
+    mediaLogs: state.mediaLogs,
+    deleteMediaLog: state.deleteMediaLog,
+    showConfirm: state.showConfirm,
+    openMediaEntryModal: state.openMediaEntryModal,
+    updateMediaLog: state.updateMediaLog,
+  })));
   
   const [activeTab, setActiveTab] = useState<'ANIME' | 'GAME'>('ANIME');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);

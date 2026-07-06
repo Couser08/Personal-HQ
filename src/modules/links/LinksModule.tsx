@@ -2,13 +2,19 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconSearch, IconTrash, IconLink as IconLinkTabler, IconCopy, IconCheck } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { TagInput } from '../../components/ui/TagInput';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function LinksModule() {
-  const { links, addLink, deleteLink , showConfirm} = useAppStore();
+  const { links, addLink, deleteLink , showConfirm} = useAppStore(useShallow(state => ({
+    links: state.links,
+    addLink: state.addLink,
+    deleteLink: state.deleteLink,
+    showConfirm: state.showConfirm,
+  })));
   
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);

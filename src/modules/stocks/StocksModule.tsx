@@ -2,12 +2,18 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconTrash, IconTrendingUp, IconFilter } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function StocksModule() {
-  const { stocks, addStock, deleteStock , showConfirm} = useAppStore();
+  const { stocks, addStock, deleteStock , showConfirm} = useAppStore(useShallow(state => ({
+    stocks: state.stocks,
+    addStock: state.addStock,
+    deleteStock: state.deleteStock,
+    showConfirm: state.showConfirm,
+  })));
   
   const [filterAction, setFilterAction] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

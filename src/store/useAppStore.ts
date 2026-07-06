@@ -611,6 +611,54 @@ export interface AppStore {
 }
 
 let globalPomodoroInterval: any = null;
+let globalPomodoroWorker: Worker | null = null;
+let globalPomodoroStartTime: number = 0;
+let globalPomodoroSecondsAtStart: number = 0;
+let globalPomodoroTick: (() => void) | null = null;
+
+const startTimer = (tickFn: () => void) => {
+  try {
+    if (!globalPomodoroWorker) {
+      const workerCode = `
+        let intervalId = null;
+        self.onmessage = function(e) {
+          if (e.data === 'start') {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = setInterval(() => {
+              self.postMessage('tick');
+            }, 1000);
+          } else if (e.data === 'stop') {
+            if (intervalId) {
+              clearInterval(intervalId);
+              intervalId = null;
+            }
+          }
+        };
+      `;
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      globalPomodoroWorker = new Worker(URL.createObjectURL(blob));
+    }
+    globalPomodoroWorker.onmessage = () => {
+      tickFn();
+    };
+    globalPomodoroWorker.postMessage('start');
+  } catch (e) {
+    console.warn('Web Worker not supported or failed to load, falling back to setInterval', e);
+    if (globalPomodoroInterval) clearInterval(globalPomodoroInterval);
+    globalPomodoroInterval = setInterval(tickFn, 1000);
+  }
+};
+
+const stopTimer = () => {
+  if (globalPomodoroWorker) {
+    globalPomodoroWorker.postMessage('stop');
+  }
+  if (globalPomodoroInterval) {
+    clearInterval(globalPomodoroInterval);
+    globalPomodoroInterval = null;
+  }
+};
+
 
 export const useAppStore = create<AppStore>()((set, get) => ({
   activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'dashboard'),
@@ -1123,12 +1171,14 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })),
 
   startGlobalPomodoro: () => {
-    if (globalPomodoroInterval) clearInterval(globalPomodoroInterval);
+    stopTimer();
     set({ pomodoroTimerState: 'running' });
+
+    globalPomodoroStartTime = Date.now();
+    globalPomodoroSecondsAtStart = get().pomodoroSecondsLeft;
 
     const tick = () => {
       const { 
-        pomodoroSecondsLeft, 
         pomodoroSessionId, 
         pomodoroStreak, 
         pomodoroAssociatedTaskId, 
@@ -1138,9 +1188,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         pomodoroTotalSeconds 
       } = get();
 
-      if (pomodoroSecondsLeft <= 1) {
-        clearInterval(globalPomodoroInterval);
-        globalPomodoroInterval = null;
+      const elapsedMs = Date.now() - globalPomodoroStartTime;
+      const elapsedSecs = Math.floor(elapsedMs / 1000);
+      const secondsLeft = Math.max(0, globalPomodoroSecondsAtStart - elapsedSecs);
+
+      if (secondsLeft <= 0) {
+        stopTimer();
+        globalPomodoroTick = null;
         set({ pomodoroTimerState: 'idle', pomodoroSecondsLeft: 0 });
 
         const addToast = useToastStore.getState().addToast;
@@ -1178,18 +1232,17 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           });
         }
       } else {
-        set({ pomodoroSecondsLeft: pomodoroSecondsLeft - 1 });
+        set({ pomodoroSecondsLeft: secondsLeft });
       }
     };
 
-    globalPomodoroInterval = setInterval(tick, 1000);
+    globalPomodoroTick = tick;
+    startTimer(tick);
   },
 
   pauseGlobalPomodoro: () => {
-    if (globalPomodoroInterval) {
-      clearInterval(globalPomodoroInterval);
-      globalPomodoroInterval = null;
-    }
+    stopTimer();
+    globalPomodoroTick = null;
     set({ pomodoroTimerState: 'paused' });
   },
 
@@ -1198,10 +1251,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   },
 
   stopGlobalPomodoro: () => {
-    if (globalPomodoroInterval) {
-      clearInterval(globalPomodoroInterval);
-      globalPomodoroInterval = null;
-    }
+    stopTimer();
+    globalPomodoroTick = null;
     const { pomodoroTotalSeconds, pomodoroPipWindow } = get();
     set({ 
       pomodoroTimerState: 'idle', 
@@ -1743,3 +1794,28 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       return nextState;
     }),
 }));
+
+if (typeof window !== 'undefined') {
+  const syncTimer = () => {
+    const state = useAppStore.getState();
+    if (state.pomodoroTimerState === 'running' && globalPomodoroTick) {
+      const elapsedMs = Date.now() - globalPomodoroStartTime;
+      const elapsedSecs = Math.floor(elapsedMs / 1000);
+      const secondsLeft = Math.max(0, globalPomodoroSecondsAtStart - elapsedSecs);
+      
+      if (secondsLeft <= 0) {
+        globalPomodoroTick();
+      } else {
+        useAppStore.setState({ pomodoroSecondsLeft: secondsLeft });
+      }
+    }
+  };
+
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncTimer();
+    }
+  });
+  window.addEventListener('focus', syncTimer);
+}
+

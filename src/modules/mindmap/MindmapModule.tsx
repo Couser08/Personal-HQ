@@ -9,6 +9,7 @@ import {
   IconMaximize, IconMinimize
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 
@@ -77,7 +78,13 @@ const sanitizeMindmapNodes = (nodes: MindmapNode[], links: MindmapLink[]): Mindm
 };
 
 export default function MindmapModule() {
-  const { mindmaps, addMindmap, updateMindmap, deleteMindmap, showConfirm } = useAppStore();
+  const { mindmaps, addMindmap, updateMindmap, deleteMindmap, showConfirm } = useAppStore(useShallow(state => ({
+    mindmaps: state.mindmaps,
+    addMindmap: state.addMindmap,
+    updateMindmap: state.updateMindmap,
+    deleteMindmap: state.deleteMindmap,
+    showConfirm: state.showConfirm,
+  })));
 
   const [activeMindmapId, setActiveMindmapId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -1018,7 +1025,7 @@ function MindmapCanvas({
   setIsFullScreen: (val: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { showConfirm } = useAppStore();
+  const showConfirm = useAppStore(state => state.showConfirm);
   
   // Apple Notes Modal State
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);

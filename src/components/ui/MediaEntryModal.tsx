@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IconX, IconCheck, IconStar } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { CustomSelect } from './CustomSelect';
 
 const STATUS_OPTIONS = {
@@ -30,7 +31,12 @@ export function MediaEntryModal() {
   const {
     mediaEntryModal, closeMediaEntryModal,
     addMediaLog, updateMediaLog,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    mediaEntryModal: state.mediaEntryModal,
+    closeMediaEntryModal: state.closeMediaEntryModal,
+    addMediaLog: state.addMediaLog,
+    updateMediaLog: state.updateMediaLog,
+  })));
 
   const { isOpen, editingLog, activeTab } = mediaEntryModal;
 

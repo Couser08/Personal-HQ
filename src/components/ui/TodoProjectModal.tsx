@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const PROJECT_COLORS = ['#f43f5e', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#06b6d4'];
 
 export function TodoProjectModal() {
-  const { todoProjectModal, closeTodoProjectModal, addTodoProject } = useAppStore();
+  const { todoProjectModal, closeTodoProjectModal, addTodoProject } = useAppStore(useShallow(state => ({
+    todoProjectModal: state.todoProjectModal,
+    closeTodoProjectModal: state.closeTodoProjectModal,
+    addTodoProject: state.addTodoProject,
+  })));
   const { isOpen } = todoProjectModal;
 
   const [name, setName] = useState('');

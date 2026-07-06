@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export function PipTimerPortal() {
   const {
@@ -12,7 +13,16 @@ export function PipTimerPortal() {
     setPomodoroPipWindow,
     pauseGlobalPomodoro,
     resumeGlobalPomodoro
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    pomodoroPipWindow: state.pomodoroPipWindow,
+    pomodoroSecondsLeft: state.pomodoroSecondsLeft,
+    pomodoroTimerState: state.pomodoroTimerState,
+    pomodoroSessionId: state.pomodoroSessionId,
+    pomodoroStreak: state.pomodoroStreak,
+    setPomodoroPipWindow: state.setPomodoroPipWindow,
+    pauseGlobalPomodoro: state.pauseGlobalPomodoro,
+    resumeGlobalPomodoro: state.resumeGlobalPomodoro,
+  })));
 
   const [isHovered, setIsHovered] = useState(false);
   const isRunning = pomodoroTimerState === 'running';

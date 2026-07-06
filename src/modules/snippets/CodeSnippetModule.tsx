@@ -5,6 +5,7 @@ import {
   IconStar, IconStarFilled, IconClock, IconFilter, IconEdit, IconDots, IconArrowLeft
 } from '@tabler/icons-react';
 import { useAppStore, type CodeSnippet } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -20,7 +21,13 @@ const LANGUAGES = [
 const LANGUAGE_OPTIONS: SelectOption[] = LANGUAGES.map(l => ({ value: l, label: l.toUpperCase() }));
 
 export default function CodeSnippetModule() {
-  const { snippets, addSnippet, updateSnippet, deleteSnippet, showConfirm } = useAppStore();
+  const { snippets, addSnippet, updateSnippet, deleteSnippet, showConfirm } = useAppStore(useShallow(state => ({
+    snippets: state.snippets,
+    addSnippet: state.addSnippet,
+    updateSnippet: state.updateSnippet,
+    deleteSnippet: state.deleteSnippet,
+    showConfirm: state.showConfirm,
+  })));
   const { addToast } = useToastStore();
   
   const [search, setSearch] = useState('');

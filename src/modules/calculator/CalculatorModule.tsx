@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconCalculator, IconTrash, IconHistory, IconDeviceFloppy } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { Badge } from '../../components/ui/Badge';
 import { CustomSelect } from '../../components/ui/CustomSelect';
@@ -44,7 +45,14 @@ export default function CalculatorModule() {
   const { 
     interestHistory, addInterestRecord, deleteInterestRecord,
     standardHistory, addStandardRecord, clearStandardHistory
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    interestHistory: state.interestHistory,
+    addInterestRecord: state.addInterestRecord,
+    deleteInterestRecord: state.deleteInterestRecord,
+    standardHistory: state.standardHistory,
+    addStandardRecord: state.addStandardRecord,
+    clearStandardHistory: state.clearStandardHistory,
+  })));
   const addToast = useToastStore(state => state.addToast);
 
   const [activeTab, setActiveTab] = useState<'standard' | 'interest'>('standard');

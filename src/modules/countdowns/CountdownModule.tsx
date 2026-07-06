@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconTrash, IconHourglassEmpty } from '@tabler/icons-react';
 import { useAppStore, type Countdown, type CountdownTemplate } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 
@@ -470,7 +471,13 @@ const CountdownCard = ({ c, template, onDelete }: { c: Countdown; template: Coun
 // MAIN MODULE
 // ──────────────────────────────────────────────
 export default function CountdownModule() {
-  const { countdowns, addCountdown, deleteCountdown, showConfirm, settings } = useAppStore();
+  const { countdowns, addCountdown, deleteCountdown, showConfirm, settings } = useAppStore(useShallow(state => ({
+    countdowns: state.countdowns,
+    addCountdown: state.addCountdown,
+    deleteCountdown: state.deleteCountdown,
+    showConfirm: state.showConfirm,
+    settings: state.settings,
+  })));
   const template: CountdownTemplate = settings.countdownTemplate ?? 'default';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
