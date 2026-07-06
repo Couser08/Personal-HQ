@@ -560,7 +560,7 @@ export default function CountdownModule() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Countdown">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Countdown" maxWidthClassName="max-w-2xl">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-text-secondary">Label</label>

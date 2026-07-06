@@ -101,6 +101,8 @@ export default function MediaModule() {
     let timestamps: Record<number, string> = {};
     let lastWatchedEp = '';
     let lastWatchedTimestamp = '';
+    let bannerImage = '/anime_hero_banner_1783275383433.png';
+    let episodeThumb = '/anime_episode_thumb_1783275399662.png';
 
     try {
       if (selectedAnime.notes && selectedAnime.notes.trim().startsWith('{')) {
@@ -111,6 +113,8 @@ export default function MediaModule() {
         timestamps = meta.timestamps ?? {};
         lastWatchedEp = meta.lastWatchedEp?.toString() || '';
         lastWatchedTimestamp = meta.lastWatchedTimestamp ?? '';
+        bannerImage = meta.bannerImage ?? '/anime_hero_banner_1783275383433.png';
+        episodeThumb = meta.episodeThumb ?? '/anime_episode_thumb_1783275399662.png';
       }
     } catch (e) {}
 
@@ -121,6 +125,8 @@ export default function MediaModule() {
       timestamps?: Record<number, string>;
       lastWatchedEp?: number | null;
       lastWatchedTimestamp?: string;
+      bannerImage?: string;
+      episodeThumb?: string;
     }) => {
       const meta = {
         notesText: updates.notesText !== undefined ? updates.notesText : notesText,
@@ -128,7 +134,9 @@ export default function MediaModule() {
         watchedEpisodes: updates.watchedEpisodes !== undefined ? updates.watchedEpisodes : watchedEpisodes,
         timestamps: updates.timestamps !== undefined ? updates.timestamps : timestamps,
         lastWatchedEp: updates.lastWatchedEp !== undefined ? updates.lastWatchedEp : (lastWatchedEp ? parseInt(lastWatchedEp) : null),
-        lastWatchedTimestamp: updates.lastWatchedTimestamp !== undefined ? updates.lastWatchedTimestamp : lastWatchedTimestamp
+        lastWatchedTimestamp: updates.lastWatchedTimestamp !== undefined ? updates.lastWatchedTimestamp : lastWatchedTimestamp,
+        bannerImage: updates.bannerImage !== undefined ? updates.bannerImage : bannerImage,
+        episodeThumb: updates.episodeThumb !== undefined ? updates.episodeThumb : episodeThumb,
       };
       updateMediaLog(selectedAnime.id, {
         notes: JSON.stringify(meta)
@@ -188,15 +196,42 @@ export default function MediaModule() {
         `}</style>
 
         {/* Hero Banner Area */}
-        <div className="relative w-full h-[280px] md:h-[340px] shrink-0 overflow-hidden bg-surface">
+        <div className="relative w-full h-[280px] md:h-[340px] shrink-0 overflow-hidden bg-surface group/banner">
           <img 
-            src="/anime_hero_banner_1783275383433.png" 
+            src={bannerImage} 
             alt="Hero Banner" 
             className="w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
           
           <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
+            {/* Custom Banner Upload Overlay button */}
+            <div className="absolute top-0 right-0 z-20">
+              <input
+                type="file"
+                accept="image/*"
+                id="banner-image-upload"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      saveAnimeMeta({ bannerImage: reader.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <label
+                htmlFor="banner-image-upload"
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-border bg-surface/40 backdrop-blur-md hover:bg-surface/80 hover:scale-105 active:scale-95 transition-all cursor-pointer text-text-primary text-xs font-bold"
+                title="Upload Custom Banner Image"
+              >
+                <IconPlus size={14} />
+                <span>Upload Banner</span>
+              </label>
+            </div>
             <div className="flex flex-col items-start gap-4">
               <button
                 onClick={() => setSelectedAnimeId(null)}
@@ -256,6 +291,30 @@ export default function MediaModule() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="episode-thumb-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          saveAnimeMeta({ episodeThumb: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="episode-thumb-upload"
+                    className="text-[10px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-md cursor-pointer transition-colors flex items-center gap-1"
+                    title="Upload Episode Card Thumbnail"
+                  >
+                    <IconPlus size={10} />
+                    <span>Upload Thumb</span>
+                  </label>
                   <span className="text-sm font-black text-text-primary">{watchedEpisodes.length} / {epCount}</span>
                   <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md">{progressPercent}%</span>
                 </div>
@@ -297,7 +356,7 @@ export default function MediaModule() {
                         />
 
                         <img 
-                          src="/anime_episode_thumb_1783275399662.png" 
+                          src={episodeThumb} 
                           alt="Thumb" 
                           className={`w-12 h-8 rounded-md object-cover shrink-0 ml-1 transition-all ${!checked && 'opacity-40 grayscale'}`}
                         />
@@ -347,7 +406,7 @@ export default function MediaModule() {
                 <div className="flex flex-col gap-2">
                   <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">Last Ep Watched</label>
                   <div className="flex items-center gap-3 bg-surface-alt rounded-xl p-2 border border-border">
-                    <img src="/anime_episode_thumb_1783275399662.png" alt="Thumb" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <img src={episodeThumb} alt="Thumb" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     <input
                       type="number"
                       min={1}

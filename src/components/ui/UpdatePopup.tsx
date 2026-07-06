@@ -3,53 +3,52 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconX, 
   IconSparkles, 
-  IconBrush, 
-  IconTerminal, 
-  IconCommand, 
-  IconPdf 
+  IconFileText,
+  IconClock,
+  IconMovie,
+  IconActivity
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconBrush className="w-5 h-5 stroke-[2]" />,
+    icon: <IconFileText className="w-5 h-5 stroke-[2]" />,
+    color: '#FF9500', 
+    bg: 'rgba(255, 149, 0, 0.08)',
+    title: 'Markdown Module & Daily Log',
+    desc: 'Write daily summaries or notes with a full-featured markdown workspace, rendering real-time styles, templates, and seamless document integration.',
+  },
+  {
+    icon: <IconClock className="w-5 h-5 stroke-[2]" />,
+    color: '#34C759', 
+    bg: 'rgba(52, 199, 89, 0.08)',
+    title: 'Background Pomodoro Engine',
+    desc: 'Never drop a session. Implemented HTML5 Web Workers + Visibility tab synchronizations to keep the Pomodoro clock running accurately in the background.',
+  },
+  {
+    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
     color: '#FF2D55', 
     bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Drawing Canvas Workspace',
-    desc: 'Express ideas visually with our premium full-featured digital whiteboard. Draw diagrams, save/load sketches, use custom pen styles, and color matching.',
+    title: 'Anime Tracker Redesign',
+    desc: 'Redesigned detailed media views featuring beautiful AI-generated widescreen banners, custom square checkboxes, and responsive notes with chibi character art.',
   },
   {
-    icon: <IconTerminal className="w-5 h-5 stroke-[2]" />,
-    color: '#5856D6', 
-    bg: 'rgba(88, 86, 214, 0.08)',
-    title: 'Coder Hub & Sprint Manager',
-    desc: 'Manage sprints, DSA questions, TIL learning logs, resource bookmarks, and development goals with a dedicated tracking dashboard.',
-  },
-  {
-    icon: <IconCommand className="w-5 h-5 stroke-[2]" />,
+    icon: <IconActivity className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', 
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Universal Command Palette',
-    desc: 'Access any tool instantly. Press Cmd/Ctrl + K to search files, open modules, trigger Pomodoro sessions, or create mindmaps globally.',
-  },
-  {
-    icon: <IconPdf className="w-5 h-5 stroke-[2]" />,
-    color: '#AF52DE', 
-    bg: 'rgba(175, 82, 222, 0.08)',
-    title: 'Premium PDF Document Reader',
-    desc: 'Attach PDF document guidelines or papers directly to mindmap nodes and view them inside the app with a dark-mode modal reader.',
+    title: 'Zustand Render Optimization',
+    desc: 'Migrated global state selectors to use shallow comparisons (`useShallow`), decreasing component re-render loops and optimizing app performance.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Full release 1.0.0 featuring a robust Drawing Whiteboard module',
-  'Integrated Coder Hub to streamline software development workflows',
-  'Global Command Palette command finder (Cmd/Ctrl + K)',
-  'Apple-style document viewer modal for PDF node attachments',
-  'Zen Fullscreen mode, node search, and child auto-grouping on mindmap imports',
-  'Modern flat Todo card designs with compact HSL outlines'
+  'Added full-featured Markdown document workspace with Daily Log support',
+  'Web Worker powered Pomodoro background timer with focus/visibility sync API',
+  'Anime detailed tracker page design revamp (banner, checkboxes, mascot)',
+  'Shallow selectors optimization across modules to reduce re-renders',
+  'Cleaned up unused variables and solved various TypeScript compilation errors',
 ];
 
 interface UpdatePopupProps {

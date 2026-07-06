@@ -1346,6 +1346,7 @@ export default function StudyModule() {
           isOpen={noteModal.open}
           onClose={() => setNoteModal(prev => ({ ...prev, open: false }))}
           title={noteModal.noteId ? "Edit Note" : "Create Note"}
+          maxWidthClassName="max-w-4xl"
         >
           <div className="flex flex-col gap-4">
             <input
@@ -1381,6 +1382,7 @@ export default function StudyModule() {
           isOpen={snippetModal.open}
           onClose={() => setSnippetModal(prev => ({ ...prev, open: false }))}
           title={snippetModal.snippetId ? "Edit Snippet" : "Add Snippet"}
+          maxWidthClassName="max-w-3xl"
         >
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -1515,6 +1517,7 @@ export default function StudyModule() {
           isOpen={questionModal.open}
           onClose={() => setQuestionModal(prev => ({ ...prev, open: false }))}
           title="Add Question Node"
+          maxWidthClassName="max-w-3xl"
         >
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -2048,7 +2051,7 @@ export default function StudyModule() {
         </div>
 
         {/* Modal additions */}
-        <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title="Add Topic">
+        <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title="Add Topic" maxWidthClassName="max-w-2xl">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-text-secondary">Topic Name</label>
@@ -2261,7 +2264,7 @@ export default function StudyModule() {
       )}
 
       {/* Add Subject Modal */}
-      <Modal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} title="Add Subject">
+      <Modal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} title="Add Subject" maxWidthClassName="max-w-2xl">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-text-secondary">Subject Name</label>

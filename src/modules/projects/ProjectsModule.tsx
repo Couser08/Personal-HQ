@@ -392,7 +392,7 @@ export default function ProjectsModule() {
         isOpen={isCreatingRoadmap}
         onClose={handleCancelCreateRoadmap}
         title="Create Custom Roadmap"
-        maxWidthClassName="max-w-lg"
+        maxWidthClassName="max-w-3xl"
       >
         <form onSubmit={handleCreateRoadmap} className="flex flex-col gap-4 w-full">
           <label className="flex flex-col gap-1 min-w-0">

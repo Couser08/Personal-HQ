@@ -3,7 +3,8 @@ import {
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil
+  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
+  IconFileText
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
   { id: 'drawing', label: 'Drawing', icon: IconPencil },
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
+  { id: 'markdown', label: 'Markdown Creator', icon: IconFileText },
   { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
 

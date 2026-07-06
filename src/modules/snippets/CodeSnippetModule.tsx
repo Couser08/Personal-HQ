@@ -359,6 +359,7 @@ export default function CodeSnippetModule() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingId ? "Edit Snippet" : "Add Code Snippet"}
+        maxWidthClassName="max-w-4xl"
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
@@ -398,7 +399,7 @@ export default function CodeSnippetModule() {
               placeholder="// Your code here..."
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-[12px] px-4 py-4 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[250px]"
+              className="w-full bg-[#1e1e1e] text-[#d4d4d4] border border-border-alt rounded-[12px] px-4 py-4 focus:outline-none focus:border-primary transition-colors text-sm font-mono min-h-[320px]"
             />
           </div>
 

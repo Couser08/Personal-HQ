@@ -625,6 +625,7 @@ export default function BudgetModule() {
         isOpen={isCategoryModalOpen}
         onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
         title={editingCategory ? 'Edit Category' : 'New Category'}
+        maxWidthClassName="max-w-2xl"
       >
         <CategoryForm
           category={editingCategory}
@@ -646,6 +647,7 @@ export default function BudgetModule() {
         isOpen={isTransactionModalOpen}
         onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
         title={editingTransaction ? 'Edit Transaction' : 'New Transaction'}
+        maxWidthClassName="max-w-2xl"
       >
         <TransactionForm
           categories={budgetCategories}

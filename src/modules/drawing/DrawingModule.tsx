@@ -339,6 +339,64 @@ export default function DrawingModule() {
           </span>
         </div>
 
+        {/* Canvas Element Grounding */}
+        <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Ground Elements</span>
+            <IconFolder size={14} className="text-text-muted" />
+          </div>
+          <p className="text-[9px] text-text-secondary leading-normal">
+            Ground elements to lock them. They won't interfere with background canvas selection.
+          </p>
+          <div className="flex flex-col gap-1.5 mt-1">
+            <button
+              onClick={() => {
+                if (!excalidrawAPI) return;
+                const elements = excalidrawAPI.getSceneElements();
+                const appState = excalidrawAPI.getAppState();
+                const selectedIds = appState.selectedElementIds || {};
+                const updated = elements.map((el: any) => {
+                  if (selectedIds[el.id]) {
+                    return { ...el, locked: true };
+                  }
+                  return el;
+                });
+                excalidrawAPI.updateScene({ elements: updated });
+              }}
+              disabled={!excalidrawAPI}
+              className="w-full py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
+            >
+              Ground Selected
+            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => {
+                  if (!excalidrawAPI) return;
+                  const elements = excalidrawAPI.getSceneElements();
+                  const updated = elements.map((el: any) => ({ ...el, locked: true }));
+                  excalidrawAPI.updateScene({ elements: updated });
+                }}
+                disabled={!excalidrawAPI}
+                className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
+              >
+                Ground All
+              </button>
+              <button
+                onClick={() => {
+                  if (!excalidrawAPI) return;
+                  const elements = excalidrawAPI.getSceneElements();
+                  const updated = elements.map((el: any) => ({ ...el, locked: false }));
+                  excalidrawAPI.updateScene({ elements: updated });
+                }}
+                disabled={!excalidrawAPI}
+                className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
+              >
+                Unground All
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Sidebar Info Banner */}
         <div className="mt-auto p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
           <div className="flex items-center gap-2">
