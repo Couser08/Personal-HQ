@@ -28,14 +28,15 @@ const NAV_ITEMS = [
   { id: 'drawing', label: 'Drawing', icon: IconPencil },
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'markdown', label: 'Markdown Creator', icon: IconFileText },
+  { id: 'condition', label: 'Condition Workstation', icon: IconChecklist },
   { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
 
 const NAV_ITEM_STYLE = (active: boolean) => ({
   display: 'flex', alignItems: 'center', gap: 10,
   padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
-  background: active ? 'rgba(244,63,94,0.08)' : 'transparent',
-  color: active ? '#f43f5e' : 'var(--text-secondary)',
+  background: active ? 'var(--bg-surface-hover)' : 'transparent',
+  color: active ? 'var(--color-primary)' : 'var(--text-secondary)',
   fontWeight: active ? 700 : 500, fontSize: 13,
   textAlign: 'left' as const, width: '100%',
   transition: 'background 0.15s, color 0.15s',
@@ -142,7 +143,7 @@ export const Sidebar = () => {
           {!isCollapsed && (
             <span className="sidebar-header-text" style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
               Personal HQ
-              <span style={{ color: '#f43f5e', marginLeft: 2 }}>.</span>
+              <span style={{ color: 'var(--color-primary)', marginLeft: 2 }}>.</span>
             </span>
           )}
         </div>
@@ -181,7 +182,7 @@ export const Sidebar = () => {
 
       <div style={{ borderTop: '1px solid var(--border-border)', padding: isCollapsed ? '16px 0' : '16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div className="sidebar-user-row" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 6px', marginBottom: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }} title={userName}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }} title={userName}>
             {userInitial}
           </div>
           <div className="sidebar-label" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -276,9 +277,9 @@ export const MobileBottomNav = () => {
                 <button
                   key={id}
                   onClick={() => { setActiveModule(id); setIsMoreOpen(false); }}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === id ? '#f43f5e' : 'var(--text-primary)' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === id ? 'var(--color-primary)' : 'var(--text-primary)' }}
                 >
-                  <div style={{ padding: 10, borderRadius: 12, background: activeModule === id ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                  <div style={{ padding: 10, borderRadius: 12, background: activeModule === id ? 'var(--bg-surface-hover)' : 'var(--bg-surface-alt)' }}>
                     <Icon size={24} />
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>{label}</span>
@@ -286,18 +287,18 @@ export const MobileBottomNav = () => {
               ))}
               <button
                 onClick={() => { setActiveModule('profile'); setIsMoreOpen(false); }}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'profile' ? '#f43f5e' : 'var(--text-primary)' }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'profile' ? 'var(--color-primary)' : 'var(--text-primary)' }}
               >
-                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'profile' ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'profile' ? 'var(--bg-surface-hover)' : 'var(--bg-surface-alt)' }}>
                   <IconUser size={24} />
                 </div>
                 <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>Profile</span>
               </button>
               <button
                 onClick={() => { setActiveModule('settings'); setIsMoreOpen(false); }}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'settings' ? '#f43f5e' : 'var(--text-primary)' }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: activeModule === 'settings' ? 'var(--color-primary)' : 'var(--text-primary)' }}
               >
-                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'settings' ? 'rgba(244,63,94,0.1)' : 'var(--bg-surface-alt)' }}>
+                <div style={{ padding: 10, borderRadius: 12, background: activeModule === 'settings' ? 'var(--bg-surface-hover)' : 'var(--bg-surface-alt)' }}>
                   <IconSettings size={24} />
                 </div>
                 <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center' }}>Settings</span>
@@ -311,13 +312,13 @@ export const MobileBottomNav = () => {
         {BOTTOM_NAV.map(({ id, label, icon: Icon }) => {
           const active = activeModule === id;
           return (
-            <motion.button key={id} onClick={() => { setActiveModule(id); setIsMoreOpen(false); }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: active ? '#f43f5e' : 'var(--text-muted)', position: 'relative', minWidth: 48 }}>
+            <motion.button key={id} onClick={() => { setActiveModule(id); setIsMoreOpen(false); }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: active ? 'var(--color-primary)' : 'var(--text-muted)', position: 'relative', minWidth: 48 }}>
               <Icon size={22} style={{ position: 'relative', zIndex: 1 }} />
               <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>{label.split(' ')[0]}</span>
             </motion.button>
           );
         })}
-        <motion.button onClick={() => setIsMoreOpen(!isMoreOpen)} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreOpen ? '#f43f5e' : 'var(--text-muted)', minWidth: 48 }}>
+        <motion.button onClick={() => setIsMoreOpen(!isMoreOpen)} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreOpen ? 'var(--color-primary)' : 'var(--text-muted)', minWidth: 48 }}>
           <IconDots size={22} />
           <span style={{ fontSize: 10, fontWeight: isMoreOpen ? 700 : 500 }}>More</span>
         </motion.button>

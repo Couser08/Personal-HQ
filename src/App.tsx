@@ -22,6 +22,7 @@ const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
 const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
+const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
 
 function LoadingSplash() {
   return (
@@ -175,6 +176,7 @@ function AppContent() {
       case 'mindmap': return <MindmapModule />;
       case 'drawing': return <DrawingModule />;
       case 'markdown': return <MarkdownModule />;
+      case 'condition': return <ConditionModule />;
       default: return <DashboardModule />;
     }
   };

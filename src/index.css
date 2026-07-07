@@ -181,7 +181,7 @@
 
   /* Focus ring — Apple-style, keyboard only */
   :focus-visible {
-    outline: 2px solid #f43f5e;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -249,13 +249,13 @@
 }
 
 /* Variants */
-.btn-primary  { background: #f43f5e; color: #fff; box-shadow: 0 2px 12px rgba(244,63,94,0.25); }
-.btn-primary:hover { background: #be123c; box-shadow: 0 4px 20px rgba(244,63,94,0.35); }
+.btn-primary  { background: var(--color-primary); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.btn-primary:hover { background: var(--color-primary-muted); box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 .btn-secondary { background: var(--bg-surface); border-color: var(--border-border); color: var(--text-secondary); }
 .btn-secondary:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
 .btn-ghost:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
-.btn-danger { background: rgba(244,63,94,0.08); border-color: rgba(244,63,94,0.2); color: #f43f5e; }
+.btn-danger { background: rgba(244,63,94,0.08); border-color: rgba(244,63,94,0.2); color: var(--color-primary); }
 .btn-danger:hover { background: rgba(244,63,94,0.15); }
 
 /* Form Controls */
