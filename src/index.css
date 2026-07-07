@@ -191,11 +191,33 @@
     outline: none;
   }
 
-  /* Semantic HTML — tighter headings */
   h1, h2, h3, h4, h5, h6 {
     line-height: 1.2;
     letter-spacing: -0.01em;
   }
+}
+
+/* Performance Mode - Disable glassmorphism and blur filters globally */
+.reduce-blur, .reduce-blur * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Force translucent background classes to be solid in performance mode */
+.reduce-blur .bg-white\/90, 
+.reduce-blur .dark\:bg-stone-900\/90, 
+.reduce-blur .bg-surface\/90, 
+.reduce-blur .bg-white\/95, 
+.reduce-blur .dark\:bg-stone-900\/95,
+.reduce-blur .bg-black\/60,
+.reduce-blur .bg-black\/40 {
+  background-color: var(--bg-surface) !important;
+}
+
+.reduce-blur .bg-surface\/40,
+.reduce-blur .bg-surface-alt\/40,
+.reduce-blur .bg-black\/30 {
+  background-color: var(--bg-surface-alt) !important;
 }
 
 /* ─── Reduce Motion ─────────────────────────────────────────────────── */

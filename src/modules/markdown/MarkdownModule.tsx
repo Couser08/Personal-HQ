@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useAppStore } from '../../store/useAppStore';
@@ -6,9 +6,83 @@ import { useShallow } from 'zustand/react/shallow';
 import { 
   IconDownload, IconCopy, IconFileText, 
   IconEye, IconPencil, IconSitemap, IconCheck, IconPlus,
-  IconChevronLeft, IconChevronRight
+  IconChevronLeft, IconChevronRight, IconTrash
 } from '@tabler/icons-react';
 import "@excalidraw/excalidraw/index.css";
+
+// Helper to parse Markdown tables
+const parseTables = (text: string): string => {
+  const lines = text.split(/\r?\n/);
+  let inTable = false;
+  let tableLines: string[] = [];
+  const resultLines: string[] = [];
+
+  const renderHtmlTable = (rows: string[]): string => {
+    if (rows.length === 0) return '';
+    
+    // Filter out separator rows like |---| or | :--- |
+    const cleanRows = rows.filter(r => {
+      const content = r.replace(/[|:\s-]/g, '');
+      return content.length > 0;
+    });
+
+    if (cleanRows.length === 0) return '';
+
+    let html = '<div class="overflow-x-auto my-6"><table class="min-w-full border-collapse border border-border/60 text-left text-sm rounded-xl overflow-hidden">';
+    
+    // Header
+    const headers = cleanRows[0]
+      .split('|')
+      .slice(1, -1)
+      .map(h => h.trim());
+      
+    html += '<thead class="bg-surface-alt border-b border-border/80"><tr>';
+    headers.forEach(h => {
+      html += `<th class="px-4 py-3 font-bold text-text-primary border-r border-border/40 last:border-r-0">${h}</th>`;
+    });
+    html += '</tr></thead>';
+
+    // Body
+    html += '<tbody class="divide-y divide-border/30">';
+    for (let rIdx = 1; rIdx < cleanRows.length; rIdx++) {
+      const cells = cleanRows[rIdx]
+        .split('|')
+        .slice(1, -1)
+        .map(c => c.trim());
+      
+      html += '<tr class="hover:bg-surface-alt/25 transition-colors">';
+      cells.forEach(c => {
+        html += `<td class="px-4 py-3 text-text-secondary border-r border-border/35 last:border-r-0">${c}</td>`;
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    return html;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const isTableRow = line.startsWith('|') && line.endsWith('|');
+
+    if (isTableRow) {
+      if (!inTable) {
+        inTable = true;
+        tableLines = [];
+      }
+      tableLines.push(line);
+    } else {
+      if (inTable) {
+        resultLines.push(renderHtmlTable(tableLines));
+        inTable = false;
+      }
+      resultLines.push(lines[i]);
+    }
+  }
+  if (inTable) {
+    resultLines.push(renderHtmlTable(tableLines));
+  }
+  return resultLines.join('\n');
+};
 
 // Custom regex-based Markdown to HTML parser
 const parseMarkdown = (md: string): string => {
@@ -19,6 +93,9 @@ const parseMarkdown = (md: string): string => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+    
+  // Parse tables before other substitutions
+  html = parseTables(html);
     
   // 1. Headers
   html = html.replace(/^###### (.*?)$/gm, '<h6 class="text-xs font-black text-text-primary uppercase tracking-wider mt-4 mb-2">$1</h6>');
@@ -192,13 +269,20 @@ const SLASH_COMMANDS = [
   { label: 'Heading 3', syntax: '### ', desc: 'Small subsection heading' },
   { label: 'Checklist Item', syntax: '- [ ] ', desc: 'To-do list item' },
   { label: 'Bullet List', syntax: '- ', desc: 'Simple bullet point' },
+  { label: 'Table', syntax: '\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n', desc: 'Insert markdown table' },
   { label: 'Code Block', syntax: '```javascript\n\n```', desc: 'Code block syntax' },
   { label: 'Alert Note', syntax: '> [!NOTE]\n> ', desc: 'Blue notice box' },
   { label: 'Alert Warning', syntax: '> [!WARNING]\n> ', desc: 'Yellow warning box' },
 ];
 
 export default function MarkdownModule() {
-  const { theme } = useAppStore(useShallow(state => ({ theme: state.theme })));
+  const { notes, addNote, updateNote, deleteNote, theme } = useAppStore(useShallow(state => ({
+    notes: state.notes,
+    addNote: state.addNote,
+    updateNote: state.updateNote,
+    deleteNote: state.deleteNote,
+    theme: state.theme,
+  })));
   
   // Resolve theme to light/dark
   const resolvedTheme = useMemo(() => {
@@ -208,11 +292,101 @@ export default function MarkdownModule() {
     return theme === 'dark' ? 'dark' : 'light';
   }, [theme]);
 
-  const [title, setTitle] = useState('document.md');
-  const [content, setContent] = useState(() => {
-    return localStorage.getItem('phq_markdown_draft') || TEMPLATES.dailyLog;
-  });
-  
+  // Obsidian-like workspace state
+  const [isFilesSidebarOpen, setIsFilesSidebarOpen] = useState(true);
+  const [activeDocId, setActiveDocId] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadedDocIdRef = useRef<string | null>(null);
+
+  // Compute markdown documents only
+  const markdownDocs = useMemo(() => {
+    return notes.filter(n => n.tags?.includes('markdown'));
+  }, [notes]);
+
+  // Load document content ONLY when activeDocId changes to prevent cursor resets
+  useEffect(() => {
+    const doc = markdownDocs.find(d => d.id === activeDocId);
+    if (doc) {
+      setTitle(doc.title);
+      setContent(doc.content);
+      loadedDocIdRef.current = activeDocId;
+    } else if (markdownDocs.length > 0) {
+      setActiveDocId(markdownDocs[0].id);
+    } else {
+      setTitle('');
+      setContent('');
+      loadedDocIdRef.current = null;
+    }
+  }, [activeDocId]); // Depend ONLY on activeDocId
+
+  // Auto-create default file if workspace is empty
+  useEffect(() => {
+    if (notes.length > 0 && markdownDocs.length === 0) {
+      handleCreateNewDoc();
+    }
+  }, [notes, markdownDocs]);
+
+  // Sync document selections
+  useEffect(() => {
+    if (markdownDocs.length > 0 && !activeDocId) {
+      setActiveDocId(markdownDocs[0].id);
+    }
+  }, [markdownDocs, activeDocId]);
+
+  // Create new document in Supabase
+  const handleCreateNewDoc = async () => {
+    const id = crypto.randomUUID();
+    const newDoc = {
+      id,
+      title: 'untitled.md',
+      content: TEMPLATES.dailyLog,
+      tags: ['markdown'],
+      pinned: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await addNote(newDoc);
+    setActiveDocId(id);
+  };
+
+  // Delete document
+  const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await deleteNote(id);
+    if (activeDocId === id) {
+      setActiveDocId(null);
+    }
+  };
+
+  // Debounced title save
+  const handleTitleChange = (newVal: string) => {
+    if (!activeDocId) return;
+    setTitle(newVal);
+    // Instant local cache save
+    updateNote(activeDocId, { title: newVal }, true);
+    
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      updateNote(activeDocId, { title: newVal });
+    }, 1500);
+  };
+
+  // Debounced content save
+  const handleContentChange = (newVal: string) => {
+    if (!activeDocId) return;
+    setContent(newVal);
+    // Instant local cache save
+    updateNote(activeDocId, { content: newVal }, true);
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      updateNote(activeDocId, { content: newVal });
+    }, 1500);
+  };
+
   const [activeTab, setActiveTab] = useState<'preview' | 'sketch' | 'mermaid'>('preview');
   const [copied, setCopied] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(true);
@@ -230,11 +404,6 @@ export default function MarkdownModule() {
   });
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
 
-  // Autosave draft
-  useEffect(() => {
-    localStorage.setItem('phq_markdown_draft', content);
-  }, [content]);
-
   // Scroll active slash command into view
   useEffect(() => {
     if (slashMenu.isOpen) {
@@ -247,11 +416,20 @@ export default function MarkdownModule() {
 
   // Load a template
   const handleLoadTemplate = (key: keyof typeof TEMPLATES) => {
-    setContent(TEMPLATES[key]);
+    if (!activeDocId) return;
+    const templateContent = TEMPLATES[key];
+    setContent(templateContent);
+    updateNote(activeDocId, { content: templateContent }, true);
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      updateNote(activeDocId, { content: templateContent });
+    }, 1000);
   };
 
   // Download markdown file
   const handleDownload = () => {
+    if (!title) return;
     const filename = title.endsWith('.md') ? title : `${title}.md`;
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -286,7 +464,7 @@ export default function MarkdownModule() {
     const after = content.slice(slashMenu.triggerIndex + 1);
     
     const newContent = before + syntax + after;
-    setContent(newContent);
+    handleContentChange(newContent);
     setSlashMenu({ isOpen: false, triggerIndex: -1, searchQuery: '' });
     setActiveCommandIndex(0);
     
@@ -302,7 +480,7 @@ export default function MarkdownModule() {
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    setContent(value);
+    handleContentChange(value);
     
     const selectionStart = e.target.selectionStart;
     const textBeforeCursor = value.slice(0, selectionStart);
@@ -355,103 +533,186 @@ export default function MarkdownModule() {
       transition={{ duration: 0.3 }}
       className="w-full h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-2 relative text-left"
     >
+      {/* 1. Files Manager Sidebar */}
+      {isFilesSidebarOpen && (
+        <aside className="w-60 h-full flex flex-col gap-3 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl shrink-0 transition-all duration-300">
+          <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Markdown Files</span>
+            <button
+              onClick={handleCreateNewDoc}
+              className="p-1 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+              title="Create new markdown document"
+            >
+              <IconPlus size={16} />
+            </button>
+          </div>
+          
+          <div className="flex-grow overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+            {markdownDocs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-[10px] text-text-muted italic">No files found.</p>
+                <button
+                  onClick={handleCreateNewDoc}
+                  className="mt-2 text-[10px] text-primary font-bold hover:underline cursor-pointer"
+                >
+                  + New Document
+                </button>
+              </div>
+            ) : (
+              markdownDocs.map(doc => {
+                const isActive = doc.id === activeDocId;
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => setActiveDocId(doc.id)}
+                    className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs cursor-pointer select-none transition-all ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary font-bold border border-primary/25 shadow-sm' 
+                        : 'text-text-secondary hover:bg-surface-alt/70 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate min-w-0">
+                      <IconFileText size={14} className={isActive ? 'text-primary' : 'text-text-muted'} />
+                      <span className="truncate">{doc.title}</span>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteDoc(doc.id, e)}
+                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      title="Delete document"
+                    >
+                      <IconTrash size={12} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </aside>
+      )}
+
       {/* Left Column: Markdown Editor Panel */}
       {isEditorOpen && (
         <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 ${
           isWorkspaceOpen ? 'flex-1' : 'w-full h-full'
         }`}>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <IconFileText size={18} />
+          {!activeDocId ? (
+            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-border/60 rounded-3xl bg-surface/40 p-8 text-center">
+              <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+                <IconFileText size={32} />
               </div>
-              <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-text-primary">Markdown Editor</h3>
-                <p className="text-[10px] text-text-muted mt-0.5">{wordCount} words · Autosaved draft</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                onChange={(e) => handleLoadTemplate(e.target.value as keyof typeof TEMPLATES)}
-                className="select-field text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl"
-                defaultValue="dailyLog"
-              >
-                <option value="blank">Load Blank</option>
-                <option value="dailyLog">Load Daily Log (Apple UI)</option>
-                <option value="roadmap">Load Roadmap</option>
-                <option value="spec">Load Tech Spec</option>
-              </select>
+              <h3 className="text-base font-bold text-text-primary">No Markdown Document Selected</h3>
+              <p className="text-xs text-text-muted mt-1 max-w-xs">Create a new markdown file or select one from the sidebar to start writing.</p>
               <button
-                onClick={handleCopy}
-                className="btn btn-secondary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5"
-                title="Copy markdown text"
+                onClick={handleCreateNewDoc}
+                className="btn btn-primary btn-md mt-4 rounded-xl flex items-center gap-1.5 cursor-pointer"
               >
-                {copied ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
-              </button>
-              <button
-                onClick={handleDownload}
-                className="btn btn-primary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5"
-                title="Download .md file"
-              >
-                <IconDownload size={14} />
-                <span>Download</span>
-              </button>
-              
-              {/* Collapse/Expand Workspace Pane Toggle */}
-              <button
-                onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
-                className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all"
-                title={isWorkspaceOpen ? "Hide Preview Pane" : "Show Preview Pane"}
-              >
-                {isWorkspaceOpen ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
+                <IconPlus size={16} />
+                <span>Create Document</span>
               </button>
             </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Document Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-field w-full font-mono text-xs py-2 px-3.5 rounded-xl border-border bg-surface-alt"
-              placeholder="document.md"
-            />
-          </div>
-
-          <div className="flex-1 flex flex-col min-h-0 relative">
-            <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Markdown Source</label>
-            <textarea
-              id="markdown-editor-textarea"
-              value={content}
-              onChange={handleTextareaChange}
-              onKeyDown={handleTextareaKeyDown}
-              className="w-full flex-grow bg-surface-alt text-text-primary border border-border/60 rounded-2xl p-4 focus:outline-none focus:border-primary font-mono text-sm leading-relaxed custom-scrollbar resize-none"
-              placeholder="Type / for commands..."
-            />
-            {/* Notion-style Slash Menu */}
-            {slashMenu.isOpen && filteredCommands.length > 0 && (
-              <div className="absolute z-50 left-4 bottom-6 w-64 bg-surface border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 max-h-56 overflow-y-auto custom-scrollbar">
-                <div className="text-[9px] font-black tracking-widest text-text-muted px-2.5 py-1.5 uppercase border-b border-border/40 mb-1">
-                  Basic Blocks
-                </div>
-                {filteredCommands.map((cmd, idx) => (
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3">
+                <div className="flex items-center gap-3">
+                  {/* Sidebar Toggle Button */}
                   <button
-                    key={cmd.label}
-                    id={`slash-cmd-item-${idx}`}
-                    onClick={() => handleSelectSlashCommand(cmd.syntax)}
-                    className={`flex flex-col items-start px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer w-full ${
-                      idx === activeCommandIndex ? 'bg-primary/10 text-primary' : 'hover:bg-surface-alt text-text-secondary hover:text-text-primary'
+                    onClick={() => setIsFilesSidebarOpen(!isFilesSidebarOpen)}
+                    className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                      isFilesSidebarOpen ? 'border-primary/20 bg-primary/5 text-primary' : 'border-border text-text-muted hover:text-text-primary'
                     }`}
+                    title={isFilesSidebarOpen ? "Collapse Files Sidebar" : "Expand Files Sidebar"}
                   >
-                    <span className="text-xs font-bold">{cmd.label}</span>
-                    <span className="text-[9px] opacity-80 mt-0.5">{cmd.desc}</span>
+                    <IconFileText size={16} />
                   </button>
-                ))}
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-primary">Markdown Editor</h3>
+                    <p className="text-[10px] text-text-muted mt-0.5">{wordCount} words · Synced to DB</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    onChange={(e) => handleLoadTemplate(e.target.value as keyof typeof TEMPLATES)}
+                    className="select-field text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl"
+                    defaultValue="dailyLog"
+                  >
+                    <option value="blank">Load Blank</option>
+                    <option value="dailyLog">Load Daily Log (Apple UI)</option>
+                    <option value="roadmap">Load Roadmap</option>
+                    <option value="spec">Load Tech Spec</option>
+                  </select>
+                  <button
+                    onClick={handleCopy}
+                    className="btn btn-secondary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    title="Copy markdown text"
+                  >
+                    {copied ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="btn btn-primary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    title="Download .md file"
+                  >
+                    <IconDownload size={14} />
+                    <span>Download</span>
+                  </button>
+                  
+                  {/* Collapse/Expand Workspace Pane Toggle */}
+                  <button
+                    onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
+                    className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all"
+                    title={isWorkspaceOpen ? "Hide Preview Pane" : "Show Preview Pane"}
+                  >
+                    {isWorkspaceOpen ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Document Title</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="input-field w-full font-mono text-xs py-2 px-3.5 rounded-xl border-border bg-surface-alt"
+                  placeholder="untitled.md"
+                />
+              </div>
+
+              <div className="flex-1 flex flex-col min-h-0 relative">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Markdown Source</label>
+                <textarea
+                  id="markdown-editor-textarea"
+                  value={content}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleTextareaKeyDown}
+                  className="w-full flex-grow bg-surface-alt text-text-primary border border-border/60 rounded-2xl p-4 focus:outline-none focus:border-primary font-mono text-sm leading-relaxed custom-scrollbar resize-none"
+                  placeholder="Type / for commands..."
+                />
+                {/* Notion-style Slash Menu */}
+                {slashMenu.isOpen && filteredCommands.length > 0 && (
+                  <div className="absolute z-55 left-4 bottom-6 w-64 bg-surface border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 max-h-56 overflow-y-auto custom-scrollbar">
+                    <div className="text-[9px] font-black tracking-widest text-text-muted px-2.5 py-1.5 uppercase border-b border-border/40 mb-1">
+                      Basic Blocks
+                    </div>
+                    {filteredCommands.map((cmd, idx) => (
+                      <button
+                        key={cmd.label}
+                        id={`slash-cmd-item-${idx}`}
+                        onClick={() => handleSelectSlashCommand(cmd.syntax)}
+                        className={`flex flex-col items-start px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer w-full ${
+                          idx === activeCommandIndex ? 'bg-primary/10 text-primary' : 'hover:bg-surface-alt text-text-secondary hover:text-text-primary'
+                        }`}
+                      >
+                        <span className="text-xs font-bold">{cmd.label}</span>
+                        <span className="text-[9px] opacity-80 mt-0.5">{cmd.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </section>
       )}
 
@@ -502,76 +763,76 @@ export default function MarkdownModule() {
           </div>
 
           <div className="flex-grow min-h-0 relative overflow-hidden flex flex-col">
-          {activeTab === 'preview' && (
-            <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 bg-surface border border-border/40 rounded-2xl p-6 text-left">
-              <article 
-                className="max-w-none text-text-primary text-[14px]"
-                dangerouslySetInnerHTML={{ __html: parsedHtml }}
-              />
-            </div>
-          )}
+            {activeTab === 'preview' && (
+              <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 bg-surface border border-border/40 rounded-2xl p-6 text-left">
+                <article 
+                  className="max-w-none text-text-primary text-[14px]"
+                  dangerouslySetInnerHTML={{ __html: parsedHtml }}
+                />
+              </div>
+            )}
 
-          {activeTab === 'sketch' && (
-            <div className="flex-1 w-full border border-border/60 rounded-2xl overflow-hidden relative min-h-[450px]">
-              <Excalidraw 
-                theme={resolvedTheme}
-              />
-            </div>
-          )}
+            {activeTab === 'sketch' && (
+              <div className="flex-1 w-full border border-border/60 rounded-2xl overflow-hidden relative min-h-[450px]">
+                <Excalidraw 
+                  theme={resolvedTheme}
+                />
+              </div>
+            )}
 
-          {activeTab === 'mermaid' && (
-            <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-4">
-              {/* Markdown Pro Tips */}
-              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Markdown Pro Tips</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-secondary leading-relaxed">
-                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                    <span className="font-bold text-text-primary">✨ Alerts & Callouts</span>
-                    <p>Github-style alerts:</p>
-                    <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+            {activeTab === 'mermaid' && (
+              <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-4">
+                {/* Markdown Pro Tips */}
+                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Markdown Pro Tips</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-secondary leading-relaxed">
+                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                      <span className="font-bold text-text-primary">✨ Alerts & Callouts</span>
+                      <p>Github-style alerts:</p>
+                      <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
 {`> [!NOTE]
 > This is a callout box`}
-                    </pre>
-                  </div>
-                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                    <span className="font-bold text-text-primary">⚡ Slash Commands</span>
-                    <p>Type <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">/</code> in the editor to quickly insert headers, lists, code blocks, or callouts.</p>
-                  </div>
-                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                    <span className="font-bold text-text-primary">✓ Checklists</span>
-                    <p>Track tasks easily:</p>
-                    <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+                      </pre>
+                    </div>
+                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                      <span className="font-bold text-text-primary">⚡ Slash Commands</span>
+                      <p>Type <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">/</code> in the editor to quickly insert headers, lists, code blocks, or callouts.</p>
+                    </div>
+                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                      <span className="font-bold text-text-primary">✓ Checklists</span>
+                      <p>Track tasks easily:</p>
+                      <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
 {`- [ ] Task to do
 - [x] Task completed`}
-                    </pre>
-                  </div>
-                  <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                    <span className="font-bold text-text-primary">📊 LaTeX Math</span>
-                    <p>Render inline math with <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$E=mc^2$</code> or block-level math using <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$$...$$</code>.</p>
+                      </pre>
+                    </div>
+                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                      <span className="font-bold text-text-primary">📊 LaTeX Math</span>
+                      <p>Render inline math with <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$E=mc^2$</code> or block-level math using <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$$...$$</code>.</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Mermaid Code Diagrams</span>
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  Use the following copyable templates in your markdown log to draw diagrams:
-                </p>
-              </div>
-
-              {/* Template 1 */}
-              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-text-primary">Flowchart Layout</span>
-                  <button
-                    onClick={() => setContent(prev => prev + `\n\n\`\`\`mermaid\ngraph TD\n    A[Start] --> B[Task 1]\n    B --> C{Choice?}\n    C -- Yes --> D[Result 1]\n    C -- No --> E[Result 2]\n\`\`\``)}
-                    className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <IconPlus size={10} />
-                    <span>Insert Flowchart</span>
-                  </button>
+                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Mermaid Code Diagrams</span>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    Use the following copyable templates in your markdown log to draw diagrams:
+                  </p>
                 </div>
-                <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+
+                {/* Template 1 */}
+                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text-primary">Flowchart Layout</span>
+                    <button
+                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngraph TD\n    A[Start] --> B[Task 1]\n    B --> C{Choice?}\n    C -- Yes --> D[Result 1]\n    C -- No --> E[Result 2]\n\`\`\``)}
+                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <IconPlus size={10} />
+                      <span>Insert Flowchart</span>
+                    </button>
+                  </div>
+                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 graph TD
     A[Start] --> B[Task 1]
@@ -579,43 +840,43 @@ graph TD
     C -- Yes --> D[Result 1]
     C -- No --> E[Result 2]
 \`\`\``}
-                </pre>
-              </div>
-
-              {/* Template 2 */}
-              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-text-primary">Sequence Flow</span>
-                  <button
-                    onClick={() => setContent(prev => prev + `\n\n\`\`\`mermaid\nsequenceDiagram\n    Alice->>Bob: Hello Bob, how are you?\n    Bob-->>Alice: Jolly good!\n\`\`\``)}
-                    className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <IconPlus size={10} />
-                    <span>Insert Sequence</span>
-                  </button>
+                  </pre>
                 </div>
-                <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+
+                {/* Template 2 */}
+                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text-primary">Sequence Flow</span>
+                    <button
+                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\nsequenceDiagram\n    Alice->>Bob: Hello Bob, how are you?\n    Bob-->>Alice: Jolly good!\n\`\`\``)}
+                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <IconPlus size={10} />
+                      <span>Insert Sequence</span>
+                    </button>
+                  </div>
+                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 sequenceDiagram
     Alice->>Bob: Hello Bob, how are you?
     Bob-->>Alice: Jolly good!
 \`\`\``}
-                </pre>
-              </div>
-
-              {/* Template 3 */}
-              <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-text-primary">Project Timeline</span>
-                  <button
-                    onClick={() => setContent(prev => prev + `\n\n\`\`\`mermaid\ngantt\n    title A Gantt Diagram\n    dateFormat  YYYY-MM-DD\n    section Section\n    A task           :a1, 2026-07-01, 30d\n\`\`\``)}
-                    className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <IconPlus size={10} />
-                    <span>Insert Gantt</span>
-                  </button>
+                  </pre>
                 </div>
-                <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+
+                {/* Template 3 */}
+                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text-primary">Project Timeline</span>
+                    <button
+                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngantt\n    title A Gantt Diagram\n    dateFormat  YYYY-MM-DD\n    section Section\n    A task           :a1, 2026-07-01, 30d\n\`\`\``)}
+                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <IconPlus size={10} />
+                      <span>Insert Gantt</span>
+                    </button>
+                  </div>
+                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 gantt
     title A Gantt Diagram
@@ -623,12 +884,12 @@ gantt
     section Section
     A task           :a1, 2026-07-01, 30d
 \`\`\``}
-                </pre>
+                  </pre>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
       )}
     </motion.div>
   );

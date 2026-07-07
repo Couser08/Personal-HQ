@@ -4,7 +4,7 @@ import {
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
-  IconFileText
+  IconFileText, IconTerminal
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'markdown', label: 'Markdown Creator', icon: IconFileText },
   { id: 'condition', label: 'Condition Workstation', icon: IconChecklist },
+  { id: 'reference', label: 'Dev Reference', icon: IconTerminal },
   { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
 

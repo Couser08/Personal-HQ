@@ -23,6 +23,7 @@ const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
+const ReferenceModule = lazy(() => import('./modules/reference/ReferenceModule'));
 
 function LoadingSplash() {
   return (
@@ -94,8 +95,9 @@ function ModuleFallback() {
 
 function App() {
   const { user, initialized, initialize } = useAuthStore();
-  const { theme, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
+  const { theme, settings, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
     theme: state.theme,
+    settings: state.settings,
     loadAllData: state.loadAllData,
     clearAllData: state.clearAllData,
     dataLoaded: state.dataLoaded
@@ -104,6 +106,14 @@ function App() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (settings?.reduceBlur) {
+      document.documentElement.classList.add('reduce-blur');
+    } else {
+      document.documentElement.classList.remove('reduce-blur');
+    }
+  }, [settings?.reduceBlur]);
 
   useEffect(() => {
     const applyTheme = () => {
@@ -177,6 +187,7 @@ function AppContent() {
       case 'drawing': return <DrawingModule />;
       case 'markdown': return <MarkdownModule />;
       case 'condition': return <ConditionModule />;
+      case 'reference': return <ReferenceModule />;
       default: return <DashboardModule />;
     }
   };

@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   initialBankBalance: 0,
   initialCashBalance: 0,
+  reduceBlur: false,
 };
 
 export const buildBackupData = (state: AppStore, owner: BackupOwner): BackupPayload => ({

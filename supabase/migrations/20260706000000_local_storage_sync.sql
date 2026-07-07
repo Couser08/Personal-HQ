@@ -129,3 +129,6 @@ CREATE INDEX IF NOT EXISTS til_logs_user_idx ON public.til_logs (user_id);
 CREATE INDEX IF NOT EXISTS roadmaps_user_idx ON public.roadmaps (user_id);
 CREATE INDEX IF NOT EXISTS resources_user_idx ON public.resources (user_id);
 CREATE INDEX IF NOT EXISTS dev_goals_user_idx ON public.dev_goals (user_id);
+
+-- Add reduce_blur setting column to user_settings
+ALTER TABLE public.user_settings ADD COLUMN IF NOT EXISTS reduce_blur BOOLEAN NOT NULL DEFAULT false;

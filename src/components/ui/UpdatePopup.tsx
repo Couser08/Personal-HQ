@@ -8,7 +8,7 @@ import {
   IconActivity
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.4';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -16,39 +16,39 @@ const FEATURES = [
     icon: <IconFileText className="w-5 h-5 stroke-[2]" />,
     color: '#FF9500', 
     bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Media Metadata Protection',
-    desc: 'Edit title and details of logs without losing custom widescreen banner images or episode thumbnails. base64 cache is fully preserved.',
+    title: 'Condition Workstation',
+    desc: 'Evaluate custom logic rules with variable workbench inputs, real-time log traces, and dynamic vector flowchart visuals.',
   },
   {
     icon: <IconActivity className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', 
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Idempotent DB Migrations',
-    desc: 'Schema migrations automatically check and drop duplicate RLS policies, resolving table out-of-sync warnings cleanly.',
+    title: 'Flowchart Diagram Export',
+    desc: 'Download your rule logic decision flowchart as a high-fidelity PNG or JPG image directly to your local computer.',
   },
   {
     icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
     color: '#FF2D55', 
     bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Banner Quote Visibility',
-    desc: 'Widescreen quotes feature static white typography with deep drop-shadows and blurred edit backdrops for 100% legibility on any image.',
+    title: 'Designer Theme Presets',
+    desc: 'Instantly swap between premium styling presets: Cyberpunk Neon, Nordic Forest, Sakura Blossom, and translucent Aura Glass.',
   },
   {
     icon: <IconSparkles className="w-5 h-5 stroke-[2]" />,
     color: '#34C759', 
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Local Sync & Cache Caching',
-    desc: 'Journal entries and sketches cache locally on fetch, fixing empty data loading states and refresh loss.',
+    title: 'Theme Accent Syncing',
+    desc: 'Buttons, outline focus rings, active navigation icons, and background cards dynamically synchronize with your chosen preset.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Fixed Media Log edit modal to preserve custom uploaded banner and episode thumbnail images on save',
-  'Added DROP POLICY IF EXISTS checks to Supabase migration files to resolve database setup conflicts',
-  'Polished banner quotes to be white with deep drop-shadows and blurred edit backdrops for perfect legibility',
-  'Optimized loadAllData to cache successfully fetched journals and sketches locally, fixing refresh issues',
-  'Created Markdown Creator page with collapsible split-pane layouts for distraction-free full-screen writing',
-  'Added Element Grounding locks in the drawing whiteboard module to lock annotations to the canvas background',
+  'Added Condition Workstation rule evaluator with custom types and real-time execution workbench',
+  'Integrated dynamic flowchart diagram rendering on Canvas with true/false path coloring',
+  'Implemented PNG and JPG flowchart image export capabilities',
+  'Created designer themes (Cyberpunk, Nordic Forest, Sakura Blossom, Aura Glass) beyond light/dark modes',
+  'Refactored buttons and sidebar navigation indicators to dynamically bind to active theme primary colors',
+  'Polished key navigation and auto-scroll behavior for Markdown slash autocomplete menus',
 ];
 
 interface UpdatePopupProps {

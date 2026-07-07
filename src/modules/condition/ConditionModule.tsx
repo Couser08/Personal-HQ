@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconDownload,
-  IconArrowRight, IconRefresh
+  IconArrowRight, IconRefresh, IconX, IconSparkles
 } from '@tabler/icons-react';
 
 interface Variable {
@@ -19,15 +19,9 @@ interface Rule {
   outcome: string;
 }
 
-const REGEX_EXAMPLES = [
-  { label: 'Email Address', regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', desc: 'Validates standard email formatting' },
-  { label: 'Strong Password', regex: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$', desc: 'Min 8 chars, 1 uppercase, 1 lowercase, 1 digit' },
-  { label: 'Phone Number', regex: '^\\+?[1-9]\\d{1,14}$', desc: 'E.164 international phone formatting' },
-  { label: 'Date (YYYY-MM-DD)', regex: '^\\d{4}-\\d{2}-\\d{2}$', desc: 'Checks ISO date format' },
-  { label: 'URL Address', regex: '^https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*)$', desc: 'Validates standard HTTP/HTTPS links' },
-];
-
 export default function ConditionModule() {
+  const [isRegexTipsOpen, setIsRegexTipsOpen] = useState(false);
+
   // Variables State
   const [variables, setVariables] = useState<Variable[]>([
     { name: 'age', type: 'number', testValue: '21' },
@@ -50,6 +44,10 @@ export default function ConditionModule() {
   });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const scaleFactor = 3;
+  const logicalWidth = 640;
+  const logicalHeight = 120 + rules.length * 100 + 90;
 
   // Variable Helpers
   const addVariable = () => {
@@ -146,8 +144,11 @@ export default function ConditionModule() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear and size
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Reset transform and apply high-DPI scaling factor
+    ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
+
+    // Clear using logical dimensions
+    ctx.clearRect(0, 0, logicalWidth, logicalHeight);
     
     // Smooth drawing
     ctx.lineJoin = 'round';
@@ -160,7 +161,7 @@ export default function ConditionModule() {
     const textMainColor = isDark ? '#ffffff' : '#09090b';
     const textSubColor = isDark ? '#a0aec0' : '#718096';
     
-    const startX = canvas.width / 2;
+    const startX = 460;
     let currentY = 50;
     const boxWidth = 240;
     const boxHeight = 55;
@@ -189,7 +190,7 @@ export default function ConditionModule() {
       drawNodeBox(ctx, startX, currentY, boxWidth, boxHeight, heading, ruleText, cardColor, textMainColor, textSubColor);
 
       // Draw horizontal branch if matches
-      const branchEndX = startX - 250;
+      const branchEndX = 220;
       ctx.beginPath();
       ctx.moveTo(startX - boxWidth / 2, currentY + boxHeight / 2);
       ctx.lineTo(branchEndX, currentY + boxHeight / 2);
@@ -206,10 +207,10 @@ export default function ConditionModule() {
       // Branch Label
       ctx.font = 'bold 9px sans-serif';
       ctx.fillStyle = '#10B981';
-      ctx.fillText('True / Yes', startX - boxWidth / 2 - 65, currentY + boxHeight / 2 - 8);
+      ctx.fillText('True / Yes', startX - boxWidth / 2 - 75, currentY + boxHeight / 2 - 8);
 
-      // Draw match outcome box
-      drawNodeBox(ctx, branchEndX - 100, currentY, 180, boxHeight, 'MATCHED OUTCOME', rule.outcome, isMatched ? '#10B981' : bgBoxColor, isMatched ? '#ffffff' : textMainColor);
+      // Draw match outcome box (centered at 130, width 180)
+      drawNodeBox(ctx, 130, currentY, 180, boxHeight, 'MATCHED OUTCOME', rule.outcome, isMatched ? '#10B981' : bgBoxColor, isMatched ? '#ffffff' : textMainColor);
 
       previousBoxY = currentY;
     });
@@ -239,24 +240,72 @@ export default function ConditionModule() {
     titleColor: string,
     subColor = '#888'
   ) => {
-    ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#111118' : '#ffffff';
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    // Add shadow styling for a glassy, professional appearance
+    ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.06)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+
+    ctx.fillStyle = isDark ? '#11111e' : '#ffffff';
     ctx.strokeStyle = borderColor;
     
     // Draw Round Rect
     ctx.beginPath();
-    ctx.roundRect(x - w / 2, y, w, h, 12);
+    ctx.roundRect(x - w / 2, y, w, h, 14);
     ctx.fill();
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.stroke();
 
-    // Texts
+    // Draw Title
     ctx.font = 'bold 11px sans-serif';
     ctx.fillStyle = titleColor;
     ctx.textAlign = 'center';
-    ctx.fillText(title, x, y + 22);
+    ctx.fillText(title, x, y + 21);
 
-    ctx.font = '500 10px sans-serif';
+    // Draw Subtext with word/character wrapping to prevent card overflow
+    ctx.font = '500 10px monospace';
     ctx.fillStyle = subColor;
-    ctx.fillText(sub, x, y + 38);
+    
+    const maxTextWidth = w - 24;
+    
+    // Check if subtext fits in one line
+    const textWidth = ctx.measureText(sub).width;
+    if (textWidth <= maxTextWidth) {
+      ctx.fillText(sub, x, y + 37);
+    } else {
+      // Split subtext into two lines cleanly
+      const words = sub.split(' ');
+      let line = '';
+      const lines: string[] = [];
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxTextWidth && n > 0) {
+          lines.push(line.trim());
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line.trim());
+
+      // Draw two lines or truncate if excessively long
+      if (lines.length === 1) {
+        ctx.fillText(lines[0], x, y + 37);
+      } else {
+        ctx.fillText(lines[0], x, y + 33);
+        const secondLine = lines.slice(1).join(' ');
+        const truncatedSecond = ctx.measureText(secondLine).width > maxTextWidth
+          ? secondLine.substring(0, Math.floor(maxTextWidth / 7.5)) + '...'
+          : secondLine;
+        ctx.fillText(truncatedSecond, x, y + 45);
+      }
+    }
   };
 
   const drawConnectorArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, isDark: boolean) => {
@@ -389,12 +438,21 @@ export default function ConditionModule() {
                 <h3 className="text-sm font-bold text-text-primary">2. Conditional Evaluation Rules</h3>
                 <p className="text-xs text-text-muted mt-0.5">Design sequential logic checks that terminate on matching outcomes</p>
               </div>
-              <button 
-                onClick={addRule}
-                className="btn btn-primary btn-sm flex items-center gap-1.5 cursor-pointer"
-              >
-                <IconPlus size={14} /> Add Rule
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsRegexTipsOpen(true)}
+                  className="btn btn-secondary btn-sm flex items-center gap-1.5 cursor-pointer text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+                  title="Open Regular Expression Guide & Tips"
+                >
+                  Regex Tips
+                </button>
+                <button 
+                  onClick={addRule}
+                  className="btn btn-primary btn-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <IconPlus size={14} /> Add Rule
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3.5">
@@ -528,42 +586,6 @@ export default function ConditionModule() {
             </div>
           </div>
 
-          {/* Section 4: Regex Templates Library */}
-          <div className="bg-surface border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm">
-            <div>
-              <h3 className="text-sm font-bold text-text-primary">Regex Examples Library</h3>
-              <p className="text-xs text-text-muted mt-0.5">Load professional regex validations into rules</p>
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {REGEX_EXAMPLES.map((ex, idx) => (
-                <div key={idx} className="flex flex-col gap-1.5 p-3 rounded-2xl bg-surface-alt/35 border border-border/30 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-primary">{ex.label}</span>
-                    <button
-                      onClick={() => {
-                        // Insert regex to the last rule or first regex rule
-                        const updatedRules = [...rules];
-                        if (updatedRules.length > 0) {
-                          const lastRule = updatedRules[updatedRules.length - 1];
-                          lastRule.operator = 'regex';
-                          lastRule.value = ex.regex;
-                          setRules(updatedRules);
-                        }
-                      }}
-                      className="text-[9px] font-black text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded cursor-pointer transition-colors uppercase tracking-wider"
-                    >
-                      Apply Last Rule
-                    </button>
-                  </div>
-                  <code className="bg-black/10 dark:bg-black/20 p-1.5 rounded font-mono text-[10px] leading-normal text-text-secondary select-all break-all">
-                    {ex.regex}
-                  </code>
-                  <p className="text-[10px] text-text-muted leading-relaxed mt-0.5">{ex.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Section 5: Decision Flow Diagram */}
           <div className="bg-surface border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between border-b border-border/40 pb-2">
@@ -593,8 +615,12 @@ export default function ConditionModule() {
             <div className="w-full overflow-x-auto custom-scrollbar flex justify-center py-2">
               <canvas
                 ref={canvasRef}
-                width={700}
-                height={150 + rules.length * 100}
+                width={logicalWidth * scaleFactor}
+                height={logicalHeight * scaleFactor}
+                style={{
+                  width: `${logicalWidth}px`,
+                  height: `${logicalHeight}px`,
+                }}
                 className="border border-border/40 bg-surface-alt/20 rounded-2xl max-w-full"
               />
             </div>
@@ -603,6 +629,117 @@ export default function ConditionModule() {
         </div>
 
       </div>
+
+      {/* Regex Cheat Sheet Modal */}
+      <AnimatePresence>
+        {isRegexTipsOpen && (
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsRegexTipsOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xl pointer-events-auto"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
+              className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-[28px] p-6 shadow-2xl w-full max-w-[480px] pointer-events-auto text-left flex flex-col max-h-[85vh] relative overflow-hidden z-10"
+            >
+              {/* Decorative glow bloom */}
+              <div className="absolute w-40 h-40 rounded-full pointer-events-none -top-16 -left-16 bg-primary/10 blur-3xl" />
+
+              <button
+                onClick={() => setIsRegexTipsOpen(false)}
+                aria-label="Close"
+                className="absolute z-20 flex items-center justify-center w-8 h-8 transition-all duration-200 border rounded-full cursor-pointer top-4 right-4 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400 active:scale-90 border-stone-200/20 dark:border-stone-700/30"
+              >
+                <IconX size={15} className="stroke-[2.5]" />
+              </button>
+
+              <div className="z-10 flex-1 w-full pr-1 mt-2 space-y-5 overflow-y-auto scrollbar-none">
+                <div className="flex flex-col items-start w-full gap-2">
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <IconSparkles className="w-5 h-5 stroke-[2]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-text-primary tracking-tight leading-tight">
+                      Regular Expression Guide
+                    </h2>
+                    <p className="text-xs text-text-muted mt-1">
+                      Cheat sheet for building powerful condition checking rules.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/40 pt-4 flex flex-col gap-3.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-text-muted">Common Operators</h3>
+                  
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-start gap-3 p-3 rounded-2xl bg-surface-alt/40 border border-border/45">
+                      <code className="bg-black/10 dark:bg-black/25 px-2 py-0.5 rounded font-mono text-xs font-bold text-primary shrink-0">^</code>
+                      <div className="ml-3">
+                        <p className="text-xs font-bold text-text-primary">Start Anchor</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5">Asserts that matches must start at the beginning of the text string. E.g., <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">^abc</code> matches "abc" but not "xyzabc".</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 rounded-2xl bg-surface-alt/40 border border-border/45">
+                      <code className="bg-black/10 dark:bg-black/25 px-2 py-0.5 rounded font-mono text-xs font-bold text-primary shrink-0">$</code>
+                      <div className="ml-3">
+                        <p className="text-xs font-bold text-text-primary">End Anchor</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5">Asserts that matches must end at the absolute end of the text string. E.g., <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">abc$</code> matches "xyzabc" but not "abcxyz".</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 rounded-2xl bg-surface-alt/40 border border-border/45">
+                      <code className="bg-black/10 dark:bg-black/25 px-2 py-0.5 rounded font-mono text-xs font-bold text-primary shrink-0">[ ]</code>
+                      <div className="ml-3">
+                        <p className="text-xs font-bold text-text-primary">Character Set</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5">Matches any single character inside the brackets. E.g., <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">[abc]</code> matches "a", "b", or "c". Range <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">[0-9]</code> matches digits.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 rounded-2xl bg-surface-alt/40 border border-border/45">
+                      <code className="bg-black/10 dark:bg-black/25 px-2 py-0.5 rounded font-mono text-xs font-bold text-primary shrink-0">( )</code>
+                      <div className="ml-3">
+                        <p className="text-xs font-bold text-text-primary">Capture Group</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5">Groups multiple characters together to evaluate as a single unit or apply quantifiers. E.g., <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">(abc)+</code> matches "abc", "abcabc", etc.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 rounded-2xl bg-surface-alt/40 border border-border/45">
+                      <code className="bg-black/10 dark:bg-black/25 px-2 py-0.5 rounded font-mono text-xs font-bold text-primary shrink-0">* , + , ?</code>
+                      <div className="ml-3">
+                        <p className="text-xs font-bold text-text-primary">Quantifiers</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5"><code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">*</code> matches 0 or more times, <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">+</code> matches 1 or more times, and <code className="font-mono bg-black/10 dark:bg-black/20 px-1 rounded">?</code> makes the preceding character optional.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/40 pt-4 pb-2">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-text-muted mb-2">Why use Regex in Rules?</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    Standard equals/contains checks match static strings. Regex lets you validate complex structural patterns dynamically (e.g., verifying email layouts, validating formatting, extracting numbers, or making rules match-agnostic).
+                  </p>
+                </div>
+              </div>
+
+              <div className="z-10 w-full pt-3 mt-4 border-t border-border/40">
+                <button
+                  onClick={() => setIsRegexTipsOpen(false)}
+                  className="w-full py-3 bg-stone-950 dark:bg-stone-50 text-white dark:text-stone-950 rounded-2xl text-xs font-bold hover:opacity-95 active:scale-[0.97] transition-all cursor-pointer text-center"
+                >
+                  Got it
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );

@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   initialBankBalance: 0,
   initialCashBalance: 0,
+  reduceBlur: false,
 };
 
 const sanitizeActiveModule = (module: string) => {
@@ -436,6 +437,7 @@ export interface AppSettings {
   initialCashBalance: number;
   currencySymbol?: string;
   mediaQuote?: string;
+  reduceBlur: boolean;
 }
 
 export interface PomodoroStats {
@@ -713,6 +715,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           initial_cash_balance: settings.initialCashBalance,
           currency_symbol: settings.currencySymbol || '$',
           media_quote: settings.mediaQuote || '',
+          reduce_blur: settings.reduceBlur,
         }).catch((e) => console.error('Failed to sync settings:', e));
       }
       return { settings };
@@ -830,6 +833,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         initialCashBalance: settingsResult.initial_cash_balance !== undefined ? Number(settingsResult.initial_cash_balance) : dbSettings.initialCashBalance,
         currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
         mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
+        reduceBlur: settingsResult.reduce_blur !== undefined ? settingsResult.reduce_blur : dbSettings.reduceBlur,
       };
       
       localStorage.setItem('theme', dbTheme);
@@ -846,6 +850,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         initial_cash_balance: dbSettings.initialCashBalance,
         currency_symbol: dbSettings.currencySymbol || '$',
         media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
+        reduce_blur: dbSettings.reduceBlur,
       }).catch((e) => console.error('Failed to initialize settings:', e));
     }
 

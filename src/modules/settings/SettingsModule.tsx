@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import {
   IconPalette, IconBell, IconHourglass,
-  IconCheck, IconX, IconCompass, IconPlayerPlay
+  IconCheck, IconX, IconCompass, IconPlayerPlay, IconSparkles
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
@@ -389,6 +389,37 @@ export default function SettingsModule() {
               </span>
               {renderCountdownPreview()}
             </div>
+          </div>
+        </div>
+
+        {/* ── Performance Mode Card ── */}
+        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <IconSparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">Performance Mode</h3>
+              <p className="text-xs text-text-muted">Optimize rendering responsiveness</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40 mt-1">
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-text-primary">Reduce Blur & Glassmorphism</p>
+              <p className="text-xs text-text-secondary mt-0.5">Disable intensive backdrop filters and semi-transparency. Essential for eliminating lag on slower devices.</p>
+            </div>
+            <button
+              onClick={() => updateSettings({ reduceBlur: !settings.reduceBlur })}
+              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
+                settings.reduceBlur ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
+              }`}
+            >
+              <motion.div 
+                layout 
+                className="w-5 h-5 rounded-full bg-white shadow-md"
+              />
+            </button>
           </div>
         </div>
 
