@@ -92,7 +92,7 @@ const parseMarkdown = (md: string): string => {
   
   // 1. Extract code blocks first to protect them from HTML escaping
   const codeBlocks: string[] = [];
-  let html = md.replace(/```(\w*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
+  let html = md.replace(/```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)\r?\n```/g, (_, lang, code) => {
     // Escape HTML inside code safely
     const escapedCode = code
       .replace(/&/g, '&amp;')
@@ -572,11 +572,16 @@ export default function MarkdownModule() {
         .md-preview blockquote { border-left: 4px solid var(--color-primary); padding-left: 1rem; font-style: italic; color: var(--color-text-muted); margin: 1.2rem 0; font-size: 13px; font-weight: 500; }
         .md-preview :not(pre) > code { font-family: monospace; background: rgba(0,0,0,0.04); padding: 0.15rem 0.35rem; border-radius: 6px; font-size: 0.85em; font-weight: 600; color: #ff2d55; }
         .dark .md-preview :not(pre) > code { background: rgba(255,255,255,0.08); color: #ff3b30; }
-        .md-preview table { width: 100%; border-collapse: collapse; margin: 1.6rem 0; font-size: 0.85rem; border-radius: 12px; overflow: hidden; }
-        .md-preview th { background: rgba(0,0,0,0.02); font-weight: 700; border: 1px solid rgba(0,0,0,0.06); padding: 0.7rem 1rem; color: var(--color-text-primary); }
-        .dark .md-preview th { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); }
-        .md-preview td { border: 1px solid rgba(0,0,0,0.06); padding: 0.7rem 1rem; color: var(--color-text-secondary); font-weight: 550; }
-        .dark .md-preview td { border-color: rgba(255,255,255,0.06); }
+        /* Premium Table Styles */
+        .md-preview table { width: 100%; border-collapse: collapse; margin: 1.75rem 0; font-size: 13px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); background: var(--bg-surface); box-shadow: 0 4px 20px -10px rgba(0,0,0,0.05); }
+        .dark .md-preview table { border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 20px -10px rgba(0,0,0,0.3); }
+        .md-preview th { background: rgba(0,0,0,0.02); font-weight: 700; color: var(--color-text-primary); padding: 0.85rem 1.1rem; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid rgba(0,0,0,0.06); }
+        .dark .md-preview th { background: rgba(255,255,255,0.03); border-bottom-color: rgba(255,255,255,0.1); }
+        .md-preview td { padding: 0.85rem 1.1rem; color: var(--color-text-secondary); border-bottom: 1px solid rgba(0,0,0,0.04); transition: background-color 0.15s ease; }
+        .dark .md-preview td { border-bottom-color: rgba(255,255,255,0.05); }
+        .md-preview tr:last-child td { border-bottom: none; }
+        .md-preview tr:hover td { background: rgba(0,0,0,0.015); }
+        .dark .md-preview tr:hover td { background: rgba(255,255,255,0.015); }
         
         /* Claude-style code block */
         .md-code-block { margin: 1.25rem 0; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: #0d1117; }

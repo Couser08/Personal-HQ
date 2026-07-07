@@ -454,17 +454,17 @@ export default function HabitTrackerModule() {
                           <p className="text-xs text-text-muted mt-0.5 truncate">{habit.description}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <button
                           onClick={() => handleOpenAddModal(habit)}
-                          className="p-1.5 rounded-lg hover:bg-surface-alt text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-surface-alt hover:bg-surface border border-border/40 text-text-secondary hover:text-text-primary transition-all cursor-pointer shadow-sm active:scale-95"
                           title="Edit"
                         >
                           <IconSettings size={13} />
                         </button>
                         <button
                           onClick={() => showConfirm('Delete Habit', `Delete "${habit.name}"?`, () => deleteHabit(habit.id))}
-                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20 text-red-500/70 hover:text-red-500 transition-all cursor-pointer shadow-sm active:scale-95"
                           title="Delete"
                         >
                           <IconTrash size={13} />
