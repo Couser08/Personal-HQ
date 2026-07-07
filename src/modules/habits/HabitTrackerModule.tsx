@@ -622,13 +622,31 @@ export default function HabitTrackerModule() {
             </div>
           )}
 
-          <div className="flex justify-end gap-2.5 mt-4 pt-3 border-t border-border">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary btn-sm">
-              Cancel
-            </button>
-            <button type="button" onClick={handleSaveHabit} className="btn btn-primary btn-sm">
-              Save Habit
-            </button>
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
+            {selectedHabitToEdit ? (
+              <button
+                type="button"
+                onClick={() => {
+                  showConfirm('Delete Habit', `Delete "${selectedHabitToEdit.name}"?`, () => {
+                    deleteHabit(selectedHabitToEdit.id);
+                    setIsModalOpen(false);
+                  });
+                }}
+                className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                Delete Habit
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary btn-sm">
+                Cancel
+              </button>
+              <button type="button" onClick={handleSaveHabit} className="btn btn-primary btn-sm">
+                Save Habit
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
