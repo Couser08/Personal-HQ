@@ -6,6 +6,10 @@ import {
   IconClockPlay, IconPlayerPause, IconPlayerPlay, 
   IconRefresh, IconConfetti, IconAlertCircle, IconAward 
 } from '@tabler/icons-react';
+import {
+  subscribePomodoroCompletion,
+  type PomodoroCompletionNotification,
+} from '../../utils/pomodoroNotifications';
 
 export interface DynamicIslandNotification {
   id: string;
@@ -38,6 +42,7 @@ export function DynamicIsland() {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [notification, setNotification] = useState<DynamicIslandNotification | null>(null);
+  const [completionPulse, setCompletionPulse] = useState<PomodoroCompletionNotification | null>(null);
   const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Format time
@@ -62,6 +67,28 @@ export function DynamicIsland() {
     };
     window.addEventListener('dynamic-island-notify', handleNotification);
     return () => window.removeEventListener('dynamic-island-notify', handleNotification);
+  }, []);
+
+  useEffect(() => {
+    return subscribePomodoroCompletion((completion) => {
+      setCompletionPulse(completion);
+      setNotification({
+        id: completion.id,
+        type: completion.variant,
+        title: completion.title,
+        subtitle: completion.subtitle,
+        icon: completion.icon,
+      });
+      setIsExpanded(false);
+
+      window.setTimeout(() => {
+        setCompletionPulse(null);
+      }, 1800);
+
+      window.setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+    });
   }, []);
 
   // Determine standard pill layout
@@ -104,6 +131,43 @@ export function DynamicIsland() {
           padding: isExpanded ? '20px 24px' : '0 18px',
         }}
       >
+        <AnimatePresence>
+          {completionPulse && (
+            <motion.div
+              key={completionPulse.id}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              className="absolute inset-[-18px] rounded-[32px] pointer-events-none overflow-hidden"
+            >
+              <motion.div
+                initial={{ opacity: 0.15, scale: 0.75 }}
+                animate={{ opacity: [0.16, 0.35, 0.1], scale: [0.75, 1.08, 1.18] }}
+                transition={{ duration: 1.1, ease: 'easeOut' }}
+                className={`absolute inset-0 rounded-[32px] ${isDark ? 'bg-amber-400/10' : 'bg-amber-300/20'} blur-2xl`}
+              />
+              {[0, 1, 2, 3, 4, 5].map((index) => {
+                const angle = (Math.PI * 2 * index) / 6;
+                const distance = 42 + (index % 3) * 8;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+
+                return (
+                  <motion.span
+                    key={`${completionPulse.id}-${index}`}
+                    initial={{ opacity: 0, scale: 0.2, x: 0, y: 0 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.2, 1, 0.4], x, y }}
+                    transition={{ duration: 1.15, delay: index * 0.05, ease: 'easeOut' }}
+                    className={`absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-lg ${
+                      completionPulse.icon === 'award' ? 'bg-amber-400' : 'bg-rose-400'
+                    }`}
+                  />
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {/* Notification mode */}
           {notification ? (

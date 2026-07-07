@@ -7,6 +7,12 @@ import {
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
+import {
+  notifyPomodoroCompletion,
+  requestPomodoroNotificationPermission,
+  showPomodoroDesktopNotification,
+  type PomodoroCompletionNotification,
+} from '../utils/pomodoroNotifications';
 
 const DEFAULT_SETTINGS: AppSettings = {
   countdownTemplate: 'default',
@@ -1405,6 +1411,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     stopTimer();
     set({ pomodoroTimerState: 'running' });
 
+    void requestPomodoroNotificationPermission();
+
     globalPomodoroStartTime = Date.now();
     globalPomodoroSecondsAtStart = get().pomodoroSecondsLeft;
 
@@ -1429,6 +1437,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         set({ pomodoroTimerState: 'idle', pomodoroSecondsLeft: 0 });
 
         const addToast = useToastStore.getState().addToast;
+        let completionNotification: PomodoroCompletionNotification;
 
         if (pomodoroSessionId === 'focus') {
           const nextStreak = pomodoroStreak + 1;
@@ -1457,6 +1466,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
             addToast('🎉 Focus Complete!', 'Great work! Time for a break.', 'success');
           }
 
+          completionNotification = {
+            id: crypto.randomUUID(),
+            sessionId: pomodoroSessionId,
+            title: 'Focus Complete',
+            subtitle: 'Great work. Break starts now.',
+            icon: 'confetti',
+            variant: 'success',
+            timestamp: Date.now(),
+          };
+
           const nextSid = nextStreak % 4 === 0 ? 'long-break' : 'short-break';
           const breakMins = nextSid === 'short-break' ? 5 : 15;
           set({ 
@@ -1466,12 +1485,26 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           });
         } else {
           addToast('⏰ Break Over!', 'Ready to focus again? 🚀', 'info');
+
+          completionNotification = {
+            id: crypto.randomUUID(),
+            sessionId: pomodoroSessionId,
+            title: 'Break Complete',
+            subtitle: 'Ready to focus again?',
+            icon: 'award',
+            variant: 'achievement',
+            timestamp: Date.now(),
+          };
+
           set({ 
             pomodoroSessionId: 'focus', 
             pomodoroSecondsLeft: 25 * 60,
             pomodoroTotalSeconds: 25 * 60
           });
         }
+
+        notifyPomodoroCompletion(completionNotification);
+        showPomodoroDesktopNotification(completionNotification);
       } else {
         set({ pomodoroSecondsLeft: secondsLeft });
       }

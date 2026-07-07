@@ -478,3 +478,16 @@ select:focus {
 .note-preview .note-code-block {
   margin: 1rem 0;
 }
+
+/* Shimmer loading skeleton effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-skeleton {
+  background: linear-gradient(90deg, var(--bg-surface-alt) 25%, var(--bg-surface-hover) 50%, var(--bg-surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 8px;
+}
+
