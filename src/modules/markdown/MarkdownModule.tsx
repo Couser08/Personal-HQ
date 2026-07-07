@@ -92,7 +92,7 @@ const parseMarkdown = (md: string): string => {
   
   // 1. Extract code blocks first to protect them from HTML escaping
   const codeBlocks: string[] = [];
-  let html = md.replace(/```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)\r?\n```/g, (_, lang, code) => {
+  let html = md.replace(/[ \t]*```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)\r?\n[ \t]*```/g, (_, lang, code) => {
     // Escape HTML inside code safely
     const escapedCode = code
       .replace(/&/g, '&amp;')
