@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconDownload,
-  IconArrowRight, IconRefresh, IconX, IconSparkles
+  IconArrowRight, IconRefresh, IconX, IconSparkles, IconEye
 } from '@tabler/icons-react';
 
 interface Variable {
@@ -43,11 +43,19 @@ export default function ConditionModule() {
     trace: []
   });
 
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const scaleFactor = 3;
+  const scaleFactor = 2;
+  // Layout constants for the diagram
+  const DIAGRAM_PAD = 40;
+  const NODE_W = 200;
+  const NODE_H = 52;
+  const ROW_GAP = 90;
+  const OUTCOME_W = 180;
   const logicalWidth = 640;
-  const logicalHeight = 120 + rules.length * 100 + 90;
+  const logicalHeight = DIAGRAM_PAD * 2 + NODE_H + rules.length * ROW_GAP + ROW_GAP + NODE_H;
 
   // Variable Helpers
   const addVariable = () => {
@@ -137,191 +145,214 @@ export default function ConditionModule() {
     evaluateConditions();
   }, [variables, rules, defaultOutcome]);
 
-  // Flowchart Canvas Drawing
+  // ──────────────────────────────────────────────────────
+  // Diagram Drawing — Apple-minimal style
+  // ──────────────────────────────────────────────────────
+  const drawDiagram = (ctx: CanvasRenderingContext2D, scale: number) => {
+    const isDark = document.documentElement.classList.contains('dark');
+
+    const W = logicalWidth;
+    const H = logicalHeight;
+
+    // Theme colours
+    const surfaceColor = isDark ? '#1c1c28' : '#ffffff';
+    const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    const textPrimary = isDark ? '#f0f0f5' : '#1d1d1f';
+    const textMuted   = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+    const arrowColor  = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)';
+    const trueColor   = '#34c759';  // Apple green
+    const falseColor  = '#ff3b30';  // Apple red
+
+    // Reset canvas
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Helpers ──────────────────────────────────────────
+    const truncate = (ctx2: CanvasRenderingContext2D, text: string, maxW: number): string => {
+      if (ctx2.measureText(text).width <= maxW) return text;
+      let t = text;
+      while (t.length > 0 && ctx2.measureText(t + '…').width > maxW) {
+        t = t.slice(0, -1);
+      }
+      return t + '…';
+    };
+
+    /** Draw a pill-shaped capsule node (rounded rect) */
+    const drawNode = (
+      x: number, y: number, w: number, h: number,
+      label: string, sub: string,
+      accent: string, isActive: boolean
+    ) => {
+      const r = 14;
+      // Shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.12)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+
+      // Fill
+      ctx.fillStyle = isActive ? accent + '18' : surfaceColor;
+      ctx.strokeStyle = isActive ? accent : borderColor;
+      ctx.lineWidth = isActive ? 1.5 : 1;
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y, w, h, r);
+      ctx.fill();
+      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      ctx.stroke();
+
+      // Accent left bar
+      if (isActive) {
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2, y + 8, 3, h - 16, 2);
+        ctx.fill();
+      }
+
+      // Label (top text)
+      ctx.font = `600 10px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = isActive ? accent : textMuted;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const maxW = w - 28;
+      ctx.fillText(truncate(ctx, label.toUpperCase(), maxW), x, y + h * 0.3);
+
+      // Sub text (bottom text)
+      ctx.font = `500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif`;
+      ctx.fillStyle = isActive ? textPrimary : textPrimary;
+      ctx.fillText(truncate(ctx, sub, maxW), x, y + h * 0.68);
+    };
+
+    /** Draw vertical arrow from bottom of one box to top of next — with gap */
+    const drawVArrow = (fromX: number, fromY: number, toY: number, color: string, labelText: string) => {
+      const GAP = 6; // gap from box border
+      const sy = fromY + GAP;
+      const ey = toY - GAP;
+      const mx = (sy + ey) / 2;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(fromX, sy);
+      ctx.lineTo(fromX, ey);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Arrowhead (pointing down)
+      const AH = 6;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(fromX, ey + AH);
+      ctx.lineTo(fromX - 4, ey);
+      ctx.lineTo(fromX + 4, ey);
+      ctx.closePath();
+      ctx.fill();
+
+      // Floating label badge mid-arrow
+      const labelX = fromX + 12;
+      const labelY = mx;
+      ctx.font = `600 8.5px -apple-system, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, labelX, labelY);
+    };
+
+    /** Draw horizontal arrow from node to outcome */
+    const drawHArrow = (fromX: number, midY: number, toX: number, color: string, active: boolean) => {
+      const GAP = 6;
+      const sx = fromX - NODE_W / 2 - GAP;
+      const ex = toX + OUTCOME_W / 2 + GAP;
+
+      ctx.strokeStyle = active ? color : arrowColor;
+      ctx.lineWidth = active ? 1.5 : 1;
+      ctx.setLineDash(active ? [] : [3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(sx, midY);
+      ctx.lineTo(ex + 8, midY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Arrowhead pointing left (toward outcome)
+      const AH = 6;
+      ctx.fillStyle = active ? color : arrowColor;
+      ctx.beginPath();
+      ctx.moveTo(ex, midY);
+      ctx.lineTo(ex + AH, midY - 4);
+      ctx.lineTo(ex + AH, midY + 4);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    // ── Layout ───────────────────────────────────────────
+    const mainX = W * 0.62;  // center X for main decision chain
+    const outcomeX = W * 0.2; // center X for outcome boxes
+
+    // START node
+    let cy = DIAGRAM_PAD;
+    drawNode(mainX, cy, NODE_W, NODE_H, 'Input', 'Test Workbench', trueColor, false);
+
+    let prevBottomY = cy + NODE_H;
+
+    rules.forEach((rule, idx) => {
+      const nextNodeY = cy + NODE_H + (idx + 1) * ROW_GAP;
+
+      // Vertical arrow: prev → this rule node
+      drawVArrow(mainX, prevBottomY, nextNodeY, arrowColor, 'No match');
+
+      // Build label: just var + operator + short value (NOT the full regex)
+      const isMatched = evalResult.matchedRuleId === rule.id;
+      const opLabel = rule.operator.replace('_', ' ');
+      const valDisplay = rule.operator === 'regex'
+        ? 'regex pattern'
+        : rule.value.length > 12 ? rule.value.slice(0, 12) + '…' : rule.value;
+      const nodeLabel = `Rule ${idx + 1}: ${rule.variableName}`;
+      const nodeSub   = `${opLabel} "${valDisplay}"`;
+
+      drawNode(mainX, nextNodeY, NODE_W, NODE_H, nodeLabel, nodeSub, trueColor, isMatched);
+
+      // Horizontal arrow to outcome
+      const midY = nextNodeY + NODE_H / 2;
+      drawHArrow(mainX, midY, outcomeX, trueColor, isMatched);
+
+      // Outcome node label
+      const outcomeActive = isMatched;
+      const outcomeLabel = 'Outcome';
+      const outcomeSub   = rule.outcome;
+      drawNode(outcomeX, nextNodeY, OUTCOME_W, NODE_H, outcomeLabel, outcomeSub, trueColor, outcomeActive);
+
+      // "Match" label on the branch
+      ctx.font = `600 8.5px -apple-system, sans-serif`;
+      ctx.fillStyle = isMatched ? trueColor : arrowColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Match', (mainX - NODE_W / 2 + outcomeX + OUTCOME_W / 2) / 2, midY - 9);
+
+      prevBottomY = nextNodeY + NODE_H;
+    });
+
+    // Default fallback node
+    const defaultY = cy + NODE_H + (rules.length + 1) * ROW_GAP - ROW_GAP / 2 + ROW_GAP / 2 - 10;
+    drawVArrow(mainX, prevBottomY, defaultY, falseColor, 'No match');
+    const isDefaultApplied = evalResult.matchedRuleId === null;
+    drawNode(mainX, defaultY, NODE_W, NODE_H, 'Default', defaultOutcome, falseColor, isDefaultApplied);
+  };
+
+  // Sync canvas draws
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Reset transform and apply high-DPI scaling factor
-    ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
-
-    // Clear using logical dimensions
-    ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-    
-    // Smooth drawing
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 2.5;
-
-    // Colors based on page dark/light mode
-    const isDark = document.documentElement.classList.contains('dark');
-    const bgBoxColor = isDark ? '#1a1a2e' : '#f4f4f6';
-    const borderBoxColor = isDark ? '#3b4078' : '#e4e4e8';
-    const textMainColor = isDark ? '#ffffff' : '#09090b';
-    const textSubColor = isDark ? '#a0aec0' : '#718096';
-    
-    const startX = 460;
-    let currentY = 50;
-    const boxWidth = 240;
-    const boxHeight = 55;
-
-    // Draw Start Node
-    drawNodeBox(ctx, startX, currentY, boxWidth, boxHeight, 'START', 'Test Workbench Input', '#10B981', '#ffffff');
-    
-    let previousBoxY = currentY;
-
-    rules.forEach((rule, idx) => {
-      currentY += 100;
-      
-      // Draw Connector Arrow from previous box
-      drawConnectorArrow(ctx, startX, previousBoxY + boxHeight, startX, currentY, isDark);
-      
-      // Text label inside connector
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillStyle = '#EF4444';
-      ctx.fillText('False / No', startX + 15, currentY - 45);
-
-      const isMatched = evalResult.matchedRuleId === rule.id;
-      const cardColor = isMatched ? '#f43f5e' : borderBoxColor;
-      const heading = `Rule ${idx + 1}: Check "${rule.variableName}"`;
-      const ruleText = `${rule.operator.replace('_', ' ')} "${rule.value}"`;
-
-      drawNodeBox(ctx, startX, currentY, boxWidth, boxHeight, heading, ruleText, cardColor, textMainColor, textSubColor);
-
-      // Draw horizontal branch if matches
-      const branchEndX = 220;
-      ctx.beginPath();
-      ctx.moveTo(startX - boxWidth / 2, currentY + boxHeight / 2);
-      ctx.lineTo(branchEndX, currentY + boxHeight / 2);
-      ctx.strokeStyle = isMatched ? '#10B981' : (isDark ? '#3b4078' : '#cbd5e1');
-      ctx.stroke();
-
-      // Yes Arrowhead
-      ctx.beginPath();
-      ctx.moveTo(branchEndX + 5, currentY + boxHeight / 2 - 5);
-      ctx.lineTo(branchEndX, currentY + boxHeight / 2);
-      ctx.lineTo(branchEndX + 5, currentY + boxHeight / 2 + 5);
-      ctx.stroke();
-
-      // Branch Label
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillStyle = '#10B981';
-      ctx.fillText('True / Yes', startX - boxWidth / 2 - 75, currentY + boxHeight / 2 - 8);
-
-      // Draw match outcome box (centered at 130, width 180)
-      drawNodeBox(ctx, 130, currentY, 180, boxHeight, 'MATCHED OUTCOME', rule.outcome, isMatched ? '#10B981' : bgBoxColor, isMatched ? '#ffffff' : textMainColor);
-
-      previousBoxY = currentY;
-    });
-
-    // Draw Default Fallback Node
-    currentY += 100;
-    drawConnectorArrow(ctx, startX, previousBoxY + boxHeight, startX, currentY, isDark);
-    
-    ctx.font = 'bold 9px sans-serif';
-    ctx.fillStyle = '#EF4444';
-    ctx.fillText('False / No', startX + 15, currentY - 45);
-
-    const isDefaultApplied = evalResult.matchedRuleId === null;
-    drawNodeBox(ctx, startX, currentY, boxWidth, boxHeight, 'DEFAULT FALLBACK', defaultOutcome, isDefaultApplied ? '#10B981' : bgBoxColor, isDefaultApplied ? '#ffffff' : textMainColor);
-
+    if (ctx) drawDiagram(ctx, scaleFactor);
   }, [rules, variables, evalResult, defaultOutcome]);
 
-  const drawNodeBox = (
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    title: string,
-    sub: string,
-    borderColor: string,
-    titleColor: string,
-    subColor = '#888'
-  ) => {
-    const isDark = document.documentElement.classList.contains('dark');
-    
-    // Add shadow styling for a glassy, professional appearance
-    ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.06)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
-
-    ctx.fillStyle = isDark ? '#11111e' : '#ffffff';
-    ctx.strokeStyle = borderColor;
-    
-    // Draw Round Rect
-    ctx.beginPath();
-    ctx.roundRect(x - w / 2, y, w, h, 14);
-    ctx.fill();
-    
-    // Reset shadow
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.stroke();
-
-    // Draw Title
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = titleColor;
-    ctx.textAlign = 'center';
-    ctx.fillText(title, x, y + 21);
-
-    // Draw Subtext with word/character wrapping to prevent card overflow
-    ctx.font = '500 10px monospace';
-    ctx.fillStyle = subColor;
-    
-    const maxTextWidth = w - 24;
-    
-    // Check if subtext fits in one line
-    const textWidth = ctx.measureText(sub).width;
-    if (textWidth <= maxTextWidth) {
-      ctx.fillText(sub, x, y + 37);
-    } else {
-      // Split subtext into two lines cleanly
-      const words = sub.split(' ');
-      let line = '';
-      const lines: string[] = [];
-
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const testWidth = ctx.measureText(testLine).width;
-        if (testWidth > maxTextWidth && n > 0) {
-          lines.push(line.trim());
-          line = words[n] + ' ';
-        } else {
-          line = testLine;
-        }
-      }
-      lines.push(line.trim());
-
-      // Draw two lines or truncate if excessively long
-      if (lines.length === 1) {
-        ctx.fillText(lines[0], x, y + 37);
-      } else {
-        ctx.fillText(lines[0], x, y + 33);
-        const secondLine = lines.slice(1).join(' ');
-        const truncatedSecond = ctx.measureText(secondLine).width > maxTextWidth
-          ? secondLine.substring(0, Math.floor(maxTextWidth / 7.5)) + '...'
-          : secondLine;
-        ctx.fillText(truncatedSecond, x, y + 45);
-      }
-    }
-  };
-
-  const drawConnectorArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, isDark: boolean) => {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.strokeStyle = isDark ? '#3b4078' : '#cbd5e1';
-    ctx.stroke();
-
-    // Arrowhead
-    ctx.beginPath();
-    ctx.moveTo(x2 - 5, y2 - 7);
-    ctx.lineTo(x2, y2);
-    ctx.lineTo(x2 + 5, y2 - 7);
-    ctx.stroke();
-  };
+  // Sync preview canvas when preview is open
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (ctx) drawDiagram(ctx, scaleFactor);
+  }, [isPreviewOpen, rules, variables, evalResult, defaultOutcome]);
 
   // Export Canvas
   const exportImage = (format: 'png' | 'jpeg') => {
@@ -586,49 +617,123 @@ export default function ConditionModule() {
             </div>
           </div>
 
-          {/* Section 5: Decision Flow Diagram */}
-          <div className="bg-surface border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <div>
-                <h3 className="text-sm font-bold text-text-primary">Decision Flow Diagram</h3>
-                <p className="text-xs text-text-muted mt-0.5">Visual trace path representation of rules</p>
-              </div>
-              
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => exportImage('png')}
-                  className="btn btn-secondary btn-sm h-8 py-0 px-2.5 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                  title="Export Diagram as PNG"
-                >
-                  <IconDownload size={12} /> PNG
-                </button>
-                <button
-                  onClick={() => exportImage('jpeg')}
-                  className="btn btn-secondary btn-sm h-8 py-0 px-2.5 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                  title="Export Diagram as JPG"
-                >
-                  <IconDownload size={12} /> JPG
-                </button>
-              </div>
-            </div>
+        </div>
+      </div>
 
-            <div className="w-full overflow-x-auto custom-scrollbar flex justify-center py-2">
-              <canvas
-                ref={canvasRef}
-                width={logicalWidth * scaleFactor}
-                height={logicalHeight * scaleFactor}
-                style={{
-                  width: `${logicalWidth}px`,
-                  height: `${logicalHeight}px`,
-                }}
-                className="border border-border/40 bg-surface-alt/20 rounded-2xl max-w-full"
-              />
-            </div>
+      {/* Section 4: Decision Flow Diagram — full-width below grid */}
+      <div className="bg-surface border border-border rounded-3xl p-5 flex flex-col gap-4 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-text-primary">Decision Flow Diagram</h3>
+            <p className="text-xs text-text-muted mt-0.5">Auto-generated visual trace of your rules</p>
           </div>
-
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsPreviewOpen(true)}
+              className="btn btn-primary btn-sm h-8 py-0 px-3 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer"
+              title="Open fullscreen preview"
+            >
+              <IconEye size={12} /> Preview
+            </button>
+            <button
+              onClick={() => exportImage('png')}
+              className="btn btn-secondary btn-sm h-8 py-0 px-2.5 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+              title="Export as PNG"
+            >
+              <IconDownload size={12} /> PNG
+            </button>
+            <button
+              onClick={() => exportImage('jpeg')}
+              className="btn btn-secondary btn-sm h-8 py-0 px-2.5 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+              title="Export as JPG"
+            >
+              <IconDownload size={12} /> JPG
+            </button>
+          </div>
         </div>
 
+        <div className="w-full overflow-x-auto flex justify-center py-1">
+          <canvas
+            ref={canvasRef}
+            width={logicalWidth * scaleFactor}
+            height={logicalHeight * scaleFactor}
+            style={{ width: `${logicalWidth}px`, height: `${logicalHeight}px` }}
+            className="rounded-2xl max-w-full"
+          />
+        </div>
       </div>
+
+      {/* Diagram Preview Modal */}
+      <AnimatePresence>
+        {isPreviewOpen && (
+          <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPreviewOpen(false)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.93, y: 24 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className="relative bg-surface border border-border rounded-[28px] shadow-2xl z-10 flex flex-col overflow-hidden"
+              style={{ maxWidth: `${logicalWidth + 48}px`, width: '100%' }}
+            >
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/40">
+                <div>
+                  <h2 className="text-base font-bold text-text-primary">Decision Flow Diagram</h2>
+                  <p className="text-xs text-text-muted mt-0.5">{rules.length} rule{rules.length !== 1 ? 's' : ''} · auto-traced</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => exportImage('png')}
+                    className="btn btn-secondary btn-sm flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <IconDownload size={13} /> Export PNG
+                  </button>
+                  <button
+                    onClick={() => setIsPreviewOpen(false)}
+                    className="w-8 h-8 rounded-full bg-surface-alt border border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <IconX size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Canvas area */}
+              <div className="overflow-auto p-6 flex justify-center">
+                <canvas
+                  ref={previewCanvasRef}
+                  width={logicalWidth * scaleFactor}
+                  height={logicalHeight * scaleFactor}
+                  style={{ width: `${logicalWidth}px`, height: `${logicalHeight}px` }}
+                  className="rounded-2xl max-w-full"
+                />
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center gap-5 px-6 pb-5 pt-2 border-t border-border/30">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#34c759]" />
+                  <span className="text-[10px] font-semibold text-text-muted">Match / Active</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#ff3b30]" />
+                  <span className="text-[10px] font-semibold text-text-muted">No Match / Default</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-px border-t border-dashed border-text-muted/50" />
+                  <span className="text-[10px] font-semibold text-text-muted">Skipped path</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Regex Cheat Sheet Modal */}
       <AnimatePresence>

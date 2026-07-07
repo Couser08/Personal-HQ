@@ -157,7 +157,7 @@ const parseMarkdown = (md: string): string => {
   html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  html = html.replace(/__(.*?)__/g, '<u>$1</u>');
+  html = html.replace(/__((?!_)[^_]+(?!_))__/g, '<u>$1</u>');
 
   // 8. Inline code
   html = html.replace(/`(.*?)`/g, '<code class="bg-surface-alt text-primary font-mono text-[11px] px-1.5 py-0.5 rounded border border-border/40">$1</code>');
