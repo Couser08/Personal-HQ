@@ -4,7 +4,7 @@ import {
   IconPlayerPlay, IconPlayerPause, IconEdit, IconCheck,
   IconFlame, IconClock, IconTarget
 } from '@tabler/icons-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, type Habit } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { ProgressRing } from '../../components/ui/ProgressRing';
@@ -255,7 +255,8 @@ export default function PomodoroModule() {
     startGlobalPomodoro,
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
-    stopGlobalPomodoro
+    stopGlobalPomodoro,
+    habits
   } = useAppStore(useShallow(state => ({
     pomodoroStats: state.pomodoroStats,
     todoTasks: state.todoTasks,
@@ -272,7 +273,8 @@ export default function PomodoroModule() {
     startGlobalPomodoro: state.startGlobalPomodoro,
     pauseGlobalPomodoro: state.pauseGlobalPomodoro,
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
-    stopGlobalPomodoro: state.stopGlobalPomodoro
+    stopGlobalPomodoro: state.stopGlobalPomodoro,
+    habits: state.habits
   })));
 
   const addToast = useToastStore(s => s.addToast);
@@ -352,6 +354,9 @@ export default function PomodoroModule() {
   };
 
   const associatedTask = todoTasks.find(t => t.id === pomodoroAssociatedTaskId);
+  const associatedHabit = pomodoroAssociatedTaskId?.startsWith('habit-')
+    ? habits.find((h: Habit) => h.id === pomodoroAssociatedTaskId.replace('habit-', ''))
+    : null;
 
   return (
     <motion.div
@@ -418,12 +423,21 @@ export default function PomodoroModule() {
             onChange={e => handleAssociatedTaskChange(e.target.value || null)}
             className="bg-surface-alt border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none focus:border-primary cursor-pointer min-w-55"
           >
-            <option value="">No Associated Task</option>
-            {todoTasks.filter(t => !t.completed && !t.deleted).map(task => (
-              <option key={task.id} value={task.id}>
-                {task.title} {task.pomodoroCount ? `(🍅 ${task.pomodoroCount})` : ''}
-              </option>
-            ))}
+            <option value="">No Associated Target</option>
+            <optgroup label="To-Do Tasks">
+              {todoTasks.filter(t => !t.completed && !t.deleted).map(task => (
+                <option key={task.id} value={task.id}>
+                  {task.title} {task.pomodoroCount ? `(🍅 ${task.pomodoroCount})` : ''}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Habits">
+              {habits.map((habit: Habit) => (
+                <option key={habit.id} value={`habit-${habit.id}`}>
+                  {habit.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </div>
       </div>
@@ -477,6 +491,11 @@ export default function PomodoroModule() {
               {associatedTask && (
                 <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
                   🎯 Working on: <span className="font-bold text-text-primary">{associatedTask.title}</span>
+                </span>
+              )}
+              {associatedHabit && (
+                <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                  🔥 Working on Habit: <span className="font-bold text-text-primary">{associatedHabit.name}</span>
                 </span>
               )}
             </div>

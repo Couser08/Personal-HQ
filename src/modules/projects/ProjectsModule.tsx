@@ -1451,6 +1451,7 @@ function DeveloperUtilitiesView() {
 
   const [regexPattern, setRegexPattern] = useState('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}');
   const [regexText, setRegexText] = useState('My email is test@example.com and alert@domain.co.in');
+  const [isRegexModalOpen, setIsRegexModalOpen] = useState(false);
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1476,13 +1477,48 @@ function DeveloperUtilitiesView() {
   const regexMatches = useMemo(() => {
     if (!regexPattern.trim() || !regexText.trim()) return [];
     try {
-      const regex = new RegExp(regexPattern, 'g');
+      let pattern = regexPattern.trim();
+      let flags = 'g';
+      
+      // Parse slash-wrapped regexes like /^(?=.*[A-Z]).{8,}$/i
+      if (pattern.startsWith('/') && pattern.includes('/', 1)) {
+        const lastSlash = pattern.lastIndexOf('/');
+        const rawFlags = pattern.slice(lastSlash + 1);
+        pattern = pattern.slice(1, lastSlash);
+        // Merge flags, ensuring global flag 'g' is active for matchAll
+        flags = Array.from(new Set(['g', ...rawFlags])).join('');
+      }
+
+      const regex = new RegExp(pattern, flags);
       const matches = [...regexText.matchAll(regex)];
       return matches.map(m => m[0]);
     } catch {
       return ['Invalid Regex Pattern'];
     }
   }, [regexPattern, regexText]);
+
+  const REGEX_PRESETS = [
+    {
+      name: 'Strong Password Verification',
+      desc: 'At least 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special character',
+      pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/'
+    },
+    {
+      name: 'Email Address Validator',
+      desc: 'Standard RFC-5322 matching for email addresses',
+      pattern: '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/'
+    },
+    {
+      name: 'Indian Phone Number',
+      desc: '10 digits mobile number with optional +91/91 prefix',
+      pattern: '/^(?:\\+91|91)?[6-9]\\d{9}$/'
+    },
+    {
+      name: 'HTTP/HTTPS URL Link',
+      desc: 'Standard web link pattern with optional subdomains/query strings',
+      pattern: '/^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$/'
+    }
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
@@ -1547,9 +1583,18 @@ function DeveloperUtilitiesView() {
 
       {/* Regex Matcher */}
       <div className="bg-surface border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-        <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-          <IconBrackets className="w-4.5 h-4.5 text-blue-500" />
-          <span className="text-xs font-black uppercase tracking-wider text-text-primary">Regex Playground</span>
+        <div className="flex items-center justify-between pb-2 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <IconBrackets className="w-4.5 h-4.5 text-blue-500" />
+            <span className="text-xs font-black uppercase tracking-wider text-text-primary">Regex Playground</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsRegexModalOpen(true)}
+            className="px-2.5 py-1 text-[9px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-350 rounded-lg transition-colors cursor-pointer border border-border/10"
+          >
+            Guide & Presets
+          </button>
         </div>
 
         <div className="flex flex-col gap-3 shrink-0">
@@ -1558,7 +1603,7 @@ function DeveloperUtilitiesView() {
             <input 
               type="text"
               required
-              placeholder="e.g. [a-z]+"
+              placeholder="e.g. /^[a-z]+$/i"
               value={regexPattern}
               onChange={e => setRegexPattern(e.target.value)}
               className="bg-surface-alt border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary focus:outline-none"
@@ -1597,6 +1642,52 @@ function DeveloperUtilitiesView() {
           </div>
         </div>
       </div>
+
+      {/* Regex Presets & Guide Modal */}
+      <Modal
+        isOpen={isRegexModalOpen}
+        onClose={() => setIsRegexModalOpen(false)}
+        title="Regex Presets & Guide"
+      >
+        <div className="flex flex-col gap-5 text-left max-h-[70vh] overflow-y-auto pr-1">
+          {/* Presets List */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Select Preset Pattern</span>
+            <div className="grid grid-cols-1 gap-2 mt-1">
+              {REGEX_PRESETS.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    setRegexPattern(preset.pattern);
+                    setIsRegexModalOpen(false);
+                  }}
+                  className="w-full text-left p-3 rounded-2xl border border-border/50 bg-surface-alt hover:bg-neutral-100 dark:hover:bg-neutral-800/40 transition-colors flex flex-col gap-1 cursor-pointer group"
+                >
+                  <span className="text-xs font-bold text-text-primary group-hover:text-primary transition-colors">{preset.name}</span>
+                  <span className="text-[10px] text-text-secondary">{preset.desc}</span>
+                  <code className="text-[9px] font-mono text-primary bg-surface/50 border border-border/20 px-1.5 py-0.5 rounded mt-1.5 self-start">{preset.pattern}</code>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Simple Cheat Sheet */}
+          <div className="flex flex-col gap-2.5 border-t border-border/40 pt-4">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Regex Cheat Sheet</span>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] text-text-secondary leading-relaxed bg-surface-alt/60 p-3.5 rounded-2xl border border-border/45 mt-1 font-medium">
+              <div><code className="font-mono text-primary font-bold">^</code> / <code className="font-mono text-primary font-bold">$</code> : Start / End of string</div>
+              <div><code className="font-mono text-primary font-bold">\d</code> / <code className="font-mono text-primary font-bold">\D</code> : Digit / Non-digit</div>
+              <div><code className="font-mono text-primary font-bold">(?=...)</code> : Positive Lookahead</div>
+              <div><code className="font-mono text-primary font-bold">\w</code> / <code className="font-mono text-primary font-bold">\W</code> : Alphanumeric / Special</div>
+              <div><code className="font-mono text-primary font-bold">.</code> : Any character except newline</div>
+              <div><code className="font-mono text-primary font-bold">?</code> / <code className="font-mono text-primary font-bold">*</code> / <code className="font-mono text-primary font-bold">+</code> : 0 or 1 / 0+ / 1+ repetitions</div>
+              <div><code className="font-mono text-primary font-bold">[a-zA-Z]</code> : Match range of letters</div>
+              <div><code className="font-mono text-primary font-bold">{"{n,m}"}</code> : Between n and m repetitions</div>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

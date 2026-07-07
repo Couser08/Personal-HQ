@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type {
   Note, Link, StockEntry, Subject, InterestRecord,
   MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
-  TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation
+  TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit
 } from '../store/useAppStore';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -970,3 +970,70 @@ export const settingsService = {
     if (error) throw error;
   }
 };
+
+// ─── Habit Tracker ────────────────────────────────────────────────────────────
+
+export const habitService = {
+  async fetchAll(userId: string): Promise<Habit[]> {
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description ?? '',
+      frequencyType: r.frequency_type as any,
+      frequencyDays: r.frequency_days ?? [],
+      frequencyCount: r.frequency_count ?? 0,
+      completedDates: r.completed_dates ?? [],
+      streak: r.streak ?? 0,
+      bestStreak: r.best_streak ?? 0,
+      createdAt: r.created_at,
+    }));
+  },
+
+  async create(userId: string, habit: Habit) {
+    const { error } = await supabase.from('habits').insert({
+      id: habit.id,
+      user_id: userId,
+      name: habit.name,
+      description: habit.description,
+      frequency_type: habit.frequencyType,
+      frequency_days: habit.frequencyDays,
+      frequency_count: habit.frequencyCount,
+      completed_dates: habit.completedDates,
+      streak: habit.streak,
+      best_streak: habit.bestStreak,
+      created_at: habit.createdAt,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<Habit>) {
+    const { error } = await supabase.from('habits').update({
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.frequencyType !== undefined && { frequency_type: data.frequencyType }),
+      ...(data.frequencyDays !== undefined && { frequency_days: data.frequencyDays }),
+      ...(data.frequencyCount !== undefined && { frequency_count: data.frequencyCount }),
+      ...(data.completedDates !== undefined && { completed_dates: data.completedDates }),
+      ...(data.streak !== undefined && { streak: data.streak }),
+      ...(data.bestStreak !== undefined && { best_streak: data.bestStreak }),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('habits').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+

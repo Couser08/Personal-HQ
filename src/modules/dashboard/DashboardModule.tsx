@@ -39,6 +39,8 @@ export default function DashboardModule() {
     addMindmap,
     pomodoroStats,
     pomodoroStreak,
+    habits,
+    toggleHabitCompletion,
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     mindmaps: state.mindmaps,
@@ -55,6 +57,8 @@ export default function DashboardModule() {
     addMindmap: state.addMindmap,
     pomodoroStats: state.pomodoroStats,
     pomodoroStreak: state.pomodoroStreak,
+    habits: state.habits,
+    toggleHabitCompletion: state.toggleHabitCompletion,
   })));
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -147,6 +151,44 @@ export default function DashboardModule() {
     return days;
   }, []);
 
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayDayOfWeek = useMemo(() => new Date().getDay(), []);
+
+  const isHabitDueToday = (habit: any) => {
+    if (habit.frequencyType === 'daily') return true;
+    if (habit.frequencyType === 'weekly_days') {
+      return habit.frequencyDays.includes(todayDayOfWeek);
+    }
+    if (habit.frequencyType === 'weekly_count') {
+      const now = new Date();
+      const currentDay = now.getDay();
+      const distanceToMon = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + distanceToMon);
+      monday.setHours(0, 0, 0, 0);
+
+      const completionsThisWeek = habit.completedDates.filter((dateStr: string) => {
+        const d = new Date(dateStr);
+        return d >= monday;
+      }).length;
+
+      return completionsThisWeek < habit.frequencyCount;
+    }
+    return true;
+  };
+
+  const dueHabits = useMemo(() => {
+    return habits.filter(isHabitDueToday);
+  }, [habits, todayDayOfWeek]);
+
+  const completedTodayCount = useMemo(() => {
+    return dueHabits.filter(h => h.completedDates.includes(todayStr)).length;
+  }, [dueHabits, todayStr]);
+
+  const habitsProgressPct = useMemo(() => {
+    return dueHabits.length > 0 ? Math.round((completedTodayCount / dueHabits.length) * 100) : 0;
+  }, [dueHabits, completedTodayCount]);
+
   const currentMonthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
@@ -184,7 +226,7 @@ export default function DashboardModule() {
       </div>
 
       {/* Main Container Modules */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8 w-full">
 
         {/* Card Module: Focus Session */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/50 rounded-[30px] p-6 flex flex-col gap-6 shadow-sm relative overflow-hidden w-full">
@@ -315,6 +357,63 @@ export default function DashboardModule() {
               {showAllTasks ? 'Show less' : 'Show more'} <IconChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllTasks ? 'rotate-180' : ''}`} />
             </button>
           )}
+        </div>
+
+        {/* Card Module: Habits Agenda */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/50 rounded-[30px] p-6 flex flex-col gap-4 shadow-sm w-full">
+          <div className="flex items-center justify-between w-full shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/10 shadow-inner">
+                <IconFlame className="w-4 h-4 stroke-[2]" />
+              </div>
+              <span className="text-xs font-extrabold uppercase tracking-widest text-neutral-900 dark:text-neutral-200">Daily Habits</span>
+            </div>
+            <button onClick={() => setActiveModule('habits')}
+              className="flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-650 cursor-pointer transition-colors">
+              Manage <IconArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2 w-full shrink-0 bg-neutral-50/50 dark:bg-neutral-950/20 border border-neutral-200/30 dark:border-neutral-800/40 rounded-2xl p-3">
+            <div className="flex justify-between items-center text-xs mb-0.5">
+              <span className="font-bold text-neutral-800 dark:text-neutral-200">Consistency</span>
+              <span className="font-bold text-neutral-400 font-mono text-[11px]">{completedTodayCount}/{dueHabits.length} done</span>
+            </div>
+            <div className="w-full h-2 bg-neutral-200/50 dark:bg-neutral-800/60 rounded-full overflow-hidden">
+              <div className="h-full bg-orange-500 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${habitsProgressPct}%` }} />
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto scrollbar-none w-full min-h-[160px]">
+            {dueHabits.length === 0 ? (
+              <div className="flex-grow flex flex-col items-center justify-center gap-2 py-4">
+                <span className="text-xl">✨</span>
+                <p className="text-xs text-neutral-400 font-bold tracking-tight italic text-center">No habits due today!</p>
+              </div>
+            ) : (
+              dueHabits.slice(0, 4).map(habit => {
+                const isCompleted = habit.completedDates.includes(todayStr);
+                return (
+                  <button key={habit.id} onClick={() => toggleHabitCompletion(habit.id, todayStr)}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-neutral-50/50 dark:bg-neutral-950/10 hover:bg-neutral-100/60 dark:hover:bg-neutral-800/40 border border-neutral-200/20 dark:border-neutral-800/10 text-left transition-all w-full group cursor-pointer">
+                    <div className={`w-4.5 h-4.5 rounded-full border-[2px] flex items-center justify-center shrink-0 transition-all ${
+                      isCompleted ? 'bg-orange-500 border-orange-500 scale-95' : 'border-neutral-300 dark:border-neutral-700 group-hover:border-orange-500'
+                    }`}>
+                      {isCompleted && <IconCheck className="w-3 h-3 text-white stroke-[3]" />}
+                    </div>
+                    <span className={`text-xs font-semibold truncate flex-1 ${
+                      isCompleted ? 'line-through text-neutral-400 dark:text-neutral-500 font-normal' : 'text-neutral-800 dark:text-neutral-200'
+                    }`}>{habit.name}</span>
+                    {habit.streak > 0 && (
+                      <span className="text-[10px] font-bold text-orange-500 bg-orange-500/5 px-2 py-0.5 rounded-md shrink-0 tracking-tight flex items-center gap-0.5">
+                        <IconFlame size={10} /> {habit.streak}d
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Card Module: Mindmaps */}

@@ -3,7 +3,7 @@ import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
   budgetCategoryService, budgetTransactionService,
-  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService
+  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService, habitService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -424,6 +424,19 @@ export interface StandardCalculation {
   createdAt: string;
 }
 
+export interface Habit {
+  id: string;
+  name: string;
+  description: string;
+  frequencyType: 'daily' | 'weekly_days' | 'weekly_count';
+  frequencyDays: number[]; // 0 = Sunday, 6 = Saturday
+  frequencyCount: number;
+  completedDates: string[]; // YYYY-MM-DD
+  streak: number;
+  bestStreak: number;
+  createdAt: string;
+}
+
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
@@ -580,6 +593,14 @@ export interface AppStore {
   standardHistory: StandardCalculation[];
   addStandardRecord: (record: StandardCalculation) => Promise<void>;
   clearStandardHistory: () => Promise<void>;
+  
+  // Habits state and actions
+  habits: Habit[];
+  addHabit: (habit: Habit) => Promise<void>;
+  updateHabit: (id: string, data: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
+  toggleHabitCompletion: (id: string, dateStr: string) => Promise<void>;
+
   // Coder Hub / Projects State
   sprints: Sprint[];
   dsaProblems: DsaProblem[];
@@ -766,6 +787,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       journalService.fetchAll(userId),
       mindmapService.fetchAll(userId),
       standardCalcService.fetchAll(userId),
+      habitService.fetchAll(userId),
       settingsService.fetch(userId),
     ]);
 
@@ -785,6 +807,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'journals',
       'mindmaps',
       'standard calculations history',
+      'habits',
       'user settings',
     ];
 
@@ -807,7 +830,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
     const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
     const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
-    const settingsResult = results[15].status === 'fulfilled' ? results[15].value : null;
+    const habits = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
+    const settingsResult = results[16].status === 'fulfilled' ? results[16].value : null;
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -860,10 +884,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     if (results[13].status === 'fulfilled') {
       localStorage.setItem('phq_mindmaps', JSON.stringify(mindmaps));
     }
+    if (results[15].status === 'fulfilled') {
+      localStorage.setItem('phq_habits', JSON.stringify(habits));
+    }
 
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
-      budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory,
+      budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
       theme: dbTheme,
       settings: dbSettings,
       dataLoaded: true
@@ -875,7 +902,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],
       snippets: [], budgetCategories: [], budgetTransactions: [],
-      todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [],
+      todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [], habits: [],
       dataLoaded: false,
     }),
 
@@ -1110,6 +1137,140 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }
   },
 
+  // ── Habits ──────────────────────────────────────────────────────────────
+  habits: (() => {
+    try {
+      const raw = localStorage.getItem('phq_habits');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  addHabit: async (habit) => {
+    if (shouldThrottle('addHabit')) return;
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().habits;
+    const updated = [habit, ...previous];
+    set({ habits: updated });
+    localStorage.setItem('phq_habits', JSON.stringify(updated));
+    try {
+      await habitService.create(uid, habit);
+      useToastStore.getState().addToast('Success', 'Habit created', 'success');
+    } catch (error) {
+      set({ habits: previous });
+      localStorage.setItem('phq_habits', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save habit'), 'error');
+      throw error;
+    }
+  },
+  updateHabit: async (id, data) => {
+    const previous = get().habits;
+    const updated = previous.map((h) => (h.id === id ? { ...h, ...data } : h));
+    set({ habits: updated });
+    localStorage.setItem('phq_habits', JSON.stringify(updated));
+    try {
+      await habitService.update(id, data);
+    } catch (error) {
+      set({ habits: previous });
+      localStorage.setItem('phq_habits', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update habit'), 'error');
+      throw error;
+    }
+  },
+  deleteHabit: async (id) => {
+    const previous = get().habits;
+    const updated = previous.filter((h) => h.id !== id);
+    set({ habits: updated });
+    localStorage.setItem('phq_habits', JSON.stringify(updated));
+    try {
+      await habitService.delete(id);
+      useToastStore.getState().addToast('Success', 'Habit deleted', 'success');
+    } catch (error) {
+      set({ habits: previous });
+      localStorage.setItem('phq_habits', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete habit'), 'error');
+      throw error;
+    }
+  },
+  toggleHabitCompletion: async (id, dateStr) => {
+    const previous = get().habits;
+    const updated = previous.map((h) => {
+      if (h.id !== id) return h;
+      const completedDates = h.completedDates.includes(dateStr)
+        ? h.completedDates.filter((d) => d !== dateStr)
+        : [...h.completedDates, dateStr];
+        
+      // Helper function to calculate streaks locally
+      const getStreakStats = (datesArr: string[]) => {
+        if (datesArr.length === 0) return { streak: 0, bestStreak: 0 };
+        const sortedDates = Array.from(new Set(datesArr))
+          .map(d => new Date(d))
+          .sort((a, b) => a.getTime() - b.getTime());
+          
+        let currentStreak = 0;
+        let bestStreak = 0;
+        let tempStreak = 0;
+        let lastDate: Date | null = null;
+        
+        for (let i = 0; i < sortedDates.length; i++) {
+          const d = sortedDates[i];
+          d.setHours(0, 0, 0, 0);
+          if (lastDate === null) {
+            tempStreak = 1;
+          } else {
+            const diffTime = d.getTime() - lastDate.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays === 1) {
+              tempStreak++;
+            } else if (diffDays > 1) {
+              if (tempStreak > bestStreak) bestStreak = tempStreak;
+              tempStreak = 1;
+            }
+          }
+          lastDate = d;
+        }
+        if (tempStreak > bestStreak) bestStreak = tempStreak;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        
+        let isActive = false;
+        if (lastDate) {
+          const lastDateTime = lastDate.getTime();
+          if (lastDateTime === today.getTime() || lastDateTime === yesterday.getTime()) {
+            isActive = true;
+          }
+        }
+        currentStreak = isActive ? tempStreak : 0;
+        return { streak: currentStreak, bestStreak: Math.max(bestStreak, currentStreak) };
+      };
+      
+      const { streak, bestStreak } = getStreakStats(completedDates);
+      return { ...h, completedDates, streak, bestStreak };
+    });
+    
+    set({ habits: updated });
+    localStorage.setItem('phq_habits', JSON.stringify(updated));
+    try {
+      const target = updated.find((h) => h.id === id);
+      if (target) {
+        await habitService.update(id, {
+          completedDates: target.completedDates,
+          streak: target.streak,
+          bestStreak: target.bestStreak,
+        });
+      }
+    } catch (error) {
+      set({ habits: previous });
+      localStorage.setItem('phq_habits', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not toggle habit completion'), 'error');
+      throw error;
+    }
+  },
+
   // ── Media ─────────────────────────────────────────────────────────────────
 
   mediaLogs: [],
@@ -1275,12 +1436,22 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           recordPomodoroSession(Math.round(pomodoroTotalSeconds / 60));
 
           if (pomodoroAssociatedTaskId) {
-            const matchedTask = todoTasks.find(t => t.id === pomodoroAssociatedTaskId);
-            if (matchedTask) {
-              updateTodoTask(pomodoroAssociatedTaskId, {
-                pomodoroCount: (matchedTask.pomodoroCount || 0) + 1
-              });
-              addToast('🍅 Session Logged', `Logged focus session to "${matchedTask.title}"`, 'success');
+            if (pomodoroAssociatedTaskId.startsWith('habit-')) {
+              const habitId = pomodoroAssociatedTaskId.replace('habit-', '');
+              const matchedHabit = get().habits.find(h => h.id === habitId);
+              if (matchedHabit) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                get().toggleHabitCompletion(habitId, todayStr);
+                addToast('🔥 Habit Completed', `Completed Pomodoro session for "${matchedHabit.name}"`, 'success');
+              }
+            } else {
+              const matchedTask = todoTasks.find(t => t.id === pomodoroAssociatedTaskId);
+              if (matchedTask) {
+                updateTodoTask(pomodoroAssociatedTaskId, {
+                  pomodoroCount: (matchedTask.pomodoroCount || 0) + 1
+                });
+                addToast('🍅 Session Logged', `Logged focus session to "${matchedTask.title}"`, 'success');
+              }
             }
           } else {
             addToast('🎉 Focus Complete!', 'Great work! Time for a break.', 'success');

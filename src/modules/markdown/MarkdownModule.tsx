@@ -9,6 +9,8 @@ import {
   IconChevronLeft, IconChevronRight, IconTrash
 } from '@tabler/icons-react';
 import "@excalidraw/excalidraw/index.css";
+import { Modal } from '../../components/ui/Modal';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 // Helper to parse Markdown tables
 const parseTables = (text: string): string => {
@@ -88,16 +90,42 @@ const parseTables = (text: string): string => {
 const parseMarkdown = (md: string): string => {
   if (!md) return '<p class="text-text-muted italic">No content written yet. Select a template or write markdown to begin.</p>';
   
-  // Escape HTML entities to prevent rendering conflicts
-  let html = md
+  // 1. Extract code blocks first to protect them from HTML escaping
+  const codeBlocks: string[] = [];
+  let html = md.replace(/```(\w*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
+    // Escape HTML inside code safely
+    const escapedCode = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const lines = escapedCode.split('\n');
+    const numberedLines = lines.map((l: string, i: number) =>
+      `<span class="code-line"><span class="code-ln">${i + 1}</span><span class="code-lc">${l}</span></span>`
+    ).join('\n');
+    const langLabel = lang || 'text';
+    const copyId = `cb-${Math.random().toString(36).slice(2,8)}`;
+    const svgCopy = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    codeBlocks.push(
+      `<div class="md-code-block" id="${copyId}">`
+      + `<div class="md-code-header"><span class="md-code-lang">${langLabel}</span>`
+      + `<button class="md-code-copy" onclick="(function(btn){const code=btn.closest('.md-code-block').querySelector('code').innerText;navigator.clipboard.writeText(code).then(()=>{btn.querySelector('.md-copy-label').textContent='Copied!';setTimeout(()=>btn.querySelector('.md-copy-label').textContent='Copy',2000)}).catch(()=>{})})(this)">${svgCopy}<span class="md-copy-label">Copy</span></button>`
+      + `</div>`
+      + `<pre class="md-code-pre"><code>${numberedLines}</code></pre>`
+      + `</div>`
+    );
+    return `__CODEBLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  // 2. Escape remaining HTML entities
+  html = html
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
     
-  // Parse tables before other substitutions
+  // Parse tables
   html = parseTables(html);
     
-  // 1. Headers
+  // 3. Headers
   html = html.replace(/^###### (.*?)$/gm, '<h6 class="text-xs font-black text-text-primary uppercase tracking-wider mt-4 mb-2">$1</h6>');
   html = html.replace(/^##### (.*?)$/gm, '<h5 class="text-sm font-extrabold text-text-primary mt-5 mb-2">$1</h5>');
   html = html.replace(/^#### (.*?)$/gm, '<h4 class="text-base font-black text-text-primary tracking-tight mt-6 mb-2">$1</h4>');
@@ -105,7 +133,7 @@ const parseMarkdown = (md: string): string => {
   html = html.replace(/^## (.*?)$/gm, '<h2 class="text-xl font-black text-text-primary tracking-tight mt-8 mb-3 pb-1 border-b border-border/30">$1</h2>');
   html = html.replace(/^# (.*?)$/gm, '<h1 class="text-2xl font-black text-text-primary tracking-tight mt-10 mb-4 pb-2 border-b border-border/50">$1</h1>');
   
-  // 2. Alert boxes (GitHub style)
+  // 4. Alert boxes (GitHub style)
   html = html.replace(/^&gt;\s*\[!NOTE\]\s*\n([\s\S]*?)(?=\n\n|\n&gt;|\n\s*\n|$)/gmi, '<div class="p-4 mb-4 rounded-2xl bg-blue-500/10 border-l-4 border-blue-500 text-text-primary"><p class="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">Note</p>$1</div>');
   html = html.replace(/^&gt;\s*\[!TIP\]\s*\n([\s\S]*?)(?=\n\n|\n&gt;|\n\s*\n|$)/gmi, '<div class="p-4 mb-4 rounded-2xl bg-emerald-500/10 border-l-4 border-emerald-500 text-text-primary"><p class="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-1">Tip</p>$1</div>');
   html = html.replace(/^&gt;\s*\[!IMPORTANT\]\s*\n([\s\S]*?)(?=\n\n|\n&gt;|\n\s*\n|$)/gmi, '<div class="p-4 mb-4 rounded-2xl bg-purple-500/10 border-l-4 border-purple-500 text-text-primary"><p class="text-xs font-bold uppercase tracking-wider text-purple-500 mb-1">Important</p>$1</div>');
@@ -115,12 +143,7 @@ const parseMarkdown = (md: string): string => {
   // Standard blockquotes
   html = html.replace(/^&gt;\s*(.*?)$/gm, '<blockquote class="border-l-4 border-border/80 pl-4 py-1 italic text-text-secondary my-4">$1</blockquote>');
 
-  // 3. Fenced Code Blocks (``` lang ... ```)
-  html = html.replace(/```(\w*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
-    return `<pre class="bg-zinc-950 dark:bg-black/40 text-zinc-200 border border-border/30 rounded-2xl p-4 my-4 overflow-x-auto font-mono text-xs"><div class="flex items-center justify-between text-[10px] uppercase font-bold text-zinc-500 pb-2 mb-2 border-b border-zinc-800"><span>${lang || 'code'}</span></div><code>${code}</code></pre>`;
-  });
-
-  // 4. Horizontal lines (---)
+  // 5. Horizontal lines (---)
   html = html.replace(/^---$/gm, '<hr class="my-6 border-border/40" />');
 
   // 5. Checklist items
@@ -146,13 +169,28 @@ const parseMarkdown = (md: string): string => {
   const paragraphs = html.split(/\n{2,}/);
   const formatted = paragraphs.map(p => {
     const trimmed = p.trim();
-    if (trimmed.startsWith('<h') || trimmed.startsWith('<blockquote') || trimmed.startsWith('<pre') || trimmed.startsWith('<hr') || trimmed.startsWith('<div') || trimmed.startsWith('<li')) {
+    if (
+      trimmed.startsWith('<h') ||
+      trimmed.startsWith('<blockquote') ||
+      trimmed.startsWith('<pre') ||
+      trimmed.startsWith('<hr') ||
+      trimmed.startsWith('<div') ||
+      trimmed.startsWith('<li') ||
+      /^__CODEBLOCK_\d+__$/.test(trimmed)
+    ) {
       return p;
     }
     return `<p class="my-3 text-sm leading-relaxed text-text-secondary">${p}</p>`;
   });
   
-  return formatted.join('\n');
+  let result = formatted.join('\n');
+  
+  // Restore code blocks after all other processing
+  codeBlocks.forEach((block, i) => {
+    result = result.replace(`__CODEBLOCK_${i}__`, block);
+  });
+  
+  return result;
 };
 
 const TEMPLATES = {
@@ -276,12 +314,13 @@ const SLASH_COMMANDS = [
 ];
 
 export default function MarkdownModule() {
-  const { notes, addNote, updateNote, deleteNote, theme } = useAppStore(useShallow(state => ({
+  const { notes, addNote, updateNote, deleteNote, theme, showConfirm } = useAppStore(useShallow(state => ({
     notes: state.notes,
     addNote: state.addNote,
     updateNote: state.updateNote,
     deleteNote: state.deleteNote,
     theme: state.theme,
+    showConfirm: state.showConfirm,
   })));
   
   // Resolve theme to light/dark
@@ -293,10 +332,14 @@ export default function MarkdownModule() {
   }, [theme]);
 
   // Obsidian-like workspace state
-  const [isFilesSidebarOpen, setIsFilesSidebarOpen] = useState(true);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+
+  // Custom document creation modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('blank');
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedDocIdRef = useRef<string | null>(null);
@@ -313,36 +356,23 @@ export default function MarkdownModule() {
       setTitle(doc.title);
       setContent(doc.content);
       loadedDocIdRef.current = activeDocId;
-    } else if (markdownDocs.length > 0) {
-      setActiveDocId(markdownDocs[0].id);
     } else {
       setTitle('');
       setContent('');
       loadedDocIdRef.current = null;
     }
-  }, [activeDocId]); // Depend ONLY on activeDocId
-
-  // Auto-create default file if workspace is empty
-  useEffect(() => {
-    if (notes.length > 0 && markdownDocs.length === 0) {
-      handleCreateNewDoc();
-    }
-  }, [notes, markdownDocs]);
-
-  // Sync document selections
-  useEffect(() => {
-    if (markdownDocs.length > 0 && !activeDocId) {
-      setActiveDocId(markdownDocs[0].id);
-    }
-  }, [markdownDocs, activeDocId]);
+  }, [activeDocId, markdownDocs]);
 
   // Create new document in Supabase
+  // Create new document from popup
   const handleCreateNewDoc = async () => {
+    const finalTitle = newDocTitle.trim() || 'untitled.md';
+    const finalTitleWithExt = finalTitle.endsWith('.md') ? finalTitle : `${finalTitle}.md`;
     const id = crypto.randomUUID();
     const newDoc = {
       id,
-      title: 'untitled.md',
-      content: TEMPLATES.dailyLog,
+      title: finalTitleWithExt,
+      content: TEMPLATES[selectedTemplate],
       tags: ['markdown'],
       pinned: false,
       createdAt: new Date().toISOString(),
@@ -350,6 +380,13 @@ export default function MarkdownModule() {
     };
     await addNote(newDoc);
     setActiveDocId(id);
+    setIsCreateModalOpen(false);
+    setNewDocTitle('');
+  };
+
+  const handleCreateDocSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleCreateNewDoc();
   };
 
   // Delete document
@@ -414,18 +451,7 @@ export default function MarkdownModule() {
     }
   }, [activeCommandIndex, slashMenu.isOpen]);
 
-  // Load a template
-  const handleLoadTemplate = (key: keyof typeof TEMPLATES) => {
-    if (!activeDocId) return;
-    const templateContent = TEMPLATES[key];
-    setContent(templateContent);
-    updateNote(activeDocId, { content: templateContent }, true);
 
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      updateNote(activeDocId, { content: templateContent });
-    }, 1000);
-  };
 
   // Download markdown file
   const handleDownload = () => {
@@ -531,118 +557,186 @@ export default function MarkdownModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      className="w-full h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-2 relative text-left"
+      className="w-full h-full min-h-[calc(100vh-140px)] text-left"
     >
-      {/* 1. Files Manager Sidebar */}
-      {isFilesSidebarOpen && (
-        <aside className="w-60 h-full flex flex-col gap-3 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl shrink-0 transition-all duration-300">
-          <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Markdown Files</span>
+      {/* Scoped Apple Typography + Claude-style code blocks */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .md-preview h1 { font-size: 1.8rem; font-weight: 800; margin-top: 2rem; margin-bottom: 1rem; color: var(--color-text-primary); border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.6rem; font-family: system-ui, -apple-system, sans-serif; letter-spacing: -0.025em; }
+        .dark .md-preview h1 { border-bottom-color: rgba(255,255,255,0.06); }
+        .md-preview h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.8rem; color: var(--color-text-primary); border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 0.4rem; font-family: system-ui, -apple-system, sans-serif; letter-spacing: -0.02em; }
+        .dark .md-preview h2 { border-bottom-color: rgba(255,255,255,0.04); }
+        .md-preview h3 { font-size: 1.1rem; font-weight: 700; margin-top: 1.3rem; margin-bottom: 0.6rem; color: var(--color-text-primary); font-family: system-ui, -apple-system, sans-serif; }
+        .md-preview p { line-height: 1.6; margin-bottom: 1rem; color: var(--color-text-secondary); font-size: 13.5px; font-weight: 550; }
+        .md-preview ul, .md-preview ol { margin-bottom: 1rem; padding-left: 1.2rem; }
+        .md-preview li { margin-bottom: 0.4rem; color: var(--color-text-secondary); font-size: 13px; font-weight: 550; }
+        .md-preview blockquote { border-left: 4px solid var(--color-primary); padding-left: 1rem; font-style: italic; color: var(--color-text-muted); margin: 1.2rem 0; font-size: 13px; font-weight: 500; }
+        .md-preview :not(pre) > code { font-family: monospace; background: rgba(0,0,0,0.04); padding: 0.15rem 0.35rem; border-radius: 6px; font-size: 0.85em; font-weight: 600; color: #ff2d55; }
+        .dark .md-preview :not(pre) > code { background: rgba(255,255,255,0.08); color: #ff3b30; }
+        .md-preview table { width: 100%; border-collapse: collapse; margin: 1.6rem 0; font-size: 0.85rem; border-radius: 12px; overflow: hidden; }
+        .md-preview th { background: rgba(0,0,0,0.02); font-weight: 700; border: 1px solid rgba(0,0,0,0.06); padding: 0.7rem 1rem; color: var(--color-text-primary); }
+        .dark .md-preview th { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); }
+        .md-preview td { border: 1px solid rgba(0,0,0,0.06); padding: 0.7rem 1rem; color: var(--color-text-secondary); font-weight: 550; }
+        .dark .md-preview td { border-color: rgba(255,255,255,0.06); }
+        
+        /* Claude-style code block */
+        .md-code-block { margin: 1.25rem 0; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: #0d1117; }
+        .md-code-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: #161b22; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .md-code-lang { font-family: SFMono-Regular, Consolas, monospace; font-size: 11px; font-weight: 600; color: #8b949e; text-transform: lowercase; letter-spacing: 0.02em; }
+        .md-code-copy { display: flex; align-items: center; gap: 5px; font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 500; color: #8b949e; background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: color 0.15s, background 0.15s; }
+        .md-code-copy:hover { color: #e6edf3; background: rgba(255,255,255,0.06); }
+        .md-code-pre { margin: 0; padding: 1rem; overflow-x: auto; background: #0d1117; }
+        .md-code-pre code { font-family: SFMono-Regular, Consolas, 'Courier New', monospace; font-size: 12.5px; line-height: 1.7; color: #e6edf3; background: transparent; display: block; }
+        .code-line { display: block; }
+        .code-ln { display: inline-block; min-width: 2.2rem; padding-right: 1rem; color: #3d444d; font-size: 11.5px; user-select: none; text-align: right; }
+        .code-lc { color: #e6edf3; white-space: pre; }
+      `}} />
+
+      {activeDocId === null ? (
+        /* Dashboard View of MD Files */
+        <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-24">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-text-primary flex items-center gap-2.5">
+                Markdown Workspace
+                <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+              </h1>
+              <p className="text-sm text-text-secondary mt-1">
+                {markdownDocs.length > 0
+                  ? `${markdownDocs.length} document${markdownDocs.length !== 1 ? 's' : ''} · ${markdownDocs.reduce((acc, d) => acc + d.content.split(/\s+/).filter(Boolean).length, 0).toLocaleString()} total words`
+                  : 'Create documentation, timelines, and flowcharts in markdown.'}
+              </p>
+            </div>
             <button
-              onClick={handleCreateNewDoc}
-              className="p-1 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-              title="Create new markdown document"
+              onClick={() => {
+                setNewDocTitle('');
+                setSelectedTemplate('blank');
+                setIsCreateModalOpen(true);
+              }}
+              className="btn btn-primary btn-sm flex items-center gap-1.5"
             >
-              <IconPlus size={16} />
+              <IconPlus size={15} /> New Document
             </button>
           </div>
-          
-          <div className="flex-grow overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
-            {markdownDocs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-[10px] text-text-muted italic">No files found.</p>
+
+          {/* Quick template chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mr-1">Quick Start:</span>
+            {([
+              { key: 'blank', label: '📄 Blank' },
+              { key: 'dailyLog', label: '🗓 Daily Log' },
+              { key: 'roadmap', label: '🗺 Roadmap' },
+              { key: 'spec', label: '📐 Spec Doc' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setNewDocTitle('');
+                  setSelectedTemplate(key);
+                  setIsCreateModalOpen(true);
+                }}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-surface border border-border hover:border-primary/40 hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {markdownDocs.length === 0 ? (
+            <EmptyState
+              icon={<IconFileText className="w-10 h-10 text-text-muted" />}
+              title="No Markdown Documents"
+              description="Create a document using one of the structural presets (Daily log, Roadmap, Spec)."
+              action={
                 <button
-                  onClick={handleCreateNewDoc}
-                  className="mt-2 text-[10px] text-primary font-bold hover:underline cursor-pointer"
+                  onClick={() => {
+                    setNewDocTitle('');
+                    setSelectedTemplate('blank');
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="btn btn-primary btn-sm flex items-center gap-2"
                 >
-                  + New Document
+                  <IconPlus size={15} /> Create Document
                 </button>
-              </div>
-            ) : (
-              markdownDocs.map(doc => {
-                const isActive = doc.id === activeDocId;
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {markdownDocs.map(doc => {
+                const wc = doc.content.split(/\s+/).filter(Boolean).length;
+                const preview = doc.content.replace(/[#*`>_\-=\[\]]/g, '').trim().slice(0, 90);
                 return (
                   <div
                     key={doc.id}
                     onClick={() => setActiveDocId(doc.id)}
-                    className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs cursor-pointer select-none transition-all ${
-                      isActive 
-                        ? 'bg-primary/10 text-primary font-bold border border-primary/25 shadow-sm' 
-                        : 'text-text-secondary hover:bg-surface-alt/70 border border-transparent'
-                    }`}
+                    className="p-5 bg-surface border border-border rounded-3xl hover:border-primary/30 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between min-h-[165px] relative group"
                   >
-                    <div className="flex items-center gap-2 truncate min-w-0">
-                      <IconFileText size={14} className={isActive ? 'text-primary' : 'text-text-muted'} />
-                      <span className="truncate">{doc.title}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                          <IconFileText size={17} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm font-bold text-text-primary truncate block">{doc.title}</span>
+                          <p className="text-[11px] text-text-secondary font-medium mt-1 line-clamp-2 leading-relaxed">
+                            {preview || 'No content yet...'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={(e) => handleDeleteDoc(doc.id, e)}
-                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
-                      title="Delete document"
-                    >
-                      <IconTrash size={12} />
-                    </button>
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-semibold text-text-muted">
+                          {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className="text-[10px] font-semibold text-text-muted">{wc.toLocaleString()} words</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showConfirm('Delete Document', `Are you sure you want to delete "${doc.title}"?`, () => {
+                            handleDeleteDoc(doc.id, e);
+                          });
+                        }}
+                        className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                        title="Delete document"
+                      >
+                        <IconTrash size={13} />
+                      </button>
+                    </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-        </aside>
-      )}
-
-      {/* Left Column: Markdown Editor Panel */}
-      {isEditorOpen && (
-        <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 ${
-          isWorkspaceOpen ? 'flex-1' : 'w-full h-full'
-        }`}>
-          {!activeDocId ? (
-            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-border/60 rounded-3xl bg-surface/40 p-8 text-center">
-              <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-4">
-                <IconFileText size={32} />
-              </div>
-              <h3 className="text-base font-bold text-text-primary">No Markdown Document Selected</h3>
-              <p className="text-xs text-text-muted mt-1 max-w-xs">Create a new markdown file or select one from the sidebar to start writing.</p>
-              <button
-                onClick={handleCreateNewDoc}
-                className="btn btn-primary btn-md mt-4 rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <IconPlus size={16} />
-                <span>Create Document</span>
-              </button>
+              })}
             </div>
-          ) : (
-            <>
+          )}
+        </div>
+      ) : (
+        /* Document Editor and Preview Workspace Split View */
+        <div className="w-full h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-2 relative text-left">
+          
+          {/* Left Column: Markdown Editor Panel (added min-w-0 to prevent right-side cutoff) */}
+          {isEditorOpen && (
+            <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 min-w-0 ${
+              isWorkspaceOpen ? 'flex-1' : 'w-full h-full'
+            }`}>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3">
                 <div className="flex items-center gap-3">
-                  {/* Sidebar Toggle Button */}
                   <button
-                    onClick={() => setIsFilesSidebarOpen(!isFilesSidebarOpen)}
-                    className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                      isFilesSidebarOpen ? 'border-primary/20 bg-primary/5 text-primary' : 'border-border text-text-muted hover:text-text-primary'
-                    }`}
-                    title={isFilesSidebarOpen ? "Collapse Files Sidebar" : "Expand Files Sidebar"}
+                    onClick={() => setActiveDocId(null)}
+                    className="px-3.5 py-1.5 rounded-xl border border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer font-sans"
                   >
-                    <IconFileText size={16} />
+                    ← Back
                   </button>
                   <div>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-text-primary">Markdown Editor</h3>
-                    <p className="text-[10px] text-text-muted mt-0.5">{wordCount} words · Synced to DB</p>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-primary font-sans">Markdown Editor</h3>
+                    <p className="text-[10px] text-text-muted mt-0.5 font-sans">{wordCount} words · Synced to DB</p>
                   </div>
                 </div>
+                
                 <div className="flex items-center gap-2">
-                  <select
-                    onChange={(e) => handleLoadTemplate(e.target.value as keyof typeof TEMPLATES)}
-                    className="select-field text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl"
-                    defaultValue="dailyLog"
-                  >
-                    <option value="blank">Load Blank</option>
-                    <option value="dailyLog">Load Daily Log (Apple UI)</option>
-                    <option value="roadmap">Load Roadmap</option>
-                    <option value="spec">Load Tech Spec</option>
-                  </select>
                   <button
                     onClick={handleCopy}
-                    className="btn btn-secondary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    className="btn btn-secondary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer font-sans"
                     title="Copy markdown text"
                   >
                     {copied ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
@@ -650,17 +744,16 @@ export default function MarkdownModule() {
                   </button>
                   <button
                     onClick={handleDownload}
-                    className="btn btn-primary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    className="btn btn-primary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer font-sans"
                     title="Download .md file"
                   >
                     <IconDownload size={14} />
                     <span>Download</span>
                   </button>
                   
-                  {/* Collapse/Expand Workspace Pane Toggle */}
                   <button
                     onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
-                    className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all"
+                    className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all font-sans"
                     title={isWorkspaceOpen ? "Hide Preview Pane" : "Show Preview Pane"}
                   >
                     {isWorkspaceOpen ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
@@ -669,7 +762,7 @@ export default function MarkdownModule() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Document Title</label>
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest font-sans">Document Title</label>
                 <input
                   type="text"
                   value={title}
@@ -680,7 +773,7 @@ export default function MarkdownModule() {
               </div>
 
               <div className="flex-1 flex flex-col min-h-0 relative">
-                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Markdown Source</label>
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1.5 font-sans">Markdown Source</label>
                 <textarea
                   id="markdown-editor-textarea"
                   value={content}
@@ -689,9 +782,9 @@ export default function MarkdownModule() {
                   className="w-full flex-grow bg-surface-alt text-text-primary border border-border/60 rounded-2xl p-4 focus:outline-none focus:border-primary font-mono text-sm leading-relaxed custom-scrollbar resize-none"
                   placeholder="Type / for commands..."
                 />
-                {/* Notion-style Slash Menu */}
+                
                 {slashMenu.isOpen && filteredCommands.length > 0 && (
-                  <div className="absolute z-55 left-4 bottom-6 w-64 bg-surface border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 max-h-56 overflow-y-auto custom-scrollbar">
+                  <div className="absolute z-55 left-4 bottom-6 w-64 bg-surface border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 max-h-56 overflow-y-auto custom-scrollbar font-sans">
                     <div className="text-[9px] font-black tracking-widest text-text-muted px-2.5 py-1.5 uppercase border-b border-border/40 mb-1">
                       Basic Blocks
                     </div>
@@ -711,128 +804,124 @@ export default function MarkdownModule() {
                   </div>
                 )}
               </div>
-            </>
+            </section>
           )}
-        </section>
-      )}
 
-      {/* Right Column: Tabbed Preview & Whiteboard Workspace */}
-      {isWorkspaceOpen && (
-        <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 ${
-          isEditorOpen ? 'flex-1' : 'w-full h-full'
-        }`}>
-          <div className="flex items-center justify-between border-b border-border/40 pb-3">
-            <div className="flex bg-surface-alt p-1 rounded-xl border border-border/50 shadow-sm shrink-0">
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'preview' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <IconEye size={14} />
-                <span>Live Preview</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('sketch')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'sketch' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <IconPencil size={14} />
-                <span>Whiteboard Sketch</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('mermaid')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'mermaid' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <IconSitemap size={14} />
-                <span>Pro Guide</span>
-              </button>
-            </div>
+          {/* Right Column: Tabbed Preview & Whiteboard Workspace (added min-w-0 to prevent right-side cutoff) */}
+          {isWorkspaceOpen && (
+            <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 min-w-0 ${
+              isEditorOpen ? 'flex-1' : 'w-full h-full'
+            }`}>
+              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                <div className="flex bg-surface-alt p-1 rounded-xl border border-border/50 shadow-sm shrink-0">
+                  <button
+                    onClick={() => setActiveTab('preview')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer font-sans ${
+                      activeTab === 'preview' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <IconEye size={14} />
+                    <span>Live Preview</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('sketch')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer font-sans ${
+                      activeTab === 'sketch' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <IconPencil size={14} />
+                    <span>Whiteboard Sketch</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('mermaid')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer font-sans ${
+                      activeTab === 'mermaid' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <IconSitemap size={14} />
+                    <span>Pro Guide</span>
+                  </button>
+                </div>
 
-            {/* Collapse/Expand Editor Pane Toggle */}
-            <button
-              onClick={() => setIsEditorOpen(!isEditorOpen)}
-              className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all ml-auto"
-              title={isEditorOpen ? "Hide Editor Pane" : "Show Editor Pane"}
-            >
-              {isEditorOpen ? <IconChevronLeft size={14} /> : <IconChevronRight size={14} />}
-            </button>
-          </div>
-
-          <div className="flex-grow min-h-0 relative overflow-hidden flex flex-col">
-            {activeTab === 'preview' && (
-              <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 bg-surface border border-border/40 rounded-2xl p-6 text-left">
-                <article 
-                  className="max-w-none text-text-primary text-[14px]"
-                  dangerouslySetInnerHTML={{ __html: parsedHtml }}
-                />
+                <button
+                  onClick={() => setIsEditorOpen(!isEditorOpen)}
+                  className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all ml-auto font-sans"
+                  title={isEditorOpen ? "Hide Editor Pane" : "Show Editor Pane"}
+                >
+                  {isEditorOpen ? <IconChevronLeft size={14} /> : <IconChevronRight size={14} />}
+                </button>
               </div>
-            )}
 
-            {activeTab === 'sketch' && (
-              <div className="flex-1 w-full border border-border/60 rounded-2xl overflow-hidden relative min-h-[450px]">
-                <Excalidraw 
-                  theme={resolvedTheme}
-                />
-              </div>
-            )}
+              <div className="flex-grow min-h-0 relative overflow-hidden flex flex-col">
+                {activeTab === 'preview' && (
+                  <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 bg-surface border border-border/40 rounded-2xl p-6 text-left">
+                    {/* Rendered Preview with md-preview layout class */}
+                    <article 
+                      className="max-w-none text-text-primary md-preview overflow-hidden break-words"
+                      dangerouslySetInnerHTML={{ __html: parsedHtml }}
+                    />
+                  </div>
+                )}
 
-            {activeTab === 'mermaid' && (
-              <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-4">
-                {/* Markdown Pro Tips */}
-                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Markdown Pro Tips</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-secondary leading-relaxed">
-                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                      <span className="font-bold text-text-primary">✨ Alerts & Callouts</span>
-                      <p>Github-style alerts:</p>
-                      <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+                {activeTab === 'sketch' && (
+                  <div className="flex-1 w-full border border-border/60 rounded-2xl overflow-hidden relative min-h-[450px]">
+                    <Excalidraw 
+                      theme={resolvedTheme}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'mermaid' && (
+                  <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-4">
+                    <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-text-muted font-sans">Markdown Pro Tips</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-secondary leading-relaxed font-sans">
+                        <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                          <span className="font-bold text-text-primary">✨ Alerts & Callouts</span>
+                          <p>Github-style alerts:</p>
+                          <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
 {`> [!NOTE]
 > This is a callout box`}
-                      </pre>
-                    </div>
-                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                      <span className="font-bold text-text-primary">⚡ Slash Commands</span>
-                      <p>Type <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">/</code> in the editor to quickly insert headers, lists, code blocks, or callouts.</p>
-                    </div>
-                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                      <span className="font-bold text-text-primary">✓ Checklists</span>
-                      <p>Track tasks easily:</p>
-                      <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
+                          </pre>
+                        </div>
+                        <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                          <span className="font-bold text-text-primary">⚡ Slash Commands</span>
+                          <p>Type <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">/</code> in the editor to quickly insert headers, lists, code blocks, or callouts.</p>
+                        </div>
+                        <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                          <span className="font-bold text-text-primary">✓ Checklists</span>
+                          <p>Track tasks easily:</p>
+                          <pre className="bg-black/10 p-1.5 rounded font-mono text-[9px]">
 {`- [ ] Task to do
 - [x] Task completed`}
-                      </pre>
+                          </pre>
+                        </div>
+                        <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
+                          <span className="font-bold text-text-primary">📊 LaTeX Math</span>
+                          <p>Render inline math with <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$E=mc^2$</code> or block-level math using <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$$...$$</code>.</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1 bg-surface-alt p-3 rounded-xl border border-border/40">
-                      <span className="font-bold text-text-primary">📊 LaTeX Math</span>
-                      <p>Render inline math with <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$E=mc^2$</code> or block-level math using <code className="bg-black/10 px-1.5 py-0.5 rounded font-mono font-bold text-primary bg-surface">$$...$$</code>.</p>
+
+                    <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 font-sans">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Mermaid Code Diagrams</span>
+                      <p className="text-xs text-text-secondary leading-relaxed">
+                        Use the following copyable templates in your markdown log to draw diagrams:
+                      </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Mermaid Code Diagrams</span>
-                  <p className="text-xs text-text-secondary leading-relaxed">
-                    Use the following copyable templates in your markdown log to draw diagrams:
-                  </p>
-                </div>
-
-                {/* Template 1 */}
-                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-primary">Flowchart Layout</span>
-                    <button
-                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngraph TD\n    A[Start] --> B[Task 1]\n    B --> C{Choice?}\n    C -- Yes --> D[Result 1]\n    C -- No --> E[Result 2]\n\`\`\``)}
-                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <IconPlus size={10} />
-                      <span>Insert Flowchart</span>
-                    </button>
-                  </div>
-                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+                    <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3 font-sans">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-text-primary">Flowchart Layout</span>
+                        <button
+                          onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngraph TD\n    A[Start] --> B[Task 1]\n    B --> C{Choice?}\n    C -- Yes --> D[Result 1]\n    C -- No --> E[Result 2]\n\`\`\``)}
+                          className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <IconPlus size={10} />
+                          <span>Insert Flowchart</span>
+                        </button>
+                      </div>
+                      <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 graph TD
     A[Start] --> B[Task 1]
@@ -840,43 +929,41 @@ graph TD
     C -- Yes --> D[Result 1]
     C -- No --> E[Result 2]
 \`\`\``}
-                  </pre>
-                </div>
+                      </pre>
+                    </div>
 
-                {/* Template 2 */}
-                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-primary">Sequence Flow</span>
-                    <button
-                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\nsequenceDiagram\n    Alice->>Bob: Hello Bob, how are you?\n    Bob-->>Alice: Jolly good!\n\`\`\``)}
-                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <IconPlus size={10} />
-                      <span>Insert Sequence</span>
-                    </button>
-                  </div>
-                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+                    <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3 font-sans">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-text-primary">Sequence Flow</span>
+                        <button
+                          onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\nsequenceDiagram\n    Alice->>Bob: Hello Bob, how are you?\n    Bob-->>Alice: Jolly good!\n\`\`\``)}
+                          className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <IconPlus size={10} />
+                          <span>Insert Sequence</span>
+                        </button>
+                      </div>
+                      <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 sequenceDiagram
     Alice->>Bob: Hello Bob, how are you?
     Bob-->>Alice: Jolly good!
 \`\`\``}
-                  </pre>
-                </div>
+                      </pre>
+                    </div>
 
-                {/* Template 3 */}
-                <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-primary">Project Timeline</span>
-                    <button
-                      onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngantt\n    title A Gantt Diagram\n    dateFormat  YYYY-MM-DD\n    section Section\n    A task           :a1, 2026-07-01, 30d\n\`\`\``)}
-                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <IconPlus size={10} />
-                      <span>Insert Gantt</span>
-                    </button>
-                  </div>
-                  <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
+                    <div className="p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-3 font-sans">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-text-primary">Project Timeline</span>
+                        <button
+                          onClick={() => handleContentChange(content + `\n\n\`\`\`mermaid\ngantt\n    title A Gantt Diagram\n    dateFormat  YYYY-MM-DD\n    section Section\n    A task           :a1, 2026-07-01, 30d\n\`\`\``)}
+                          className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <IconPlus size={10} />
+                          <span>Insert Gantt</span>
+                        </button>
+                      </div>
+                      <pre className="bg-zinc-950 dark:bg-black/20 text-zinc-300 border border-border/30 rounded-xl p-3 font-mono text-[10px] leading-relaxed">
 {`\`\`\`mermaid
 gantt
     title A Gantt Diagram
@@ -884,13 +971,110 @@ gantt
     section Section
     A task           :a1, 2026-07-01, 30d
 \`\`\``}
-                  </pre>
-                </div>
+                      </pre>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </section>
+          )}
+
+        </div>
       )}
+
+      {/* Creation Presets Popup Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create Markdown Document"
+      >
+        <form onSubmit={handleCreateDocSubmit} className="flex flex-col gap-4 text-left font-sans">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Document Title</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g., sprint-log.md"
+              value={newDocTitle}
+              onChange={e => setNewDocTitle(e.target.value)}
+              className="w-full bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-250/60 dark:border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:border-neutral-500/50"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Structural Preset</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setSelectedTemplate('blank')}
+                className={`p-3 rounded-2xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
+                  selectedTemplate === 'blank'
+                    ? 'border-neutral-900 bg-neutral-900/5 dark:border-neutral-100 dark:bg-neutral-100/5 text-neutral-900 dark:text-neutral-100 font-bold'
+                    : 'border-neutral-250/60 hover:bg-neutral-50 dark:border-neutral-800 text-neutral-500'
+                }`}
+              >
+                <span className="text-xs font-bold font-sans">Blank Document</span>
+                <span className="text-[10px] opacity-80 font-medium font-sans">Start writing fresh</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setSelectedTemplate('dailyLog')}
+                className={`p-3 rounded-2xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
+                  selectedTemplate === 'dailyLog'
+                    ? 'border-neutral-900 bg-neutral-900/5 dark:border-neutral-100 dark:bg-neutral-100/5 text-neutral-900 dark:text-neutral-100 font-bold'
+                    : 'border-neutral-250/60 hover:bg-neutral-50 dark:border-neutral-800 text-neutral-500'
+                }`}
+              >
+                <span className="text-xs font-bold font-sans">Daily Project Log</span>
+                <span className="text-[10px] opacity-80 font-medium font-sans">Daily goals & activity logs</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTemplate('roadmap')}
+                className={`p-3 rounded-2xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
+                  selectedTemplate === 'roadmap'
+                    ? 'border-neutral-900 bg-neutral-900/5 dark:border-neutral-100 dark:bg-neutral-100/5 text-neutral-900 dark:text-neutral-100 font-bold'
+                    : 'border-neutral-250/60 hover:bg-neutral-50 dark:border-neutral-800 text-neutral-500'
+                }`}
+              >
+                <span className="text-xs font-bold font-sans">Project Roadmap</span>
+                <span className="text-[10px] opacity-80 font-medium font-sans">Version timelines & feature checklists</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTemplate('spec')}
+                className={`p-3 rounded-2xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
+                  selectedTemplate === 'spec'
+                    ? 'border-neutral-900 bg-neutral-900/5 dark:border-neutral-100 dark:bg-neutral-100/5 text-neutral-900 dark:text-neutral-100 font-bold'
+                    : 'border-neutral-250/60 hover:bg-neutral-50 dark:border-neutral-800 text-neutral-500'
+                }`}
+              >
+                <span className="text-xs font-bold font-sans">RFC Technical Spec</span>
+                <span className="text-[10px] opacity-80 font-medium font-sans">Proposals and logic architectures</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-neutral-105 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(false)}
+              className="px-4 py-2 text-xs font-bold text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-805 rounded-xl transition-all cursor-pointer font-sans"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold bg-neutral-900 hover:bg-neutral-850 dark:bg-neutral-100 dark:hover:bg-white text-white dark:text-black rounded-xl transition-all cursor-pointer font-sans"
+            >
+              Create Document
+            </button>
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 }

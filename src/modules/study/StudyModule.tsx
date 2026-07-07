@@ -76,7 +76,7 @@ export default function StudyModule() {
   const [topicName, setTopicName] = useState('');
 
   // Local state for modals inside Workspace
-  const [noteModal, setNoteModal] = useState<{ open: boolean; noteId: string | null; title: string; content: string }>({ open: false, noteId: null, title: '', content: '' });
+  const [noteModal, setNoteModal] = useState<{ open: boolean; noteId: string | null; title: string; content: string; isReadOnly: boolean }>({ open: false, noteId: null, title: '', content: '', isReadOnly: false });
   const [snippetModal, setSnippetModal] = useState<{ open: boolean; snippetId: string | null; title: string; lang: string; code: string; desc: string; tags: string }>({ open: false, snippetId: null, title: '', lang: 'javascript', code: '', desc: '', tags: '' });
   const [resourceModal, setResourceModal] = useState<{ open: boolean; title: string; url: string; type: 'link' | 'pdf' | 'doc' | 'image' | 'video' | 'youtube' }>({ open: false, title: '', url: '', type: 'link' });
   const [questionModal, setQuestionModal] = useState<{ open: boolean; question: string; answer: string; difficulty: 'easy' | 'medium' | 'hard' }>({ open: false, question: '', answer: '', difficulty: 'medium' });
@@ -289,7 +289,7 @@ export default function StudyModule() {
       });
     }
     updateTopic(selectedSubjectId, selectedTopicId, { notes: notesList });
-    setNoteModal({ open: false, noteId: null, title: '', content: '' });
+    setNoteModal({ open: false, noteId: null, title: '', content: '', isReadOnly: false });
   };
 
   // Topic Code Snippets
@@ -688,7 +688,7 @@ export default function StudyModule() {
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-base">Saved Notes</h3>
                 <button
-                  onClick={() => setNoteModal({ open: true, noteId: null, title: '', content: '' })}
+                  onClick={() => setNoteModal({ open: true, noteId: null, title: '', content: '', isReadOnly: false })}
                   className="btn btn-primary btn-sm"
                 >
                   <IconPlus className="w-4 h-4" /> Add Note
@@ -706,7 +706,7 @@ export default function StudyModule() {
                   {activeTopic.notes.map(note => (
                     <div
                       key={note.id}
-                      onClick={() => setNoteModal({ open: true, noteId: note.id, title: note.title, content: note.content })}
+                      onClick={() => setNoteModal({ open: true, noteId: note.id, title: note.title, content: note.content, isReadOnly: true })}
                       className="bg-surface border border-border hover:border-primary/25 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-sm flex flex-col gap-4 relative"
                     >
                       <div className="flex items-start justify-between">
@@ -1345,36 +1345,62 @@ export default function StudyModule() {
         <Modal
           isOpen={noteModal.open}
           onClose={() => setNoteModal(prev => ({ ...prev, open: false }))}
-          title={noteModal.noteId ? "Edit Note" : "Create Note"}
+          title={noteModal.isReadOnly ? "View Note" : noteModal.noteId ? "Edit Note" : "Create Note"}
           maxWidthClassName="max-w-4xl"
         >
-          <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Title"
-              value={noteModal.title}
-              onChange={e => setNoteModal(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full bg-transparent border-none text-lg font-bold focus:outline-none placeholder:text-text-muted text-text-primary"
-            />
-            <RichTextEditor
-              key={noteModal.noteId || 'new'}
-              value={noteModal.content}
-              onChange={val => setNoteModal(prev => ({ ...prev, content: val }))}
-            />
-            <div className="flex justify-end gap-2 pt-3 border-t border-border-alt">
-              <button
-                onClick={() => setNoteModal(prev => ({ ...prev, open: false }))}
-                className="btn btn-secondary btn-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveTopicNote}
-                className="btn btn-primary btn-md"
-              >
-                Save Note
-              </button>
-            </div>
+          <div className="flex flex-col gap-4 text-left">
+            {noteModal.isReadOnly ? (
+              <>
+                <h3 className="text-lg font-bold text-text-primary select-text">{noteModal.title || 'Untitled Note'}</h3>
+                <div 
+                  className="prose dark:prose-invert max-h-96 overflow-y-auto p-4 bg-surface-alt border border-border-alt rounded-2xl text-xs font-semibold leading-relaxed text-text-secondary select-text"
+                  dangerouslySetInnerHTML={{ __html: noteModal.content || '<p class="italic text-text-muted">No content</p>' }}
+                />
+                <div className="flex justify-end gap-2 pt-3 border-t border-border-alt">
+                  <button
+                    onClick={() => setNoteModal(prev => ({ ...prev, open: false }))}
+                    className="btn btn-secondary btn-md"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => setNoteModal(prev => ({ ...prev, isReadOnly: false }))}
+                    className="btn btn-primary btn-md"
+                  >
+                    Edit Note
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={noteModal.title}
+                  onChange={e => setNoteModal(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full bg-transparent border-none text-lg font-bold focus:outline-none placeholder:text-text-muted text-text-primary"
+                />
+                <RichTextEditor
+                  key={noteModal.noteId || 'new'}
+                  value={noteModal.content}
+                  onChange={val => setNoteModal(prev => ({ ...prev, content: val }))}
+                />
+                <div className="flex justify-end gap-2 pt-3 border-t border-border-alt">
+                  <button
+                    onClick={() => setNoteModal(prev => ({ ...prev, open: false }))}
+                    className="btn btn-secondary btn-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveTopicNote}
+                    className="btn btn-primary btn-md"
+                  >
+                    Save Note
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </Modal>
 

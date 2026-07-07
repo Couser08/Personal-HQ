@@ -18,6 +18,7 @@ const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
 const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
 const TodoModule = lazy(() => import('./modules/todo/TodoModule'));
+const HabitTrackerModule = lazy(() => import('./modules/habits/HabitTrackerModule'));
 const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
 const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
@@ -181,6 +182,7 @@ function AppContent() {
       case 'snippets': return <CodeSnippetModule />;
       case 'pomodoro': return <PomodoroModule />;
       case 'todo': return <TodoModule />;
+      case 'habits': return <HabitTrackerModule />;
       case 'settings': return <SettingsModule />;
       case 'profile': return <ProfileModule />;
       case 'mindmap': return <MindmapModule />;
