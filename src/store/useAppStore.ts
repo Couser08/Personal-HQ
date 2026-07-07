@@ -52,7 +52,7 @@ const shouldThrottle = (actionName: string, limit = 600) => {
   return false;
 };
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system' | 'cyberpunk' | 'nordic' | 'sakura' | 'auraglass';
 
 export interface JournalEntry {
   id: string;

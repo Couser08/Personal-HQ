@@ -4,8 +4,8 @@ import { useAppStore, type AccentColor } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import {
-  IconSun, IconMoon, IconPalette, IconBell, IconHourglass,
-  IconCheck, IconX, IconCompass, IconPlayerPlay, IconDeviceDesktop
+  IconPalette, IconBell, IconHourglass,
+  IconCheck, IconX, IconCompass, IconPlayerPlay
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
@@ -41,6 +41,16 @@ const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
   { name: 'amber',  hex: '#f59e0b' },
   { name: 'teal',   hex: '#06b6d4' },
   { name: 'gray',   hex: '#6b7280' },
+];
+
+const THEMES = [
+  { value: 'light', label: 'Light Mode', color1: '#ffffff', color2: '#f4f4f5', accent: '#f43f5e', desc: 'Clean and bright aesthetic' },
+  { value: 'dark', label: 'Dark Mode', color1: '#0a0a0a', color2: '#111111', accent: '#f43f5e', desc: 'Classic sleek dark theme' },
+  { value: 'system', label: 'System Default', color1: '#f4f4f5', color2: '#0a0a0a', accent: '#71717a', desc: 'Syncs with your OS theme' },
+  { value: 'cyberpunk', label: 'Cyberpunk Neon', color1: '#06060c', color2: '#0e0f1d', accent: '#ff007f', desc: 'Vibrant neon hot-pink tones' },
+  { value: 'nordic', label: 'Nordic Forest', color1: '#1b2421', color2: '#222f2b', accent: '#a3b899', desc: 'Calm evergreen and moss' },
+  { value: 'sakura', label: 'Sakura Blossom', color1: '#fff0f5', color2: '#fff9fb', accent: '#db7093', desc: 'Soft pink cherry blossoms' },
+  { value: 'auraglass', label: 'Aura Glass', color1: '#0f0724', color2: '#160c30', accent: '#a78bfa', desc: 'Translucent indigo glass' },
 ];
 
 export default function SettingsModule() {
@@ -219,14 +229,18 @@ export default function SettingsModule() {
         </div>
 
         {/* Shortcut system dropdown at top-right */}
-        <div className="w-48 shrink-0">
+        <div className="w-56 shrink-0">
           <CustomSelect
-            value={theme === 'system' ? 'system' : theme}
+            value={theme}
             onChange={(val) => setTheme(val as any)}
             options={[
               { value: 'system', label: 'System Default' },
               { value: 'light',  label: 'Light Mode' },
-              { value: 'dark',   label: 'Dark Mode' }
+              { value: 'dark',   label: 'Dark Mode' },
+              { value: 'cyberpunk', label: 'Cyberpunk Neon' },
+              { value: 'nordic', label: 'Nordic Forest' },
+              { value: 'sakura', label: 'Sakura Blossom' },
+              { value: 'auraglass', label: 'Aura Glass' }
             ]}
           />
         </div>
@@ -250,40 +264,31 @@ export default function SettingsModule() {
           {/* Theme selection buttons */}
           <div className="flex flex-col gap-2.5">
             <div>
-              <p className="text-sm font-semibold text-text-primary">Theme</p>
-              <p className="text-xs text-text-secondary mt-0.5">Choose your preferred theme</p>
+              <p className="text-sm font-semibold text-text-primary">Theme Preset</p>
+              <p className="text-xs text-text-secondary mt-0.5">Select a premium workspace theme preset</p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setTheme('light')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                  theme === 'light'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
-                }`}
-              >
-                <IconSun className="w-4 h-4" /> Light
-              </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                  theme === 'dark'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
-                }`}
-              >
-                <IconMoon className="w-4 h-4" /> Dark
-              </button>
-              <button
-                onClick={() => setTheme('system')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                  theme === 'system'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
-                }`}
-              >
-                <IconDeviceDesktop className="w-4 h-4" /> System
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {THEMES.map(t => (
+                <button
+                  key={t.value}
+                  onClick={() => setTheme(t.value as any)}
+                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    theme === t.value
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : 'border-border bg-surface-alt hover:bg-surface-hover'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs font-bold text-text-primary">{t.label}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="w-2.5 h-2.5 rounded-full border border-border/40" style={{ background: t.color1 }} title="Background" />
+                      <div className="w-2.5 h-2.5 rounded-full border border-border/40" style={{ background: t.color2 }} title="Surface" />
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: t.accent }} title="Primary Accent" />
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-text-secondary mt-1">{t.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 

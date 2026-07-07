@@ -20,8 +20,8 @@
   --color-text-muted:     var(--text-muted);
 
   /* Accent — single tint, propagated everywhere */
-  --color-primary:       #f43f5e;
-  --color-primary-muted: #be123c;
+  --color-primary:       var(--accent-primary);
+  --color-primary-muted: var(--accent-primary-muted);
 
   /* Elevation shadows (Apple material system) */
   --shadow-subtle:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
@@ -62,6 +62,9 @@
     --text-secondary: #52525b;
     --text-muted:     #71717a;
 
+    --accent-primary:       #f43f5e;
+    --accent-primary-muted: #be123c;
+
     color-scheme: light;
   }
 
@@ -79,7 +82,91 @@
     --text-secondary: #a1a1aa;
     --text-muted:     #52525b;
 
+    --accent-primary:       #f43f5e;
+    --accent-primary-muted: #be123c;
+
     color-scheme: dark;
+  }
+
+  /* Cyberpunk Neon */
+  .cyberpunk {
+    --bg-background:   #06060c;
+    --bg-surface:      #0e0f1d;
+    --bg-surface-alt:  #14162e;
+    --bg-surface-hover:#20244c;
+
+    --border-border:     #1a1d3b;
+    --border-border-alt: #2c3263;
+
+    --text-primary:   #00ffcc;
+    --text-secondary: #ff007f;
+    --text-muted:     #787ca5;
+
+    --accent-primary:       #ff007f;
+    --accent-primary-muted: #c2005f;
+
+    color-scheme: dark;
+  }
+
+  /* Nordic Forest */
+  .nordic {
+    --bg-background:   #1b2421;
+    --bg-surface:      #222f2b;
+    --bg-surface-alt:  #293b36;
+    --bg-surface-hover:#354e47;
+
+    --border-border:     #2f423d;
+    --border-border-alt: #3d554e;
+
+    --text-primary:   #f0ece1;
+    --text-secondary: #a3b899;
+    --text-muted:     #6f8b70;
+
+    --accent-primary:       #a3b899;
+    --accent-primary-muted: #7d9672;
+
+    color-scheme: dark;
+  }
+
+  /* Sakura Blossom */
+  .sakura {
+    --bg-background:   #fff0f5;
+    --bg-surface:      #fff9fb;
+    --bg-surface-alt:  #ffe4e1;
+    --bg-surface-hover:#ffd1dc;
+
+    --border-border:     #ffd1dc;
+    --border-border-alt: #ffb7c5;
+
+    --text-primary:   #4b0082;
+    --text-secondary: #db7093;
+    --text-muted:     #bc8f8f;
+
+    --accent-primary:       #db7093;
+    --accent-primary-muted: #b0486c;
+
+    color-scheme: light;
+  }
+
+  /* Aura Glass (translucent / frosted glass over moving mesh gradient) */
+  .auraglass {
+    --bg-background:   #0f0724;
+    --bg-surface:      rgba(22, 12, 48, 0.45);
+    --bg-surface-alt:  rgba(33, 20, 71, 0.55);
+    --bg-surface-hover:rgba(50, 31, 102, 0.65);
+
+    --border-border:     rgba(139, 92, 246, 0.25);
+    --border-border-alt: rgba(139, 92, 246, 0.4);
+
+    --text-primary:   #fafafa;
+    --text-secondary: #c084fc;
+    --text-muted:     #8b5cf6;
+
+    --accent-primary:       #a78bfa;
+    --accent-primary-muted: #8b5cf6;
+
+    color-scheme: dark;
+    backdrop-filter: blur(20px);
   }
 
   /* Global base styles */

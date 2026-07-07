@@ -106,11 +106,18 @@ function App() {
 
   useEffect(() => {
     const applyTheme = () => {
-      const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      if (isDark) {
+      // Clear previous classes
+      document.documentElement.classList.remove('dark', 'cyberpunk', 'nordic', 'sakura', 'auraglass');
+      
+      const isSystemDark = theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDarkTheme = theme === 'dark' || theme === 'cyberpunk' || theme === 'nordic' || theme === 'auraglass';
+      
+      if (isDarkTheme || isSystemDark) {
         document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
+      }
+      
+      if (theme !== 'light' && theme !== 'dark' && theme !== 'system') {
+        document.documentElement.classList.add(theme);
       }
     };
     applyTheme();
