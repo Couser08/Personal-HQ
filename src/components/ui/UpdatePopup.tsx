@@ -8,47 +8,47 @@ import {
   IconActivity
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.2.4';
+const APP_VERSION = '1.6.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
+    icon: <IconSparkles className="w-5 h-5 stroke-[2]" />,
+    color: '#FF2D55', 
+    bg: 'rgba(255, 45, 85, 0.08)',
+    title: 'Habits Engine Migration',
+    desc: 'Fully migrated habit logging schema using local SQLite backups and dedicated SQL migrations for stable database sync.',
+  },
+  {
     icon: <IconFileText className="w-5 h-5 stroke-[2]" />,
-    color: '#FF9500', 
-    bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Condition Workstation',
-    desc: 'Evaluate custom logic rules with variable workbench inputs, real-time log traces, and dynamic vector flowchart visuals.',
+    color: '#5856D6', 
+    bg: 'rgba(88, 86, 214, 0.08)',
+    title: 'Audio Alert Notifications',
+    desc: 'Added fully customizable audio buzzer alerts and browser notifications that trigger automatically when pomodoro timers expire.',
   },
   {
     icon: <IconActivity className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', 
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Flowchart Diagram Export',
-    desc: 'Download your rule logic decision flowchart as a high-fidelity PNG or JPG image directly to your local computer.',
+    title: 'Whiteboard Canvas Polish',
+    desc: 'Upgraded pen drawing tool with adaptive smoothing algorithms, custom brushes, clear commands, and clean workspace layouts.',
   },
   {
     icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
-    color: '#FF2D55', 
-    bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Designer Theme Presets',
-    desc: 'Instantly swap between premium styling presets: Cyberpunk Neon, Nordic Forest, Sakura Blossom, and translucent Aura Glass.',
-  },
-  {
-    icon: <IconSparkles className="w-5 h-5 stroke-[2]" />,
     color: '#34C759', 
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Theme Accent Syncing',
-    desc: 'Buttons, outline focus rings, active navigation icons, and background cards dynamically synchronize with your chosen preset.',
+    title: 'Projects Hub Roadmaps',
+    desc: 'Integrated add and delete controls for learning roadmaps, linking tasks directly to your coder hub project milestones.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Added Condition Workstation rule evaluator with custom types and real-time execution workbench',
-  'Integrated dynamic flowchart diagram rendering on Canvas with true/false path coloring',
-  'Implemented PNG and JPG flowchart image export capabilities',
-  'Created designer themes (Cyberpunk, Nordic Forest, Sakura Blossom, Aura Glass) beyond light/dark modes',
-  'Refactored buttons and sidebar navigation indicators to dynamically bind to active theme primary colors',
-  'Polished key navigation and auto-scroll behavior for Markdown slash autocomplete menus',
+  'Implemented Habits tracking schema migration with SQL transaction support',
+  'Added browser desktop notifications & audio alerts for Pomodoro timer cycles',
+  'Polished custom brush coordinates layout inside Drawing whiteboard canvas',
+  'Created roadmap creation and deletion actions on Coder Hub panel',
+  'Optimized Zustand shallow selectors on top-level App shell render loop',
+  'Fixed modal animations layout stretching bugs for smaller screens',
 ];
 
 interface UpdatePopupProps {
@@ -79,7 +79,7 @@ function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
         </div>
         <div className="flex-1 min-w-0 pr-4">
           <h3 className="font-bold text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">Version {APP_VERSION}</h3>
-          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">The major upgrade is here.</p>
+          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Major system updates are ready.</p>
         </div>
       </div>
 
@@ -141,13 +141,10 @@ function FullModal({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <h2 className="text-[18px] font-black text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
-                  Personal HQ Patch {APP_VERSION}
+                  Personal HQ Release {APP_VERSION}
                 </h2>
-                <p className="text-[11px] font-black tracking-widest text-rose-500 uppercase mt-1">
-                  Major Issue Fixes
-                </p>
                 <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-2">
-                  A critical updates patch resolving database sync issues, media metadata deletion bugs, quote legibility overlays, and document caching.
+                  A premium feature update bringing habits schema database backing, native Pomodoro alerts, drawing whiteboards polish, and responsive outliners.
                 </p>
               </div>
             </div>
