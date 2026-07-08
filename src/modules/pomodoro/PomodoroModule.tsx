@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   IconPlayerPlay, IconPlayerPause, IconEdit, IconCheck,
-  IconFlame, IconClock, IconTarget
+  IconFlame, IconClock, IconTarget, IconSparkles
 } from '@tabler/icons-react';
 import { useAppStore, type Habit } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -458,11 +458,19 @@ export default function PomodoroModule() {
 
       {/* Custom Task Session setup */}
       {associatedTask && (
-        <div className="bg-surface border border-border rounded-2xl p-4.5 -mt-3 shadow-sm flex flex-col gap-3 text-left">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-xs font-bold text-text-primary">Custom Session Target</h4>
-              <p className="text-[10px] text-text-muted">Set specific time and session goals for this task</p>
+        <div className="bg-surface-alt/40 backdrop-blur-md border border-border/60 rounded-3xl p-5 -mt-3 shadow-sm flex flex-col gap-4 text-left transition-all duration-300">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary/10 text-primary animate-pulse"
+                style={{ backgroundColor: 'rgba(var(--color-primary), 0.1)', color: 'var(--color-primary)' }}
+              >
+                <IconSparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-text-primary">Custom Session Target</h4>
+                <p className="text-[10px] text-text-muted mt-0.5">Set specific time and session goals for this task</p>
+              </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
@@ -483,62 +491,72 @@ export default function PomodoroModule() {
                 }}
                 className="sr-only peer"
               />
-              <div className="w-8 h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-9 h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {customSessions[associatedTask.id] && (
-            <div className="grid grid-cols-2 gap-4 pt-1.5 border-t border-border/30">
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-text-secondary uppercase">Focus Minutes</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={180}
-                  value={customSessions[associatedTask.id].minutes}
-                  onChange={(e) => {
-                    const mins = Math.max(1, parseInt(e.target.value) || 25);
-                    const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], minutes: mins } };
-                    setCustomSessions(updated);
-                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
-                    applyTimer(mins, 'focus');
-                  }}
-                  className="w-full bg-surface-alt border border-border rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary outline-none focus:border-primary"
-                />
+                <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Focus Minutes</label>
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={customSessions[associatedTask.id].minutes}
+                    onChange={(e) => {
+                      const mins = Math.max(1, parseInt(e.target.value) || 25);
+                      const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], minutes: mins } };
+                      setCustomSessions(updated);
+                      localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                      applyTimer(mins, 'focus');
+                    }}
+                    className="w-full bg-surface border border-border/80 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text-primary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  <span className="absolute right-3 text-[10px] text-text-muted font-bold pointer-events-none">min</span>
+                </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-text-secondary uppercase">Session Target</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={customSessions[associatedTask.id].total}
-                  onChange={(e) => {
-                     const total = Math.max(1, parseInt(e.target.value) || 4);
-                     const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], total } };
-                     setCustomSessions(updated);
-                     localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
-                  }}
-                  className="w-full bg-surface-alt border border-border rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary outline-none focus:border-primary"
-                />
+                <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Session Target</label>
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={customSessions[associatedTask.id].total}
+                    onChange={(e) => {
+                      const total = Math.max(1, parseInt(e.target.value) || 4);
+                      const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], total } };
+                      setCustomSessions(updated);
+                      localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                    }}
+                    className="w-full bg-surface border border-border/80 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text-primary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  <span className="absolute right-3 text-[10px] text-text-muted font-bold pointer-events-none">qty</span>
+                </div>
               </div>
             </div>
           )}
 
           {customSessions[associatedTask.id] && (
-            <div className="text-[11px] text-text-secondary flex flex-col gap-1 mt-1">
-              <div className="flex justify-between font-semibold">
-                <span>Sessions Goal:</span>
-                <span className="text-text-primary">{associatedTask.pomodoroCount || 0} / {customSessions[associatedTask.id].total} completed</span>
+            <div className="text-[11px] text-text-secondary flex flex-col gap-2 mt-1">
+              <div className="flex justify-between items-center font-bold">
+                <span className="text-xs text-text-primary">Sessions Progress</span>
+                <span className="text-primary font-mono" style={{ color: 'var(--color-primary)' }}>
+                  {associatedTask.pomodoroCount || 0} / {customSessions[associatedTask.id].total} completed
+                </span>
               </div>
-              <div className="w-full bg-surface-alt h-1.5 rounded-full overflow-hidden mt-0.5">
+              <div className="w-full bg-surface h-2 rounded-full overflow-hidden p-[1px] border border-border/40">
                 <div 
-                  className="bg-primary h-full rounded-full transition-all duration-500" 
+                  className="h-full rounded-full transition-all duration-500 relative" 
                   style={{ 
                     width: `${Math.min(100, ((associatedTask.pomodoroCount || 0) / customSessions[associatedTask.id].total) * 100)}%`,
                     backgroundColor: 'var(--color-primary)' 
                   }} 
-                />
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/30 animate-pulse" />
+                </div>
               </div>
             </div>
           )}

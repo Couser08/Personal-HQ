@@ -9,7 +9,7 @@ import {
   IconNotebook
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.2';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -49,7 +49,9 @@ const HIGHLIGHTS = [
   'Created toggles in Settings to disable/enable Wavy Completion Ripple and reduced animations',
   'Polished custom brush coordinates layout inside Drawing whiteboard canvas',
   'Upgraded RichTextEditor writing layout, typography hierarchy, and local state persistence',
-  'Fixed modal responsive bounds to prevent layout stretching on smaller tablet profiles'
+  'Fixed modal responsive bounds to prevent layout stretching on smaller tablet profiles',
+  'Added quick toggle options for Pomodoro countdown sound volume configurations',
+  'Refined editor block paragraph spacing and border styling alignment'
 ];
 
 interface UpdatePopupProps {

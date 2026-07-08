@@ -177,39 +177,49 @@ export const WavyEffectOverlay = () => {
 
         {/* Central Premium Card */}
         <motion.div
-          initial={{ scale: 0.8, opacity: 0, y: 40 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.85, opacity: 0, y: -20 }}
-          transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-          className="relative z-10 max-w-sm w-full bg-white/20 dark:bg-zinc-900/30 backdrop-blur-[24px] border border-white/20 dark:border-zinc-800/40 p-8 rounded-[36px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.4)] text-center flex flex-col items-center gap-4 m-4"
+          initial={{ opacity: 0, scale: 0.94, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.94, y: 20 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
+          className="bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/50 dark:border-zinc-800/60 rounded-[28px] p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-[360px] pointer-events-auto text-center backdrop-blur-2xl flex flex-col items-center gap-6 relative overflow-hidden antialiased m-4"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Card Glass Highlight */}
-          <div className="absolute inset-0 rounded-[36px] bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
+          {/* Radial premium gradient bloom background */}
+          <div 
+            className="absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl pointer-events-none animate-pulse" 
+            style={{ backgroundColor: `${config.waveColor}20` }} 
+          />
 
-          {/* Floating Icon Container */}
+          {/* Icon Container - Squircle geometry with realistic drop shadow */}
           <motion.div 
             animate={{ 
-              y: [0, -8, 0],
+              y: [0, -6, 0],
             }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-16 h-16 rounded-[22px] bg-white/80 dark:bg-zinc-800/80 shadow-md flex items-center justify-center border border-white/40 dark:border-zinc-700/30"
+            className="w-16 h-16 rounded-[22px] flex items-center justify-center shadow-sm mt-3 shrink-0"
+            style={{ 
+              backgroundColor: `${config.waveColor}15`, 
+              borderColor: `${config.waveColor}25`,
+              borderWidth: '1px'
+            }}
           >
             {config.icon}
           </motion.div>
 
-          <div className="space-y-1.5 mt-2">
-            <h2 className="text-xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          {/* Content Block */}
+          <div className="w-full flex flex-col gap-2.5 px-1">
+            <h3 className="text-[17px] font-bold text-zinc-900 dark:text-zinc-50 tracking-tight leading-tight">
               {config.title}
-            </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium leading-relaxed px-4">
+            </h3>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
               {config.subtitle}
             </p>
           </div>
 
+          {/* Primary Call-to-action Button */}
           <button
             onClick={() => setActiveEffect(null)}
-            className="mt-3 w-full py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-850 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs shadow-md shadow-black/10 transition-all active:scale-[0.97] cursor-pointer"
+            className="w-full py-3 bg-zinc-950 dark:bg-zinc-50 text-white dark:text-zinc-950 rounded-2xl text-xs font-bold hover:opacity-95 active:scale-[0.97] transition-all duration-200 shadow-md shadow-zinc-950/10 dark:shadow-zinc-50/5 cursor-pointer"
           >
             Awesome
           </button>

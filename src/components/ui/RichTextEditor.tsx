@@ -401,22 +401,22 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
             {group.map(btn => {
               if (btn.label === 'Highlight') {
                 return (
-                  <div key={btn.label} className="relative flex items-center bg-surface border border-border/30 rounded-lg overflow-hidden mx-0.5 shadow-sm">
+                  <div key={btn.label} className="relative flex items-center bg-surface border border-border/30 rounded-lg mx-0.5 shadow-sm">
                     <button
                       type="button"
                       title={`Highlight (Color: ${HIGHLIGHT_COLORS.find(c => c.hex === activeHighlightColor)?.label || 'Yellow'})`}
                       aria-label="Apply Highlight"
                       onClick={() => exec('hiliteColor', activeHighlightColor)}
-                      className="btn btn-ghost btn-sm btn-square pr-1 border-r border-border/40 h-7 rounded-none cursor-pointer flex items-center justify-center"
-                      style={{ borderBottom: `3.5px solid ${activeHighlightColor}` }}
+                      className="btn btn-ghost btn-sm btn-square pr-1 border-r border-border/40 h-7 rounded-l-lg cursor-pointer flex flex-col items-center justify-center gap-0.5"
                     >
-                      <IconHighlight className="w-4 h-4 text-text-primary" />
+                      <IconHighlight className="w-3.5 h-3.5 text-text-primary" />
+                      <div className="w-3.5 h-1 rounded-full shrink-0" style={{ backgroundColor: activeHighlightColor }} />
                     </button>
                     <button
                       type="button"
                       title="Select Highlight Color"
                       onClick={() => setShowColorPicker(!showColorPicker)}
-                      className="btn btn-ghost btn-sm px-1.5 h-7 rounded-none hover:bg-surface-alt transition-all cursor-pointer flex items-center justify-center"
+                      className="btn btn-ghost btn-sm px-1.5 h-7 rounded-r-lg hover:bg-surface-alt transition-all cursor-pointer flex items-center justify-center"
                     >
                       <IconChevronDown className="w-3 h-3 text-text-muted" />
                     </button>
