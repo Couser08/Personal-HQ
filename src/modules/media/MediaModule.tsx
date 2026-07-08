@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconMovie, IconDeviceGamepad2, 
@@ -50,6 +50,11 @@ export default function MediaModule() {
   
   // Dedicated anime detailed page tracking
   const [selectedAnimeId, setSelectedAnimeId] = useState<string | null>(null);
+  const [visibleEpisodes, setVisibleEpisodes] = useState(25);
+
+  useEffect(() => {
+    setVisibleEpisodes(25);
+  }, [selectedAnimeId]);
 
   const [isEditingQuote, setIsEditingQuote] = useState(false);
   const [quoteInput, setQuoteInput] = useState('');
@@ -359,66 +364,81 @@ export default function MediaModule() {
                 {epCount === 0 ? (
                   <p className="text-xs text-text-muted italic col-span-2 py-10 text-center">No episodes found. Update total episodes.</p>
                 ) : (
-                  Array.from({ length: epCount }, (_, i) => i + 1).map(epNum => {
-                    const checked = watchedEpisodes.includes(epNum);
-                    return (
-                      <div
-                        key={epNum}
-                        className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-                          checked 
-                            ? 'bg-surface-alt border-rose-500/30 shadow-[0_4px_20px_rgba(244,63,94,0.05)]' 
-                            : 'bg-surface-alt border-transparent hover:border-border'
-                        }`}
-                      >
-                        <div className="w-6 shrink-0 flex justify-center">
-                          <span className="text-[10px] font-black text-text-muted">{epNum.toString().padStart(2, '0')}</span>
-                        </div>
-                        
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            let updated;
-                            if (checked) {
-                              updated = watchedEpisodes.filter(e => e !== epNum);
-                            } else {
-                              updated = [...watchedEpisodes, epNum];
-                            }
-                            saveAnimeMeta({ watchedEpisodes: updated });
-                          }}
-                          className="anime-checkbox shrink-0"
-                        />
-
-                        <img 
-                          src={episodeThumb} 
-                          alt="Thumb" 
-                          className={`w-12 h-8 rounded-md object-cover shrink-0 ml-1 transition-all ${!checked && 'opacity-40 grayscale'}`}
-                        />
-
-                        <div className="flex flex-col ml-1 min-w-0 flex-1">
-                          <span className="text-[11px] font-bold text-text-primary truncate">Episode {epNum}</span>
-                          <span className={`text-[8px] font-black uppercase tracking-wider ${checked ? 'text-rose-500' : 'text-text-muted'}`}>
-                            {checked ? 'Watched' : 'Not Watched'}
-                          </span>
-                        </div>
-                        
-                        {checked && (
-                          <div className="shrink-0">
-                            <input
-                              type="text"
-                              placeholder="00:00"
-                              value={timestamps[epNum] || ''}
-                              onChange={e => {
-                                const updatedTime = { ...timestamps, [epNum]: e.target.value };
-                                saveAnimeMeta({ timestamps: updatedTime });
-                              }}
-                              className="w-12 bg-background border border-border rounded-md px-1 py-1 text-[9px] font-mono text-text-secondary outline-none focus:border-rose-500 text-center"
-                            />
+                  <>
+                    {Array.from({ length: Math.min(epCount, visibleEpisodes) }, (_, i) => i + 1).map(epNum => {
+                      const checked = watchedEpisodes.includes(epNum);
+                      return (
+                        <div
+                          key={epNum}
+                          className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                            checked 
+                              ? 'bg-surface-alt border-rose-500/30 shadow-[0_4px_20px_rgba(244,63,94,0.05)]' 
+                              : 'bg-surface-alt border-transparent hover:border-border'
+                          }`}
+                        >
+                          <div className="w-6 shrink-0 flex justify-center">
+                            <span className="text-[10px] font-black text-text-muted">{epNum.toString().padStart(2, '0')}</span>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })
+                          
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              let updated;
+                              if (checked) {
+                                updated = watchedEpisodes.filter(e => e !== epNum);
+                              } else {
+                                updated = [...watchedEpisodes, epNum];
+                              }
+                              saveAnimeMeta({ watchedEpisodes: updated });
+                            }}
+                            className="anime-checkbox shrink-0"
+                          />
+
+                          <img 
+                            src={episodeThumb} 
+                            alt="Thumb" 
+                            className={`w-12 h-8 rounded-md object-cover shrink-0 ml-1 transition-all ${!checked && 'opacity-40 grayscale'}`}
+                          />
+
+                          <div className="flex flex-col ml-1 min-w-0 flex-1">
+                            <span className="text-[11px] font-bold text-text-primary truncate">Episode {epNum}</span>
+                            <span className={`text-[8px] font-black uppercase tracking-wider ${checked ? 'text-rose-500' : 'text-text-muted'}`}>
+                              {checked ? 'Watched' : 'Not Watched'}
+                            </span>
+                          </div>
+                          
+                          {checked && (
+                            <div className="shrink-0">
+                              <input
+                                type="text"
+                                placeholder="00:00"
+                                value={timestamps[epNum] || ''}
+                                onChange={e => {
+                                  const updatedTime = { ...timestamps, [epNum]: e.target.value };
+                                  saveAnimeMeta({ timestamps: updatedTime });
+                                }}
+                                className="w-12 bg-background border border-border rounded-md px-1 py-1 text-[9px] font-mono text-text-secondary outline-none focus:border-rose-500 text-center"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {epCount > visibleEpisodes && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleEpisodes(prev => prev + 25)}
+                        className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-border/60 bg-surface hover:bg-surface-hover/30 hover:border-rose-500/40 cursor-pointer transition-all gap-1.5 text-center mt-1"
+                      >
+                        <span className="text-xs font-black text-rose-500">Episodes {visibleEpisodes + 1} to {epCount}</span>
+                        <span className="text-[10px] text-text-secondary">
+                          {epCount - visibleEpisodes} more episodes are collapsed to optimize performance. Click to show next 25 episodes.
+                        </span>
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
               <div className="mt-4 pt-4 border-t border-border text-center">

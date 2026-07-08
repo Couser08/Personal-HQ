@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   initialBankBalance: 0,
   initialCashBalance: 0,
   reduceBlur: false,
+  reduceAnimations: false,
 };
 
 const sanitizeActiveModule = (module: string) => {
@@ -134,6 +135,12 @@ export interface TodoProject {
   color: string;
 }
 
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface TodoTask {
   id: string;
   projectId: string | null;
@@ -147,6 +154,7 @@ export interface TodoTask {
   pomodoroCount?: number;
   deleted?: boolean;
   createdAt: string;
+  subtasks?: SubTask[];
 }
 
 export interface TopicNote {
@@ -457,6 +465,7 @@ export interface AppSettings {
   currencySymbol?: string;
   mediaQuote?: string;
   reduceBlur: boolean;
+  reduceAnimations: boolean;
 }
 
 export interface PomodoroStats {
@@ -743,6 +752,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           currency_symbol: settings.currencySymbol || '$',
           media_quote: settings.mediaQuote || '',
           reduce_blur: settings.reduceBlur,
+          reduce_animations: settings.reduceAnimations,
         }).catch((e) => console.error('Failed to sync settings:', e));
       }
       return { settings };
@@ -864,6 +874,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
         mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
         reduceBlur: settingsResult.reduce_blur !== undefined ? settingsResult.reduce_blur : dbSettings.reduceBlur,
+        reduceAnimations: settingsResult.reduce_animations !== undefined ? settingsResult.reduce_animations : dbSettings.reduceAnimations,
       };
       
       localStorage.setItem('theme', dbTheme);
@@ -881,6 +892,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         currency_symbol: dbSettings.currencySymbol || '$',
         media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
         reduce_blur: dbSettings.reduceBlur,
+        reduce_animations: dbSettings.reduceAnimations,
       }).catch((e) => console.error('Failed to initialize settings:', e));
     }
 

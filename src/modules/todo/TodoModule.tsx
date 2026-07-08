@@ -1083,6 +1083,7 @@ function TaskItem({
   projects: TodoProject[];
   openTodoTaskModal: (task?: TodoTask | null) => void;
 }) {
+  const updateTodoTask = useAppStore(state => state.updateTodoTask);
   return (
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
@@ -1120,7 +1121,7 @@ function TaskItem({
           </AnimatePresence>
         </button>
 
-        {/* Task Title */}
+        {/* Task Title & Subtasks */}
         <div className="flex-1 min-w-0">
           <span 
             onDoubleClick={() => {
@@ -1138,6 +1139,34 @@ function TaskItem({
           >
             {task.title}
           </span>
+
+          {/* Subtasks List */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="mt-2.5 pl-2 flex flex-col gap-1.5 border-l-2 border-border/80 text-xs">
+              {task.subtasks.map(st => (
+                <div key={st.id} className="flex items-center gap-2 py-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = (task.subtasks || []).map(s => s.id === st.id ? { ...s, completed: !s.completed } : s);
+                      updateTodoTask(task.id, { subtasks: updated });
+                    }}
+                    className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                      st.completed 
+                        ? 'border-rose-500 bg-rose-500 text-white' 
+                        : 'border-text-muted/65 hover:border-rose-400 bg-transparent'
+                    }`}
+                  >
+                    {st.completed && <IconCheck size={9} strokeWidth={4} />}
+                  </button>
+                  <span className={`flex-1 break-all select-none leading-tight ${st.completed ? 'text-text-muted line-through' : 'text-text-secondary'}`}>
+                    {st.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons (Edit, Delete) - Always visible on mobile, hover-only on desktop */}
@@ -1162,8 +1191,18 @@ function TaskItem({
       </div>
 
       {/* Bottom Row: Metadata badges below the title */}
-      {(task.projectId || task.priority !== 'none' || task.dueDate || task.startTime || task.endTime || (task.tags && task.tags.length > 0) || (task.pomodoroCount !== undefined && task.pomodoroCount > 0)) && (
+      {(task.projectId || task.priority !== 'none' || task.dueDate || task.startTime || task.endTime || (task.tags && task.tags.length > 0) || (task.pomodoroCount !== undefined && task.pomodoroCount > 0) || (task.subtasks && task.subtasks.length > 0)) && (
         <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-border/30 w-full text-[11px] text-text-secondary">
+          {/* Subtask count badge */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/5 text-rose-500 border border-rose-500/10 font-medium">
+              <IconLayoutList className="w-3 h-3 text-text-muted" />
+              <span>
+                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} subtasks
+              </span>
+            </span>
+          )}
+
           {/* Associated Project */}
           {task.projectId && projects.find(p => p.id === task.projectId) && (
             <span 

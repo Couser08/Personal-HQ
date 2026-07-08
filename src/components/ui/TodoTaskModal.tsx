@@ -4,7 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { CustomSelect } from './CustomSelect';
 import { TagInput } from './TagInput';
-import { IconX } from '@tabler/icons-react';
+import { IconX, IconTrash } from '@tabler/icons-react';
+import type { SubTask } from '../../store/useAppStore';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -51,6 +52,7 @@ export function TodoTaskModal() {
   const [dueDate, setDueDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
 
   // Sync state when modal opens
   useEffect(() => {
@@ -69,6 +71,7 @@ export function TodoTaskModal() {
 
       setStartTime(task.startTime || '');
       setEndTime(task.endTime || '');
+      setSubtasks(task.subtasks || []);
     }
   }, [isOpen, task]);
 
@@ -85,6 +88,7 @@ export function TodoTaskModal() {
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       startTime: startTime || null,
       endTime: endTime || null,
+      subtasks,
     });
     
     closeTodoTaskModal();
@@ -188,6 +192,76 @@ export function TodoTaskModal() {
             <div>
               <label style={labelStyle}>Tags (Press Enter)</label>
               <TagInput tags={tags} onChange={setTags} placeholder="Add labels..." />
+            </div>
+
+            {/* Subtasks Editor */}
+            <div>
+              <label style={labelStyle}>Subtasks</label>
+              <div className="flex flex-col gap-2.5 bg-surface-alt/40 p-4 rounded-[20px] border border-border/40 max-h-48 overflow-y-auto custom-scrollbar">
+                {subtasks.map((st) => (
+                  <div key={st.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={st.completed}
+                      onChange={(e) => {
+                        setSubtasks(subtasks.map(s => s.id === st.id ? { ...s, completed: e.target.checked } : s));
+                      }}
+                      className="w-4 h-4 rounded border-border accent-primary cursor-pointer shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={st.title}
+                      onChange={(e) => {
+                        setSubtasks(subtasks.map(s => s.id === st.id ? { ...s, title: e.target.value } : s));
+                      }}
+                      className="flex-1 bg-transparent border-none text-xs text-text-primary outline-none focus:underline"
+                      placeholder="Subtask name..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSubtasks(subtasks.filter(s => s.id !== st.id))}
+                      className="p-1 hover:bg-rose-500/10 text-text-muted hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <IconTrash size={12} />
+                    </button>
+                  </div>
+                ))}
+                
+                <div className="flex gap-2 mt-1">
+                  <input
+                    type="text"
+                    id="new-subtask-input"
+                    placeholder="Add new subtask..."
+                    className="flex-1 bg-surface border border-border/30 text-xs px-3 py-1.5 rounded-xl outline-none focus:border-primary/50 text-text-primary"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val) {
+                          setSubtasks([...subtasks, { id: crypto.randomUUID(), title: val, completed: false }]);
+                          e.currentTarget.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('new-subtask-input') as HTMLInputElement;
+                      if (input) {
+                        const val = input.value.trim();
+                        if (val) {
+                          setSubtasks([...subtasks, { id: crypto.randomUUID(), title: val, completed: false }]);
+                          input.value = '';
+                        }
+                      }
+                    }}
+                    className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Due Date & Times */}

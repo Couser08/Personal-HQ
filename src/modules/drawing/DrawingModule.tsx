@@ -4,7 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
-  IconPlus, IconTrash, IconFolder, IconFileText 
+  IconPlus, IconTrash, IconFolder, IconFileText,
+  IconMaximize, IconMinimize
 } from '@tabler/icons-react';
 import "@excalidraw/excalidraw/index.css";
 
@@ -34,6 +35,7 @@ export default function DrawingModule() {
 
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const debounceTimer = useRef<any>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Resolve theme to 'dark' or 'light' supporting 'system' preference
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(() => {
@@ -320,6 +322,24 @@ export default function DrawingModule() {
           })}
         </div>
 
+        {/* Fullscreen Mode snap option */}
+        <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Fullscreen Mode</span>
+            <button
+              type="button"
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1"
+            >
+              {isFullScreen ? <IconMinimize size={10} /> : <IconMaximize size={10} />}
+              <span>{isFullScreen ? "Minimize" : "Maximize"}</span>
+            </button>
+          </div>
+          <span className="text-[9px] text-text-secondary leading-normal">
+            Expands the canvas to fill the entire screen for distraction-free sketching.
+          </span>
+        </div>
+
         {/* Isometric grid snap toggle options */}
         <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
           <div className="flex items-center justify-between">
@@ -419,8 +439,22 @@ export default function DrawingModule() {
       {/* ── Main Canvas Viewport Area ── */}
       <div 
         key={activeSketchId} 
-        className={`flex-grow h-full relative rounded-[32px] overflow-hidden border border-border/50 bg-surface shadow-[0_15px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ${isoGrid ? 'iso-grid-active' : ''}`}
+        className={`relative bg-surface overflow-hidden ${
+          isFullScreen 
+            ? 'fixed inset-0 z-[500] w-screen h-screen rounded-none border-none shadow-none' 
+            : 'flex-grow h-full rounded-[32px] border border-border/50 shadow-[0_15px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]'
+        } ${isoGrid ? 'iso-grid-active' : ''}`}
       >
+        {/* Floating Fullscreen toggle button */}
+        <button
+          type="button"
+          onClick={() => setIsFullScreen(!isFullScreen)}
+          className="absolute top-3.5 right-16 z-[99999] p-2.5 bg-surface hover:bg-surface-hover border border-border text-text-primary rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+          title={isFullScreen ? "Exit Full Screen" : "Full Screen Mode"}
+        >
+          {isFullScreen ? <IconMinimize size={16} /> : <IconMaximize size={16} />}
+        </button>
+
         <Excalidraw
           theme={resolvedTheme}
           initialData={{

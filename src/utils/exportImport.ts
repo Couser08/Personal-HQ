@@ -39,6 +39,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   initialBankBalance: 0,
   initialCashBalance: 0,
   reduceBlur: false,
+  reduceAnimations: false,
 };
 
 export const buildBackupData = (state: AppStore, owner: BackupOwner): BackupPayload => ({

@@ -4,7 +4,7 @@ import { Layout } from './components/layout/Layout';
 import { useAppStore } from './store/useAppStore';
 import { useAuthStore } from './store/useAuthStore';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
@@ -152,18 +152,20 @@ function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {!user ? (
-        <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}>
-          <LoginPage onLoginSuccess={() => {}} />
-          <ConfirmDialog />
-        </motion.div>
-      ) : (
-        <motion.div key="app" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
-          <AppContent />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <MotionConfig reducedMotion={settings?.reduceAnimations ? "always" : "user"}>
+      <AnimatePresence mode="wait">
+        {!user ? (
+          <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}>
+            <LoginPage onLoginSuccess={() => {}} />
+            <ConfirmDialog />
+          </motion.div>
+        ) : (
+          <motion.div key="app" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
+            <AppContent />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }
 

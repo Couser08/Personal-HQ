@@ -677,6 +677,7 @@ export const todoTaskService = {
       pomodoroCount: r.pomodoro_count ?? 0,
       deleted: r.deleted ?? false,
       createdAt: r.created_at,
+      subtasks: r.subtasks ?? [],
     }));
   },
 
@@ -696,6 +697,7 @@ export const todoTaskService = {
         pomodoro_count: task.pomodoroCount ?? 0,
         deleted: task.deleted ?? false,
         created_at: task.createdAt,
+        subtasks: task.subtasks ?? [],
       });
       if (error) {
         console.warn('TodoTask Create Error:', error);
@@ -721,6 +723,7 @@ export const todoTaskService = {
       if (data.endTime !== undefined) payload.end_time = data.endTime;
       if (data.pomodoroCount !== undefined) payload.pomodoro_count = data.pomodoroCount;
       if (data.deleted !== undefined) payload.deleted = data.deleted;
+      if (data.subtasks !== undefined) payload.subtasks = data.subtasks;
 
       const { error } = await supabase.from('todo_tasks').update(payload).eq('id', id);
       if (error) {

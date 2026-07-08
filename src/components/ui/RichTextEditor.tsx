@@ -7,7 +7,7 @@ import {
 import { CustomSelect } from './CustomSelect';
 import { Modal } from './Modal';
 
-import { codeToHtml } from 'shiki';
+// shiki import removed to be dynamically imported only when code blocks exist on page
 
 const LANG_OPTIONS = [
   { value: 'javascript', label: 'JavaScript' },
@@ -69,8 +69,18 @@ async function highlightAllCodeBlocksInHtml(html: string, isDark: boolean): Prom
   const doc = parser.parseFromString(html, 'text/html');
   const theme = isDark ? 'github-dark' : 'snazzy-light';
 
-  // 1. Highlight custom note-code-blocks
+  // 1. Check if there are actually any code blocks to highlight
   const codeBlocks = doc.querySelectorAll<HTMLElement>('.note-code-block');
+  const plainPreCodes = doc.querySelectorAll('pre code');
+  
+  if (codeBlocks.length === 0 && plainPreCodes.length === 0) {
+    return html;
+  }
+
+  // 2. Dynamically import shiki only if code blocks are present
+  const { codeToHtml } = await import('shiki');
+
+  // 3. Highlight custom note-code-blocks
   for (const block of Array.from(codeBlocks)) {
     const lang = block.getAttribute('data-language') || 'javascript';
     const encoded = block.getAttribute('data-code') || '';
@@ -103,8 +113,7 @@ async function highlightAllCodeBlocksInHtml(html: string, isDark: boolean): Prom
     }
   }
 
-  // 2. Highlight plain pre > code blocks (for backwards compatibility)
-  const plainPreCodes = doc.querySelectorAll('pre code');
+  // 4. Highlight plain pre > code blocks (for backwards compatibility)
   for (const codeElem of Array.from(plainPreCodes)) {
     if (codeElem.closest('.note-code-block')) continue;
     
@@ -287,6 +296,7 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
     const language = (lang && lang.toLowerCase() !== 'other') ? lang.toLowerCase() : 'javascript';
 
     try {
+      const { codeToHtml } = await import('shiki');
       const rawHtml = await codeToHtml(cleanCode, { lang: language, theme });
       const parser = new DOMParser();
       const doc = parser.parseFromString(rawHtml, 'text/html');

@@ -409,10 +409,29 @@ export default function SettingsModule() {
               <p className="text-sm font-semibold text-text-primary">Reduce Blur & Glassmorphism</p>
               <p className="text-xs text-text-secondary mt-0.5">Disable intensive backdrop filters and semi-transparency. Essential for eliminating lag on slower devices.</p>
             </div>
-            <button
+             <button
               onClick={() => updateSettings({ reduceBlur: !settings.reduceBlur })}
               className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
                 settings.reduceBlur ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
+              }`}
+            >
+              <motion.div 
+                layout 
+                className="w-5 h-5 rounded-full bg-white shadow-md"
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40">
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-text-primary">Reduce Animations</p>
+              <p className="text-xs text-text-secondary mt-0.5">Disable transitions, spring equations, and fade effects globally. Crucial for smooth running on older or low-end PCs.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => updateSettings({ reduceAnimations: !settings.reduceAnimations })}
+              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
+                settings.reduceAnimations ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
               }`}
             >
               <motion.div 
