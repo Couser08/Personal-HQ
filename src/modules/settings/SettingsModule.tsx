@@ -349,18 +349,52 @@ export default function SettingsModule() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => addToast('Success', 'Everything looks great!', 'success')}
-                className="py-2 px-4 rounded-xl border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                className="py-2 px-4 rounded-xl border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <IconCheck className="w-4 h-4" /> Success
               </button>
               <button
                 onClick={() => addToast('Error', 'Something went wrong.', 'error')}
-                className="py-2 px-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                className="py-2 px-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <IconX className="w-4 h-4" /> Error
               </button>
             </div>
           </div>
+
+          {/* Premium Wavy Effect Toggle */}
+          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40 mt-1">
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-text-primary">Wavy Complete Effect</p>
+              <p className="text-xs text-text-secondary mt-0.5">Show a premium Apple AirDrop-like wavy ripple animation on task, habit, and study timer completions.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => updateSettings({ wavyEffectEnabled: settings.wavyEffectEnabled === false ? true : false })}
+              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
+                settings.wavyEffectEnabled !== false ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
+              }`}
+            >
+              <motion.div 
+                layout 
+                className="w-5 h-5 rounded-full bg-white shadow-md"
+              />
+            </button>
+          </div>
+
+          {/* Test Wavy Effect button */}
+          {settings.wavyEffectEnabled !== false && (
+            <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+              <p className="text-sm font-semibold text-text-primary">Test Wavy Complete Effect</p>
+              <p className="text-xs text-text-secondary mb-1">Click to trigger a test wavy completion ripple animation instantly.</p>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'test' } }))}
+                className="py-2 px-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <IconSparkles className="w-4 h-4" /> Trigger Test Ripple
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Countdown Display Template Card ── full width */}

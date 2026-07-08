@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { 
   IconPlus, IconTrash, IconFolder, IconFileText,
-  IconMaximize, IconMinimize
+  IconMaximize, IconMinimize, IconChevronDown, IconChevronUp
 } from '@tabler/icons-react';
 import "@excalidraw/excalidraw/index.css";
 
@@ -67,6 +67,7 @@ export default function DrawingModule() {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
   const [isoGrid, setIsoGrid] = useState(false);
+  const [isDrawFilesCollapsed, setIsDrawFilesCollapsed] = useState(false);
   const canvasBackground = resolvedTheme === 'dark' ? '#121214' : '#ffffff';
   const panelBackground = resolvedTheme === 'dark' ? 'rgba(17, 17, 19, 0.92)' : 'rgba(255, 255, 255, 0.92)';
 
@@ -257,13 +258,26 @@ export default function DrawingModule() {
       {/* ── Left Sidebar (Sketch Library & DB Status) ── */}
       <div className="w-[250px] h-full flex flex-col gap-4 p-4.5 rounded-3xl border border-border/50 bg-surface/40 backdrop-blur-md shadow-sm shrink-0 text-left overflow-y-auto custom-scrollbar">
         {/* Slot Library Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-border/40">
+        <div 
+          onClick={() => setIsDrawFilesCollapsed(!isDrawFilesCollapsed)}
+          className="flex items-center justify-between pb-2 border-b border-border/40 cursor-pointer select-none group"
+        >
           <div className="flex flex-col">
-            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Sketchbook</span>
-            <span className="text-[10px] text-text-secondary mt-0.5">Manage draw files</span>
+            <span className="text-xs font-black uppercase tracking-widest text-text-muted group-hover:text-primary transition-colors">Sketchbook</span>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[10px] text-text-secondary">Manage draw files</span>
+              {isDrawFilesCollapsed ? (
+                <IconChevronDown size={11} className="text-text-muted" />
+              ) : (
+                <IconChevronUp size={11} className="text-text-muted" />
+              )}
+            </div>
           </div>
           <button
-            onClick={handleCreateNewSketch}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCreateNewSketch();
+            }}
             className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
             title="Create New Canvas"
           >
@@ -272,7 +286,8 @@ export default function DrawingModule() {
         </div>
 
         {/* List of Save Slots */}
-        <div className="flex flex-col gap-1.5 flex-grow overflow-y-auto custom-scrollbar">
+        {!isDrawFilesCollapsed && (
+          <div className="flex flex-col gap-1.5 flex-grow overflow-y-auto custom-scrollbar">
           {sketches.map((sk) => {
             const active = sk.id === activeSketchId;
             const isRenaming = renameId === sk.id;
@@ -321,6 +336,7 @@ export default function DrawingModule() {
             );
           })}
         </div>
+      )}
 
         {/* Fullscreen Mode snap option */}
         <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">

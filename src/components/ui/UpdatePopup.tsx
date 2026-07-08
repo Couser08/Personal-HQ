@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconX, 
   IconSparkles, 
-  IconFileText,
-  IconMovie,
-  IconActivity
+  IconFlame,
+  IconClock,
+  IconPalette,
+  IconNotebook
 } from '@tabler/icons-react';
 
 const APP_VERSION = '1.6.0';
@@ -13,42 +14,42 @@ const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconSparkles className="w-5 h-5 stroke-[2]" />,
-    color: '#FF2D55', 
-    bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Habits Engine Migration',
-    desc: 'Fully migrated habit logging schema using local SQLite backups and dedicated SQL migrations for stable database sync.',
+    icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
+    color: '#FF9500', // Apple Orange
+    bg: 'rgba(255, 149, 0, 0.08)',
+    title: 'Wavy Completion Ripple',
+    desc: 'Celebrate success! Experience a premium full-screen concentric ripple and gradient glow overlay when completing all daily habits or Pomodoro sessions.',
   },
   {
-    icon: <IconFileText className="w-5 h-5 stroke-[2]" />,
-    color: '#5856D6', 
-    bg: 'rgba(88, 86, 214, 0.08)',
-    title: 'Audio Alert Notifications',
-    desc: 'Added fully customizable audio buzzer alerts and browser notifications that trigger automatically when pomodoro timers expire.',
-  },
-  {
-    icon: <IconActivity className="w-5 h-5 stroke-[2]" />,
-    color: '#007AFF', 
+    icon: <IconClock className="w-5 h-5 stroke-[2]" />,
+    color: '#007AFF', // Apple Blue
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Whiteboard Canvas Polish',
-    desc: 'Upgraded pen drawing tool with adaptive smoothing algorithms, custom brushes, clear commands, and clean workspace layouts.',
+    title: 'Pomodoro Alerts & Sounds',
+    desc: 'Customize audio buzzer alerts and trigger browser desktop notifications automatically when focus or break sessions complete.',
   },
   {
-    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
-    color: '#34C759', 
+    icon: <IconPalette className="w-5 h-5 stroke-[2]" />,
+    color: '#FF2D55', // Apple Pink
+    bg: 'rgba(255, 45, 85, 0.08)',
+    title: 'Reduce Motion Settings',
+    desc: 'Respecting preferences. Enable Reduced Animations inside Settings to completely bypass particle effects, wavy ripples, and transitions.',
+  },
+  {
+    icon: <IconNotebook className="w-5 h-5 stroke-[2]" />,
+    color: '#34C759', // Apple Green
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Projects Hub Roadmaps',
-    desc: 'Integrated add and delete controls for learning roadmaps, linking tasks directly to your coder hub project milestones.',
+    title: 'Rich Editor & Habits Polish',
+    desc: 'Enhanced notebook typography, customizable header spacing, responsive outline listings, and local SQLite data transactions.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Implemented Habits tracking schema migration with SQL transaction support',
-  'Added browser desktop notifications & audio alerts for Pomodoro timer cycles',
+  'Added Concentric Wavy Ripple celebration effect triggered on checklist or habit completions',
+  'Integrated Pomodoro session completion sound alerts and desktop push notifications',
+  'Created toggles in Settings to disable/enable Wavy Completion Ripple and reduced animations',
   'Polished custom brush coordinates layout inside Drawing whiteboard canvas',
-  'Created roadmap creation and deletion actions on Coder Hub panel',
-  'Optimized Zustand shallow selectors on top-level App shell render loop',
-  'Fixed modal animations layout stretching bugs for smaller screens',
+  'Upgraded RichTextEditor writing layout, typography hierarchy, and local state persistence',
+  'Fixed modal responsive bounds to prevent layout stretching on smaller tablet profiles'
 ];
 
 interface UpdatePopupProps {

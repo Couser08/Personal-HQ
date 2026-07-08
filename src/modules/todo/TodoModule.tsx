@@ -114,6 +114,10 @@ export default function TodoModule() {
       setTimeout(() => {
         updateTodoTask(id, { completed: true });
         setCompletingIds(prev => prev.filter(x => x !== id));
+        // Trigger premium wavy effect
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'todo' } }));
+        }
       }, 600);
     } else {
       updateTodoTask(id, { completed: false });

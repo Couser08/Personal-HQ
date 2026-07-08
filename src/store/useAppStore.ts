@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   initialCashBalance: 0,
   reduceBlur: false,
   reduceAnimations: false,
+  wavyEffectEnabled: true,
 };
 
 const sanitizeActiveModule = (module: string) => {
@@ -466,6 +467,7 @@ export interface AppSettings {
   mediaQuote?: string;
   reduceBlur: boolean;
   reduceAnimations: boolean;
+  wavyEffectEnabled?: boolean;
 }
 
 export interface PomodoroStats {
@@ -1455,6 +1457,11 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           const nextStreak = pomodoroStreak + 1;
           set({ pomodoroStreak: nextStreak });
           recordPomodoroSession(Math.round(pomodoroTotalSeconds / 60));
+
+          // Trigger premium wavy complete effect on work pomodoro finish
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'pomodoro' } }));
+          }
 
           if (pomodoroAssociatedTaskId) {
             if (pomodoroAssociatedTaskId.startsWith('habit-')) {

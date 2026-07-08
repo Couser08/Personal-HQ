@@ -2,12 +2,20 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 import {
   IconBold, IconItalic, IconUnderline, IconStrikethrough,
   IconList, IconListNumbers, IconH1,
-  IconCode, IconHighlight, IconClearFormatting
+  IconCode, IconHighlight, IconClearFormatting, IconChevronDown
 } from '@tabler/icons-react';
 import { CustomSelect } from './CustomSelect';
 import { Modal } from './Modal';
 
 // shiki import removed to be dynamically imported only when code blocks exist on page
+
+const HIGHLIGHT_COLORS = [
+  { hex: '#fef08a', label: 'Yellow' },
+  { hex: '#bbf7d0', label: 'Green' },
+  { hex: '#bfdbfe', label: 'Blue' },
+  { hex: '#fbcfe8', label: 'Pink' },
+  { hex: '#fed7aa', label: 'Orange' },
+];
 
 const LANG_OPTIONS = [
   { value: 'javascript', label: 'JavaScript' },
@@ -204,6 +212,10 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
   // Store selection to restore focus after modal edits
   const [savedRange, setSavedRange] = useState<Range | null>(null);
 
+  // Highlighter color states
+  const [activeHighlightColor, setActiveHighlightColor] = useState('#fef08a');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   // Code modal state
   const [codeModal, setCodeModal] = useState<{
     open: boolean;
@@ -386,21 +398,70 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
         {GROUPS.map((group, gi) => (
           <div key={gi} className="flex items-center">
             {gi > 0 && <div className="w-px h-5 bg-border mx-1.5" aria-hidden />}
-            {group.map(btn => (
-              <button
-                key={btn.label}
-                type="button"
-                title={btn.label}
-                aria-label={btn.label}
-                onClick={() => btn.action === 'code-block'
-                  ? openCodeModal(null, '', 'javascript')
-                  : exec(btn.command ?? '', btn.value)
-                }
-                className="btn btn-ghost btn-sm btn-square"
-              >
-                {btn.icon}
-              </button>
-            ))}
+            {group.map(btn => {
+              if (btn.label === 'Highlight') {
+                return (
+                  <div key={btn.label} className="relative flex items-center bg-surface border border-border/30 rounded-lg overflow-hidden mx-0.5 shadow-sm">
+                    <button
+                      type="button"
+                      title={`Highlight (Color: ${HIGHLIGHT_COLORS.find(c => c.hex === activeHighlightColor)?.label || 'Yellow'})`}
+                      aria-label="Apply Highlight"
+                      onClick={() => exec('hiliteColor', activeHighlightColor)}
+                      className="btn btn-ghost btn-sm btn-square pr-1 border-r border-border/40 h-7 rounded-none cursor-pointer flex items-center justify-center"
+                      style={{ borderBottom: `3.5px solid ${activeHighlightColor}` }}
+                    >
+                      <IconHighlight className="w-4 h-4 text-text-primary" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Select Highlight Color"
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      className="btn btn-ghost btn-sm px-1.5 h-7 rounded-none hover:bg-surface-alt transition-all cursor-pointer flex items-center justify-center"
+                    >
+                      <IconChevronDown className="w-3 h-3 text-text-muted" />
+                    </button>
+                    
+                    {showColorPicker && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowColorPicker(false)} />
+                        <div className="absolute top-full left-0 mt-1.5 p-1.5 bg-surface border border-border rounded-xl shadow-high flex gap-1.5 z-50">
+                          {HIGHLIGHT_COLORS.map(color => (
+                            <button
+                              key={color.hex}
+                              type="button"
+                              title={color.label}
+                              onClick={() => {
+                                setActiveHighlightColor(color.hex);
+                                setShowColorPicker(false);
+                                exec('hiliteColor', color.hex);
+                              }}
+                              className="w-6 h-6 rounded-full border border-border-alt hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-sm"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={btn.label}
+                  type="button"
+                  title={btn.label}
+                  aria-label={btn.label}
+                  onClick={() => btn.action === 'code-block'
+                    ? openCodeModal(null, '', 'javascript')
+                    : exec(btn.command ?? '', btn.value)
+                  }
+                  className="btn btn-ghost btn-sm btn-square cursor-pointer"
+                >
+                  {btn.icon}
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>

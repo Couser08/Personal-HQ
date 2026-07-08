@@ -10,6 +10,7 @@ import { TodoTaskModal } from '../ui/TodoTaskModal';
 import { JournalNoticeModal } from '../ui/JournalNoticeModal';
 import { DynamicIsland, triggerDynamicIsland } from '../ui/DynamicIsland';
 import { CommandPalette } from '../ui/CommandPalette';
+import { WavyEffectOverlay } from '../ui/WavyEffectOverlay';
 
 interface LayoutProps {
   children: ReactNode;
@@ -68,6 +69,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <TodoProjectModal />
       <TodoTaskModal />
       <JournalNoticeModal />
+      <WavyEffectOverlay />
     </div>
   );
 };

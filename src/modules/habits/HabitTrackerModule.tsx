@@ -102,6 +102,24 @@ export default function HabitTrackerModule() {
     }
   };
 
+  const handleToggleHabit = async (habitId: string) => {
+    const target = habits.find(h => h.id === habitId);
+    if (!target) return;
+    const isCurrentlyCompleted = target.completedDates.includes(todayStr);
+    
+    if (!isCurrentlyCompleted) {
+      const incompleteDueToday = dueHabits.filter(h => h.id !== habitId && !h.completedDates.includes(todayStr));
+      if (incompleteDueToday.length === 0 && dueHabits.length > 0) {
+        // Trigger premium wavy effect
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'habits' } }));
+        }
+      }
+    }
+    
+    await toggleHabitCompletion(habitId, todayStr);
+  };
+
   // Verify if a habit is due today
   const isHabitDueToday = (habit: Habit) => {
     if (habit.frequencyType === 'daily') return true;
@@ -403,7 +421,7 @@ export default function HabitTrackerModule() {
                     return (
                       <button
                         key={habit.id}
-                        onClick={() => toggleHabitCompletion(habit.id, todayStr)}
+                        onClick={() => handleToggleHabit(habit.id)}
                         className={`flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all w-full cursor-pointer ${
                           isCompleted
                             ? 'bg-emerald-500/8 border border-emerald-500/20'

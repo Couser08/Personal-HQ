@@ -286,6 +286,16 @@ export default function PomodoroModule() {
     return (localStorage.getItem('pomodoro_theme') as any) || 'default';
   });
 
+  // Custom Task Session configs
+  const [customSessions, setCustomSessions] = useState<Record<string, { minutes: number; total: number }>>(() => {
+    try {
+      const raw = localStorage.getItem('phq_task_custom_sessions');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
   // Daily Goal States
   const [dailyGoal, setDailyGoal] = useState(4);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -324,6 +334,10 @@ export default function PomodoroModule() {
     setPomodoroAssociatedTaskId(id);
     if (id) {
       localStorage.setItem('pomodoro_associated_task_id', id);
+      // Auto-apply custom timer settings if configured
+      if (customSessions[id]) {
+        applyTimer(customSessions[id].minutes, 'focus');
+      }
     } else {
       localStorage.removeItem('pomodoro_associated_task_id');
     }
@@ -441,6 +455,95 @@ export default function PomodoroModule() {
           </select>
         </div>
       </div>
+
+      {/* Custom Task Session setup */}
+      {associatedTask && (
+        <div className="bg-surface border border-border rounded-2xl p-4.5 -mt-3 shadow-sm flex flex-col gap-3 text-left">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-xs font-bold text-text-primary">Custom Session Target</h4>
+              <p className="text-[10px] text-text-muted">Set specific time and session goals for this task</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={!!customSessions[associatedTask.id]}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    const updated = { ...customSessions, [associatedTask.id]: { minutes: 25, total: 4 } };
+                    setCustomSessions(updated);
+                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                    applyTimer(25, 'focus');
+                  } else {
+                    const updated = { ...customSessions };
+                    delete updated[associatedTask.id];
+                    setCustomSessions(updated);
+                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                  }
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          {customSessions[associatedTask.id] && (
+            <div className="grid grid-cols-2 gap-4 pt-1.5 border-t border-border/30">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-text-secondary uppercase">Focus Minutes</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={customSessions[associatedTask.id].minutes}
+                  onChange={(e) => {
+                    const mins = Math.max(1, parseInt(e.target.value) || 25);
+                    const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], minutes: mins } };
+                    setCustomSessions(updated);
+                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                    applyTimer(mins, 'focus');
+                  }}
+                  className="w-full bg-surface-alt border border-border rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-text-secondary uppercase">Session Target</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={customSessions[associatedTask.id].total}
+                  onChange={(e) => {
+                     const total = Math.max(1, parseInt(e.target.value) || 4);
+                     const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], total } };
+                     setCustomSessions(updated);
+                     localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                  }}
+                  className="w-full bg-surface-alt border border-border rounded-xl px-3 py-1.5 text-xs font-semibold text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+          )}
+
+          {customSessions[associatedTask.id] && (
+            <div className="text-[11px] text-text-secondary flex flex-col gap-1 mt-1">
+              <div className="flex justify-between font-semibold">
+                <span>Sessions Goal:</span>
+                <span className="text-text-primary">{associatedTask.pomodoroCount || 0} / {customSessions[associatedTask.id].total} completed</span>
+              </div>
+              <div className="w-full bg-surface-alt h-1.5 rounded-full overflow-hidden mt-0.5">
+                <div 
+                  className="bg-primary h-full rounded-full transition-all duration-500" 
+                  style={{ 
+                    width: `${Math.min(100, ((associatedTask.pomodoroCount || 0) / customSessions[associatedTask.id].total) * 100)}%`,
+                    backgroundColor: 'var(--color-primary)' 
+                  }} 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Preset Selectors */}
       <div className="flex flex-wrap gap-2 pt-2 items-center">
