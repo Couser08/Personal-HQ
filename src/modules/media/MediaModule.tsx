@@ -179,7 +179,7 @@ export default function MediaModule() {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
-        className="flex flex-col w-full min-h-screen text-left bg-background font-sans pb-16"
+        className="flex flex-col w-full min-h-screen pb-16 font-sans text-left bg-background"
       >
         <style>{`
           .anime-checkbox {
@@ -228,11 +228,11 @@ export default function MediaModule() {
           <img 
             src={bannerImage} 
             alt="Hero Banner" 
-            className="w-full h-full object-cover object-center"
+            className="object-cover object-center w-full h-full"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background via-background/40 to-transparent" />
           
-          <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
+          <div className="absolute flex items-start justify-between top-6 left-6 right-6">
             {/* Custom Banner Upload Overlay button */}
             <div className="absolute top-0 right-0 z-20">
               <input
@@ -253,23 +253,23 @@ export default function MediaModule() {
               />
               <label
                 htmlFor="banner-image-upload"
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 hover:scale-105 active:scale-95 transition-all cursor-pointer text-white text-xs font-bold shadow-lg"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-black transition-all border rounded-full shadow-lg cursor-pointer border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 hover:scale-105 active:scale-95"
                 title="Upload Widescreen Banner (16:9 ratio recommended)"
               >
                 <IconPlus size={14} />
                 <span>Upload Banner (16:9)</span>
               </label>
             </div>
-            <div className="flex flex-col items-start gap-4 flex-1 max-w-xl md:max-w-2xl mr-24">
+            <div className="flex flex-col items-start flex-1 max-w-xl gap-4 mr-24 md:max-w-2xl">
               <button
                 onClick={() => setSelectedAnimeId(null)}
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 transition-colors cursor-pointer text-white shadow-lg"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-black transition-colors border rounded-full shadow-lg cursor-pointer border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60"
               >
                 <IconArrowLeft size={16} />
                 <span className="text-xs font-bold">Back to Catalogue</span>
               </button>
               
-              <div className="mt-4 w-full">
+              <div className="w-full mt-4">
                 {isEditingQuote ? (
                   <input
                     type="text"
@@ -287,7 +287,7 @@ export default function MediaModule() {
                         setIsEditingQuote(false);
                       }
                     }}
-                    className="bg-black/60 backdrop-blur-md border border-white/20 text-xl md:text-2xl font-bold tracking-tight text-white focus:outline-none w-full max-w-xl px-4 py-2 rounded-2xl shadow-2xl focus:border-rose-500 transition-all"
+                    className="w-full max-w-xl px-4 py-2 text-xl font-bold tracking-tight text-white transition-all border shadow-2xl bg-black/60 backdrop-blur-md border-white/20 md:text-2xl focus:outline-none rounded-2xl focus:border-rose-500"
                     autoFocus
                   />
                 ) : (
@@ -307,7 +307,7 @@ export default function MediaModule() {
           </div>
           
           {/* Title positioned inside the banner */}
-          <div className="absolute bottom-6 left-6 md:left-8 right-6 md:right-8 flex flex-col md:flex-row md:items-end justify-between z-10 gap-4">
+          <div className="absolute z-10 flex flex-col justify-between gap-4 bottom-6 left-6 md:left-8 right-6 md:right-8 md:flex-row md:items-end">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
               {selectedAnime.title}
             </h2>
@@ -337,13 +337,13 @@ export default function MediaModule() {
           <div className="flex flex-col gap-4">
             <div className="bg-surface rounded-[24px] border border-border p-6 shadow-2xl relative overflow-hidden flex flex-col h-full">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500">
                     <IconMovie size={18} />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-text-primary">Episode Progress Tracker</h3>
+                    <h3 className="text-xs font-black tracking-widest uppercase text-text-primary">Episode Progress Tracker</h3>
                     <p className="text-[10px] text-text-muted mt-0.5">Track anime episodes you've watched</p>
                   </div>
                 </div>
@@ -380,7 +380,7 @@ export default function MediaModule() {
               {/* Grid List */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                 {epCount === 0 ? (
-                  <p className="text-xs text-text-muted italic col-span-2 py-10 text-center">No episodes found. Update total episodes.</p>
+                  <p className="col-span-2 py-10 text-xs italic text-center text-text-muted">No episodes found. Update total episodes.</p>
                 ) : (
                   <>
                     {Array.from({ length: Math.min(epCount, visibleEpisodes) }, (_, i) => i + 1).map(epNum => {
@@ -394,7 +394,7 @@ export default function MediaModule() {
                               : 'bg-surface-alt border-transparent hover:border-border'
                           }`}
                         >
-                          <div className="w-6 shrink-0 flex justify-center">
+                          <div className="flex justify-center w-6 shrink-0">
                             <span className="text-[10px] font-black text-text-muted">{epNum.toString().padStart(2, '0')}</span>
                           </div>
                           
@@ -419,7 +419,7 @@ export default function MediaModule() {
                             className={`w-12 h-8 rounded-md object-cover shrink-0 ml-1 transition-all ${!checked && 'opacity-40 grayscale'}`}
                           />
 
-                          <div className="flex flex-col ml-1 min-w-0 flex-1">
+                          <div className="flex flex-col flex-1 min-w-0 ml-1">
                             <span className="text-[11px] font-bold text-text-primary truncate">Episode {epNum}</span>
                             <span className={`text-[8px] font-black uppercase tracking-wider ${checked ? 'text-rose-500' : 'text-text-muted'}`}>
                               {checked ? 'Watched' : 'Not Watched'}
@@ -459,7 +459,7 @@ export default function MediaModule() {
                   </>
                 )}
               </div>
-              <div className="mt-4 pt-4 border-t border-border text-center">
+              <div className="pt-4 mt-4 text-center border-t border-border">
                 <span className="text-[10px] text-text-muted tracking-widest uppercase">Every episode is a step forward.</span>
               </div>
             </div>
@@ -474,11 +474,11 @@ export default function MediaModule() {
                 <IconMovie size={14} /> Resume Watch Point
               </h4>
               
-              <div className="flex flex-col gap-4 relative z-10">
+              <div className="relative z-10 flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">Last Ep Watched</label>
-                  <div className="flex items-center gap-3 bg-surface-alt rounded-xl p-2 border border-border">
-                    <img src={episodeThumb} alt="Thumb" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                  <div className="flex items-center gap-3 p-2 border bg-surface-alt rounded-xl border-border">
+                    <img src={episodeThumb} alt="Thumb" className="object-cover w-10 h-10 rounded-lg shrink-0" />
                     <input
                       type="number"
                       min={1}
@@ -486,21 +486,21 @@ export default function MediaModule() {
                       placeholder="e.g. 5"
                       value={lastWatchedEp}
                       onChange={e => saveAnimeMeta({ lastWatchedEp: e.target.value ? parseInt(e.target.value) : null })}
-                      className="bg-transparent border-none text-xs font-bold text-text-primary focus:outline-none w-full min-w-0"
+                      className="w-full min-w-0 text-xs font-bold bg-transparent border-none text-text-primary focus:outline-none"
                     />
                   </div>
                 </div>
                 
                 <div className="flex flex-col gap-2">
                   <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">Exact Timestamp</label>
-                  <div className="flex items-center gap-3 bg-surface-alt rounded-xl p-3 border border-border">
+                  <div className="flex items-center gap-3 p-3 border bg-surface-alt rounded-xl border-border">
                     <IconStarFilled size={14} className="text-text-muted shrink-0" />
                     <input
                       type="text"
                       placeholder="e.g. 15:20"
                       value={lastWatchedTimestamp}
                       onChange={e => saveAnimeMeta({ lastWatchedTimestamp: e.target.value })}
-                      className="bg-transparent border-none text-xs font-bold text-text-primary focus:outline-none w-full min-w-0"
+                      className="w-full min-w-0 text-xs font-bold bg-transparent border-none text-text-primary focus:outline-none"
                     />
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export default function MediaModule() {
                   {watchedEpisodes.length} of {epCount} episodes watched
                 </p>
               </div>
-              <div className="relative w-16 h-16 flex items-center justify-center shrink-0 z-10">
+              <div className="relative z-10 flex items-center justify-center w-16 h-16 shrink-0">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                   <path className="text-border" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path className="text-rose-500" strokeDasharray={`${progressPercent}, 100`} strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -531,26 +531,22 @@ export default function MediaModule() {
               <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3 flex items-center gap-2 relative z-10">
                 Review & Notes
               </h4>
-              <div className="flex gap-4 items-stretch flex-grow z-10 min-h-0">
-                <textarea
-                  placeholder="Write your thoughts, reviews, or key takeaways..."
-                  value={notesText}
-                  onChange={e => saveAnimeMeta({ notesText: e.target.value })}
-                  className="flex-1 bg-surface-alt/40 border border-border/50 rounded-xl p-3 text-[11px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-rose-500/50 resize-none overflow-y-auto custom-scrollbar"
-                />
-                <div className="hidden sm:flex w-24 shrink-0 flex-col items-center justify-center bg-surface-alt/25 border border-border/40 rounded-xl p-2 relative overflow-hidden">
-                  <img 
-                    src={chibiMascotUrl || "/anime_chibi_mascot_1783275415079.png"} 
-                    alt="Mascot" 
-                    className={`w-20 h-20 object-contain filter drop-shadow-md transition-all ${theme === 'dark' ? '' : 'brightness-95'}`}
-                    onError={() => {
-                      if (chibiMascotUrl && chibiMascotUrl !== '/anime_chibi_mascot_1783275415079.png') {
-                        setChibiMascotUrl('/anime_chibi_mascot_1783275415079.png');
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+              <textarea
+                placeholder="Write your thoughts, reviews, or key takeaways..."
+                value={notesText}
+                onChange={e => saveAnimeMeta({ notesText: e.target.value })}
+                className="w-full bg-surface-alt/40 border border-border/50 rounded-xl p-3 text-[11px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-rose-500/50 resize-none flex-grow relative z-10 overflow-y-auto custom-scrollbar pr-20 pb-12"
+              />
+              <img 
+                src={chibiMascotUrl || "/anime_chibi_mascot_1783275415079.png"} 
+                alt="Mascot" 
+                className={`absolute bottom-3 right-3 w-28 h-28 object-contain filter drop-shadow-md transition-all z-20 pointer-events-none ${theme === 'dark' ? 'opacity-85' : 'brightness-95 opacity-90'}`}
+                onError={() => {
+                  if (chibiMascotUrl && chibiMascotUrl !== '/anime_chibi_mascot_1783275415079.png') {
+                    setChibiMascotUrl('/anime_chibi_mascot_1783275415079.png');
+                  }
+                }}
+              />
             </div>
 
           </div>
@@ -565,13 +561,13 @@ export default function MediaModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="flex flex-col max-w-6xl mx-auto w-full pb-16"
+      className="flex flex-col w-full max-w-6xl pb-16 mx-auto"
     >
       {/* ── Header ── */}
-      <div className="flex flex-col gap-4 sm:flex-row justify-between sm:items-end mb-8 pt-4">
+      <div className="flex flex-col justify-between gap-4 pt-4 mb-8 sm:flex-row sm:items-end">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1">Personal HQ</p>
-          <h2 className="text-4xl font-black tracking-tight text-text-primary leading-none">Media Log</h2>
+          <h2 className="text-4xl font-black leading-none tracking-tight text-text-primary">Media Log</h2>
           <p className="text-[15px] text-text-secondary font-medium mt-2">Your personal catalogue for anime & games.</p>
         </div>
         <button
@@ -648,7 +644,7 @@ export default function MediaModule() {
               <div className="w-20 h-20 rounded-[24px] flex items-center justify-center text-text-muted mb-6 border border-border" style={{ background: 'var(--bg-surface-alt)' }}>
                 {activeTab === 'ANIME' ? <IconMovie className="w-9 h-9" /> : <IconDeviceGamepad2 className="w-9 h-9" />}
               </div>
-              <h3 className="font-bold text-xl text-text-primary mb-2">No entries yet</h3>
+              <h3 className="mb-2 text-xl font-bold text-text-primary">No entries yet</h3>
               <p className="text-[15px] text-text-muted mb-8 text-center max-w-xs">
                 Start tracking your {activeTab === 'ANIME' ? 'anime' : 'games'}, add ratings and reviews.
               </p>
@@ -661,7 +657,7 @@ export default function MediaModule() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-left">
+            <div className="grid grid-cols-1 gap-5 text-left md:grid-cols-2 lg:grid-cols-3">
               <AnimatePresence>
                 {filteredLogs.map(log => {
                   const statusStyle = getStatusStyle(log.status);
@@ -702,7 +698,7 @@ export default function MediaModule() {
                       className="bg-surface border border-border rounded-[24px] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col gap-3 cursor-pointer"
                     >
                       {/* Title row */}
-                      <div className="flex justify-between items-start gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <h3 className="font-bold text-[16px] text-text-primary leading-snug tracking-tight line-clamp-2 flex-1">
                           {log.title}
                         </h3>
@@ -712,7 +708,7 @@ export default function MediaModule() {
                               e.stopPropagation();
                               openMediaEntryModal(activeTab, log);
                             }}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover transition-colors cursor-pointer"
+                            className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover"
                           >
                             <IconEdit className="w-3.5 h-3.5" />
                           </button>
@@ -721,7 +717,7 @@ export default function MediaModule() {
                               e.stopPropagation();
                               showConfirm('Delete Entry', 'Delete this media log?', () => deleteMediaLog(log.id));
                             }}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10"
                           >
                             <IconTrash className="w-3.5 h-3.5" />
                           </button>
@@ -729,7 +725,7 @@ export default function MediaModule() {
                       </div>
 
                       {/* Status + season/episodes */}
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
                           className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider"
                           style={{ background: statusStyle.bg, color: statusStyle.color }}

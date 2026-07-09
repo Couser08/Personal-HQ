@@ -9,7 +9,7 @@ import {
   IconNotebook
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.3.3';
+const APP_VERSION = '1.3.5';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -17,40 +17,39 @@ const FEATURES = [
     icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
     color: '#FF9500', // Apple Orange
     bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Diverse Wavy Overlays & Minimal Mode',
-    desc: 'Distinct completion animations for Pomodoro (breathing), Todo (confetti burst), and Habits (rising flames). Added a lightweight Minimal Wave mode that bypasses particle rendering to support lower-spec devices.',
+    title: 'Disjoint Import Auto-Grouping',
+    desc: 'Mindmap JSON imports with multiple disconnected tree roots are now automatically merged under a unified master root node to keep connections clear.',
   },
   {
     icon: <IconClock className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', // Apple Blue
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Inline Subtask Creator & Verification',
-    desc: 'Quickly create subtasks directly from your list. Pressing Enter now verifies and captures selected date/project metadata from the preview bar instantly instead of creating default tasks.',
+    title: 'Precision Camera Centering',
+    desc: 'Centering the camera focuses directly on the primary root node rather than the calculated bounds center, giving you instant orientation.',
   },
   {
     icon: <IconPalette className="w-5 h-5 stroke-[2]" />,
     color: '#FF2D55', // Apple Pink
     bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Secure Admin Assets Management',
-    desc: 'Admins can now securely upload, preview, and reset multiple preintegrated image assets (Dashboard illustration and Media log mascot chibi) live via the control panel.',
+    title: 'Stocks Module Cleanup',
+    desc: 'Removed the legacy Stocks tracking module to keep focus on productivity and core software developer workflow components.',
   },
   {
     icon: <IconNotebook className="w-5 h-5 stroke-[2]" />,
     color: '#34C759', // Apple Green
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Markdown PDF Export & Numbered Lists',
-    desc: 'Download styled notes as vector-text PDF documents directly from the preview pane. Trigger numbered lists via slash commands instantly.',
+    title: 'Whiteboard Canvas Refinements',
+    desc: 'Drawing coordinates, brush presets, and sidebar tools layouts are optimized for fluid, pixel-perfect sketch controls.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Added styled PDF document download option to Markdown Module preview pane',
-  'Integrated Numbered List option to editor slash (/) command actions menu',
-  'Redesigned Dashboard Hub layout into a clean, modern, and high-contrast SaaS-style workspace',
-  'Created uploader interfaces for multiple global illustrations inside the Admin control panel',
-  'Moved Media Log mascot into a separate column next to notes to avoid obstructing typing input',
-  'Added collapsible whiteboard sidebar state with a floating toggle button on drawing canvas',
-  'Created live metadata preview uploader and verification on Enter keypress in Checklist'
+  'Implemented automatic root-node grouping for disjoint JSON mindmap imports',
+  'Aligned camera centering behavior with the mindmap root node location',
+  'Removed legacy Stocks Module to declutter dashboard and navigation sidebar',
+  'Polished whiteboard drawing brush scaling presets and pen stroke smoothing',
+  'Refined Todo list checklist items metadata tags alignment',
+  'Fixed Pomodoro timer complete audio alerts synchronization issues'
 ];
 
 interface UpdatePopupProps {
@@ -81,7 +80,7 @@ function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
         </div>
         <div className="flex-1 min-w-0 pr-4">
           <h3 className="font-bold text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">Version {APP_VERSION}</h3>
-          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Major system updates are ready.</p>
+          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Minor patch fixes are ready.</p>
         </div>
       </div>
 
@@ -146,7 +145,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   Personal HQ Release {APP_VERSION}
                 </h2>
                 <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-2">
-                  A premium feature update bringing habits schema database backing, native Pomodoro alerts, drawing whiteboards polish, and responsive outliners.
+                  A patch release delivering smart disjoint JSON mindmap merging, centered cameras, whiteboard tools polish, and layout cleanup.
                 </p>
               </div>
             </div>

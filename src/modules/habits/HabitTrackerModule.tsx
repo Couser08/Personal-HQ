@@ -527,6 +527,34 @@ export default function HabitTrackerModule() {
                         </div>
                       </div>
                     </div>
+
+                    {/* GitHub-style Contribution Heatmap */}
+                    <div className="flex flex-col gap-1.5 bg-surface-alt/45 rounded-2xl p-3 border border-border/20">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Last 30 Days Consistency</span>
+                      <div className="flex flex-wrap gap-1 items-center mt-1 select-none">
+                        {Array.from({ length: 30 }).map((_, i) => {
+                          const date = new Date();
+                          date.setDate(date.getDate() - (29 - i));
+                          const dateStr = date.toISOString().split('T')[0];
+                          const isCompleted = habit.completedDates.includes(dateStr);
+                          const isCurrentToday = dateStr === todayStr;
+
+                          return (
+                            <div 
+                              key={i} 
+                              className={`w-3.5 h-3.5 rounded-sm transition-all duration-300 ${
+                                isCompleted 
+                                  ? 'bg-emerald-500 hover:brightness-110 shadow-sm' 
+                                  : isCurrentToday
+                                    ? 'border-2 border-primary bg-transparent animate-pulse'
+                                    : 'bg-border/60 dark:bg-neutral-800 hover:bg-border/90 dark:hover:bg-neutral-700'
+                              }`}
+                              title={`${date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}: ${isCompleted ? 'Completed' : 'Missed'}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 );
               })}

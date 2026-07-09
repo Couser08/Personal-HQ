@@ -73,6 +73,73 @@ export default function DrawingModule() {
   const canvasBackground = resolvedTheme === 'dark' ? '#121214' : '#ffffff';
   const panelBackground = resolvedTheme === 'dark' ? 'rgba(17, 17, 19, 0.92)' : 'rgba(255, 255, 255, 0.92)';
 
+  const addStickyNote = (color: string) => {
+    if (!excalidrawAPI) return;
+    const elements = excalidrawAPI.getSceneElements();
+    const appState = excalidrawAPI.getAppState();
+    
+    const zoom = appState.zoom.value || 1;
+    const centerX = -appState.scrollX + (window.innerWidth / 2) / zoom;
+    const centerY = -appState.scrollY + (window.innerHeight / 2) / zoom;
+    
+    const rectId = crypto.randomUUID();
+    const textId = crypto.randomUUID();
+    
+    const colors: Record<string, { bg: string; stroke: string }> = {
+      yellow: { bg: '#fef08a', stroke: '#ca8a04' },
+      blue: { bg: '#bfdbfe', stroke: '#2563eb' },
+      pink: { bg: '#fbcfe8', stroke: '#db2777' },
+      green: { bg: '#bbf7d0', stroke: '#16a34a' }
+    };
+    
+    const themeColors = colors[color] || colors.yellow;
+    
+    const stickyRect = {
+      id: rectId,
+      type: 'rectangle',
+      x: centerX - 80,
+      y: centerY - 80,
+      width: 160,
+      height: 160,
+      strokeColor: themeColors.stroke,
+      backgroundColor: themeColors.bg,
+      fillStyle: 'solid',
+      strokeWidth: 1.5,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      locked: false,
+      groupIds: [rectId],
+    };
+
+    const stickyText = {
+      id: textId,
+      type: 'text',
+      x: centerX - 60,
+      y: centerY - 30,
+      width: 120,
+      height: 60,
+      strokeColor: '#1e293b',
+      backgroundColor: 'transparent',
+      fillStyle: 'hachure',
+      strokeWidth: 1,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      locked: false,
+      text: 'Sticky Note\n(double click to edit)',
+      fontSize: 14,
+      fontFamily: 1,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      groupIds: [rectId],
+    };
+
+    excalidrawAPI.updateScene({
+      elements: [...elements, stickyRect, stickyText]
+    });
+  };
+
   // Sync active sketch ID to local storage for quick reload defaults
   useEffect(() => {
     localStorage.setItem('phq_active_sketch_id', activeSketchId);
@@ -433,6 +500,95 @@ export default function DrawingModule() {
                   Unground All
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Element Grouping */}
+          <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Element Grouping</span>
+              <span className="text-[9px] text-text-muted font-bold font-mono">Ctrl+G / Shift+G</span>
+            </div>
+            <p className="text-[9px] text-text-secondary leading-normal">
+              Select multiple elements to group them together for joint transformation and scaling.
+            </p>
+            <div className="flex gap-1.5 mt-1">
+              <button
+                onClick={() => {
+                  if (!excalidrawAPI) return;
+                  const elements = excalidrawAPI.getSceneElements();
+                  const appState = excalidrawAPI.getAppState();
+                  const selectedIds = appState.selectedElementIds || {};
+                  
+                  const groupId = crypto.randomUUID();
+                  const updated = elements.map((el: any) => {
+                    if (selectedIds[el.id]) {
+                      const groupIds = el.groupIds || [];
+                      return { ...el, groupIds: [...groupIds, groupId] };
+                    }
+                    return el;
+                  });
+                  excalidrawAPI.updateScene({ elements: updated });
+                }}
+                disabled={!excalidrawAPI}
+                className="flex-1 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
+              >
+                Group
+              </button>
+              <button
+                onClick={() => {
+                  if (!excalidrawAPI) return;
+                  const elements = excalidrawAPI.getSceneElements();
+                  const appState = excalidrawAPI.getAppState();
+                  const selectedIds = appState.selectedElementIds || {};
+                  
+                  const updated = elements.map((el: any) => {
+                    if (selectedIds[el.id] && el.groupIds && el.groupIds.length > 0) {
+                      return { ...el, groupIds: el.groupIds.slice(0, -1) };
+                    }
+                    return el;
+                  });
+                  excalidrawAPI.updateScene({ elements: updated });
+                }}
+                disabled={!excalidrawAPI}
+                className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
+              >
+                Ungroup
+              </button>
+            </div>
+          </div>
+
+          {/* Sticky Notes */}
+          <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Sticky Notes</span>
+            <p className="text-[9px] text-text-secondary leading-normal">
+              Quickly drop a colored, grouped post-it note at the center of your screen viewport.
+            </p>
+            <div className="grid grid-cols-4 gap-1.5 mt-1">
+              <button
+                onClick={() => addStickyNote('yellow')}
+                disabled={!excalidrawAPI}
+                className="h-6 rounded-md bg-[#fef08a] border border-[#ca8a04]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Add Yellow Sticky Note"
+              />
+              <button
+                onClick={() => addStickyNote('blue')}
+                disabled={!excalidrawAPI}
+                className="h-6 rounded-md bg-[#bfdbfe] border border-[#2563eb]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Add Blue Sticky Note"
+              />
+              <button
+                onClick={() => addStickyNote('pink')}
+                disabled={!excalidrawAPI}
+                className="h-6 rounded-md bg-[#fbcfe8] border border-[#db2777]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Add Pink Sticky Note"
+              />
+              <button
+                onClick={() => addStickyNote('green')}
+                disabled={!excalidrawAPI}
+                className="h-6 rounded-md bg-[#bbf7d0] border border-[#16a34a]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Add Green Sticky Note"
+              />
             </div>
           </div>
 

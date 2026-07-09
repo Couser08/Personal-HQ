@@ -9,6 +9,7 @@ import {
   IconMaximize, IconMinimize
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
+import { useToastStore } from '../../store/useToastStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -335,6 +336,8 @@ export default function MindmapModule() {
   const activeMindmap = useMemo(() => {
     return mindmaps.find(m => m.id === activeMindmapId) || null;
   }, [mindmaps, activeMindmapId]);
+
+
 
   // Set first mindmap active automatically, or honour pendingMindmapId from Dashboard
   useEffect(() => {
@@ -1026,6 +1029,85 @@ function MindmapCanvas({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const showConfirm = useAppStore(state => state.showConfirm);
+  const addToast = useToastStore(s => s.addToast);
+
+  const handleTidyLayout = () => {
+    if (!mindmap) return;
+    const rootNode = mindmap.nodes.find(n => n.isRoot);
+    if (!rootNode) return;
+
+    // Reset root position to center
+    const newNodes = [...mindmap.nodes];
+    const rootIndex = newNodes.findIndex(n => n.id === rootNode.id);
+    const rx = 450;
+    const ry = 250;
+    newNodes[rootIndex] = { ...rootNode, x: rx, y: ry };
+
+    // Get direct children of root
+    const rootChildren = newNodes.filter(n => n.parentId === rootNode.id);
+    
+    // Split children into left and right
+    const rightChildren: typeof rootChildren = [];
+    const leftChildren: typeof rootChildren = [];
+    
+    rootChildren.forEach((child, index) => {
+      const side = child.side || (index % 2 === 0 ? 'right' : 'left');
+      if (side === 'left') {
+        leftChildren.push(child);
+      } else {
+        rightChildren.push(child);
+      }
+    });
+
+    // Helper function to recursively layout sub-trees
+    const layoutSubTree = (parentId: string, parentX: number, parentY: number, direction: 'left' | 'right', verticalSpacing: number) => {
+      const children = newNodes.filter(n => n.parentId === parentId);
+      if (children.length === 0) return;
+
+      const totalHeight = (children.length - 1) * verticalSpacing;
+      const startY = parentY - totalHeight / 2;
+
+      children.forEach((child, index) => {
+        const childX = direction === 'right' ? parentX + 220 : parentX - 220;
+        const childY = startY + index * verticalSpacing;
+        
+        const childIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[childIdx] = { ...child, x: childX, y: childY, side: direction };
+
+        // Recurse for grandchildren with slightly tighter spacing
+        layoutSubTree(child.id, childX, childY, direction, verticalSpacing * 0.85);
+      });
+    };
+
+    // Layout right sub-tree
+    if (rightChildren.length > 0) {
+      const rTotalHeight = (rightChildren.length - 1) * 120;
+      const rStartY = ry - rTotalHeight / 2;
+      rightChildren.forEach((child, idx) => {
+        const cx = rx + 240;
+        const cy = rStartY + idx * 120;
+        const childIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[childIdx] = { ...child, x: cx, y: cy, side: 'right' };
+        layoutSubTree(child.id, cx, cy, 'right', 90);
+      });
+    }
+
+    // Layout left sub-tree
+    if (leftChildren.length > 0) {
+      const lTotalHeight = (leftChildren.length - 1) * 120;
+      const lStartY = ry - lTotalHeight / 2;
+      leftChildren.forEach((child, idx) => {
+        const cx = rx - 240;
+        const cy = lStartY + idx * 120;
+        const childIdx = newNodes.findIndex(n => n.id === child.id);
+        newNodes[childIdx] = { ...child, x: cx, y: cy, side: 'left' };
+        layoutSubTree(child.id, cx, cy, 'left', 90);
+      });
+    }
+
+    onUpdate({ nodes: newNodes });
+    addToast('Layout Aligned', 'Nodes have been reorganized neatly.', 'success');
+  };
   
   // Apple Notes Modal State
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -1674,10 +1756,45 @@ function MindmapCanvas({
       const sourceNode = mindmap.nodes.find(n => n.id === link.source);
       const targetNode = mindmap.nodes.find(n => n.id === link.target);
       if (!sourceNode || !targetNode) return;
-      const start = { x: sourceNode.x + 80, y: sourceNode.y + 22 };
-      const end = { x: targetNode.x + 80, y: targetNode.y + 22 };
-      
-      svgContent += `<path d="M ${start.x} ${start.y} C ${start.x + (end.x - start.x)/2} ${start.y}, ${start.x + (end.x - start.x)/2} ${end.y}, ${end.x} ${end.y}" fill="none" stroke="#cbd5e1" stroke-width="2" />`;
+
+      let pathData = '';
+      const side = targetNode.side || 'right';
+
+      if (side === 'left') {
+        const xStart = sourceNode.isRoot ? sourceNode.x : sourceNode.x;
+        const yStart = sourceNode.isRoot ? sourceNode.y + 32 : sourceNode.y + 22;
+        const xEnd = targetNode.x + 160;
+        const yEnd = targetNode.y + 22;
+        const controlX1 = xStart - (xStart - xEnd) / 2;
+        const controlX2 = xStart - (xStart - xEnd) / 2;
+        pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
+      } else if (side === 'right') {
+        const xStart = sourceNode.isRoot ? sourceNode.x + 180 : sourceNode.x + 160;
+        const yStart = sourceNode.isRoot ? sourceNode.y + 32 : sourceNode.y + 22;
+        const xEnd = targetNode.x;
+        const yEnd = targetNode.y + 22;
+        const controlX1 = xStart + (xEnd - xStart) / 2;
+        const controlX2 = xStart + (xEnd - xStart) / 2;
+        pathData = `M ${xStart} ${yStart} C ${controlX1} ${yStart}, ${controlX2} ${yEnd}, ${xEnd} ${yEnd}`;
+      } else {
+        const xStart = sourceNode.isRoot ? sourceNode.x + 90 : sourceNode.x + 80;
+        const yStart = sourceNode.isRoot ? sourceNode.y + 64 : sourceNode.y + 44;
+        const xEnd = targetNode.x + 80;
+        const yEnd = targetNode.y;
+        const controlY1 = yStart + (yEnd - yStart) / 2;
+        const controlY2 = yStart + (yEnd - yStart) / 2;
+        pathData = `M ${xStart} ${yStart} C ${xStart} ${controlY1}, ${xEnd} ${controlY2}, ${xEnd} ${yEnd}`;
+      }
+
+      let strokeColor = '#cbd5e1';
+      if (sourceNode.color && sourceNode.color !== 'gray') {
+        strokeColor = sourceNode.color === 'rose' ? '#fda4af' :
+                      sourceNode.color === 'amber' ? '#fcd34d' :
+                      sourceNode.color === 'purple' ? '#d8b4fe' :
+                      sourceNode.color === 'green' ? '#6ee7b7' : '#93c5fd';
+      }
+
+      svgContent += `<path d="${pathData}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" />`;
     });
 
     // Draw nodes
@@ -2280,6 +2397,15 @@ function MindmapCanvas({
             title="Open Advanced Notes & Media Panel"
           >
             <IconBook className="w-4 h-4" />
+          </button>
+
+          {/* Tidy Layout */}
+          <button
+            onClick={handleTidyLayout}
+            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt transition-colors"
+            title="Auto Align Mindmap Nodes neatly"
+          >
+            <IconLayout className="w-4 h-4" />
           </button>
 
           {/* Outline Style customizer */}

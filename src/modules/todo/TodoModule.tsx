@@ -10,6 +10,7 @@ import {
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
+import { useToastStore } from '../../store/useToastStore';
 
 const isToday = (dateStr: string | null) => {
   if (!dateStr) return false;
@@ -30,6 +31,7 @@ const isUpcoming = (dateStr: string | null) => {
 };
 
 export default function TodoModule() {
+  const addToast = useToastStore(s => s.addToast);
   const { 
     todoTasks, todoProjects, 
     addTodoTask, updateTodoTask, deleteTodoTask, restoreTodoTask, emptyTodoTrash,
@@ -88,7 +90,10 @@ export default function TodoModule() {
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskTitle.trim()) {
+      addToast('Required Field Missing', 'Please enter a task title.', 'warning');
+      return;
+    }
 
     let finalStartTime = taskStartTime;
     let finalEndTime = taskEndTime;
@@ -101,6 +106,21 @@ export default function TodoModule() {
       const tm = parseInt(toMin) || 30;
       finalStartTime = `${fh}:${fm.toString().padStart(2, '0')} ${fromAmPm}`;
       finalEndTime = `${th}:${tm.toString().padStart(2, '0')} ${toAmPm}`;
+    }
+
+    if (!selectedDate) {
+      addToast('Required Field Missing', 'Please select a due date for the task.', 'warning');
+      return;
+    }
+
+    if (!finalStartTime || !finalEndTime) {
+      addToast('Required Field Missing', 'Please select both start and end times for the task.', 'warning');
+      return;
+    }
+
+    if (newTaskPriority === 'none') {
+      addToast('Required Field Missing', 'Please select a priority (Low, Medium, or High).', 'warning');
+      return;
     }
 
     addTodoTask({

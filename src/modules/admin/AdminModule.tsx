@@ -57,7 +57,16 @@ export default function AdminModule() {
       // Dispatch events to let modules know they need to refresh
       window.dispatchEvent(new CustomEvent(isDash ? 'dashboard-illustration-updated' : 'media-mascot-updated'));
     } catch (err: any) {
-      addToast('Upload Failed', err.message || 'An error occurred during upload.', 'error');
+      let msg = err.message || 'An error occurred during upload.';
+      if (err.message && (
+        err.message.toLowerCase().includes('bucket') ||
+        err.message.toLowerCase().includes('not found') ||
+        err.message.toLowerCase().includes('does not exist') ||
+        err.status === 404
+      )) {
+        msg = "Storage bucket 'avatars' not found. Please log in to your Supabase Console, navigate to Storage, and create a public bucket named 'avatars' with public access.";
+      }
+      addToast('Upload Failed', msg, 'error');
     } finally {
       if (isDash) setDashUploading(false);
       else setMascotUploading(false);

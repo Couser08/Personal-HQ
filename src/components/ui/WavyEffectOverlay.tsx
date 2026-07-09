@@ -102,7 +102,7 @@ export const WavyEffectOverlay = () => {
       >
         {/* Dynamic Blobs in background - Hidden in minimal mode for low CPU/GPU load */}
         {settings?.wavyEffectMode !== 'minimal' && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-70">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-70">
             <motion.div 
               animate={{ 
                 scale: [1, 1.15, 1],
@@ -132,7 +132,7 @@ export const WavyEffectOverlay = () => {
           <>
             {/* 1. Pomodoro Breathing Ripples */}
             {activeEffect === 'pomodoro' && (
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 {[...Array(3)].map((_, idx) => (
                   <motion.div
                     key={idx}
@@ -144,7 +144,7 @@ export const WavyEffectOverlay = () => {
                       delay: idx * 1.1,
                       repeat: Infinity,
                     }}
-                    className="absolute rounded-full border"
+                    className="absolute border rounded-full"
                     style={{
                       borderColor: config.waveColor,
                       boxShadow: `0 0 40px ${config.waveColor}33`,
@@ -209,7 +209,7 @@ export const WavyEffectOverlay = () => {
                         repeat: Infinity,
                         repeatDelay: Math.random() * 0.5
                       }}
-                      className="absolute left-1/2 top-1/2 rounded-full"
+                      className="absolute rounded-full left-1/2 top-1/2"
                       style={{ 
                         width: size,
                         height: size,
@@ -238,7 +238,7 @@ export const WavyEffectOverlay = () => {
                       initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
                       animate={{ x: tx, y: ty, scale: [0, 1.4, 0], opacity: [1, 0], rotate: 180 }}
                       transition={{ duration: 2.2, ease: 'easeOut', delay: i * 0.04 }}
-                      className="absolute left-1/2 top-1/2 w-5 h-5 text-purple-400"
+                      className="absolute w-5 h-5 text-purple-400 left-1/2 top-1/2"
                       style={{ transform: 'translate(-50%, -50%)' }}
                     >
                       <IconSparkles className="w-full h-full" />
@@ -261,7 +261,7 @@ export const WavyEffectOverlay = () => {
         >
           {/* Radial premium gradient bloom background */}
           <div 
-            className="absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl pointer-events-none animate-pulse" 
+            className="absolute w-40 h-40 rounded-full pointer-events-none -top-16 -left-16 blur-3xl animate-pulse" 
             style={{ backgroundColor: `${config.waveColor}20` }} 
           />
 
