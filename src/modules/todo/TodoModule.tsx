@@ -5,7 +5,8 @@ import {
   IconCheck, IconPlus, IconTrash, IconCalendar, 
   IconFlag, IconTag, IconSearch,
   IconSun, IconCalendarEvent, IconLayoutList,
-  IconChevronLeft, IconChevronRight, IconClock, IconEdit
+  IconChevronLeft, IconChevronRight, IconClock, IconEdit,
+  IconList
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
@@ -67,6 +68,8 @@ export default function TodoModule() {
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const [newTaskTagInput, setNewTaskTagInput] = useState('');
   const [newTaskTags, setNewTaskTags] = useState<string[]>([]);
+  const [newTaskSubtasks, setNewTaskSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
+  const [showSubtasksDropdown, setShowSubtasksDropdown] = useState(false);
   const [completingIds, setCompletingIds] = useState<string[]>([]);
 
   // Time range picker states
@@ -86,24 +89,46 @@ export default function TodoModule() {
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
+
+    let finalStartTime = taskStartTime;
+    let finalEndTime = taskEndTime;
+
+    // Auto-parse time fields if submit is fired while time picker is still open
+    if (showTimePicker) {
+      const fh = parseInt(fromHour) || 10;
+      const fm = parseInt(fromMin) || 0;
+      const th = parseInt(toHour) || 10;
+      const tm = parseInt(toMin) || 30;
+      finalStartTime = `${fh}:${fm.toString().padStart(2, '0')} ${fromAmPm}`;
+      finalEndTime = `${th}:${tm.toString().padStart(2, '0')} ${toAmPm}`;
+    }
+
     addTodoTask({
       id: crypto.randomUUID(),
       title: newTaskTitle.trim(),
       projectId: newTaskProject,
       priority: newTaskPriority,
       tags: newTaskTags,
+      subtasks: newTaskSubtasks,
       completed: false,
       dueDate: selectedDate ? selectedDate.toISOString() : null,
-      startTime: taskStartTime || null,
-      endTime: taskEndTime || null,
+      startTime: finalStartTime || null,
+      endTime: finalEndTime || null,
       createdAt: new Date().toISOString(),
     });
+
     setNewTaskTitle('');
     setNewTaskPriority('none');
     setSelectedDate(new Date());
     setNewTaskTags([]);
+    setNewTaskSubtasks([]);
     setTaskStartTime('');
     setTaskEndTime('');
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    setShowPriorityDropdown(false);
+    setShowTagsDropdown(false);
+    setShowSubtasksDropdown(false);
   };
 
   const handleToggleTask = (id: string) => {
@@ -402,6 +427,38 @@ export default function TodoModule() {
               onChange={e => setNewTaskTitle(e.target.value)}
               className="w-full bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-xl font-medium mb-6"
             />
+            
+            {/* Live Preview Badge Bar */}
+            {(selectedDate || taskStartTime || newTaskPriority !== 'none' || newTaskTags.length > 0 || newTaskSubtasks.length > 0) && (
+              <div className="flex flex-wrap gap-2 mb-6 p-3 bg-surface-alt/55 rounded-2xl border border-border/40 text-[11px] font-semibold text-text-secondary items-center animate-fade-in">
+                <span className="text-[10px] uppercase font-bold text-text-muted">Task Preview:</span>
+                {selectedDate && (
+                  <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    📅 {selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
+                {taskStartTime && taskEndTime && (
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                    ⏰ {taskStartTime} - {taskEndTime}
+                  </span>
+                )}
+                {newTaskPriority !== 'none' && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 capitalize font-bold">
+                    🚩 {newTaskPriority} Priority
+                  </span>
+                )}
+                {newTaskTags.map(tag => (
+                  <span key={tag} className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                    🏷️ {tag}
+                  </span>
+                ))}
+                {newTaskSubtasks.length > 0 && (
+                  <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                    📋 {newTaskSubtasks.length} Subtask(s)
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative">
@@ -738,6 +795,79 @@ export default function TodoModule() {
                             }
                           }}
                           className="px-2 py-1 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Subtasks Dropdown */}
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowSubtasksDropdown(!showSubtasksDropdown);
+                      setShowDatePicker(false);
+                      setShowTimePicker(false);
+                      setShowPriorityDropdown(false);
+                      setShowTagsDropdown(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-alt hover:bg-surface-hover rounded-lg border border-border text-xs font-semibold text-text-secondary transition-colors"
+                  >
+                    <IconList className="w-4 h-4 text-orange-500" /> 
+                    {newTaskSubtasks.length > 0 ? `${newTaskSubtasks.length} Subtask(s)` : 'Subtasks'}
+                  </button>
+                  {showSubtasksDropdown && (
+                    <div className="absolute bottom-full left-0 mb-2 w-64 max-w-[calc(100vw-3rem)] bg-surface border border-border rounded-xl shadow-lg p-3 z-50 animate-fade-in flex flex-col gap-2">
+                      <span className="font-bold text-xs text-text-primary block mb-1">Add Subtasks</span>
+                      {newTaskSubtasks.length > 0 && (
+                        <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto mb-1 custom-scrollbar">
+                          {newTaskSubtasks.map(st => (
+                            <div key={st.id} className="flex items-center justify-between gap-2 text-xs py-1 px-2 bg-surface-alt rounded-lg">
+                              <span className="truncate text-text-secondary flex-1">{st.title}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => setNewTaskSubtasks(prev => prev.filter(x => x.id !== st.id))}
+                                className="text-rose-500 hover:text-rose-600 font-bold px-1"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          id="quick-subtask-input"
+                          placeholder="Subtask name..."
+                          className="flex-1 bg-surface-alt border-none text-xs p-1.5 rounded-lg outline-none text-text-primary"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.currentTarget.value.trim();
+                              if (val) {
+                                setNewTaskSubtasks(prev => [...prev, { id: crypto.randomUUID(), title: val, completed: false }]);
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.getElementById('quick-subtask-input') as HTMLInputElement;
+                            if (input) {
+                              const val = input.value.trim();
+                              if (val) {
+                                setNewTaskSubtasks(prev => [...prev, { id: crypto.randomUUID(), title: val, completed: false }]);
+                                input.value = '';
+                              }
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-650 transition-colors"
                         >
                           Add
                         </button>

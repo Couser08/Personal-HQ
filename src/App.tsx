@@ -24,7 +24,7 @@ const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
 const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
-const ReferenceModule = lazy(() => import('./modules/reference/ReferenceModule'));
+const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
 
 function LoadingSplash() {
   return (
@@ -173,6 +173,9 @@ function AppContent() {
   const activeModule = useAppStore((state) => state.activeModule);
 
   const renderModule = () => {
+    const { user } = useAuthStore.getState();
+    const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
+
     switch (activeModule) {
       case 'dashboard': return <DashboardModule />;
       case 'journal': return <JournalModule />;
@@ -191,7 +194,7 @@ function AppContent() {
       case 'drawing': return <DrawingModule />;
       case 'markdown': return <MarkdownModule />;
       case 'condition': return <ConditionModule />;
-      case 'reference': return <ReferenceModule />;
+      case 'admin': return isAdmin ? <AdminModule /> : <DashboardModule />;
       default: return <DashboardModule />;
     }
   };

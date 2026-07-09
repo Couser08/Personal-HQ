@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   reduceBlur: false,
   reduceAnimations: false,
   wavyEffectEnabled: true,
+  wavyEffectMode: 'premium',
 };
 
 const sanitizeActiveModule = (module: string) => {
@@ -468,6 +469,7 @@ export interface AppSettings {
   reduceBlur: boolean;
   reduceAnimations: boolean;
   wavyEffectEnabled?: boolean;
+  wavyEffectMode?: 'premium' | 'minimal';
 }
 
 export interface PomodoroStats {

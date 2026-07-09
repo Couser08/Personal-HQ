@@ -100,80 +100,155 @@ export const WavyEffectOverlay = () => {
         onClick={() => setActiveEffect(null)}
         className="fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden pointer-events-auto bg-black/35 backdrop-blur-[6px] select-none"
       >
-        {/* Dynamic Blobs in background */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-70">
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.15, 1],
-              rotate: [0, 90, 0],
-              x: [-20, 20, -20],
-              y: [-10, 10, -10]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute w-[450px] h-[450px] rounded-full mix-blend-screen filter blur-[80px] ${config.accentBlob1}`} 
-          />
-          <motion.div 
-            animate={{ 
-              scale: [1.1, 0.95, 1.1],
-              rotate: [90, 0, 90],
-              x: [30, -30, 30],
-              y: [20, -20, 20]
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute w-[380px] h-[380px] rounded-full mix-blend-screen filter blur-[70px] ${config.accentBlob2}`} 
-            style={{ transform: 'translate(60px, -40px)' }}
-          />
-        </div>
-
-        {/* Concentric Expanding Ripple Rings */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          {[...Array(4)].map((_, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ scale: 0.05, opacity: 0.9 }}
-              animate={{ scale: 3.2, opacity: 0 }}
-              transition={{
-                duration: 3.2,
-                ease: [0.16, 1, 0.3, 1],
-                delay: idx * 0.7,
-                repeat: Infinity,
+        {/* Dynamic Blobs in background - Hidden in minimal mode for low CPU/GPU load */}
+        {settings?.wavyEffectMode !== 'minimal' && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-70">
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.15, 1],
+                rotate: [0, 90, 0],
+                x: [-20, 20, -20],
+                y: [-10, 10, -10]
               }}
-              className="absolute rounded-full border-2"
-              style={{
-                borderColor: config.waveColor,
-                boxShadow: `0 0 50px ${config.waveColorAlpha}, inset 0 0 50px ${config.waveColorAlpha}`,
-                width: '450px',
-                height: '450px',
-                background: `radial-gradient(circle, ${config.waveColorAlpha} 0%, transparent 65%)`
-              }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+              className={`absolute w-[450px] h-[450px] rounded-full mix-blend-screen filter blur-[80px] ${config.accentBlob1}`} 
             />
-          ))}
-        </div>
+            <motion.div 
+              animate={{ 
+                scale: [1.1, 0.95, 1.1],
+                rotate: [90, 0, 90],
+                x: [30, -30, 30],
+                y: [20, -20, 20]
+              }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              className={`absolute w-[380px] h-[380px] rounded-full mix-blend-screen filter blur-[70px] ${config.accentBlob2}`} 
+              style={{ transform: 'translate(60px, -40px)' }}
+            />
+          </div>
+        )}
 
-        {/* Floating Confetti-like bits for extra premiumness */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(12)].map((_, i) => {
-            const angle = (i * 360) / 12;
-            const distance = 160 + Math.random() * 80;
-            const rad = (angle * Math.PI) / 180;
-            const tx = Math.cos(rad) * distance;
-            const ty = Math.sin(rad) * distance;
-            return (
-              <motion.div
-                key={i}
-                initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
-                animate={{ x: tx, y: ty, scale: [0, 1.2, 0.8, 0], opacity: 0, rotate: 360 }}
-                transition={{ duration: 2.5, ease: 'easeOut', delay: 0.2 }}
-                className="absolute left-1/2 top-1/2 w-3.5 h-3.5 rounded-lg"
-                style={{
-                  backgroundColor: config.waveColor,
-                  boxShadow: `0 0 10px ${config.waveColor}`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-              />
-            );
-          })}
-        </div>
+        {/* Distinct Completion Effects - Bypassed in minimal mode */}
+        {settings?.wavyEffectMode !== 'minimal' && (
+          <>
+            {/* 1. Pomodoro Breathing Ripples */}
+            {activeEffect === 'pomodoro' && (
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                {[...Array(3)].map((_, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ scale: 0.1, opacity: 0.8 }}
+                    animate={{ scale: [0.1, 1.9, 2.3], opacity: [0.8, 0.35, 0] }}
+                    transition={{
+                      duration: 3.8,
+                      ease: 'easeInOut',
+                      delay: idx * 1.1,
+                      repeat: Infinity,
+                    }}
+                    className="absolute rounded-full border"
+                    style={{
+                      borderColor: config.waveColor,
+                      boxShadow: `0 0 40px ${config.waveColor}33`,
+                      width: '420px',
+                      height: '420px',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* 2. Todo Celebratory Confetti Burst */}
+            {activeEffect === 'todo' && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(16)].map((_, i) => {
+                  const angle = (i * 360) / 16 + (Math.random() * 10 - 5);
+                  const distance = 130 + Math.random() * 110;
+                  const rad = (angle * Math.PI) / 180;
+                  const tx = Math.cos(rad) * distance;
+                  const ty = Math.sin(rad) * distance;
+                  const colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
+                  const particleColor = colors[i % colors.length];
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
+                      animate={{ x: tx, y: ty, scale: [0, 1.5, 0.7, 0], opacity: [1, 1, 0], rotate: 360 }}
+                      transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute left-1/2 top-1/2 w-3.5 h-3.5 rounded-full"
+                      style={{ 
+                        backgroundColor: particleColor, 
+                        transform: 'translate(-50%, -50%)',
+                        boxShadow: `0 0 8px ${particleColor}88`
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 3. Habits Flame Sparks */}
+            {activeEffect === 'habits' && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(14)].map((_, i) => {
+                  const startX = (Math.random() - 0.5) * 160;
+                  const endX = startX + (Math.random() - 0.5) * 50;
+                  const size = 6 + Math.random() * 6;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ x: startX, y: 160, scale: 0, opacity: 0 }}
+                      animate={{ 
+                        y: [-120, -240], 
+                        x: [startX, endX],
+                        scale: [0, 1.4, 0.7, 0], 
+                        opacity: [0, 0.95, 0.4, 0] 
+                      }}
+                      transition={{ 
+                        duration: 2.0 + Math.random() * 1.5, 
+                        ease: 'easeOut',
+                        delay: Math.random() * 1.0,
+                        repeat: Infinity,
+                        repeatDelay: Math.random() * 0.5
+                      }}
+                      className="absolute left-1/2 top-1/2 rounded-full"
+                      style={{ 
+                        width: size,
+                        height: size,
+                        background: 'radial-gradient(circle, #fb923c 0%, #f43f5e 100%)',
+                        boxShadow: '0 0 12px #f97316',
+                        transform: 'translate(-50%, -50%)' 
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 4. Test Colorful Sparkle Burst */}
+            {activeEffect === 'test' && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(12)].map((_, i) => {
+                  const angle = (i * 360) / 12;
+                  const distance = 130 + Math.random() * 80;
+                  const rad = (angle * Math.PI) / 180;
+                  const tx = Math.cos(rad) * distance;
+                  const ty = Math.sin(rad) * distance;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
+                      animate={{ x: tx, y: ty, scale: [0, 1.4, 0], opacity: [1, 0], rotate: 180 }}
+                      transition={{ duration: 2.2, ease: 'easeOut', delay: i * 0.04 }}
+                      className="absolute left-1/2 top-1/2 w-5 h-5 text-purple-400"
+                      style={{ transform: 'translate(-50%, -50%)' }}
+                    >
+                      <IconSparkles className="w-full h-full" />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
 
         {/* Central Premium Card */}
         <motion.div

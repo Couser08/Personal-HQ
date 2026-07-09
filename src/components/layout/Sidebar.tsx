@@ -4,7 +4,7 @@ import {
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
-  IconFileText, IconTerminal, IconFlame
+  IconFileText, IconFlame, IconShieldLock
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2 },
   { id: 'markdown', label: 'Markdown Creator', icon: IconFileText },
   { id: 'condition', label: 'Condition Workstation', icon: IconChecklist },
-  { id: 'reference', label: 'Dev Reference', icon: IconTerminal },
+  { id: 'admin', label: 'Admin Panel', icon: IconShieldLock },
   { id: 'utilities', label: 'Utilities', icon: IconLayoutGrid },
 ];
 
@@ -159,15 +159,19 @@ export const Sidebar = () => {
       </div>
 
       <nav className="sidebar-scroll" style={{ flex: 1, padding: isCollapsed ? '12px 0' : '12px 14px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-          const active = activeModule === id;
-          return (
-            <motion.button key={id} id={'tour-' + id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(active)} title={isCollapsed ? label : undefined}>
-              <Icon size={18} style={{ flexShrink: 0 }} />
-              <span className="sidebar-label" style={{ whiteSpace: 'nowrap' }}>{label}</span>
-            </motion.button>
-          );
-        })}
+        {(() => {
+          const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
+          const visibleNavItems = NAV_ITEMS.filter(item => item.id !== 'admin' || isAdmin);
+          return visibleNavItems.map(({ id, label, icon: Icon }) => {
+            const active = activeModule === id;
+            return (
+              <motion.button key={id} id={'tour-' + id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(active)} title={isCollapsed ? label : undefined}>
+                <Icon size={18} style={{ flexShrink: 0 }} />
+                <span className="sidebar-label" style={{ whiteSpace: 'nowrap' }}>{label}</span>
+              </motion.button>
+            );
+          });
+        })()}
 
         <div style={{ height: 1, background: 'var(--border-border)', margin: isCollapsed ? '8px 16px' : '12px 4px' }} />
 
@@ -246,16 +250,19 @@ export const Sidebar = () => {
   );
 };
 
-const BOTTOM_NAV = NAV_ITEMS.slice(0, 4);
-
 export const MobileBottomNav = () => {
   const { activeModule, setActiveModule } = useAppStore(useShallow(state => ({
     activeModule: state.activeModule,
     setActiveModule: state.setActiveModule
   })));
+  const { user } = useAuthStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const MORE_NAV = NAV_ITEMS.slice(4);
+  const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
+  const visibleNavItems = NAV_ITEMS.filter(item => item.id !== 'admin' || isAdmin);
+
+  const BOTTOM_NAV = visibleNavItems.slice(0, 4);
+  const MORE_NAV = visibleNavItems.slice(4);
 
   return (
     <>

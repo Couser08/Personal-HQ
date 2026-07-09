@@ -307,6 +307,7 @@ const SLASH_COMMANDS = [
   { label: 'Heading 3', syntax: '### ', desc: 'Small subsection heading' },
   { label: 'Checklist Item', syntax: '- [ ] ', desc: 'To-do list item' },
   { label: 'Bullet List', syntax: '- ', desc: 'Simple bullet point' },
+  { label: 'Numbered List', syntax: '1. ', desc: 'Numbered list item' },
   { label: 'Table', syntax: '\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n', desc: 'Insert markdown table' },
   { label: 'Code Block', syntax: '```javascript\n\n```', desc: 'Code block syntax' },
   { label: 'Alert Note', syntax: '> [!NOTE]\n> ', desc: 'Blue notice box' },
@@ -464,6 +465,107 @@ export default function MarkdownModule() {
     anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Export rendered Markdown preview to PDF
+  const handleExportPDF = () => {
+    const previewEl = document.getElementById('markdown-preview-pane');
+    if (!previewEl) return;
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const doc = printFrame.contentWindow?.document || printFrame.contentDocument;
+    if (!doc) return;
+
+    // Get style elements and link tags to match styling
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(node => node.outerHTML)
+      .join('\n');
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>${title || 'document'}</title>
+          ${styles}
+          <style>
+            body {
+              background: white !important;
+              color: black !important;
+              padding: 40px !important;
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            }
+            .md-code-block {
+              background: #f4f4f5 !important;
+              border: 1px solid #e4e4e7 !important;
+              color: #18181b !important;
+              page-break-inside: avoid;
+            }
+            .md-code-header {
+              background: #e4e4e7 !important;
+              border-bottom: 1px solid #d4d4d8 !important;
+              color: #27272a !important;
+            }
+            .code-line {
+              border-bottom: none !important;
+            }
+            .code-ln {
+              color: #a1a1aa !important;
+              border-right: 1px solid #e4e4e7 !important;
+            }
+            code, pre {
+              background: #f4f4f5 !important;
+              color: #09090b !important;
+            }
+            h1, h2, h3, h4, h5, h6 {
+              color: black !important;
+              border-color: #e4e4e7 !important;
+              page-break-after: avoid;
+            }
+            th, td {
+              border-color: #d4d4d8 !important;
+            }
+            thead {
+              background: #f4f4f5 !important;
+            }
+            blockquote {
+              border-color: #d4d4d8 !important;
+              color: #71717a !important;
+            }
+            hr {
+              border-color: #e4e4e7 !important;
+            }
+            @page {
+              size: A4;
+              margin: 20mm;
+            }
+          </style>
+        </head>
+        <body class="dark:bg-white dark:text-black">
+          <div class="markdown-preview-content md-preview">
+            ${previewEl.innerHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() {
+                window.frameElement.remove();
+              }, 100);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
   };
 
   // Copy to clipboard
@@ -757,6 +859,15 @@ export default function MarkdownModule() {
                   </button>
                   
                   <button
+                    onClick={handleExportPDF}
+                    className="btn btn-secondary btn-md text-xs py-1.5 px-3 h-auto min-h-0 rounded-xl flex items-center gap-1.5 cursor-pointer font-sans hover:text-primary transition-all"
+                    title="Download rendered PDF"
+                  >
+                    <IconFileText size={14} />
+                    <span>PDF</span>
+                  </button>
+                  
+                  <button
                     onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
                     className="btn btn-secondary btn-md text-xs py-1.5 px-2 h-auto min-h-0 rounded-xl flex items-center justify-center cursor-pointer hover:text-primary transition-all font-sans"
                     title={isWorkspaceOpen ? "Hide Preview Pane" : "Show Preview Pane"}
@@ -862,6 +973,7 @@ export default function MarkdownModule() {
                   <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 bg-surface border border-border/40 rounded-2xl p-6 text-left">
                     {/* Rendered Preview with md-preview layout class */}
                     <article 
+                      id="markdown-preview-pane"
                       className="max-w-none text-text-primary md-preview overflow-hidden break-words"
                       dangerouslySetInnerHTML={{ __html: parsedHtml }}
                     />

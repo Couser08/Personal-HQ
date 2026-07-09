@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
+import { supabase } from '../../lib/supabase';
 
 const STATUS_OPTIONS = {
   ANIME: ['WATCHING', 'COMPLETED', 'DROPPED', 'PLANNING'],
@@ -58,6 +59,23 @@ export default function MediaModule() {
 
   const [isEditingQuote, setIsEditingQuote] = useState(false);
   const [quoteInput, setQuoteInput] = useState('');
+  const [chibiMascotUrl, setChibiMascotUrl] = useState('');
+
+  const loadMascot = () => {
+    const publicUrl = supabase.storage.from('avatars').getPublicUrl('global/media_chibi_mascot.png').data.publicUrl;
+    setChibiMascotUrl(`${publicUrl}?t=${Date.now()}`);
+  };
+
+  useEffect(() => {
+    loadMascot();
+    const handleUpdate = () => {
+      loadMascot();
+    };
+    window.addEventListener('media-mascot-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('media-mascot-updated', handleUpdate);
+    };
+  }, []);
 
   const handleTabChange = (tab: 'ANIME' | 'GAME') => {
     if (tab !== activeTab) {
@@ -513,17 +531,26 @@ export default function MediaModule() {
               <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3 flex items-center gap-2 relative z-10">
                 Review & Notes
               </h4>
-              <textarea
-                placeholder="Write your thoughts, reviews, or key takeaways..."
-                value={notesText}
-                onChange={e => saveAnimeMeta({ notesText: e.target.value })}
-                className="w-full bg-surface-alt/40 border border-border/50 rounded-xl p-3 text-[11px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-rose-500/50 resize-none flex-grow relative z-10 overflow-y-auto custom-scrollbar"
-              />
-              <img 
-                src="/anime_chibi_mascot_1783275415079.png" 
-                alt="Mascot" 
-                className={`absolute -bottom-4 -right-4 w-32 h-32 object-contain opacity-90 z-0 pointer-events-none ${theme === 'dark' ? '' : 'brightness-90'}`}
-              />
+              <div className="flex gap-4 items-stretch flex-grow z-10 min-h-0">
+                <textarea
+                  placeholder="Write your thoughts, reviews, or key takeaways..."
+                  value={notesText}
+                  onChange={e => saveAnimeMeta({ notesText: e.target.value })}
+                  className="flex-1 bg-surface-alt/40 border border-border/50 rounded-xl p-3 text-[11px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-rose-500/50 resize-none overflow-y-auto custom-scrollbar"
+                />
+                <div className="hidden sm:flex w-24 shrink-0 flex-col items-center justify-center bg-surface-alt/25 border border-border/40 rounded-xl p-2 relative overflow-hidden">
+                  <img 
+                    src={chibiMascotUrl || "/anime_chibi_mascot_1783275415079.png"} 
+                    alt="Mascot" 
+                    className={`w-20 h-20 object-contain filter drop-shadow-md transition-all ${theme === 'dark' ? '' : 'brightness-95'}`}
+                    onError={() => {
+                      if (chibiMascotUrl && chibiMascotUrl !== '/anime_chibi_mascot_1783275415079.png') {
+                        setChibiMascotUrl('/anime_chibi_mascot_1783275415079.png');
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
           </div>

@@ -382,11 +382,41 @@ export default function SettingsModule() {
             </button>
           </div>
 
+          {/* Wavy Effect Mode (Premium vs Minimal) */}
+          {settings.wavyEffectEnabled !== false && (
+            <div className="flex flex-col gap-2 py-3 border-t border-border/40 text-left">
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Wavy Effect Mode</p>
+                <p className="text-xs text-text-secondary mt-0.5">Select Premium for full floating bloom particles and waves, or Minimal to bypass floating particles and keep a simple background blur (reduces performance load on slower devices).</p>
+              </div>
+              <div className="flex rounded-xl bg-surface-alt p-1 border border-border mt-1.5 w-full max-w-[280px]">
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ wavyEffectMode: 'premium' })}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    settings.wavyEffectMode !== 'minimal' ? 'bg-[#F43F5E] text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Premium Bloom
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ wavyEffectMode: 'minimal' })}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    settings.wavyEffectMode === 'minimal' ? 'bg-[#F43F5E] text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Minimal Wave
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Test Wavy Effect button */}
           {settings.wavyEffectEnabled !== false && (
             <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
               <p className="text-sm font-semibold text-text-primary">Test Wavy Complete Effect</p>
-              <p className="text-xs text-text-secondary mb-1">Click to trigger a test wavy completion ripple animation instantly.</p>
+              <p className="text-xs text-text-secondary mb-1 text-left">Click to trigger a test wavy completion ripple animation instantly.</p>
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'test' } }))}
                 className="py-2 px-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"

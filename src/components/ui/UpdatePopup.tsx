@@ -9,7 +9,7 @@ import {
   IconNotebook
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.6.2';
+const APP_VERSION = '1.3.3';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
@@ -17,41 +17,40 @@ const FEATURES = [
     icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
     color: '#FF9500', // Apple Orange
     bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Wavy Completion Ripple',
-    desc: 'Celebrate success! Experience a premium full-screen concentric ripple and gradient glow overlay when completing all daily habits or Pomodoro sessions.',
+    title: 'Diverse Wavy Overlays & Minimal Mode',
+    desc: 'Distinct completion animations for Pomodoro (breathing), Todo (confetti burst), and Habits (rising flames). Added a lightweight Minimal Wave mode that bypasses particle rendering to support lower-spec devices.',
   },
   {
     icon: <IconClock className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', // Apple Blue
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Pomodoro Alerts & Sounds',
-    desc: 'Customize audio buzzer alerts and trigger browser desktop notifications automatically when focus or break sessions complete.',
+    title: 'Inline Subtask Creator & Verification',
+    desc: 'Quickly create subtasks directly from your list. Pressing Enter now verifies and captures selected date/project metadata from the preview bar instantly instead of creating default tasks.',
   },
   {
     icon: <IconPalette className="w-5 h-5 stroke-[2]" />,
     color: '#FF2D55', // Apple Pink
     bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Reduce Motion Settings',
-    desc: 'Respecting preferences. Enable Reduced Animations inside Settings to completely bypass particle effects, wavy ripples, and transitions.',
+    title: 'Secure Admin Assets Management',
+    desc: 'Admins can now securely upload, preview, and reset multiple preintegrated image assets (Dashboard illustration and Media log mascot chibi) live via the control panel.',
   },
   {
     icon: <IconNotebook className="w-5 h-5 stroke-[2]" />,
     color: '#34C759', // Apple Green
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Rich Editor & Habits Polish',
-    desc: 'Enhanced notebook typography, customizable header spacing, responsive outline listings, and local SQLite data transactions.',
+    title: 'Markdown PDF Export & Numbered Lists',
+    desc: 'Download styled notes as vector-text PDF documents directly from the preview pane. Trigger numbered lists via slash commands instantly.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Added Concentric Wavy Ripple celebration effect triggered on checklist or habit completions',
-  'Integrated Pomodoro session completion sound alerts and desktop push notifications',
-  'Created toggles in Settings to disable/enable Wavy Completion Ripple and reduced animations',
-  'Polished custom brush coordinates layout inside Drawing whiteboard canvas',
-  'Upgraded RichTextEditor writing layout, typography hierarchy, and local state persistence',
-  'Fixed modal responsive bounds to prevent layout stretching on smaller tablet profiles',
-  'Added quick toggle options for Pomodoro countdown sound volume configurations',
-  'Refined editor block paragraph spacing and border styling alignment'
+  'Added styled PDF document download option to Markdown Module preview pane',
+  'Integrated Numbered List option to editor slash (/) command actions menu',
+  'Redesigned Dashboard Hub layout into a clean, modern, and high-contrast SaaS-style workspace',
+  'Created uploader interfaces for multiple global illustrations inside the Admin control panel',
+  'Moved Media Log mascot into a separate column next to notes to avoid obstructing typing input',
+  'Added collapsible whiteboard sidebar state with a floating toggle button on drawing canvas',
+  'Created live metadata preview uploader and verification on Enter keypress in Checklist'
 ];
 
 interface UpdatePopupProps {
