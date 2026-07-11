@@ -93,7 +93,7 @@ export const MediaDetailView: React.FC<MediaDetailViewProps> = ({
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      className="flex flex-col w-full min-h-screen pb-16 font-sans text-left bg-background select-none"
+      className="flex flex-col w-full min-h-screen pb-16 font-sans text-left select-none bg-background"
     >
       <style>{`
         .anime-checkbox {
@@ -132,7 +132,7 @@ export const MediaDetailView: React.FC<MediaDetailViewProps> = ({
         />
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background via-background/40 to-transparent" />
         
-        <div className="absolute flex items-start justify-between top-6 left-6 right-6 z-20">
+        <div className="absolute z-20 flex items-start justify-between top-6 left-6 right-6">
           <div className="absolute top-0 right-0">
             <input
               type="file"
@@ -152,7 +152,7 @@ export const MediaDetailView: React.FC<MediaDetailViewProps> = ({
             />
             <label
               htmlFor="banner-image-upload"
-              className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-white transition-all border rounded-full shadow-lg cursor-pointer border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 hover:scale-105 active:scale-95"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold transition-all border rounded-full shadow-lg cursor-pointer text-primary border-white/10 bg-black/40 backdrop-blur-md hover:bg-black/60 hover:scale-105 active:scale-95"
               title="Upload Widescreen Banner"
             >
               <IconPlus size={14} />

@@ -1,947 +1,810 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  IconPlus, IconTrash, IconTrendingUp, IconTrendingDown, 
-  IconEdit, IconFilter, IconWallet, IconSettings,
-  IconCoin, IconBuildingStore, IconCar, IconDeviceGamepad2,
-  IconShoppingCart, IconBriefcase, IconHome, IconPlane,
-  IconSchool, IconPill, IconShirt, IconDeviceDesktop,
-  IconBulb, IconBarbell, IconBook, IconCoffee
+  IconWallet, 
+  IconTrendingUp, 
+  IconTrendingDown, 
+  IconPlus, 
+  IconTrash, 
+  IconSearch, 
+  IconEdit, 
+  IconCheck, 
+  IconX, 
+  IconHistory
 } from '@tabler/icons-react';
-import { useAppStore, type BudgetCategory, type BudgetTransaction } from '../../store/useAppStore';
-import { useShallow } from 'zustand/react/shallow';
-import { Modal } from '../../components/ui/Modal';
-import { EmptyState } from '../../components/ui/EmptyState';
+import { useAppStore } from '../../store/useAppStore';
+import { useToastStore } from '../../store/useToastStore';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
-const ICON_MAP: Record<string, React.ElementType> = {
-  '💰': IconCoin,
-  '🍔': IconBuildingStore,
-  '🚗': IconCar,
-  '🎮': IconDeviceGamepad2,
-  '🛒': IconShoppingCart,
-  '💼': IconBriefcase,
-  '🏠': IconHome,
-  '✈️': IconPlane,
-  '🎓': IconSchool,
-  '💊': IconPill,
-  '💅': IconShirt,
-  '🍿': IconDeviceDesktop,
-  '💡': IconBulb,
-  '🏋️': IconBarbell,
-  '📚': IconBook,
-  '☕': IconCoffee,
+// Emojis for categories to enhance scannability (Apple design style)
+const CATEGORY_EMOJIS: Record<string, string> = {
+  // Income
+  Salary: '💼',
+  Freelance: '💻',
+  Business: '📈',
+  Investments: '📊',
+  Bonus: '🎁',
+  Gift: '💝',
+  'Rental Income': '🏢',
+  Refunds: '↩️',
+  Grants: '📜',
+  // Expense
+  'Food & Dining': '🍔',
+  'Rent & Bills': '🏠',
+  Shopping: '🛍️',
+  Travel: '✈️',
+  Entertainment: '🎬',
+  Groceries: '🛒',
+  Miscellaneous: '🏷️',
+  'Health & Fitness': '🏋️',
+  Education: '🎓',
+  'Gifts & Donations': '🎁',
+  Insurance: '🛡️',
+  Transport: '🚗',
+  Subscriptions: '🔄',
+  Taxes: '💸',
 };
 
-const renderIcon = (iconKey: string, className = "w-5 h-5") => {
-  const IconComponent = ICON_MAP[iconKey];
-  if (IconComponent) {
-    return <IconComponent className={className} />;
-  }
-  return <span className="text-lg leading-none">{iconKey}</span>;
+// Subtle colors for category background tags
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  // Income
+  Salary: { bg: 'bg-emerald-50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/30' },
+  Freelance: { bg: 'bg-blue-50 dark:bg-blue-950/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-900/30' },
+  Business: { bg: 'bg-purple-50 dark:bg-purple-950/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-900/30' },
+  Investments: { bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-900/30' },
+  Bonus: { bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-900/30' },
+  Gift: { bg: 'bg-rose-50 dark:bg-rose-950/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-900/30' },
+  'Rental Income': { bg: 'bg-purple-50 dark:bg-purple-950/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-900/30' },
+  Refunds: { bg: 'bg-blue-50 dark:bg-blue-950/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-900/30' },
+  Grants: { bg: 'bg-emerald-50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/30' },
+  // Expense
+  'Food & Dining': { bg: 'bg-rose-50 dark:bg-rose-950/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-900/30' },
+  'Rent & Bills': { bg: 'bg-orange-50 dark:bg-orange-950/20', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-900/30' },
+  Shopping: { bg: 'bg-pink-50 dark:bg-pink-950/20', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-200 dark:border-pink-900/30' },
+  Travel: { bg: 'bg-indigo-50 dark:bg-indigo-950/20', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-900/30' },
+  Entertainment: { bg: 'bg-violet-50 dark:bg-violet-950/20', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-200 dark:border-violet-900/30' },
+  Groceries: { bg: 'bg-teal-50 dark:bg-teal-950/20', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-900/30' },
+  Miscellaneous: { bg: 'bg-slate-50 dark:bg-slate-900/30', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-200 dark:border-slate-800/40' },
+  'Health & Fitness': { bg: 'bg-emerald-50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/30' },
+  Education: { bg: 'bg-blue-50 dark:bg-blue-950/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-900/30' },
+  'Gifts & Donations': { bg: 'bg-rose-50 dark:bg-rose-950/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-900/30' },
+  Insurance: { bg: 'bg-purple-50 dark:bg-purple-950/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-900/30' },
+  Transport: { bg: 'bg-indigo-50 dark:bg-indigo-950/20', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-900/30' },
+  Subscriptions: { bg: 'bg-pink-50 dark:bg-pink-950/20', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-200 dark:border-pink-900/30' },
+  Taxes: { bg: 'bg-slate-50 dark:bg-slate-900/30', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-200 dark:border-slate-800/40' },
 };
-
-const colorClasses = {
-  rose: 'bg-rose-500 text-rose-500 border-rose-200',
-  blue: 'bg-blue-500 text-blue-500 border-blue-200',
-  green: 'bg-green-500 text-green-500 border-green-200',
-  amber: 'bg-amber-500 text-amber-500 border-amber-200',
-  purple: 'bg-purple-500 text-purple-500 border-purple-200',
-};
-
-const lightBgClasses = {
-  rose: 'bg-rose-100 dark:bg-rose-900/30',
-  blue: 'bg-blue-100 dark:bg-blue-900/30',
-  green: 'bg-green-100 dark:bg-green-900/30',
-  amber: 'bg-amber-100 dark:bg-amber-900/30',
-  purple: 'bg-purple-100 dark:bg-purple-900/30',
-};
-
-const PREDEFINED_CATEGORIES = [
-  // Transportation
-  { name: 'Petrol', icon: '🚗', color: 'amber', budget: 100 },
-  { name: 'Porter/Delivery', icon: '🚚', color: 'amber', budget: 50 },
-  { name: 'Taxi/Cab', icon: '🚖', color: 'amber', budget: 80 },
-  { name: 'Bus/Train', icon: '🚇', color: 'blue', budget: 40 },
-  { name: 'Parking', icon: '🅿️', color: 'purple', budget: 20 },
-  { name: 'Car Wash', icon: '🧽', color: 'blue', budget: 20 },
-  { name: 'Bicycle/Scooter', icon: '🚲', color: 'amber', budget: 15 },
-  // Entertainment
-  { name: 'Movies', icon: '🍿', color: 'rose', budget: 60 },
-  { name: 'Games', icon: '🎮', color: 'purple', budget: 50 },
-  { name: 'Concerts/Events', icon: '🎟️', color: 'rose', budget: 100 },
-  { name: 'Books', icon: '📚', color: 'amber', budget: 30 },
-  { name: 'Subscriptions', icon: '📺', color: 'rose', budget: 40 },
-  { name: 'Cinema', icon: '🎬', color: 'rose', budget: 40 },
-  { name: 'Music Streams', icon: '🎵', color: 'purple', budget: 15 },
-  // Food & Drinks
-  { name: 'Groceries', icon: '🛒', color: 'green', budget: 300 },
-  { name: 'Dining Out', icon: '🍔', color: 'rose', budget: 150 },
-  { name: 'Cafe/Coffee', icon: '☕', color: 'amber', budget: 50 },
-  { name: 'Snacks', icon: '🍩', color: 'amber', budget: 30 },
-  { name: 'Fast Food', icon: '🍕', color: 'rose', budget: 80 },
-  { name: 'Bar/Drinks', icon: '🍺', color: 'purple', budget: 100 },
-  // Housing & Bills
-  { name: 'Rent', icon: '🏠', color: 'blue', budget: 1000 },
-  { name: 'Electricity', icon: '💡', color: 'amber', budget: 100 },
-  { name: 'Water Bill', icon: '💧', color: 'blue', budget: 30 },
-  { name: 'Internet', icon: '🌐', color: 'blue', budget: 60 },
-  { name: 'Mobile Recharge', icon: '📱', color: 'blue', budget: 40 },
-  { name: 'Gas/Heating', icon: '🔥', color: 'amber', budget: 50 },
-  { name: 'Laundry', icon: '🧺', color: 'blue', budget: 30 },
-  { name: 'Cleaning Supplies', icon: '🧹', color: 'green', budget: 25 },
-  // Shopping
-  { name: 'Clothes', icon: '👕', color: 'purple', budget: 150 },
-  { name: 'Shoes', icon: '👟', color: 'purple', budget: 100 },
-  { name: 'Electronics', icon: '💻', color: 'blue', budget: 200 },
-  { name: 'Furniture', icon: '🛋️', color: 'amber', budget: 150 },
-  { name: 'Home Decor', icon: '🖼️', color: 'amber', budget: 80 },
-  { name: 'Cosmetics', icon: '💄', color: 'rose', budget: 60 },
-  // Health & Wellness
-  { name: 'Medicine', icon: '💊', color: 'rose', budget: 50 },
-  { name: 'Doctor/Clinic', icon: '🏥', color: 'rose', budget: 100 },
-  { name: 'Gym/Fitness', icon: '🏋️', color: 'green', budget: 50 },
-  { name: 'Insurance', icon: '🛡️', color: 'blue', budget: 150 },
-  { name: 'Barber/Salon', icon: '💈', color: 'purple', budget: 40 },
-  // Education
-  { name: 'School Fees', icon: '🎓', color: 'blue', budget: 500 },
-  { name: 'Online Courses', icon: '📖', color: 'blue', budget: 100 },
-  { name: 'Stationery', icon: '✏️', color: 'amber', budget: 20 },
-  // Travel
-  { name: 'Flights', icon: '✈️', color: 'blue', budget: 300 },
-  { name: 'Hotels', icon: '🏨', color: 'blue', budget: 250 },
-  { name: 'Sightseeing', icon: '🗺️', color: 'blue', budget: 100 },
-  // Income Sources
-  { name: 'Salary', icon: '💼', color: 'green', budget: 0 },
-  { name: 'Freelance', icon: '💻', color: 'blue', budget: 0 },
-  { name: 'Investments', icon: '📈', color: 'green', budget: 0 },
-  { name: 'Gifts Received', icon: '🎁', color: 'rose', budget: 0 },
-  { name: 'Refunds', icon: '💰', color: 'green', budget: 0 },
-  // Others
-  { name: 'Charity/Donation', icon: '❤️', color: 'rose', budget: 50 },
-  { name: 'Pet Care', icon: '🐱', color: 'amber', budget: 80 },
-  { name: 'Taxes', icon: '📄', color: 'rose', budget: 200 },
-  { name: 'Miscellaneous', icon: '⚙️', color: 'blue', budget: 100 },
-  { name: 'Golf/Sports', icon: '🏌️', color: 'green', budget: 50 },
-  { name: 'Courier/Porter', icon: '📦', color: 'amber', budget: 20 },
-  { name: 'Gifts Sent', icon: '🎁', color: 'rose', budget: 50 },
-  { name: 'Childcare', icon: '👶', color: 'rose', budget: 150 },
-  { name: 'Office Supplies', icon: '📁', color: 'blue', budget: 30 }
-];
 
 export default function BudgetModule() {
-  const { 
-    settings,
-    updateSettings,
-    budgetCategories, 
-    budgetTransactions, 
-    addBudgetCategory, 
-    updateBudgetCategory, 
-    deleteBudgetCategory,
-    addBudgetTransaction, 
-    updateBudgetTransaction,
+  const addToast = useToastStore((s) => s.addToast);
+
+  // Bind with AppStore for database sync
+  const {
+    budgetCategories,
+    budgetTransactions,
+    addBudgetCategory,
+    addBudgetTransaction,
     deleteBudgetTransaction,
-    showConfirm,
-  } = useAppStore(useShallow(state => ({
-    settings: state.settings,
-    updateSettings: state.updateSettings,
-    budgetCategories: state.budgetCategories,
-    budgetTransactions: state.budgetTransactions,
-    addBudgetCategory: state.addBudgetCategory,
-    updateBudgetCategory: state.updateBudgetCategory,
-    deleteBudgetCategory: state.deleteBudgetCategory,
-    addBudgetTransaction: state.addBudgetTransaction,
-    updateBudgetTransaction: state.updateBudgetTransaction,
-    deleteBudgetTransaction: state.deleteBudgetTransaction,
-    showConfirm: state.showConfirm,
-  })));
+    showConfirm
+  } = useAppStore(
+    useShallow((state) => ({
+      budgetCategories: state.budgetCategories,
+      budgetTransactions: state.budgetTransactions,
+      addBudgetCategory: state.addBudgetCategory,
+      addBudgetTransaction: state.addBudgetTransaction,
+      deleteBudgetTransaction: state.deleteBudgetTransaction,
+      showConfirm: state.showConfirm,
+    }))
+  );
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
-  const [editingTransaction, setEditingTransaction] = useState<BudgetTransaction | null>(null);
-
-  // Filters state
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterMonth, setFilterMonth] = useState<string>('all');
-
-  const currencySymbol = settings.currencySymbol || '$';
-
-  const stats = useMemo(() => {
-    let bankIncome = 0;
-    let bankExpenses = 0;
-    let cashIncome = 0;
-    let cashExpenses = 0;
-
-    budgetTransactions.forEach(t => {
-      // Force conversion to number to prevent string concatenation bugs
-      const amt = Number(t.amount) || 0;
-      if (t.type === 'income') {
-        if (t.paymentMethod === 'cash') cashIncome += amt;
-        else bankIncome += amt;
-      } else {
-        if (t.paymentMethod === 'cash') cashExpenses += amt;
-        else bankExpenses += amt;
+  // Ensure default category is loaded in database to prevent FK constraint failure
+  useEffect(() => {
+    const initDefaultCategory = async () => {
+      if (budgetCategories.length === 0) {
+        try {
+          await addBudgetCategory({
+            id: crypto.randomUUID(),
+            name: 'General',
+            budget: 0,
+            color: 'blue',
+            icon: '💰',
+          });
+        } catch (e) {
+          console.error('Failed to create default category', e);
+        }
       }
-    });
-
-    const income = bankIncome + cashIncome;
-    const expenses = bankExpenses + cashExpenses;
-    
-    return {
-      income,
-      expenses,
-      bankBalance: (settings.initialBankBalance || 0) + bankIncome - bankExpenses,
-      cashBalance: (settings.initialCashBalance || 0) + cashIncome - cashExpenses,
-      totalBalance: (settings.initialBankBalance || 0) + (settings.initialCashBalance || 0) + income - expenses,
     };
-  }, [budgetTransactions, settings.initialBankBalance, settings.initialCashBalance]);
+    initDefaultCategory();
+  }, [budgetCategories.length, addBudgetCategory]);
 
-  const categorySpending = useMemo(() => {
-    return budgetCategories.map(cat => {
-      const spent = budgetTransactions
-        .filter(t => t.categoryId === cat.id && t.type === 'expense')
-        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-      const progress = Math.min((spent / (cat.budget || 1)) * 100, 100);
-      return { ...cat, spent, progress };
-    });
-  }, [budgetCategories, budgetTransactions]);
+  // Initial Balance stored locally (as requested)
+  const [initialBalance, setInitialBalance] = useState<number>(() => {
+    const saved = localStorage.getItem('expense_tracker_initial_balance');
+    return saved ? Number(saved) : 1000; // default to 1000
+  });
 
-  // Extract unique transaction months for month filter dropdown
-  const uniqueMonths = useMemo(() => {
-    const monthsSet = new Set<string>();
-    budgetTransactions.forEach(t => {
-      const date = new Date(t.date);
-      const label = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-      monthsSet.add(label);
+  const [isEditingBalance, setIsEditingBalance] = useState(false);
+  const [balanceInput, setBalanceInput] = useState(String(initialBalance));
+
+  // Form State
+  const [txType, setTxType] = useState<'income' | 'expense'>('expense');
+  const [txTitle, setTxTitle] = useState('');
+  const [txAmount, setTxAmount] = useState('');
+  const [txCategory, setTxCategory] = useState('');
+  const [txDate, setTxDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  // Categories list based on transaction type selection
+  const categoriesList = useMemo(() => {
+    if (txType === 'income') {
+      return ['Salary', 'Freelance', 'Business', 'Investments', 'Bonus', 'Gift', 'Rental Income', 'Refunds', 'Grants'];
+    } else {
+      return [
+        'Food & Dining', 'Rent & Bills', 'Shopping', 'Travel', 'Entertainment', 
+        'Groceries', 'Health & Fitness', 'Education', 'Gifts & Donations', 
+        'Insurance', 'Transport', 'Subscriptions', 'Taxes', 'Miscellaneous'
+      ];
+    }
+  }, [txType]);
+
+  const categoryOptions = useMemo(() => {
+    return categoriesList.map(cat => ({
+      value: cat,
+      label: `${CATEGORY_EMOJIS[cat] || '🏷️'} ${cat}`
+    }));
+  }, [categoriesList]);
+
+  // Sync category input when switching transaction types
+  useEffect(() => {
+    setTxCategory(categoriesList[0] || '');
+  }, [txType, categoriesList]);
+
+  // Parse transaction details (custom logic to store title & category in description text field)
+  const parsedTransactions = useMemo(() => {
+    return budgetTransactions.map((t) => {
+      let title = t.description;
+      let category = 'Miscellaneous';
+      try {
+        const parsed = JSON.parse(t.description);
+        if (parsed && typeof parsed === 'object') {
+          title = parsed.title || t.description;
+          category = parsed.category || 'Miscellaneous';
+        }
+      } catch (e) {
+        // Plain string fallback
+      }
+      return {
+        ...t,
+        parsedTitle: title,
+        parsedCategory: category,
+      };
     });
-    return Array.from(monthsSet);
   }, [budgetTransactions]);
 
-  // Filter transactions
-  const filteredTransactions = useMemo(() => {
-    return budgetTransactions.filter(t => {
-      const matchesType = filterType === 'all' || t.type === filterType;
-      const matchesCategory = filterCategory === 'all' || t.categoryId === filterCategory;
-      
-      let matchesMonth = true;
-      if (filterMonth !== 'all') {
-        const tMonthLabel = new Date(t.date).toLocaleString('default', { month: 'short', year: 'numeric' });
-        matchesMonth = tMonthLabel === filterMonth;
+  // Calculations
+  const totals = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    parsedTransactions.forEach((t) => {
+      if (t.type === 'income') {
+        income += t.amount;
+      } else {
+        expense += t.amount;
       }
-      
-      return matchesType && matchesCategory && matchesMonth;
     });
-  }, [budgetTransactions, filterType, filterCategory, filterMonth]);
+    return {
+      totalIncome: income,
+      totalExpenses: expense,
+      remainingBalance: initialBalance + income - expense,
+    };
+  }, [parsedTransactions, initialBalance]);
 
-  const hasBudgetData = budgetCategories.length > 0 || budgetTransactions.length > 0;
+  // Filtered transactions sorted by Date (newest first)
+  const filteredTransactions = useMemo(() => {
+    let result = parsedTransactions;
 
-  const seedPredefinedCategories = async () => {
-    for (const cat of PREDEFINED_CATEGORIES) {
-      await addBudgetCategory({
-        id: crypto.randomUUID(),
-        name: cat.name,
-        icon: cat.icon,
-        color: cat.color as any,
-        budget: cat.budget
+    // Search query filter
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.parsedTitle.toLowerCase().includes(q) ||
+          t.parsedCategory.toLowerCase().includes(q)
+      );
+    }
+
+    // Type filter
+    if (filterType !== 'all') {
+      result = result.filter((t) => t.type === filterType);
+    }
+
+    // Category filter
+    if (filterCategory !== 'all') {
+      result = result.filter((t) => t.parsedCategory === filterCategory);
+    }
+
+    // Sort newest first
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [parsedTransactions, searchQuery, filterType, filterCategory]);
+
+  // Get all unique categories present in the current transactions to populate filter dropdown
+  const uniqueCategories = useMemo(() => {
+    const categories = new Set<string>();
+    parsedTransactions.forEach((t) => {
+      if (t.parsedCategory) categories.add(t.parsedCategory);
+    });
+    return Array.from(categories);
+  }, [parsedTransactions]);
+
+  const filterCategoryOptions = useMemo(() => {
+    return [
+      { value: 'all', label: 'All Categories' },
+      ...uniqueCategories.map((cat) => ({
+        value: cat,
+        label: `${CATEGORY_EMOJIS[cat] || '🏷️'} ${cat}`,
+      })),
+    ];
+  }, [uniqueCategories]);
+
+  const handleUpdateBalance = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = Number(balanceInput);
+    if (isNaN(val) || val < 0) {
+      addToast('Invalid Balance', 'Initial balance must be a non-negative number.', 'warning');
+      return;
+    }
+    setInitialBalance(val);
+    localStorage.setItem('expense_tracker_initial_balance', String(val));
+    setIsEditingBalance(false);
+    addToast('Balance Updated', `Initial balance configured to $${val.toLocaleString()}`, 'success');
+  };
+
+  const handleAddTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validations
+    if (!txTitle.trim()) {
+      addToast('Required Field Missing', 'Please enter a title for the transaction.', 'warning');
+      return;
+    }
+
+    const amountNum = Number(txAmount);
+    if (!txAmount || isNaN(amountNum) || amountNum <= 0) {
+      addToast('Invalid Amount', 'Please enter a positive numeric amount.', 'warning');
+      return;
+    }
+
+    if (!txCategory) {
+      addToast('Required Field Missing', 'Please select a valid category.', 'warning');
+      return;
+    }
+
+    if (!txDate) {
+      addToast('Required Field Missing', 'Please select a date.', 'warning');
+      return;
+    }
+
+    // Find database category ID
+    const targetCategoryId = budgetCategories[0]?.id;
+    if (!targetCategoryId) {
+      addToast('Database Error', 'Syncing default category. Please try again in a moment.', 'info');
+      return;
+    }
+
+    const txId = crypto.randomUUID();
+    const serializedDescription = JSON.stringify({
+      title: txTitle.trim(),
+      category: txCategory,
+    });
+
+    try {
+      await addBudgetTransaction({
+        id: txId,
+        categoryId: targetCategoryId,
+        amount: amountNum,
+        description: serializedDescription,
+        date: new Date(txDate).toISOString(),
+        type: txType,
+        paymentMethod: 'online',
       });
+
+      // Reset transaction form input (keep date and type for convenience)
+      setTxTitle('');
+      setTxAmount('');
+      addToast('Transaction Saved', 'Financial item logged successfully.', 'success');
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -16 }}
-      className="flex flex-col gap-6 h-full pb-10"
-    >
-      {/* Header */}
-      <div className="flex flex-col gap-4 justify-between items-start md:flex-row md:items-center border-b border-border pb-4">
-        <div>
-          <h2 className="flex gap-2 items-center text-2xl font-bold">
-            Expense & Income Tracker <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary"></span>
-          </h2>
-          <p className="text-sm text-text-secondary">Track cash flow, set category budgets, and monitor balance metrics.</p>
-        </div>
-        <div className="flex gap-2.5">
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="btn btn-secondary btn-md rounded-full px-4 cursor-pointer"
-          >
-            <IconSettings className="w-4 h-4" /> Settings
-          </button>
-          <button
-            onClick={() => {
-              setEditingCategory(null);
-              setIsCategoryModalOpen(true);
-            }}
-            className="btn btn-secondary btn-md rounded-full px-4 hidden md:flex cursor-pointer"
-          >
-            <IconPlus className="w-4 h-4" /> Add Category
-          </button>
-          <button
-            onClick={() => {
-              setEditingTransaction(null);
-              setIsTransactionModalOpen(true);
-            }}
-            className="btn btn-primary btn-md rounded-full px-5 cursor-pointer"
-          >
-            <IconPlus className="w-4 h-4" /> Add Transaction
-          </button>
-        </div>
-      </div>
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteBudgetTransaction(id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-      {/* Tabs */}
-      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40 w-fit">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            activeTab === 'overview' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab('transactions')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            activeTab === 'transactions' ? 'bg-surface text-text-primary shadow-md' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Transactions Ledger ({filteredTransactions.length})
-        </button>
-      </div>
+  const handleClearAll = () => {
+    if (budgetTransactions.length === 0) {
+      addToast('History Empty', 'No transactions exist to clear.', 'info');
+      return;
+    }
 
-      {!hasBudgetData ? (
-        <EmptyState
-          icon={<IconWallet className="w-9 h-9 text-text-muted" />}
-          title="No transactions yet"
-          description="Create categories and add transactions to see your balance, spending progress, and history."
-          action={
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <button onClick={() => setIsCategoryModalOpen(true)} className="btn btn-secondary btn-md cursor-pointer">
-                  <IconPlus className="w-4 h-4" /> Add Category
-                </button>
-                <button onClick={() => setIsTransactionModalOpen(true)} className="btn btn-primary btn-md cursor-pointer">
-                  <IconPlus className="w-4 h-4" /> Add Transaction
-                </button>
-              </div>
-              <button 
-                onClick={seedPredefinedCategories} 
-                className="mt-3 text-xs font-bold text-primary hover:underline cursor-pointer"
-              >
-                ⚡ Initialize 60 Predefined Categories (Groceries, Petrol, Salary, Porter, etc.)
-              </button>
-            </div>
+    showConfirm(
+      'Wipe Transaction History',
+      'Are you sure you want to permanently clear all transactions? This action will sync with database and cannot be undone.',
+      async () => {
+        try {
+          // Sequentially delete to ensure backend cleans up
+          for (const tx of budgetTransactions) {
+            await deleteBudgetTransaction(tx.id);
           }
-        />
-      ) : (
-        <AnimatePresence mode="wait">
-          {activeTab === 'overview' ? (
-            <motion.div
-              key="overview"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="grid grid-cols-1 gap-6 lg:grid-cols-3"
-            >
-              {/* Seeding offer banner if categories are empty */}
-              {budgetCategories.length === 0 && (
-                <div className="col-span-1 lg:col-span-3 p-5 rounded-3xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-left animate-fade-in">
-                  <div>
-                    <h4 className="text-sm font-black text-text-primary">Seed Predefined Categories?</h4>
-                    <p className="text-xs text-text-secondary mt-1">Get started instantly with 60 comprehensive category limits (Petrol, Groceries, Rent, Salary, Porter, etc.).</p>
-                  </div>
-                  <button onClick={seedPredefinedCategories} className="btn btn-primary btn-sm rounded-full shrink-0 cursor-pointer">
-                    ⚡ Seeding 60 Categories
+          addToast('History Cleared', 'All transaction history wiped successfully.', 'success');
+        } catch (e) {
+          addToast('Error', 'Failed to clear all transactions.', 'error');
+        }
+      }
+    );
+  };
+
+  // Helper formats
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(val);
+  };
+
+  const getCategoryConfig = (categoryName: string) => {
+    return (
+      CATEGORY_COLORS[categoryName] || {
+        bg: 'bg-slate-50 dark:bg-slate-900/30',
+        text: 'text-slate-600 dark:text-slate-400',
+        border: 'border-slate-200 dark:border-slate-800/40',
+      }
+    );
+  };
+
+  return (
+    <div className="relative min-h-full w-full bg-background text-text-primary overflow-y-auto px-4 py-6 md:p-8">
+      {/* Apple-style background blur blobs (purely aesthetic - no glassmorphism on cards) */}
+      <div className="absolute top-[-100px] right-[-100px] w-96 h-96 rounded-full bg-rose-500/10 dark:bg-rose-500/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-100px] left-[-100px] w-96 h-96 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-3xl pointer-events-none" />
+
+      {/* Header Container */}
+      <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-surface border border-border flex items-center justify-center text-primary shadow-subtle">
+              <IconWallet className="w-5 h-5" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary">
+              Expense & Income
+            </h1>
+          </div>
+          <p className="text-xs text-text-secondary mt-1 font-medium pl-0.5">
+            Clean, minimal asset tracking inspired by Cupertino design principles.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleClearAll}
+            className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-surface border border-border hover:bg-surface-hover text-rose-600 dark:text-rose-400 transition-colors shadow-subtle cursor-pointer active:scale-[0.98]"
+          >
+            <IconTrash className="w-3.5 h-3.5" />
+            Clear All
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+        {/* Core Stats Row - Spans all columns */}
+        <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          
+          {/* Card 1: Available Balance */}
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle relative overflow-hidden transition-all duration-200 hover:shadow-lifted">
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                Remaining Balance
+              </span>
+              {!isEditingBalance ? (
+                <button
+                  onClick={() => {
+                    setBalanceInput(String(initialBalance));
+                    setIsEditingBalance(true);
+                  }}
+                  className="p-1 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
+                  title="Configure starting balance"
+                >
+                  <IconEdit className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleUpdateBalance}
+                    className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors cursor-pointer"
+                    title="Confirm balance"
+                  >
+                    <IconCheck className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingBalance(false)}
+                    className="p-1 rounded-md text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+                    title="Cancel edit"
+                  >
+                    <IconX className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
+            </div>
 
-              {/* Financial Dashboard Widget */}
-              <div className="flex flex-col col-span-1 gap-6 p-6 rounded-[28px] border bg-surface/50 border-border/80 lg:col-span-3 lg:flex-row items-center justify-between backdrop-blur-md">
-                
-                {/* Balances */}
-                <div className="flex flex-col gap-4 w-full lg:w-1/3">
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
-                    <div>
-                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Bank Balance</p>
-                      <p className={`text-xl font-black ${stats.bankBalance >= 0 ? 'text-blue-500' : 'text-rose-500'}`}>{currencySymbol}{stats.bankBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                      <IconWallet className="w-5 h-5 text-blue-500" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
-                    <div>
-                      <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Cash Balance</p>
-                      <p className={`text-xl font-black ${stats.cashBalance >= 0 ? 'text-green-500' : 'text-rose-500'}`}>{currencySymbol}{stats.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
-                      <span className="text-xl leading-none">💵</span>
-                    </div>
-                  </div>
+            {isEditingBalance ? (
+              <form onSubmit={handleUpdateBalance} className="mt-2.5">
+                <label className="text-[10px] text-text-muted font-medium block mb-1">Set Starting Balance ($)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={balanceInput}
+                    onChange={(e) => setBalanceInput(e.target.value)}
+                    className="flex-1 text-sm bg-surface-alt border border-border-alt rounded-lg px-2.5 py-1 text-text-primary focus:outline-none focus:border-primary"
+                    placeholder="Starting balance"
+                    autoFocus
+                  />
                 </div>
+              </form>
+            ) : (
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-3xl font-extrabold tracking-tight text-text-primary">
+                  {formatCurrency(totals.remainingBalance)}
+                </span>
+              </div>
+            )}
 
-                {/* Center Net Balance */}
-                <div className="flex flex-col items-center justify-center text-center p-6 bg-surface-alt border border-border/40 rounded-[24px] min-w-[240px] flex-1 lg:flex-none">
-                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-1">Total Net Balance</p>
-                  <p className={`text-4xl font-black tracking-tight ${stats.totalBalance >= 0 ? 'text-text-primary' : 'text-rose-500'}`}>
-                    {currencySymbol}{stats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold mt-2 ${
-                    stats.totalBalance >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-rose-500/10 text-rose-500'
-                  }`}>
-                    {stats.totalBalance >= 0 ? '✓ In Surplus' : '⚠ In Deficit'}
-                  </span>
-                </div>
+            <div className="text-[10px] text-text-muted mt-2 font-medium flex items-center gap-1">
+              <span>Initial Balance: {formatCurrency(initialBalance)}</span>
+            </div>
+          </div>
 
-                {/* Income / Expense */}
-                <div className="flex flex-col gap-4 w-full lg:w-1/3">
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
-                        <IconTrendingUp className="w-4 h-4 text-green-500" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Income</p>
-                        <p className="text-lg font-black text-text-primary">{currencySymbol}{stats.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-surface border border-border/60 rounded-2xl text-left">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-rose-500/10 rounded-lg flex items-center justify-center">
-                        <IconTrendingDown className="w-4 h-4 text-rose-500" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Expenses</p>
-                        <p className="text-lg font-black text-text-primary">{currencySymbol}{stats.expenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
-                  </div>
+          {/* Card 2: Income */}
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle relative overflow-hidden transition-all duration-200 hover:shadow-lifted">
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                Total Income
+              </span>
+              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                <IconTrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <span className="text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(totals.totalIncome)}
+              </span>
+            </div>
+            <p className="text-[10px] text-text-muted mt-2 font-medium">
+              Sum of positive cash flow logged.
+            </p>
+          </div>
+
+          {/* Card 3: Expense */}
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle relative overflow-hidden transition-all duration-200 hover:shadow-lifted">
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                Total Expenses
+              </span>
+              <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
+                <IconTrendingDown className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <span className="text-3xl font-extrabold tracking-tight text-rose-600 dark:text-rose-400">
+                {formatCurrency(totals.totalExpenses)}
+              </span>
+            </div>
+            <p className="text-[10px] text-text-muted mt-2 font-medium">
+              Sum of negative outflows logged.
+            </p>
+          </div>
+        </div>
+
+        {/* Form Column - Left (1 block wide) */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle flex flex-col gap-4">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-sm font-bold tracking-tight text-text-primary uppercase">
+                Add Transaction
+              </h2>
+            </div>
+
+            <form onSubmit={handleAddTransaction} className="flex flex-col gap-4">
+              {/* Type Toggle Slider (Pill Control) */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-1.5">
+                  Flow Type
+                </label>
+                <div className="bg-surface-alt p-1 rounded-lg border border-border flex relative">
+                  <button
+                    type="button"
+                    onClick={() => setTxType('expense')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all relative z-10 cursor-pointer ${
+                      txType === 'expense'
+                        ? 'text-rose-600 dark:text-rose-400 bg-surface shadow-subtle border border-border'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    Expense
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTxType('income')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all relative z-10 cursor-pointer ${
+                      txType === 'income'
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-surface shadow-subtle border border-border'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    Income
+                  </button>
                 </div>
               </div>
 
-              {/* Categories list */}
-              {categorySpending.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex flex-col gap-4 p-5 rounded-[24px] border bg-surface border-border hover:shadow-md transition-shadow relative group text-left animate-fade-in"
+              {/* Title Input */}
+              <div>
+                <label
+                  htmlFor="tx-title"
+                  className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-1"
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-3 items-center">
-                      <div className={`w-11 h-11 rounded-xl ${lightBgClasses[cat.color as keyof typeof lightBgClasses]} flex items-center justify-center text-2xl border border-border/20`}>
-                        {renderIcon(cat.icon, `w-6 h-6 text-${cat.color}-500`)}
-                      </div>
-                      <div>
-                        <p className="font-bold text-text-primary text-[15px]">{cat.name}</p>
-                        <p className="text-xs text-text-muted">
-                          {currencySymbol}{cat.spent.toLocaleString()} spent {cat.budget ? `/ ${currencySymbol}${cat.budget.toLocaleString()} limit` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => {
-                          setEditingCategory(cat);
-                          setIsCategoryModalOpen(true);
-                        }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors cursor-pointer"
-                        title="Edit Category"
-                      >
-                        <IconEdit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => showConfirm('Delete Category', 'Delete this category and all its transactions?', () => deleteBudgetCategory(cat.id))}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors cursor-pointer"
-                        title="Delete Category"
-                      >
-                        <IconTrash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                  Transaction Title
+                </label>
+                <input
+                  id="tx-title"
+                  type="text"
+                  value={txTitle}
+                  onChange={(e) => setTxTitle(e.target.value)}
+                  placeholder={txType === 'income' ? 'e.g. Salary Paycheck' : 'e.g. Grocery store'}
+                  className="w-full bg-surface-alt border border-border rounded-xl px-3.5 py-2.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-all shadow-subtle"
+                />
+              </div>
 
-                  {cat.budget > 0 && (
-                    <div className="space-y-1">
-                      <div className="overflow-hidden relative h-1.5 rounded-full bg-border-alt">
-                        <div
-                          className={`absolute inset-y-0 left-0 ${colorClasses[cat.color].split(' ')[0]} rounded-full transition-all duration-500`}
-                          style={{ width: `${cat.progress}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[9px] font-bold text-text-secondary">
-                        <span>SPENT BUDGET</span>
-                        <span className={cat.progress >= 90 ? 'text-rose-500' : ''}>{Math.round(cat.progress)}%</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="transactions"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="space-y-4"
-            >
-              {/* Dynamic Filter Panel */}
-              <div className="bg-surface-alt border border-border/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between text-left">
-                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-                  <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest mr-2 flex items-center gap-1">
-                    <IconFilter className="w-3 h-3" /> Filters
+              {/* Amount Input */}
+              <div>
+                <label
+                  htmlFor="tx-amount"
+                  className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-1"
+                >
+                  Amount ($)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted">
+                    $
                   </span>
-                  
-                  {/* Type Filter Buttons */}
-                  <div className="flex gap-1 bg-surface p-1 rounded-xl border border-border/50">
-                    {([
-                      { id: 'all', label: 'All' },
-                      { id: 'expense', label: 'Expenses' },
-                      { id: 'income', label: 'Income' }
-                    ] as const).map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => setFilterType(t.id)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                          filterType === t.id ? 'bg-surface-alt text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 w-full md:w-auto">
-                  {/* Category Filter */}
-                  <div className="flex-1 md:w-48">
-                    <CustomSelect
-                      value={filterCategory}
-                      onChange={setFilterCategory}
-                      options={[
-                        { value: 'all', label: 'All Categories' },
-                        ...budgetCategories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))
-                      ]}
-                    />
-                  </div>
-
-                  {/* Month Filter */}
-                  <div className="flex-1 md:w-40">
-                    <CustomSelect
-                      value={filterMonth}
-                      onChange={setFilterMonth}
-                      options={[
-                        { value: 'all', label: 'All Months' },
-                        ...uniqueMonths.map(m => ({ value: m, label: m }))
-                      ]}
-                    />
-                  </div>
+                  <input
+                    id="tx-amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={txAmount}
+                    onChange={(e) => setTxAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-surface-alt border border-border rounded-xl pl-8 pr-3.5 py-2.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-all shadow-subtle"
+                  />
                 </div>
               </div>
 
-              {filteredTransactions.length === 0 ? (
-                <EmptyState
-                  icon="💸"
-                  title="No matching transactions"
-                  description="Try adjusting your dynamic filters to view ledger records."
-                  action={
-                    <button
-                      onClick={() => {
-                        setFilterType('all');
-                        setFilterCategory('all');
-                        setFilterMonth('all');
-                      }}
-                      className="btn btn-secondary btn-sm cursor-pointer"
-                    >
-                      Clear Filters
-                    </button>
-                  }
+              {/* Category Dropdown */}
+              <div>
+                <CustomSelect
+                  value={txCategory}
+                  onChange={setTxCategory}
+                  options={categoryOptions}
+                  label="Category"
+                  placeholder="Select Category"
                 />
-              ) : (
-                <div className="flex flex-col gap-2.5">
-                  {filteredTransactions.map((txn) => {
-                    const cat = budgetCategories.find(c => c.id === txn.categoryId);
-                    return (
-                      <div
-                        key={txn.id}
-                        className="flex gap-4 justify-between items-center p-4 rounded-2xl border bg-surface border-border/80 hover:border-primary/20 transition-all group text-left animate-fade-in"
-                      >
-                        <div className="flex gap-4 items-center min-w-0">
-                          <div className={`w-10 h-10 rounded-xl ${cat ? lightBgClasses[cat.color as keyof typeof lightBgClasses] : 'bg-surface-alt'} flex items-center justify-center text-xl shrink-0 border border-border/20`}>
-                            {cat ? renderIcon(cat.icon, `w-5 h-5 text-${cat.color}-500`) : <span className="text-xl">💸</span>}
+              </div>
+
+              {/* Datepicker */}
+              <div>
+                <label
+                  htmlFor="tx-date"
+                  className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-1"
+                >
+                  Transaction Date
+                </label>
+                <input
+                  id="tx-date"
+                  type="date"
+                  value={txDate}
+                  onChange={(e) => setTxDate(e.target.value)}
+                  className="w-full bg-surface-alt border border-border rounded-xl px-3.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-primary transition-all shadow-subtle cursor-pointer"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full mt-2 bg-primary hover:bg-primary-muted text-white text-xs font-bold py-3 rounded-xl transition-all cursor-pointer shadow-subtle flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              >
+                <IconPlus className="w-4 h-4" />
+                Add Transaction
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* History Column - Right (2 blocks wide) */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle flex flex-col gap-4 h-full min-h-[500px]">
+            
+            {/* List Header controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+              <div>
+                <h2 className="text-sm font-bold tracking-tight text-text-primary uppercase">
+                  Recent Ledger
+                </h2>
+                <p className="text-[10px] text-text-muted font-medium mt-0.5">
+                  Showing {filteredTransactions.length} of {parsedTransactions.length} items
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative w-full sm:w-60">
+                <IconSearch className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search ledger..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-surface-alt border border-border rounded-full pl-9 pr-3.5 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-all shadow-subtle"
+                />
+              </div>
+            </div>
+
+            {/* List Filters row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">
+                Filter Type:
+              </span>
+              <button
+                onClick={() => setFilterType('all')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === 'all'
+                    ? 'bg-text-primary text-background'
+                    : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterType('income')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === 'income'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
+                }`}
+              >
+                Income
+              </button>
+              <button
+                onClick={() => setFilterType('expense')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                  filterType === 'expense'
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
+                }`}
+              >
+                Expenses
+              </button>
+
+              <div className="h-4 w-[1px] bg-border mx-1" />
+
+              <div className="flex items-center gap-1.5">
+                <CustomSelect
+                  value={filterCategory}
+                  onChange={setFilterCategory}
+                  options={filterCategoryOptions}
+                  placeholder="All Categories"
+                  className="w-44"
+                />
+              </div>
+            </div>
+
+            {/* Ledger Transactions list container */}
+            <div className="flex-1 overflow-y-auto max-h-[460px] pr-1 mt-2">
+              <AnimatePresence initial={false}>
+                {filteredTransactions.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-16 text-center"
+                  >
+                    <div className="p-3 rounded-full bg-surface-alt border border-border mb-3 text-text-muted">
+                      <IconHistory className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-text-primary">
+                      No matching records
+                    </span>
+                    <p className="text-[10px] text-text-muted max-w-[200px] mt-1">
+                      {searchQuery || filterType !== 'all' || filterCategory !== 'all'
+                        ? 'Try clearing your filters or search terms.'
+                        : 'Your financial history is empty. Logs will appear here.'}
+                    </p>
+                  </motion.div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {filteredTransactions.map((t) => {
+                      const catStyle = getCategoryConfig(t.parsedCategory);
+                      const isIncome = t.type === 'income';
+
+                      return (
+                        <motion.div
+                          key={t.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-surface-alt hover:bg-surface-hover/80 border border-border transition-colors group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Emoji Badge icon */}
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-base ${catStyle.bg} ${catStyle.border}`}>
+                              {CATEGORY_EMOJIS[t.parsedCategory] || '🏷️'}
+                            </div>
+
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-text-primary truncate pr-1">
+                                {t.parsedTitle}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wide ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+                                  {t.parsedCategory}
+                                </span>
+                                <span className="text-[9px] text-text-muted font-medium">
+                                  {new Date(t.date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-text-primary text-[14px] truncate">{txn.description}</p>
-                            <p className="text-[10px] text-text-secondary font-medium">
-                              {cat?.name || 'Unassigned'} • {new Date(txn.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-4 items-center shrink-0">
-                          <p className={`font-black text-sm tracking-tight ${txn.type === 'income' ? 'text-green-500' : 'text-rose-500'}`}>
-                            {txn.type === 'income' ? '+' : '-'}{currencySymbol}{Number(txn.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </p>
-                          
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => {
-                                setEditingTransaction(txn);
-                                setIsTransactionModalOpen(true);
-                              }}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-primary bg-surface-alt border border-border/50 transition-colors cursor-pointer"
-                              title="Edit Record"
+
+                          <div className="flex items-center gap-3.5 pl-2 shrink-0">
+                            <span
+                              className={`text-xs font-extrabold tracking-tight ${
+                                isIncome
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-rose-600 dark:text-rose-400'
+                              }`}
                             >
-                              <IconEdit className="w-3.5 h-3.5" />
-                            </button>
+                              {isIncome ? '+' : '-'}
+                              {formatCurrency(t.amount)}
+                            </span>
+
                             <button
-                              onClick={() => showConfirm('Delete Record', 'Delete this ledger transaction entry?', () => deleteBudgetTransaction(txn.id))}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-rose-500 bg-surface-alt border border-border/50 transition-colors cursor-pointer"
-                              title="Delete Record"
+                              onClick={() => handleDelete(t.id)}
+                              className="p-1 rounded-lg text-text-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer duration-150"
+                              title="Delete log"
                             >
                               <IconTrash className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-
-      {/* Category Modal Overlay */}
-      <Modal
-        isOpen={isCategoryModalOpen}
-        onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
-        title={editingCategory ? 'Edit Category' : 'New Category'}
-        maxWidthClassName="max-w-2xl"
-      >
-        <CategoryForm
-          category={editingCategory}
-          onSubmit={async (data) => {
-            if (editingCategory) {
-              await updateBudgetCategory(editingCategory.id, data);
-            } else {
-              await addBudgetCategory({ ...data, id: crypto.randomUUID() });
-            }
-            setIsCategoryModalOpen(false);
-            setEditingCategory(null);
-          }}
-          onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
-        />
-      </Modal>
-
-      {/* Transaction Modal Overlay */}
-      <Modal
-        isOpen={isTransactionModalOpen}
-        onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
-        title={editingTransaction ? 'Edit Transaction' : 'New Transaction'}
-        maxWidthClassName="max-w-2xl"
-      >
-        <TransactionForm
-          categories={budgetCategories}
-          transaction={editingTransaction}
-          onSubmit={async (data) => {
-            if (editingTransaction) {
-              await updateBudgetTransaction(editingTransaction.id, data);
-            } else {
-              await addBudgetTransaction({ ...data, id: crypto.randomUUID(), date: new Date().toISOString() });
-            }
-            setIsTransactionModalOpen(false);
-            setEditingTransaction(null);
-          }}
-          onClose={() => { setIsTransactionModalOpen(false); setEditingTransaction(null); }}
-        />
-      </Modal>
-
-      {/* Settings Modal */}
-      <Modal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        title="Budget Settings"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const initialBankBalance = parseFloat(formData.get('initialBankBalance') as string) || 0;
-            const initialCashBalance = parseFloat(formData.get('initialCashBalance') as string) || 0;
-            const currencySymbol = formData.get('currencySymbol') as string || '$';
-            updateSettings({ initialBankBalance, initialCashBalance, currencySymbol });
-            setIsSettingsModalOpen(false);
-          }}
-          className="flex flex-col gap-4 text-left"
-        >
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Currency Symbol</label>
-            <select
-              name="currencySymbol"
-              defaultValue={settings.currencySymbol || '$'}
-              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm font-semibold"
-            >
-              <option value="$">USD ($)</option>
-              <option value="₹">INR (₹)</option>
-              <option value="€">EUR (€)</option>
-              <option value="£">GBP (£)</option>
-              <option value="¥">JPY/CNY (¥)</option>
-              <option value="C$">CAD (C$)</option>
-              <option value="A$">AUD (A$)</option>
-            </select>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Bank Balance ({currencySymbol})</label>
-            <input
-              name="initialBankBalance"
-              type="number"
-              step="0.01"
-              defaultValue={settings.initialBankBalance || 0}
-              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Initial Cash Balance ({currencySymbol})</label>
-            <input
-              name="initialCashBalance"
-              type="number"
-              step="0.01"
-              defaultValue={settings.initialCashBalance || 0}
-              className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-              required
-            />
-          </div>
-          <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-            <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
-            <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">Save Settings</button>
-          </div>
-        </form>
-      </Modal>
-    </motion.div>
-  );
-}
-
-function CategoryForm({ 
-  category, 
-  onSubmit,
-  onClose
-}: { 
-  category: BudgetCategory | null; 
-  onSubmit: (data: Omit<BudgetCategory, 'id'>) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(category?.name || '');
-  const [budget, setBudget] = useState(category?.budget ? category.budget.toString() : '');
-  const [color, setColor] = useState<BudgetCategory['color']>(category?.color || 'rose');
-  const [icon, setIcon] = useState(category?.icon || '💰');
-
-  const icons = [
-    '💰', '🍔', '🚗', '🎮', '🛒', '💼', '🏠', '✈️', '🎓', '💊', '💅', '🍿', '💡', '🏋️', '📚', '☕',
-    '🚚', '🚖', '🚇', '🅿️', '🎟️', '📺', '🍩', '🍕', '🍺', '💧', '🌐', '📱', '🔥', '👕', '👟', '💻',
-    '🛋️', '🖼️', '💄', '🏥', '🛡️', '💈', '🎒', '📖', '✏️', '🏨', '🗺️', '📈', '🎁', '❤️', '🐱', '📄',
-    '⚙️', '🏌️', '🎬', '🎵', '🧺', '📦', '🧽', '🚲', '👶', '🧹', '📁'
-  ];
-  const colors = ['rose', 'blue', 'green', 'amber', 'purple'] as const;
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        await onSubmit({ name, budget: budget ? parseFloat(budget) : 0, color, icon });
-      }}
-      className="flex flex-col gap-4 text-left"
-    >
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category Name</label>
-        <input
-          type="text"
-          value={name}
-          placeholder="e.g. Dining Out, Utilities"
-          onChange={(e) => setName(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Monthly Budget Limit (Optional)</label>
-        <input
-          type="number"
-          value={budget}
-          placeholder="e.g. 500"
-          onChange={(e) => setBudget(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Accent Color</label>
-        <div className="flex gap-2.5">
-          {colors.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              className={`w-9 h-9 rounded-full border-2 transition-all cursor-pointer ${
-                colorClasses[c].split(' ')[0]} ${color === c ? 'border-text-primary scale-110 shadow-sm' : 'border-transparent hover:scale-105'
-              }`}
-            />
-          ))}
         </div>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Select Icon</label>
-        <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto custom-scrollbar p-1">
-          {icons.map((i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIcon(i)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                icon === i ? 'bg-surface-alt border border-primary scale-110 shadow-sm' : 'bg-surface border border-border/80 hover:scale-105'
-              }`}
-            >
-              {renderIcon(i, "w-5 h-5")}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">Save Category</button>
-      </div>
-    </form>
-  );
-}
-
-function TransactionForm({ 
-  categories, 
-  transaction,
-  onSubmit,
-  onClose
-}: { 
-  categories: BudgetCategory[]; 
-  transaction: BudgetTransaction | null;
-  onSubmit: (data: Omit<BudgetTransaction, 'id' | 'date'>) => Promise<void>;
-  onClose: () => void;
-}) {
-  const settings = useAppStore(state => state.settings);
-  const [categoryId, setCategoryId] = useState(transaction?.categoryId || categories[0]?.id || '');
-  const [amount, setAmount] = useState(transaction?.amount ? transaction.amount.toString() : '');
-  const [description, setDescription] = useState(transaction?.description || '');
-  const [type, setType] = useState<'income' | 'expense'>(transaction?.type || 'expense');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>(transaction?.paymentMethod || 'online');
-
-  const currencySymbol = settings.currencySymbol || '$';
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        await onSubmit({ categoryId, amount: parseFloat(amount), description, type, paymentMethod });
-      }}
-      className="flex flex-col gap-4 text-left"
-    >
-      {/* Type toggle */}
-      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40">
-        <button
-          type="button"
-          onClick={() => setType('expense')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            type === 'expense' ? 'bg-surface text-rose-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Expense
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('income')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            type === 'income' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Income
-        </button>
-      </div>
-
-      {/* Payment Method toggle */}
-      <div className="flex gap-1.5 p-1 rounded-2xl bg-surface-alt border border-border/40">
-        <button
-          type="button"
-          onClick={() => setPaymentMethod('online')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            paymentMethod === 'online' ? 'bg-surface text-blue-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Online (Bank/UPI)
-        </button>
-        <button
-          type="button"
-          onClick={() => setPaymentMethod('cash')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            paymentMethod === 'cash' ? 'bg-surface text-green-500 shadow-sm' : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Cash
-        </button>
-      </div>
-      
-      {/* Category Select */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category</label>
-        {categories.length === 0 ? (
-          <p className="text-xs text-rose-500 font-bold">Please add or seed categories first!</p>
-        ) : (
-          <CustomSelect
-            value={categoryId}
-            onChange={val => setCategoryId(val)}
-            options={categories.map(cat => ({ value: cat.id, label: `${cat.icon} ${cat.name}` }))}
-          />
-        )}
-      </div>
-
-      {/* Amount input */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Amount ({currencySymbol})</label>
-        <input
-          type="number"
-          step="0.01"
-          value={amount}
-          placeholder="0.00"
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-          required
-        />
-      </div>
-
-      {/* Description input */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">Description</label>
-        <input
-          type="text"
-          value={description}
-          placeholder="e.g. Grocery shopping, Weekly wage"
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-sm"
-          required
-        />
-      </div>
-      
-      {/* Footer buttons */}
-      <div className="flex gap-2.5 justify-end pt-3 border-t border-border/40 mt-2">
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-md rounded-full px-5 cursor-pointer">Cancel</button>
-        <button type="submit" className="btn btn-primary btn-md rounded-full px-6 cursor-pointer">
-          {transaction ? 'Save Changes' : 'Add Transaction'}
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }

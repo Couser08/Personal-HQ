@@ -1412,3 +1412,71 @@ export const devGoalService = {
   }
 };
 
+// ─── Journal Sticky Notes ───────────────────────────────────────────────────────
+
+export interface JournalStickyNote {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  createdAt: string;
+}
+
+export const journalStickyNoteService = {
+  async fetchAll(userId: string): Promise<JournalStickyNote[]> {
+    const { data, error } = await supabase
+      .from('journal_sticky_notes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      content: r.content,
+      x: Number(r.x),
+      y: Number(r.y),
+      createdAt: r.created_at,
+    }));
+  },
+
+  async create(userId: string, note: JournalStickyNote) {
+    const { error } = await supabase.from('journal_sticky_notes').insert({
+      id: note.id,
+      user_id: userId,
+      content: note.content,
+      x: note.x,
+      y: note.y,
+      created_at: note.createdAt,
+    });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return;
+      throw error;
+    }
+  },
+
+  async update(id: string, data: Partial<JournalStickyNote>) {
+    const payload: any = {};
+    if (data.content !== undefined) payload.content = data.content;
+    if (data.x !== undefined) payload.x = data.x;
+    if (data.y !== undefined) payload.y = data.y;
+
+    const { error } = await supabase.from('journal_sticky_notes').update(payload).eq('id', id);
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return;
+      throw error;
+    }
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('journal_sticky_notes').delete().eq('id', id);
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return;
+      throw error;
+    }
+  }
+};
+
+

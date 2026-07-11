@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   IconPlus, IconTrash, IconFlame, IconCalendar, 
-  IconCheck, IconSettings, IconAward
+  IconCheck, IconSettings, IconAward, IconTarget
 } from '@tabler/icons-react';
 import { useAppStore, type Habit } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -21,7 +21,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export default function HabitTrackerModule() {
-  const { habits, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, showConfirm } = useAppStore(
+  const { habits, addHabit, updateHabit, deleteHabit, toggleHabitCompletion, showConfirm, activeFocusItem, setActiveFocusItem } = useAppStore(
     useShallow(state => ({
       habits: state.habits,
       addHabit: state.addHabit,
@@ -29,6 +29,8 @@ export default function HabitTrackerModule() {
       deleteHabit: state.deleteHabit,
       toggleHabitCompletion: state.toggleHabitCompletion,
       showConfirm: state.showConfirm,
+      activeFocusItem: state.activeFocusItem,
+      setActiveFocusItem: state.setActiveFocusItem,
     }))
   );
 
@@ -419,31 +421,53 @@ export default function HabitTrackerModule() {
                   dueHabits.map(habit => {
                     const isCompleted = habit.completedDates.includes(todayStr);
                     return (
-                      <button
+                      <div
                         key={habit.id}
-                        onClick={() => handleToggleHabit(habit.id)}
-                        className={`flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all w-full cursor-pointer ${
+                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl text-left transition-all w-full border ${
                           isCompleted
-                            ? 'bg-emerald-500/8 border border-emerald-500/20'
+                            ? 'bg-emerald-500/5 border border-emerald-500/20'
                             : 'bg-surface-alt/60 border border-border/50 hover:border-border'
                         }`}
                       >
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                          isCompleted
-                            ? 'bg-emerald-500 border-emerald-500'
-                            : 'border-border'
-                        }`}>
-                          {isCompleted && <IconCheck size={11} strokeWidth={3} className="text-white" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-semibold truncate ${
-                            isCompleted ? 'line-through text-text-muted' : 'text-text-primary'
-                          }`}>{habit.name}</p>
-                          {habit.description && (
-                            <p className="text-[10px] text-text-muted truncate mt-0.5">{habit.description}</p>
-                          )}
-                        </div>
-                      </button>
+                        <button
+                          onClick={() => handleToggleHabit(habit.id)}
+                          className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer"
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                            isCompleted
+                              ? 'bg-emerald-500 border-emerald-500'
+                              : 'border-border'
+                          }`}>
+                            {isCompleted && <IconCheck size={11} strokeWidth={3} className="text-white" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-xs font-semibold truncate ${
+                              isCompleted ? 'line-through text-text-muted' : 'text-text-primary'
+                            }`}>{habit.name}</p>
+                            {habit.description && (
+                              <p className="text-[10px] text-text-muted truncate mt-0.5">{habit.description}</p>
+                            )}
+                          </div>
+                        </button>
+                        
+                        {!isCompleted && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const isActive = activeFocusItem?.id === habit.id;
+                              setActiveFocusItem(isActive ? null : { type: 'habit', id: habit.id, title: habit.name });
+                            }}
+                            className={`p-1.5 rounded-lg shrink-0 transition-colors cursor-pointer ${
+                              activeFocusItem?.id === habit.id
+                                ? 'text-emerald-500 bg-emerald-500/10'
+                                : 'text-text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
+                            }`}
+                            title={activeFocusItem?.id === habit.id ? "Deactivate focus" : "Focus on this habit"}
+                          >
+                            <IconTarget size={14} />
+                          </button>
+                        )}
+                      </div>
                     );
                   })
                 )}
@@ -473,6 +497,22 @@ export default function HabitTrackerModule() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        {!habit.completedDates.includes(todayStr) && (
+                          <button
+                            onClick={() => {
+                              const isActive = activeFocusItem?.id === habit.id;
+                              setActiveFocusItem(isActive ? null : { type: 'habit', id: habit.id, title: habit.name });
+                            }}
+                            className={`p-1.5 rounded-lg border transition-all cursor-pointer shadow-sm active:scale-95 ${
+                              activeFocusItem?.id === habit.id
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                                : 'bg-surface-alt hover:bg-surface border-border/40 text-text-secondary hover:text-emerald-500'
+                            }`}
+                            title={activeFocusItem?.id === habit.id ? "Deactivate focus" : "Focus on this habit"}
+                          >
+                            <IconTarget size={13} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenAddModal(habit)}
                           className="p-1.5 rounded-lg bg-surface-alt hover:bg-surface border border-border/40 text-text-secondary hover:text-text-primary transition-all cursor-pointer shadow-sm active:scale-95"

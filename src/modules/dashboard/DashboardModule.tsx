@@ -6,7 +6,7 @@ import {
   IconChecklist, IconClockPlay, IconSitemap,
   IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh,
   IconCheck, IconArrowRight, IconFlame, IconCalendar,
-  IconChevronDown, IconRocket, IconLayoutList
+  IconChevronDown, IconRocket, IconLayoutList, IconTarget
 } from '@tabler/icons-react';
 
 export default function DashboardModule() {
@@ -28,6 +28,8 @@ export default function DashboardModule() {
     pomodoroStreak,
     habits,
     toggleHabitCompletion,
+    activeFocusItem,
+    setActiveFocusItem,
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     mindmaps: state.mindmaps,
@@ -46,6 +48,8 @@ export default function DashboardModule() {
     pomodoroStreak: state.pomodoroStreak,
     habits: state.habits,
     toggleHabitCompletion: state.toggleHabitCompletion,
+    activeFocusItem: state.activeFocusItem,
+    setActiveFocusItem: state.setActiveFocusItem,
   })));
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -432,17 +436,36 @@ export default function DashboardModule() {
               </div>
             ) : (
               visibleTasks.map(task => (
-                <button key={task.id} onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group cursor-pointer">
-                  <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                    task.completed ? 'bg-rose-500 border-rose-500 scale-90' : 'border-border group-hover:border-rose-500'
-                  }`}>
-                    {task.completed && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                  </div>
-                  <span className={`text-xs font-semibold truncate flex-1 ${
-                    task.completed ? 'line-through text-text-muted font-normal' : 'text-text-primary'
-                  }`}>{task.title}</span>
-                </button>
+                <div key={task.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group">
+                  <button onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
+                    className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
+                    <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
+                      task.completed ? 'bg-rose-500 border-rose-500 scale-90' : 'border-border group-hover:border-rose-500'
+                    }`}>
+                      {task.completed && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                    </div>
+                    <span className={`text-xs font-semibold truncate flex-grow ${
+                      task.completed ? 'line-through text-text-muted font-normal' : 'text-text-primary'
+                    }`}>{task.title}</span>
+                  </button>
+                  {!task.completed && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const isActive = activeFocusItem?.id === task.id;
+                        setActiveFocusItem(isActive ? null : { type: 'todo', id: task.id, title: task.title });
+                      }}
+                      className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
+                        activeFocusItem?.id === task.id
+                          ? 'text-blue-500 bg-blue-500/10'
+                          : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title={activeFocusItem?.id === task.id ? "Deactivate focus" : "Focus on this task"}
+                    >
+                      <IconTarget size={13} />
+                    </button>
+                  )}
+                </div>
               ))
             )}
           </div>
@@ -477,17 +500,36 @@ export default function DashboardModule() {
               {dueHabits.slice(0, 2).map(habit => {
                 const isCompleted = habit.completedDates.includes(todayStr);
                 return (
-                  <button key={habit.id} onClick={() => toggleHabitCompletion(habit.id, todayStr)}
-                    className="flex items-center w-full gap-3 px-3 py-2 text-left transition-all border cursor-pointer rounded-xl bg-surface-alt/45 hover:bg-surface-alt border-border/20 group">
-                    <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                      isCompleted ? 'bg-orange-500 border-orange-500 scale-90' : 'border-border group-hover:border-orange-500'
-                    }`}>
-                      {isCompleted && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                    <span className={`text-xs font-semibold truncate flex-1 ${
-                      isCompleted ? 'line-through text-text-muted font-normal' : 'text-text-primary'
-                    }`}>{habit.name}</span>
-                  </button>
+                  <div key={habit.id} className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group">
+                    <button onClick={() => toggleHabitCompletion(habit.id, todayStr)}
+                      className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
+                      <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
+                        isCompleted ? 'bg-orange-500 border-orange-500 scale-90' : 'border-border group-hover:border-orange-500'
+                      }`}>
+                        {isCompleted && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                      </div>
+                      <span className={`text-xs font-semibold truncate flex-grow ${
+                        isCompleted ? 'line-through text-text-muted font-normal' : 'text-text-primary'
+                      }`}>{habit.name}</span>
+                    </button>
+                    {!isCompleted && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const isActive = activeFocusItem?.id === habit.id;
+                          setActiveFocusItem(isActive ? null : { type: 'habit', id: habit.id, title: habit.name });
+                        }}
+                        className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
+                          activeFocusItem?.id === habit.id
+                            ? 'text-orange-500 bg-orange-500/10'
+                            : 'text-text-muted hover:text-orange-500 hover:bg-orange-500/10 opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={activeFocusItem?.id === habit.id ? "Deactivate focus" : "Focus on this habit"}
+                      >
+                        <IconTarget size={13} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
               {dueHabits.length === 0 && (

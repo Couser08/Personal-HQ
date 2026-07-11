@@ -5,7 +5,7 @@ import {
   IconFlag, IconTag, IconSearch,
   IconLayoutList,
   IconChevronLeft, IconChevronRight, IconClock, IconEdit,
-  IconList
+  IconList, IconTarget
 } from '@tabler/icons-react';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -91,6 +91,8 @@ interface TaskListProps {
   openTodoTaskModal: (task?: TodoTask | null) => void;
   tickStyle: 'default' | 'bounce' | 'minimal';
   strikeStyle: 'solid' | 'dashed' | 'dotted' | 'double' | 'wavy';
+  isSidebarOpen?: boolean;
+  setIsSidebarOpen?: (open: boolean) => void;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -155,6 +157,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   openTodoTaskModal,
   tickStyle,
   strikeStyle,
+  isSidebarOpen,
+  setIsSidebarOpen,
 }) => {
   // Date picker helpers & navigation
   const getDaysInMonth = (month: number, year: number) => {
@@ -237,15 +241,27 @@ export const TaskList: React.FC<TaskListProps> = ({
       
       {/* Top Header */}
       <div className="h-16 border-b border-border flex items-center justify-between px-6 shrink-0 relative z-10 bg-bg-primary/80 backdrop-blur-md select-none">
-        <div className="relative w-64 hidden sm:block">
-          <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input 
-            type="text" 
-            placeholder="Search tasks... ⌘K" 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-surface-alt border border-border rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-primary/50 text-text-primary placeholder:text-text-muted transition-colors"
-          />
+        <div className="flex items-center gap-2 relative w-full sm:w-64">
+          {setIsSidebarOpen && (
+            <button 
+              type="button"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="md:hidden p-2 -ml-2 text-text-secondary hover:text-text-primary hover:bg-surface-alt rounded-xl transition-colors cursor-pointer mr-1"
+              title="Open Menu"
+            >
+              <IconList className="w-5 h-5" />
+            </button>
+          )}
+          <div className="relative w-full">
+            <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input 
+              type="text" 
+              placeholder="Search tasks... ⌘K" 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-surface-alt border border-border rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-primary/50 text-text-primary placeholder:text-text-muted transition-colors"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3 ml-auto">
           <button className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer">
@@ -1067,11 +1083,13 @@ function TaskGroup({
         <AnimatePresence>
           {tasks.map(task => {
             const isCompleted = task.completed || completingIds.includes(task.id);
+            const isCompleting = completingIds.includes(task.id);
             return (
               <TaskItem
                 key={task.id}
                 task={task}
                 isCompleted={isCompleted}
+                isCompleting={isCompleting}
                 onToggle={onToggle}
                 onDelete={onDelete}
                 tickStyle={tickStyle}
@@ -1088,11 +1106,12 @@ function TaskGroup({
 }
 
 function TaskItem({
-  task, isCompleted, onToggle, onDelete,
+  task, isCompleted, isCompleting = false, onToggle, onDelete,
   tickStyle, strikeStyle, projects, openTodoTaskModal
 }: {
   task: TodoTask;
   isCompleted: boolean;
+  isCompleting?: boolean;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   tickStyle: string;
@@ -1101,6 +1120,34 @@ function TaskItem({
   openTodoTaskModal: (task?: TodoTask | null) => void;
 }) {
   const updateTodoTask = useAppStore(state => state.updateTodoTask);
+  const settings = useAppStore(state => state.settings);
+  const activeFocusItem = useAppStore(state => state.activeFocusItem);
+  const setActiveFocusItem = useAppStore(state => state.setActiveFocusItem);
+  const todoCompletionAnimation = settings.todoCompletionAnimation || 'circle-fill-confetti';
+
+  // Pre-generate particle positions for explosions
+  const particles = useMemo(() => {
+    return Array.from({ length: 22 }).map((_, i) => {
+      const angle = (i / 22) * 360 * (Math.PI / 180);
+      const speed = 40 + Math.random() * 70;
+      const size = 4 + Math.random() * 5;
+      const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f97316', '#a855f7', '#eab308'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const shape = Math.random() > 0.5 ? 'circle' : 'square';
+      return {
+        id: i,
+        x: Math.cos(angle) * speed,
+        y: Math.sin(angle) * speed,
+        size,
+        color,
+        shape,
+        rotation: Math.random() * 360,
+      };
+    });
+  }, []);
+
+  const emojis = ['🎉', '✨', '🥳', '🌟', '👏', '💖'];
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
@@ -1112,22 +1159,93 @@ function TaskItem({
           : 'border-dashed border-border-alt hover:border-border bg-surface/60 shadow-sm'
       }`}
     >
-      <div className="flex items-start gap-3 w-full">
+      {/* ── Ripple + Particles Background Wave ── */}
+      {isCompleting && todoCompletionAnimation === 'ripple-particles' && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0.7 }}
+          animate={{ scale: 22, opacity: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="absolute bg-purple-500/20 w-8 h-8 rounded-full pointer-events-none z-0"
+          style={{ left: '22px', top: '22px', transform: 'translate(-50%, -50%)' }}
+        />
+      )}
+
+      {/* ── Ripple Rising Dust ── */}
+      {isCompleting && todoCompletionAnimation === 'ripple-particles' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+          {Array.from({ length: 12 }).map((_, i) => {
+            const startX = 30 + Math.random() * 200;
+            const startY = 15 + Math.random() * 30;
+            return (
+              <motion.div
+                key={i}
+                initial={{ x: startX, y: startY, opacity: 1, scale: 0.8 }}
+                animate={{ y: startY - 35, x: startX + (Math.random() - 0.5) * 20, opacity: 0, scale: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut', delay: Math.random() * 0.12 }}
+                className="absolute w-1.5 h-1.5 rounded-full bg-purple-400/50"
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Bounce Circle Pulse Ring ── */}
+      {isCompleting && todoCompletionAnimation === 'bounce-circle' && (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0.8 }}
+          animate={{ scale: 2.3, opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="absolute w-8 h-8 rounded-full border border-rose-500/40 pointer-events-none z-0"
+          style={{ left: '22px', top: '22px', transform: 'translate(-50%, -50%)' }}
+        />
+      )}
+
+      {/* ── Sweep Line + Fill ── */}
+      {isCompleting && todoCompletionAnimation === 'sweep-fill' && (
+        <>
+          <motion.div
+            initial={{ left: '0%' }}
+            animate={{ left: '100%' }}
+            transition={{ duration: 0.55, ease: 'easeInOut' }}
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-r from-green-400 to-transparent shadow-[0_0_8px_rgba(74,222,128,0.8)] pointer-events-none z-30"
+          />
+          <motion.div
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 0.55, ease: 'easeInOut' }}
+            className="absolute left-0 top-0 bottom-0 bg-green-500/5 pointer-events-none z-0"
+          />
+        </>
+      )}
+
+      <div className="flex items-start gap-3 w-full relative z-10">
+        
+        {/* Checkbox Button */}
         <button 
           onClick={() => onToggle(task.id)}
-          className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors relative z-10 mt-0.5 cursor-pointer ${
-            isCompleted 
-              ? 'border-rose-500 bg-rose-500' 
-              : 'border-text-muted hover:border-rose-400 bg-transparent'
-          }`}
+          className="w-5.5 h-5.5 rounded-full border-2 border-text-muted hover:border-rose-400 bg-transparent flex items-center justify-center shrink-0 relative overflow-hidden z-10 mt-0.5 cursor-pointer"
         >
+          {/* Custom Circle Fill Animation */}
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={isCompleted ? { scale: 1 } : { scale: 0 }}
+            transition={todoCompletionAnimation === 'bounce-circle' 
+              ? { type: 'spring', stiffness: 350, damping: 12 }
+              : { duration: 0.22, ease: 'easeOut' }
+            }
+            className={`absolute inset-0 rounded-full ${
+              todoCompletionAnimation === 'sweep-fill' ? 'bg-green-500' :
+              todoCompletionAnimation === 'ripple-particles' ? 'bg-purple-500' : 'bg-rose-500'
+            }`}
+          />
+
           <AnimatePresence>
             {isCompleted && (
               <motion.svg 
-                initial={tickStyle === 'bounce' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
-                animate={tickStyle === 'bounce' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
+                initial={tickStyle === 'bounce' || todoCompletionAnimation === 'bounce-circle' ? { scale: 0, rotate: -45 } : { pathLength: 0, opacity: 0 }}
+                animate={tickStyle === 'bounce' || todoCompletionAnimation === 'bounce-circle' ? { scale: 1, rotate: 0 } : { pathLength: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="w-3.5 h-3.5 text-white" 
+                className="w-3.5 h-3.5 text-white relative z-10" 
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
               >
                 <motion.path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -1135,6 +1253,93 @@ function TaskItem({
             )}
           </AnimatePresence>
         </button>
+
+        {/* ── Particle Emitter Overlay (Circle/Pop Confetti) ── */}
+        {isCompleting && (todoCompletionAnimation === 'circle-fill-confetti' || todoCompletionAnimation === 'pop-confetti') && (
+          <div className="absolute top-3 left-3 pointer-events-none z-50">
+            {particles.map(p => (
+              <motion.div
+                key={p.id}
+                initial={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: 0 }}
+                animate={{ 
+                  x: p.x, 
+                  y: p.y, 
+                  scale: 0, 
+                  opacity: 0,
+                  rotate: p.rotation + 180 
+                }}
+                transition={{ duration: todoCompletionAnimation === 'pop-confetti' ? 0.5 : 0.6, ease: [0.1, 0.8, 0.3, 1] }}
+                className={`absolute ${p.shape === 'circle' ? 'rounded-full' : 'rounded-sm'}`}
+                style={{
+                  width: p.size,
+                  height: p.size,
+                  backgroundColor: p.color,
+                  marginLeft: -p.size / 2,
+                  marginTop: -p.size / 2,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Emoji Pop Emitter Overlay ── */}
+        {isCompleting && todoCompletionAnimation === 'emoji-pop' && (
+          <div className="absolute top-3 left-3 pointer-events-none z-50">
+            {Array.from({ length: 8 }).map((_, i) => {
+              const emoji = emojis[i % emojis.length];
+              const angle = (i / 8) * 360 * (Math.PI / 180) + (Math.random() - 0.5) * 0.4;
+              const dist = 35 + Math.random() * 45;
+              return (
+                <motion.span
+                  key={i}
+                  initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
+                  animate={{ 
+                    x: Math.cos(angle) * dist, 
+                    y: Math.sin(angle) * dist - 25, 
+                    scale: [0, 1.35, 0], 
+                    opacity: [1, 1, 0],
+                    rotate: (Math.random() - 0.5) * 60 
+                  }}
+                  transition={{ duration: 0.58, ease: 'easeOut', delay: Math.random() * 0.05 }}
+                  className="absolute text-xs"
+                  style={{ marginLeft: '-8px', marginTop: '-8px' }}
+                >
+                  {emoji}
+                </motion.span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Star Burst Emitter Overlay ── */}
+        {isCompleting && todoCompletionAnimation === 'star-burst' && (
+          <div className="absolute top-3 left-3 pointer-events-none z-50">
+            {Array.from({ length: 12 }).map((_, i) => {
+              const angle = (i / 12) * 360 * (Math.PI / 180);
+              const dist = 45 + Math.random() * 35;
+              return (
+                <motion.svg
+                  key={i}
+                  viewBox="0 0 24 24"
+                  fill="gold"
+                  initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
+                  animate={{ 
+                    x: Math.cos(angle) * dist, 
+                    y: Math.sin(angle) * dist, 
+                    scale: [0, 1.25, 0], 
+                    opacity: [1, 1, 0],
+                    rotate: 270 
+                  }}
+                  transition={{ duration: 0.55, ease: 'easeOut' }}
+                  className="absolute w-3.5 h-3.5 text-yellow-400"
+                  style={{ marginLeft: '-7px', marginTop: '-7px' }}
+                >
+                  <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.858 1.4-8.168L.134 10.41l8.2-1.192L12 .587z" />
+                </motion.svg>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <span 
@@ -1185,6 +1390,22 @@ function TaskItem({
         <div className="flex items-center gap-0.5 shrink-0 ml-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           {!isCompleted && (
             <button 
+              onClick={() => {
+                const isActive = activeFocusItem?.id === task.id;
+                setActiveFocusItem(isActive ? null : { type: 'todo', id: task.id, title: task.title });
+              }} 
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeFocusItem?.id === task.id
+                  ? 'text-blue-500 bg-blue-500/10'
+                  : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10'
+              }`}
+              title={activeFocusItem?.id === task.id ? "Deactivate focus" : "Focus on this task"}
+            >
+              <IconTarget className="w-4 h-4" />
+            </button>
+          )}
+          {!isCompleted && (
+            <button 
               onClick={() => openTodoTaskModal(task)} 
               className="p-1.5 text-text-muted hover:text-[#007AFF] hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
               title="Edit task details"
@@ -1203,7 +1424,7 @@ function TaskItem({
       </div>
 
       {(task.projectId || task.priority !== 'none' || task.dueDate || task.startTime || task.endTime || (task.tags && task.tags.length > 0) || (task.pomodoroCount !== undefined && task.pomodoroCount > 0) || (task.subtasks && task.subtasks.length > 0)) && (
-        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-border/30 w-full text-[11px] text-text-secondary select-none">
+        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-border/30 w-full text-[11px] text-text-secondary select-none relative z-10">
           {task.subtasks && task.subtasks.length > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/5 text-rose-500 border border-rose-500/10 font-semibold">
               <IconLayoutList className="w-3 h-3 text-text-muted" />

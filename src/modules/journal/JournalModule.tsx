@@ -20,7 +20,9 @@ import {
   IconTag,
   IconTrash,
   IconPalette,
+  IconX,
 } from '@tabler/icons-react';
+import type { JournalStickyNote } from '../../lib/db';
 import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { CustomSelect } from '../../components/ui/CustomSelect';
@@ -155,7 +157,7 @@ const exportJson = (filename: string, payload: unknown) => {
 };
 
 export default function JournalModule() {
-  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm, setActiveModule, theme } = useAppStore(
+  const { journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, showConfirm, setActiveModule, theme, journalStickyNotes, addJournalStickyNote, updateJournalStickyNote, deleteJournalStickyNote } = useAppStore(
     useShallow((state) => ({
       journals: state.journals,
       addJournalEntry: state.addJournalEntry,
@@ -164,6 +166,10 @@ export default function JournalModule() {
       showConfirm: state.showConfirm,
       setActiveModule: state.setActiveModule,
       theme: state.theme,
+      journalStickyNotes: state.journalStickyNotes,
+      addJournalStickyNote: state.addJournalStickyNote,
+      updateJournalStickyNote: state.updateJournalStickyNote,
+      deleteJournalStickyNote: state.deleteJournalStickyNote,
     })),
   );
 
@@ -490,116 +496,168 @@ export default function JournalModule() {
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative flex-grow">
-            <IconSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search journal entries..."
-              className="input-field w-full pl-10 bg-surface"
-            />
-          </div>
-          <div className="flex bg-surface p-1 rounded-xl border border-border shrink-0">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'all' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              All Entries
-            </button>
-            <button
-              onClick={() => setActiveTab('favorites')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'favorites' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              Favorites
-            </button>
-          </div>
-        </div>
-
-        {/* Catalog Grid */}
-        {filteredEntries.length === 0 ? (
-          <div className="bg-surface border border-border/70 rounded-3xl p-12 text-center shadow-sm">
-            <EmptyState
-              title="No journal entries found"
-              description="Create a new journal entry or clear the search filter to get started."
-              action={
-                <button onClick={createEntry} className="btn btn-primary btn-md">
-                  Create First Entry
-                </button>
-              }
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEntries.map((entry) => {
-              const cleanContent = (entry.content || '').replace(/<[^>]*>/g, '').trim();
-              const snippet = cleanContent ? (cleanContent.length > 90 ? cleanContent.slice(0, 90) + '...' : cleanContent) : 'Nothing written yet.';
-
-              return (
-                <div
-                  key={entry.id}
-                  onClick={() => {
-                    setActiveEntryId(entry.id);
-                  }}
-                  className="group relative bg-surface border border-border/70 hover:border-primary/40 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between min-h-[190px] overflow-hidden"
+        {/* Split grid for Journals Catalog + Sticky Notes Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Column: Journals List & Filters (col-span-8) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            {/* Filters and Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative flex-grow">
+                <IconSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search journal entries..."
+                  className="input-field w-full pl-10 bg-surface"
+                />
+              </div>
+              <div className="flex bg-surface p-1 rounded-xl border border-border shrink-0">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'all' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
                 >
-                  <div className="absolute w-24 h-24 rounded-full pointer-events-none -top-10 -left-10 bg-primary/5 blur-xl group-hover:bg-primary/10 transition-colors" />
-                  
-                  <div className="relative z-10 flex-1 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{formatDateTime(entry.date)}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-surface-alt text-text-primary border border-border/50">
-                          {entry.mood}
-                        </span>
-                        {entry.pinned && (
-                          <span className="text-rose-500 font-extrabold text-[9px] tracking-wider bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-full">PINNED</span>
-                        )}
+                  All Entries
+                </button>
+                <button
+                  onClick={() => setActiveTab('favorites')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'favorites' ? 'bg-surface-alt text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Favorites
+                </button>
+              </div>
+            </div>
+
+            {/* Catalog Grid */}
+            {filteredEntries.length === 0 ? (
+              <div className="bg-surface border border-border/70 rounded-3xl p-12 text-center shadow-sm">
+                <EmptyState
+                  title="No journal entries found"
+                  description="Create a new journal entry or clear the search filter to get started."
+                  action={
+                    <button onClick={createEntry} className="btn btn-primary btn-md">
+                      Create First Entry
+                    </button>
+                  }
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredEntries.map((entry) => {
+                  const cleanContent = (entry.content || '').replace(/<[^>]*>/g, '').trim();
+                  const snippet = cleanContent ? (cleanContent.length > 90 ? cleanContent.slice(0, 90) + '...' : cleanContent) : 'Nothing written yet.';
+
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={() => {
+                        setActiveEntryId(entry.id);
+                      }}
+                      className="group relative bg-surface border border-border/70 hover:border-primary/40 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between min-h-[190px] overflow-hidden"
+                    >
+                      <div className="absolute w-24 h-24 rounded-full pointer-events-none -top-10 -left-10 bg-primary/5 blur-xl group-hover:bg-primary/10 transition-colors" />
+                      
+                      <div className="relative z-10 flex-1 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{formatDateTime(entry.date)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-surface-alt text-text-primary border border-border/50">
+                              {entry.mood}
+                            </span>
+                            {entry.pinned && (
+                              <span className="text-rose-500 font-extrabold text-[9px] tracking-wider bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-full">PINNED</span>
+                            )}
+                          </div>
+                        </div>
+                        <h4 className="text-base font-bold text-text-primary group-hover:text-primary transition-colors leading-tight mt-1">
+                          {entry.title || 'Untitled Entry'}
+                        </h4>
+                        <p className="text-xs text-text-secondary leading-relaxed line-clamp-3 mt-1">
+                          {snippet}
+                        </p>
+                      </div>
+
+                      <div className="relative z-10 flex items-center justify-between border-t border-border/40 pt-4 mt-4">
+                        <div className="flex flex-wrap gap-1 max-w-[70%]">
+                          {entry.tags.slice(0, 2).map((t) => (
+                            <span key={t} className="text-[9px] font-semibold text-text-muted bg-surface-alt px-1.5 py-0.5 rounded">
+                              #{t}
+                            </span>
+                          ))}
+                          {entry.tags.length > 2 && (
+                            <span className="text-[9px] font-semibold text-text-muted">
+                              +{entry.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showConfirm(
+                              'Delete Journal Entry',
+                              `Are you sure you want to delete "${entry.title || 'Untitled Entry'}"? This action cannot be undone.`,
+                              () => deleteJournalEntry(entry.id)
+                            );
+                          }}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Delete Entry"
+                        >
+                          <IconTrash size={14} />
+                        </button>
                       </div>
                     </div>
-                    <h4 className="text-base font-bold text-text-primary group-hover:text-primary transition-colors leading-tight mt-1">
-                      {entry.title || 'Untitled Entry'}
-                    </h4>
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-3 mt-1">
-                      {snippet}
-                    </p>
-                  </div>
-
-                  <div className="relative z-10 flex items-center justify-between border-t border-border/40 pt-4 mt-4">
-                    <div className="flex flex-wrap gap-1 max-w-[70%]">
-                      {entry.tags.slice(0, 2).map((t) => (
-                        <span key={t} className="text-[9px] font-semibold text-text-muted bg-surface-alt px-1.5 py-0.5 rounded">
-                          #{t}
-                        </span>
-                      ))}
-                      {entry.tags.length > 2 && (
-                        <span className="text-[9px] font-semibold text-text-muted">
-                          +{entry.tags.length - 2}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        showConfirm(
-                          'Delete Journal Entry',
-                          `Are you sure you want to delete "${entry.title || 'Untitled Entry'}"? This action cannot be undone.`,
-                          () => deleteJournalEntry(entry.id)
-                        );
-                      }}
-                      className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Delete Entry"
-                    >
-                      <IconTrash size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </motion.div>
+
+          {/* Right Column: Sticky Notes (col-span-4) */}
+          <div className="lg:col-span-4 bg-surface border border-border/70 rounded-3xl p-5 shadow-sm">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-text-primary">Sticky Notes</span>
+                  <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold">
+                    {journalStickyNotes.length}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    addJournalStickyNote({
+                      id: crypto.randomUUID(),
+                      content: 'New sticky note. Double click to edit!',
+                      x: 0,
+                      y: 0,
+                      createdAt: new Date().toISOString()
+                    });
+                  }}
+                  className="p-1 rounded-lg text-amber-600 hover:bg-amber-500/10 cursor-pointer flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+                >
+                  <IconPlus className="w-3.5 h-3.5" /> Add Note
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                {journalStickyNotes.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-text-muted italic border border-dashed border-border/40 rounded-2xl">
+                    No sticky notes yet. Add one to capture quick thoughts!
+                  </div>
+                ) : (
+                  journalStickyNotes.map((note) => (
+                    <StickyNoteCard
+                      key={note.id}
+                      note={note}
+                      onUpdate={(content) => updateJournalStickyNote(note.id, { content })}
+                      onDelete={() => deleteJournalStickyNote(note.id)}
+                      isDark={resolvedTheme === 'dark'}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div></motion.div>
     );
   }
 
@@ -1039,6 +1097,69 @@ export default function JournalModule() {
               </div>
             </div>
           </aside>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Sticky Note Helper Component ───────────────────────────────────────────────────
+
+function StickyNoteCard({
+  note,
+  onUpdate,
+  onDelete,
+  isDark,
+}: {
+  note: JournalStickyNote;
+  onUpdate: (content: string) => void;
+  onDelete: () => void;
+  isDark: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState(note.content);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (text.trim() !== note.content.trim()) {
+      onUpdate(text.trim());
+    }
+  };
+
+  return (
+    <motion.div
+      layout
+      className={`relative p-3.5 rounded-2xl border transition-all duration-200 flex flex-col justify-between min-h-[90px] shadow-sm text-left ${
+        isDark
+          ? 'bg-amber-950/20 border-amber-900/30 text-amber-200'
+          : 'bg-amber-50 border-amber-200 text-amber-950'
+      }`}
+    >
+      <button
+        onClick={onDelete}
+        className="absolute top-2.5 right-2.5 p-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-amber-800/60 hover:text-red-500 transition-colors cursor-pointer"
+        title="Delete note"
+      >
+        <IconX className="w-3.5 h-3.5" />
+      </button>
+
+      <div className="flex-1 mt-1 text-xs leading-relaxed font-semibold pr-6 select-text">
+        {isEditing ? (
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={handleBlur}
+            autoFocus
+            className="w-full bg-transparent focus:outline-none resize-none min-h-[60px]"
+          />
+        ) : (
+          <div
+            onDoubleClick={() => setIsEditing(true)}
+            className="whitespace-pre-wrap cursor-pointer"
+            title="Double click to edit"
+          >
+            {note.content || 'Blank sticky note...'}
+          </div>
         )}
       </div>
     </motion.div>

@@ -69,7 +69,9 @@ export default function DrawingModule() {
   const [renameTitle, setRenameTitle] = useState('');
   const [isoGrid, setIsoGrid] = useState(false);
   const [isDrawFilesCollapsed, setIsDrawFilesCollapsed] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  });
   const canvasBackground = resolvedTheme === 'dark' ? '#121214' : '#ffffff';
   const panelBackground = resolvedTheme === 'dark' ? 'rgba(17, 17, 19, 0.92)' : 'rgba(255, 255, 255, 0.92)';
 

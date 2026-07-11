@@ -6,51 +6,89 @@ import {
   IconTerminal,
   IconMovie,
   IconFlame,
-  IconDatabase
+  IconLayout,
+  IconBrush,
+  IconDatabase,
+  IconSettings
 } from '@tabler/icons-react';
 
 const APP_VERSION = '1.4.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
-const FEATURES = [
-  {
-    icon: <IconTerminal className="w-5 h-5 stroke-[2]" />,
-    color: '#FF9500', // Apple Orange
-    bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Today I Learned (TIL) Logger',
-    desc: 'Log and catalog daily micro-journal logs, coding tips, and technical learnings. Features quick tags, dynamic filters, and full text search.',
-  },
-  {
-    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
-    color: '#007AFF', // Apple Blue
-    bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Anime Rankings & Reviews',
-    desc: 'Keep track of your watch list. Rate, review, and organize personal rankings with detailed stats inside the newly enhanced Media Logger.',
-  },
-  {
-    icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
-    color: '#FF2D55', // Apple Pink
-    bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Upgraded Wavy Celebrations',
-    desc: 'Beautiful new concentric ripple waveforms, star particle bursts, and glowing background gradient paths when completing tasks or daily habits.',
-  },
-  {
-    icon: <IconDatabase className="w-5 h-5 stroke-[2]" />,
-    color: '#34C759', // Apple Green
-    bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Sync schemas & Todo Deletion',
-    desc: 'Under the hood database migrations for syncing task deletions, tracking media entries metadata, and stable local SQLite integrations.',
-  },
-];
+interface FeatureItem {
+  icon: React.ReactNode;
+  color: string;
+  bg: string;
+  title: string;
+  desc: string;
+}
 
-const HIGHLIGHTS = [
-  'Created a dedicated TIL (Today I Learned) micro-journal logger module',
-  'Added personal Anime Rankings, scores, and ratings tabs to the Media Logger',
-  'Upgraded Wavy Ripple animation overlays with high-performance canvas rendering',
-  'Integrated database sync and migrations tracking for deleted Todo items',
-  'Refactored Admin control panel with assets fallback settings',
-  'Polished responsive layouts for outline outliners and drawing tools sidebars'
-];
+const TAB_CONTENT: Record<'features' | 'uiux' | 'improvements', { desc: string; list: FeatureItem[] }> = {
+  features: {
+    desc: 'New full-featured modules designed to expand your productivity workflows.',
+    list: [
+      {
+        icon: <IconTerminal className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500', // Apple Orange
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Today I Learned (TIL) Logger',
+        desc: 'Log and catalog daily micro-journal tips, technical logs, and code snippets with quick tags, smart filters, and full text search.',
+      },
+      {
+        icon: <IconMovie className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#007AFF', // Apple Blue
+        bg: 'rgba(0, 122, 255, 0.08)',
+        title: 'Anime Rankings & Reviews',
+        desc: 'Organize your anime lists with scores, detailed personal notes, custom ratings, and watch logs directly inside the Media Logger.',
+      },
+    ]
+  },
+  uiux: {
+    desc: 'Visual upgrades and layout updates focusing on beautiful, responsive aesthetics.',
+    list: [
+      {
+        icon: <IconFlame className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF2D55', // Apple Pink
+        bg: 'rgba(255, 45, 85, 0.08)',
+        title: 'Canvas Ripple Celebrations',
+        desc: 'Vibrant, concentric ripple canvas waves, star bursts, and gradient flows that trigger when completing Pomodoro sessions or habits.',
+      },
+      {
+        icon: <IconLayout className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#AF52DE', // Apple Violet
+        bg: 'rgba(175, 82, 222, 0.08)',
+        title: 'Mascot Layout Adjustments',
+        desc: 'Mascot preview logs moved to side columns in the Media section, ensuring typing fields remain completely unobstructed.',
+      },
+      {
+        icon: <IconBrush className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF3B30', // Apple Red
+        bg: 'rgba(255, 59, 48, 0.08)',
+        title: 'Whiteboard Side Collapser',
+        desc: 'Easily collapse drawing canvas tool panels using a smooth floating chevron toggle, giving you maximum space to draw.',
+      },
+    ]
+  },
+  improvements: {
+    desc: 'Behind-the-scenes updates to keep your database fast, secure, and fully synced.',
+    list: [
+      {
+        icon: <IconDatabase className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#34C759', // Apple Green
+        bg: 'rgba(52, 199, 89, 0.08)',
+        title: 'Database Deletion Syncing',
+        desc: 'Integrated transacted sync handlers and SQL schema migrations to track and sync deleted checklist items across the cloud.',
+      },
+      {
+        icon: <IconSettings className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#8E8E93', // Apple Gray
+        bg: 'rgba(142, 142, 147, 0.08)',
+        title: 'Illustration Banner Managers',
+        desc: 'Safely upload, reset, and live-update fallback greeting illustrations directly inside the Admin control workstation.',
+      },
+    ]
+  }
+};
 
 interface UpdatePopupProps {
   onExpand: () => void;
@@ -103,6 +141,9 @@ function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
 }
 
 function FullModal({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<'features' | 'uiux' | 'improvements'>('features');
+  const currentTab = TAB_CONTENT[activeTab];
+
   return (
     <>
       <motion.div
@@ -121,7 +162,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
           transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
           className="bg-white/95 dark:bg-stone-900/95 border border-stone-200/50 dark:border-stone-800/60 rounded-[28px] p-6 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-[440px] pointer-events-auto text-left backdrop-blur-2xl flex flex-col max-h-[85vh] relative overflow-hidden antialiased"
         >
-          {/* Top Decorative Amber Glow Bloom like Journal Component */}
+          {/* Decorative Glow */}
           <div className="absolute w-40 h-40 rounded-full pointer-events-none -top-16 -left-16 bg-amber-500/10 blur-3xl" />
 
           <button
@@ -132,11 +173,11 @@ function FullModal({ onClose }: { onClose: () => void }) {
             <IconX size={15} className="stroke-[2.5]" />
           </button>
 
-          {/* Pure Fluid Scrollable Flex Engine - No layout break points */}
-          <div className="z-10 flex-1 w-full pr-1 mt-2 space-y-5 overflow-y-auto scrollbar-none">
+          {/* Scrollable Container */}
+          <div className="z-10 flex-1 w-full pr-1 mt-2 space-y-5 overflow-y-auto scrollbar-none flex flex-col">
             
             {/* Header Content */}
-            <div className="flex flex-col items-start w-full gap-3">
+            <div className="flex flex-col items-start w-full gap-3 shrink-0">
               <div className="w-12 h-12 rounded-[18px] bg-gradient-to-b from-[#FF2D55] to-[#5856D6] flex items-center justify-center shadow-md">
                 <IconSparkles className="w-6 h-6 text-white stroke-[2]" />
               </div>
@@ -144,49 +185,86 @@ function FullModal({ onClose }: { onClose: () => void }) {
                 <h2 className="text-[18px] font-black text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
                   Personal HQ Release {APP_VERSION}
                 </h2>
-                <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-2">
-                  A major feature release introducing Today I Learned (TIL) loggers, Anime rating boards, high-performance canvas celebration overlays, and schema syncing.
+                <p className="text-[12.5px] text-stone-500 dark:text-stone-400 leading-normal font-medium mt-1">
+                  Explore category-wise updates using the segmented tabs below.
                 </p>
               </div>
             </div>
 
-            {/* Dynamic Features List Loop Container */}
-            <div className="flex flex-col items-stretch w-full space-y-3">
-              {FEATURES.map(f => (
-                <div 
-                  key={f.title} 
-                  className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/30 border border-stone-200/40 dark:border-stone-800/40 w-full"
-                >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-black/[0.02] dark:border-white/[0.02]"
-                    style={{ background: f.bg, color: f.color }}
-                  >
-                    {f.icon}
-                  </div>
-                  <div className="pt-0.5 flex-1 min-w-0">
-                    <p className="font-bold text-[13px] text-stone-900 dark:text-stone-50 mb-0.5 truncate">{f.title}</p>
-                    <p className="text-[12px] text-stone-500 dark:text-stone-400 leading-normal font-medium">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
+            {/* Segmented Tab Switch */}
+            <div className="flex bg-stone-100 dark:bg-stone-800/60 p-1 rounded-2xl border border-stone-200/30 dark:border-stone-850/40 w-full shrink-0">
+              <button 
+                onClick={() => setActiveTab('features')} 
+                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'features' 
+                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
+                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
+                }`}
+              >
+                Features
+              </button>
+              <button 
+                onClick={() => setActiveTab('uiux')} 
+                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'uiux' 
+                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
+                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
+                }`}
+              >
+                UI/UX
+              </button>
+              <button 
+                onClick={() => setActiveTab('improvements')} 
+                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'improvements' 
+                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
+                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
+                }`}
+              >
+                Improvements
+              </button>
             </div>
 
-            {/* Changelog Summary View Card */}
-            <div className="w-full p-4 border bg-stone-50/50 dark:bg-stone-800/20 border-stone-200/40 dark:border-stone-800/40 rounded-2xl">
-              <h3 className="font-extrabold text-[9px] mb-2.5 uppercase tracking-widest text-stone-400 dark:text-stone-500">Changelog Summary</h3>
-              <ul className="w-full space-y-2">
-                {HIGHLIGHTS.map(item => (
-                  <li key={item} className="flex items-start gap-2.5 text-[12px] text-stone-500 dark:text-stone-400 font-medium w-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] mt-1.5 shrink-0" />
-                    <span className="flex-1 leading-normal">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Tab Description */}
+            <p className="text-[11.5px] text-stone-400 dark:text-stone-500 italic leading-relaxed font-medium shrink-0">
+              {currentTab.desc}
+            </p>
+
+            {/* Dynamic Tab Features List */}
+            <div className="flex-1 flex flex-col items-stretch space-y-3">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                  className="space-y-3"
+                >
+                  {currentTab.list.map(f => (
+                    <div 
+                      key={f.title} 
+                      className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/30 border border-stone-200/40 dark:border-stone-800/40 w-full"
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-black/[0.02] dark:border-white/[0.02]"
+                        style={{ background: f.bg, color: f.color }}
+                      >
+                        {f.icon}
+                      </div>
+                      <div className="pt-0.5 flex-1 min-w-0">
+                        <p className="font-bold text-[13px] text-stone-900 dark:text-stone-50 mb-0.5 truncate">{f.title}</p>
+                        <p className="text-[12px] text-stone-500 dark:text-stone-400 leading-normal font-medium">{f.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
           {/* Action Footer Trigger Block */}
-          <div className="z-10 w-full pt-3 mt-4 border-t border-stone-100 dark:border-stone-800/40">
+          <div className="z-10 w-full pt-3 mt-4 border-t border-stone-100 dark:border-stone-800/40 shrink-0">
             <button
               onClick={onClose}
               className="w-full py-3 bg-stone-950 dark:bg-stone-50 text-white dark:text-stone-950 rounded-2xl text-xs font-bold hover:opacity-95 active:scale-[0.97] transition-all duration-200 shadow-md cursor-pointer text-center"

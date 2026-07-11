@@ -58,7 +58,13 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   if (isSidebarCollapsed) return null;
 
   return (
-    <div className="w-[250px] h-full flex flex-col gap-4 p-4.5 rounded-3xl border border-border/50 bg-surface/40 backdrop-blur-md shadow-sm shrink-0 text-left overflow-y-auto custom-scrollbar select-none">
+    <>
+      {/* Mobile Sidebar backdrop overlay */}
+      <div 
+        className="fixed inset-0 bg-black/35 backdrop-blur-xs z-[190] md:hidden cursor-pointer"
+        onClick={() => setIsSidebarCollapsed(true)}
+      />
+      <div className="w-[250px] h-[calc(100%-16px)] md:h-full flex flex-col gap-4 p-4.5 rounded-3xl border border-border/50 bg-surface/95 dark:bg-surface-alt/95 md:bg-surface/40 backdrop-blur-md shadow-xl md:shadow-sm shrink-0 text-left overflow-y-auto custom-scrollbar select-none absolute md:relative left-2 top-2 bottom-2 md:left-0 md:top-0 md:bottom-0 z-[200]">
       
       {/* Sketchbook Library Header */}
       <div 
@@ -229,5 +235,6 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
       </div>
 
     </div>
+    </>
   );
 };

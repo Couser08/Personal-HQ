@@ -10,6 +10,7 @@ import { TodoTaskModal } from '../ui/TodoTaskModal';
 import { JournalNoticeModal } from '../ui/JournalNoticeModal';
 import { DynamicIsland, triggerDynamicIsland } from '../ui/DynamicIsland';
 import { CommandPalette } from '../ui/CommandPalette';
+import { TaskFocusIsland } from '../ui/TaskFocusIsland';
 import { WavyEffectOverlay } from '../ui/WavyEffectOverlay';
 
 interface LayoutProps {
@@ -59,6 +60,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       {/* Dynamic notifications & overlay widgets */}
       <DynamicIsland />
+      <TaskFocusIsland />
       <CommandPalette />
 
       {/* Toast notifications */}

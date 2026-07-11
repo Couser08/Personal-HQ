@@ -4,7 +4,8 @@ import {
   interestService, mediaService, countdownService, snippetService,
   budgetCategoryService, budgetTransactionService,
   todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService, habitService,
-  sprintService, dsaProblemService, tilLogService, roadmapService, resourceService, devGoalService
+  sprintService, dsaProblemService, tilLogService, roadmapService, resourceService, devGoalService,
+  journalStickyNoteService, type JournalStickyNote
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   reduceAnimations: false,
   wavyEffectEnabled: true,
   wavyEffectMode: 'premium',
+  todoCompletionAnimation: 'circle-fill-confetti',
 };
 
 const sanitizeActiveModule = (module: string) => {
@@ -471,6 +473,7 @@ export interface AppSettings {
   reduceAnimations: boolean;
   wavyEffectEnabled?: boolean;
   wavyEffectMode?: 'premium' | 'minimal';
+  todoCompletionAnimation?: string;
 }
 
 export interface PomodoroStats {
@@ -598,6 +601,11 @@ export interface AppStore {
   updateJournalEntry: (id: string, data: Partial<JournalEntry>) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
   
+  journalStickyNotes: JournalStickyNote[];
+  addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
+  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
+  deleteJournalStickyNote: (id: string) => Promise<void>;
+  
   // Mindmap Creator
   mindmaps: Mindmap[];
   addMindmap: (mindmap: Mindmap) => Promise<void>;
@@ -650,6 +658,9 @@ export interface AppStore {
   addDevGoal: (goal: DevGoal) => void;
   updateDevGoal: (id: string, data: Partial<DevGoal>) => void;
   deleteDevGoal: (id: string) => void;
+
+  activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
+  setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
 
   importData: (data: Partial<AppStore>) => void;
 }
@@ -740,6 +751,22 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       return [];
     }
   })(),
+  journalStickyNotes: (() => {
+    try {
+      const raw = localStorage.getItem('phq_journal_sticky_notes');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  activeFocusItem: (() => {
+    try {
+      const raw = localStorage.getItem('phq_active_focus_item');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })(),
   updateSettings: (newSettings) =>
     set((state) => {
       const settings = { ...state.settings, ...newSettings };
@@ -816,6 +843,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       roadmapService.fetchAll(userId),
       resourceService.fetchAll(userId),
       devGoalService.fetchAll(userId),
+      journalStickyNoteService.fetchAll(userId),
     ]);
 
     const serviceNames = [
@@ -842,6 +870,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'roadmaps',
       'resources',
       'dev goals',
+      'journal sticky notes',
     ];
 
     const failedServices = results
@@ -871,6 +900,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const roadmaps = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
     const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
     const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
+    const journalStickyNotes = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -946,11 +976,14 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     if (results[22].status === 'fulfilled') {
       localStorage.setItem('phq_dev_goals', JSON.stringify(devGoals));
     }
+    if (results[23].status === 'fulfilled') {
+      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(journalStickyNotes));
+    }
 
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
       budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
-      sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals,
+      sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
       theme: dbTheme,
       settings: dbSettings,
       dataLoaded: true
@@ -963,6 +996,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       interestHistory: [], mediaLogs: [], countdowns: [],
       snippets: [], budgetCategories: [], budgetTransactions: [],
       todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [], habits: [],
+      sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [],
+      journalStickyNotes: [], activeFocusItem: null,
       dataLoaded: false,
     }),
 
@@ -1837,6 +1872,51 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }
   },
 
+  addJournalStickyNote: async (note) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().journalStickyNotes;
+    const next = [...previous, note];
+    localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(next));
+    set({ journalStickyNotes: next });
+    try {
+      await journalStickyNoteService.create(uid, note);
+    } catch (error) {
+      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
+      set({ journalStickyNotes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save sticky note'), 'error');
+      throw error;
+    }
+  },
+  updateJournalStickyNote: async (id, data) => {
+    const previous = get().journalStickyNotes;
+    const next = previous.map((n) => (n.id === id ? { ...n, ...data } : n));
+    localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(next));
+    set({ journalStickyNotes: next });
+    try {
+      await journalStickyNoteService.update(id, data);
+    } catch (error) {
+      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
+      set({ journalStickyNotes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update sticky note'), 'error');
+      throw error;
+    }
+  },
+  deleteJournalStickyNote: async (id) => {
+    const previous = get().journalStickyNotes;
+    const next = previous.filter((n) => n.id !== id);
+    localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(next));
+    set({ journalStickyNotes: next });
+    try {
+      await journalStickyNoteService.delete(id);
+    } catch (error) {
+      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
+      set({ journalStickyNotes: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete sticky note'), 'error');
+      throw error;
+    }
+  },
+
   // Drawing Actions
   drawingElements: [],
   drawingAppState: {},
@@ -2164,6 +2244,15 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     localStorage.setItem('phq_dev_goals', JSON.stringify(next));
     set({ devGoals: next });
     await devGoalService.delete(id);
+  },
+
+  setActiveFocusItem: (item) => {
+    if (item) {
+      localStorage.setItem('phq_active_focus_item', JSON.stringify(item));
+    } else {
+      localStorage.removeItem('phq_active_focus_item');
+    }
+    set({ activeFocusItem: item });
   },
 
   importData: (data) =>

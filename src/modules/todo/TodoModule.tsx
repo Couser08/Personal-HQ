@@ -61,6 +61,7 @@ export default function TodoModule() {
   
   const [todoView, setTodoView] = useState<'list' | 'calendar' | 'board'>('list');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +145,7 @@ export default function TodoModule() {
   };
 
   return (
-    <div className="flex h-full bg-bg-primary text-text-primary rounded-xl overflow-hidden shadow-sm border border-border">
+    <div className="flex h-full bg-bg-primary text-text-primary rounded-xl overflow-hidden shadow-sm border border-border relative">
       <TodoSidebar
         activeList={activeList}
         setActiveList={setActiveList}
@@ -156,6 +157,8 @@ export default function TodoModule() {
         setTickStyle={setTickStyle}
         strikeStyle={strikeStyle}
         setStrikeStyle={setStrikeStyle}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
       />
       <TaskList
         todoTasks={todoTasks}
@@ -220,6 +223,8 @@ export default function TodoModule() {
         openTodoTaskModal={openTodoTaskModal}
         tickStyle={tickStyle}
         strikeStyle={strikeStyle}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
       />
     </div>
   );
