@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
-import { IconUpload, IconPhoto, IconTrash, IconLock, IconShieldCheck, IconDeviceGamepad2 } from '@tabler/icons-react';
+import { 
+  IconUpload, IconPhoto, IconTrash, IconLock, 
+  IconShieldCheck, IconDeviceGamepad2, IconMovie 
+} from '@tabler/icons-react';
 import { useToastStore } from '../../store/useToastStore';
 
 export default function AdminModule() {
@@ -9,16 +12,21 @@ export default function AdminModule() {
   const addToast = useToastStore(s => s.addToast);
   const [dashPreview, setDashPreview] = useState<string>('');
   const [mascotPreview, setMascotPreview] = useState<string>('');
+  const [bannerPreview, setBannerPreview] = useState<string>('');
   const [dashUploading, setDashUploading] = useState(false);
   const [mascotUploading, setMascotUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
 
   const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
 
   const loadAssets = () => {
     const dashUrl = supabase.storage.from('avatars').getPublicUrl('global/dashboard_illustration.png').data.publicUrl;
     const mascotUrl = supabase.storage.from('avatars').getPublicUrl('global/media_chibi_mascot.png').data.publicUrl;
+    const bannerUrl = supabase.storage.from('avatars').getPublicUrl('global/anime_review_banner.png').data.publicUrl;
+    
     setDashPreview(`${dashUrl}?t=${Date.now()}`);
     setMascotPreview(`${mascotUrl}?t=${Date.now()}`);
+    setBannerPreview(`${bannerUrl}?t=${Date.now()}`);
   };
 
   useEffect(() => {
@@ -37,8 +45,12 @@ export default function AdminModule() {
     }
 
     const isDash = path === 'global/dashboard_illustration.png';
+    const isMascot = path === 'global/media_chibi_mascot.png';
+    const isBanner = path === 'global/anime_review_banner.png';
+
     if (isDash) setDashUploading(true);
-    else setMascotUploading(true);
+    else if (isMascot) setMascotUploading(true);
+    else if (isBanner) setBannerUploading(true);
 
     try {
       const { error: uploadError } = await supabase.storage
@@ -52,10 +64,22 @@ export default function AdminModule() {
         throw uploadError;
       }
 
-      addToast('Upload Success', `${isDash ? 'Dashboard illustration' : 'Chibi mascot'} updated successfully.`, 'success');
+      let assetName = 'Asset';
+      if (isDash) assetName = 'Dashboard illustration';
+      else if (isMascot) assetName = 'Chibi mascot';
+      else if (isBanner) assetName = 'Anime Review Banner';
+
+      addToast('Upload Success', `${assetName} updated successfully.`, 'success');
       loadAssets();
+      
       // Dispatch events to let modules know they need to refresh
-      window.dispatchEvent(new CustomEvent(isDash ? 'dashboard-illustration-updated' : 'media-mascot-updated'));
+      if (isDash) {
+        window.dispatchEvent(new CustomEvent('dashboard-illustration-updated'));
+      } else if (isMascot) {
+        window.dispatchEvent(new CustomEvent('media-mascot-updated'));
+      } else if (isBanner) {
+        window.dispatchEvent(new CustomEvent('anime-banner-updated'));
+      }
     } catch (err: any) {
       let msg = err.message || 'An error occurred during upload.';
       if (err.message && (
@@ -69,12 +93,16 @@ export default function AdminModule() {
       addToast('Upload Failed', msg, 'error');
     } finally {
       if (isDash) setDashUploading(false);
-      else setMascotUploading(false);
+      else if (isMascot) setMascotUploading(false);
+      else if (isBanner) setBannerUploading(false);
     }
   };
 
   const handleReset = async (path: string) => {
     const isDash = path === 'global/dashboard_illustration.png';
+    const isMascot = path === 'global/media_chibi_mascot.png';
+    const isBanner = path === 'global/anime_review_banner.png';
+    
     try {
       const { error: deleteError } = await supabase.storage
         .from('avatars')
@@ -84,9 +112,21 @@ export default function AdminModule() {
         throw deleteError;
       }
 
-      addToast('Reset Success', `${isDash ? 'Dashboard illustration' : 'Chibi mascot'} reset to default.`, 'success');
+      let assetName = 'Asset';
+      if (isDash) assetName = 'Dashboard illustration';
+      else if (isMascot) assetName = 'Chibi mascot';
+      else if (isBanner) assetName = 'Anime Review Banner';
+
+      addToast('Reset Success', `${assetName} reset to default.`, 'success');
       loadAssets();
-      window.dispatchEvent(new CustomEvent(isDash ? 'dashboard-illustration-updated' : 'media-mascot-updated'));
+      
+      if (isDash) {
+        window.dispatchEvent(new CustomEvent('dashboard-illustration-updated'));
+      } else if (isMascot) {
+        window.dispatchEvent(new CustomEvent('media-mascot-updated'));
+      } else if (isBanner) {
+        window.dispatchEvent(new CustomEvent('anime-banner-updated'));
+      }
     } catch (err: any) {
       addToast('Reset Failed', err.message || 'An error occurred during reset.', 'error');
     }
@@ -188,7 +228,7 @@ export default function AdminModule() {
         </div>
 
         {/* Section 2: Media Log Review Mascot */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full border-b border-border pb-8">
           <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
             <div>
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
@@ -246,6 +286,71 @@ export default function AdminModule() {
               ) : (
                 <div className="text-center text-text-muted">
                   <span className="text-xs font-medium italic">No custom mascot uploaded. Render fallback `/anime_chibi_mascot_1783275415079.png`.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Anime Review Center Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full pb-8">
+          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+            <div>
+              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <IconMovie className="w-4 h-4 text-primary" /> Anime Review Banner
+              </h3>
+              <p className="text-xs text-text-secondary mt-1">Upload a widescreen banner image to style the header card of your new Anime Review Center page.</p>
+            </div>
+
+            <label className="border-2 border-dashed border-border/80 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-surface-alt/20 hover:bg-surface-alt/40 relative">
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => handleUpload(e, 'global/anime_review_banner.png')} 
+                className="hidden" 
+                disabled={bannerUploading} 
+              />
+              {bannerUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <span className="text-xs font-bold text-text-secondary animate-pulse">Uploading banner...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <IconUpload className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-text-primary block">Click to select banner</span>
+                    <span className="text-[10px] text-text-muted mt-1 block">Supports PNG, JPG, WebP, SVG</span>
+                  </div>
+                </>
+              )}
+            </label>
+
+            {bannerPreview && (
+              <button
+                onClick={() => handleReset('global/anime_review_banner.png')}
+                className="py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/15 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 w-full mt-2"
+              >
+                <IconTrash className="w-4 h-4" /> Reset to Default Banner
+              </button>
+            )}
+          </div>
+
+          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-text-primary">Current Banner Preview</h3>
+            <div className="flex-grow bg-surface-alt/30 border border-border/40 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
+              {bannerPreview ? (
+                <img 
+                  src={bannerPreview} 
+                  alt="Anime Review Banner Preview" 
+                  className="max-w-full max-h-48 object-cover rounded-2xl border border-border/30 shadow-md"
+                  onError={() => setBannerPreview('')}
+                />
+              ) : (
+                <div className="text-center text-text-muted">
+                  <span className="text-xs font-medium italic">No custom banner uploaded. Render glassmorphic card fallback.</span>
                 </div>
               )}
             </div>

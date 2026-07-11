@@ -3,53 +3,53 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IconX, 
   IconSparkles, 
+  IconTerminal,
+  IconMovie,
   IconFlame,
-  IconClock,
-  IconPalette,
-  IconNotebook
+  IconDatabase
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.3.5';
+const APP_VERSION = '1.4.0';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 const FEATURES = [
   {
-    icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
+    icon: <IconTerminal className="w-5 h-5 stroke-[2]" />,
     color: '#FF9500', // Apple Orange
     bg: 'rgba(255, 149, 0, 0.08)',
-    title: 'Disjoint Import Auto-Grouping',
-    desc: 'Mindmap JSON imports with multiple disconnected tree roots are now automatically merged under a unified master root node to keep connections clear.',
+    title: 'Today I Learned (TIL) Logger',
+    desc: 'Log and catalog daily micro-journal logs, coding tips, and technical learnings. Features quick tags, dynamic filters, and full text search.',
   },
   {
-    icon: <IconClock className="w-5 h-5 stroke-[2]" />,
+    icon: <IconMovie className="w-5 h-5 stroke-[2]" />,
     color: '#007AFF', // Apple Blue
     bg: 'rgba(0, 122, 255, 0.08)',
-    title: 'Precision Camera Centering',
-    desc: 'Centering the camera focuses directly on the primary root node rather than the calculated bounds center, giving you instant orientation.',
+    title: 'Anime Rankings & Reviews',
+    desc: 'Keep track of your watch list. Rate, review, and organize personal rankings with detailed stats inside the newly enhanced Media Logger.',
   },
   {
-    icon: <IconPalette className="w-5 h-5 stroke-[2]" />,
+    icon: <IconFlame className="w-5 h-5 stroke-[2]" />,
     color: '#FF2D55', // Apple Pink
     bg: 'rgba(255, 45, 85, 0.08)',
-    title: 'Stocks Module Cleanup',
-    desc: 'Removed the legacy Stocks tracking module to keep focus on productivity and core software developer workflow components.',
+    title: 'Upgraded Wavy Celebrations',
+    desc: 'Beautiful new concentric ripple waveforms, star particle bursts, and glowing background gradient paths when completing tasks or daily habits.',
   },
   {
-    icon: <IconNotebook className="w-5 h-5 stroke-[2]" />,
+    icon: <IconDatabase className="w-5 h-5 stroke-[2]" />,
     color: '#34C759', // Apple Green
     bg: 'rgba(52, 199, 89, 0.08)',
-    title: 'Whiteboard Canvas Refinements',
-    desc: 'Drawing coordinates, brush presets, and sidebar tools layouts are optimized for fluid, pixel-perfect sketch controls.',
+    title: 'Sync schemas & Todo Deletion',
+    desc: 'Under the hood database migrations for syncing task deletions, tracking media entries metadata, and stable local SQLite integrations.',
   },
 ];
 
 const HIGHLIGHTS = [
-  'Implemented automatic root-node grouping for disjoint JSON mindmap imports',
-  'Aligned camera centering behavior with the mindmap root node location',
-  'Removed legacy Stocks Module to declutter dashboard and navigation sidebar',
-  'Polished whiteboard drawing brush scaling presets and pen stroke smoothing',
-  'Refined Todo list checklist items metadata tags alignment',
-  'Fixed Pomodoro timer complete audio alerts synchronization issues'
+  'Created a dedicated TIL (Today I Learned) micro-journal logger module',
+  'Added personal Anime Rankings, scores, and ratings tabs to the Media Logger',
+  'Upgraded Wavy Ripple animation overlays with high-performance canvas rendering',
+  'Integrated database sync and migrations tracking for deleted Todo items',
+  'Refactored Admin control panel with assets fallback settings',
+  'Polished responsive layouts for outline outliners and drawing tools sidebars'
 ];
 
 interface UpdatePopupProps {
@@ -80,7 +80,7 @@ function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
         </div>
         <div className="flex-1 min-w-0 pr-4">
           <h3 className="font-bold text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">Version {APP_VERSION}</h3>
-          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Minor patch fixes are ready.</p>
+          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Features and design updates are ready.</p>
         </div>
       </div>
 
@@ -145,7 +145,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   Personal HQ Release {APP_VERSION}
                 </h2>
                 <p className="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-medium mt-2">
-                  A patch release delivering smart disjoint JSON mindmap merging, centered cameras, whiteboard tools polish, and layout cleanup.
+                  A major feature release introducing Today I Learned (TIL) loggers, Anime rating boards, high-performance canvas celebration overlays, and schema syncing.
                 </p>
               </div>
             </div>

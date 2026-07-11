@@ -4,7 +4,7 @@ import {
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
-  IconFileText, IconFlame, IconShieldLock
+  IconFileText, IconFlame, IconShieldLock, IconBulb
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { id: 'study', label: 'Study Tracker', icon: IconBook },
   { id: 'budget', label: 'Expense & Income', icon: IconWallet },
   { id: 'snippets', label: 'Snippets Vault', icon: IconCode },
+  { id: 'til', label: 'Today I Learned', icon: IconBulb },
   { id: 'pomodoro', label: 'Pomodoro', icon: IconClockPlay },
   { id: 'mindmap', label: 'Mindmap', icon: IconSitemap },
   { id: 'drawing', label: 'Drawing', icon: IconPencil },

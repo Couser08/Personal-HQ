@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { IconPlus, IconTrash, IconFileText } from '@tabler/icons-react';
-import { Modal } from '../../components/ui/Modal';
 
 interface Doc {
   id: string;
@@ -13,14 +12,7 @@ interface MarkdownSidebarProps {
   setActiveDocId: (id: string | null) => void;
   markdownDocs: Doc[];
   handleDeleteDoc: (id: string, e: React.MouseEvent) => void;
-  isCreateModalOpen: boolean;
-  setIsCreateModalOpen: (val: boolean) => void;
-  newDocTitle: string;
-  setNewDocTitle: (val: string) => void;
-  selectedTemplate: 'blank' | 'dailyLog' | 'roadmap' | 'spec';
-  setSelectedTemplate: (val: 'blank' | 'dailyLog' | 'roadmap' | 'spec') => void;
-  handleCreateDocSubmit: (e: React.FormEvent) => void;
-  TEMPLATES: Record<string, string>;
+  onOpenCreateModal: () => void;
 }
 
 export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
@@ -28,13 +20,7 @@ export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
   setActiveDocId,
   markdownDocs,
   handleDeleteDoc,
-  isCreateModalOpen,
-  setIsCreateModalOpen,
-  newDocTitle,
-  setNewDocTitle,
-  selectedTemplate,
-  setSelectedTemplate,
-  handleCreateDocSubmit,
+  onOpenCreateModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -47,7 +33,7 @@ export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
         <span className="text-xs font-black uppercase tracking-widest text-text-muted">Documents</span>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={onOpenCreateModal}
           className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
           title="Create New Doc"
         >
@@ -85,7 +71,7 @@ export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
                 </div>
                 <button
                   onClick={(e) => handleDeleteDoc(doc.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 text-text-muted hover:text-red-500 rounded-lg transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 text-text-muted hover:text-red-500 rounded-lg transition-all cursor-pointer"
                   title="Delete Document"
                 >
                   <IconTrash size={12} />
@@ -95,57 +81,6 @@ export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
           })
         )}
       </div>
-
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Document"
-      >
-        <form onSubmit={handleCreateDocSubmit} className="flex flex-col gap-4 text-left font-sans select-none">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Document Title</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. project-proposal.md"
-              value={newDocTitle}
-              onChange={e => setNewDocTitle(e.target.value)}
-              className="input-field text-sm"
-              autoFocus
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Template Preset</label>
-            <select
-              value={selectedTemplate}
-              onChange={e => setSelectedTemplate(e.target.value as any)}
-              className="input-field text-sm bg-surface"
-            >
-              <option value="blank">Blank Page</option>
-              <option value="dailyLog">Daily Project Log</option>
-              <option value="roadmap">Project Roadmap</option>
-              <option value="spec">RFC / Specs Template</option>
-            </select>
-          </div>
-
-          <div className="flex gap-2 justify-end mt-2">
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 border border-border hover:bg-surface-alt rounded-xl text-xs font-bold text-text-secondary cursor-pointer transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-[0_4px_12px_rgba(244,63,94,0.15)]"
-            >
-              Create
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

@@ -25,6 +25,7 @@ const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
 const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
+const TilModule = lazy(() => import('./modules/til/TilModule'));
 
 function LoadingSplash() {
   return (
@@ -185,6 +186,7 @@ function AppContent() {
       case 'study': return <StudyModule />;
       case 'media': return <MediaModule />;
       case 'snippets': return <CodeSnippetModule />;
+      case 'til': return <TilModule />;
       case 'pomodoro': return <PomodoroModule />;
       case 'todo': return <TodoModule />;
       case 'habits': return <HabitTrackerModule />;

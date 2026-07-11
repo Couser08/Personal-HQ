@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  IconPlus, IconTrash, IconFolder, IconFileText,
-  IconMaximize, IconMinimize, IconChevronDown, IconChevronUp
+  IconPlus, IconTrash, IconFileText, IconMaximize, 
+  IconMinimize, IconChevronDown, IconChevronUp, IconChevronLeft 
 } from '@tabler/icons-react';
 
 interface Sketch {
@@ -12,6 +12,7 @@ interface Sketch {
 
 interface WhiteboardSidebarProps {
   isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (val: boolean) => void;
   isDrawFilesCollapsed: boolean;
   setIsDrawFilesCollapsed: (val: boolean) => void;
   sketches: Sketch[];
@@ -34,6 +35,7 @@ interface WhiteboardSidebarProps {
 
 export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   isSidebarCollapsed,
+  setIsSidebarCollapsed,
   isDrawFilesCollapsed,
   setIsDrawFilesCollapsed,
   sketches,
@@ -57,7 +59,8 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
 
   return (
     <div className="w-[250px] h-full flex flex-col gap-4 p-4.5 rounded-3xl border border-border/50 bg-surface/40 backdrop-blur-md shadow-sm shrink-0 text-left overflow-y-auto custom-scrollbar select-none">
-      {/* Slot Library Header */}
+      
+      {/* Sketchbook Library Header */}
       <div 
         onClick={() => setIsDrawFilesCollapsed(!isDrawFilesCollapsed)}
         className="flex items-center justify-between pb-2 border-b border-border/40 cursor-pointer select-none group"
@@ -73,16 +76,32 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
             )}
           </div>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCreateNewSketch();
-          }}
-          className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
-          title="Create New Canvas"
-        >
-          <IconPlus size={15} />
-        </button>
+        
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCreateNewSketch();
+            }}
+            className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
+            title="Create New Canvas"
+          >
+            <IconPlus size={15} />
+          </button>
+          
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsSidebarCollapsed(true);
+            }}
+            className="w-7 h-7 rounded-xl border border-border bg-surface hover:bg-surface-hover text-text-secondary flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            title="Hide Sketch Library"
+          >
+            <IconChevronLeft size={14} />
+          </button>
+        </div>
       </div>
 
       {/* List of Save Slots */}
@@ -175,119 +194,6 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         </span>
       </div>
 
-      {/* Canvas Element Grounding */}
-      <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Ground Elements</span>
-          <IconFolder size={14} className="text-text-muted" />
-        </div>
-        <p className="text-[9px] text-text-secondary leading-normal">
-          Ground elements to lock them. They won't interfere with background canvas selection.
-        </p>
-        <div className="flex flex-col gap-1.5 mt-1">
-          <button
-            onClick={() => {
-              if (!excalidrawAPI) return;
-              const elements = excalidrawAPI.getSceneElements();
-              const appState = excalidrawAPI.getAppState();
-              const selectedIds = appState.selectedElementIds || {};
-              const updated = elements.map((el: any) => {
-                if (selectedIds[el.id]) {
-                  return { ...el, locked: true };
-                }
-                return el;
-              });
-              excalidrawAPI.updateScene({ elements: updated });
-            }}
-            disabled={!excalidrawAPI}
-            className="w-full py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
-          >
-            Ground Selected
-          </button>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => {
-                if (!excalidrawAPI) return;
-                const elements = excalidrawAPI.getSceneElements();
-                const updated = elements.map((el: any) => ({ ...el, locked: true }));
-                excalidrawAPI.updateScene({ elements: updated });
-              }}
-              disabled={!excalidrawAPI}
-              className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
-            >
-              Ground All
-            </button>
-            <button
-              onClick={() => {
-                if (!excalidrawAPI) return;
-                const elements = excalidrawAPI.getSceneElements();
-                const updated = elements.map((el: any) => ({ ...el, locked: false }));
-                excalidrawAPI.updateScene({ elements: updated });
-              }}
-              disabled={!excalidrawAPI}
-              className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
-            >
-              Unground All
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Element Grouping */}
-      <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Element Grouping</span>
-          <span className="text-[9px] text-text-muted font-bold font-mono">Ctrl+G / Shift+G</span>
-        </div>
-        <p className="text-[9px] text-text-secondary leading-normal">
-          Select multiple elements to group them together for joint transformation and scaling.
-        </p>
-        <div className="flex gap-1.5 mt-1">
-          <button
-            onClick={() => {
-              if (!excalidrawAPI) return;
-              const elements = excalidrawAPI.getSceneElements();
-              const appState = excalidrawAPI.getAppState();
-              const selectedIds = appState.selectedElementIds || {};
-              
-              const groupId = crypto.randomUUID();
-              const updated = elements.map((el: any) => {
-                if (selectedIds[el.id]) {
-                  const groupIds = el.groupIds || [];
-                  return { ...el, groupIds: [...groupIds, groupId] };
-                }
-                return el;
-              });
-              excalidrawAPI.updateScene({ elements: updated });
-            }}
-            disabled={!excalidrawAPI}
-            className="flex-1 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
-          >
-            Group
-          </button>
-          <button
-            onClick={() => {
-              if (!excalidrawAPI) return;
-              const elements = excalidrawAPI.getSceneElements();
-              const appState = excalidrawAPI.getAppState();
-              const selectedIds = appState.selectedElementIds || {};
-              
-              const updated = elements.map((el: any) => {
-                if (selectedIds[el.id] && el.groupIds && el.groupIds.length > 0) {
-                  return { ...el, groupIds: el.groupIds.slice(0, -1) };
-                }
-                return el;
-              });
-              excalidrawAPI.updateScene({ elements: updated });
-            }}
-            disabled={!excalidrawAPI}
-            className="flex-1 py-1 rounded-lg bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-[9px] font-black uppercase tracking-wider transition-all disabled:opacity-55 cursor-pointer text-center"
-          >
-            Ungroup
-          </button>
-        </div>
-      </div>
-
       {/* Sticky Notes */}
       <div className="p-3 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
         <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Sticky Notes</span>
@@ -322,23 +228,6 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         </div>
       </div>
 
-      {/* Sidebar Info Banner */}
-      <div className="mt-auto p-4 rounded-2xl bg-surface border border-border/40 text-left flex flex-col gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <IconFolder size={14} className="text-text-muted" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Cloud Storage</span>
-        </div>
-        <div className="text-[11px] font-semibold text-text-secondary flex flex-col gap-1 mt-0.5">
-          <div className="flex justify-between">
-            <span>Saved Slots:</span>
-            <span className="font-mono text-text-primary">{sketches.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Supabase Sync:</span>
-            <span className="text-emerald-500 font-extrabold uppercase text-[9px] tracking-wider">Active</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

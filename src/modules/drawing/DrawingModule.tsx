@@ -6,18 +6,22 @@ import { WhiteboardSidebar } from './WhiteboardSidebar';
 import { WhiteboardCanvas } from './WhiteboardCanvas';
 import "@excalidraw/excalidraw/index.css";
 
+const DEFAULT_SKETCH_ID = 'd3b07384-d113-4ec5-a55d-e0e22a76f2bc';
+
 const sanitizeElements = (elements: readonly any[]) => {
   if (!Array.isArray(elements)) return [];
-  return elements.map(el => {
-    if (el && el.type === 'arrow') {
-      return {
-        ...el,
-        endArrowhead: el.endArrowhead || 'arrow',
-        startArrowhead: el.startArrowhead || null,
-      };
-    }
-    return el;
-  });
+  return elements
+    .filter(Boolean)
+    .map(el => {
+      if (el.type === 'arrow') {
+        return {
+          ...el,
+          endArrowhead: el.endArrowhead || 'arrow',
+          startArrowhead: el.startArrowhead || null,
+        };
+      }
+      return el;
+    });
 };
 
 export default function DrawingModule() {
@@ -58,7 +62,7 @@ export default function DrawingModule() {
 
   const [activeSketchId, setActiveSketchId] = useState<string>(() => {
     const lastActive = localStorage.getItem('phq_active_sketch_id');
-    return lastActive || 'default';
+    return lastActive || DEFAULT_SKETCH_ID;
   });
 
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -167,7 +171,7 @@ export default function DrawingModule() {
     const list = notes.filter(n => n.tags && n.tags.includes('sketch'));
     if (list.length === 0) {
       addNote({
-        id: 'default',
+        id: DEFAULT_SKETCH_ID,
         title: 'First Sketch',
         content: JSON.stringify({ elements: [], appState: {} }),
         pinned: false,
@@ -192,7 +196,7 @@ export default function DrawingModule() {
       cleanApp.theme = resolvedTheme;
       cleanApp.viewBackgroundColor = isoGrid ? 'transparent' : (resolvedTheme === 'dark' ? '#121214' : '#ffffff');
       cleanApp.gridModeEnabled = isoGrid;
-      return { elements: activeSketch.elements, appState: cleanApp };
+      return { elements: (activeSketch.elements || []).filter(Boolean), appState: cleanApp };
     }
     return { elements: [], appState: {} };
   }, [activeSketch, resolvedTheme, isoGrid]);
@@ -321,6 +325,7 @@ export default function DrawingModule() {
       {/* ── Left Sidebar (Sketch Library & DB Status) ── */}
       <WhiteboardSidebar
         isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
         isDrawFilesCollapsed={isDrawFilesCollapsed}
         setIsDrawFilesCollapsed={setIsDrawFilesCollapsed}
         sketches={sketches}

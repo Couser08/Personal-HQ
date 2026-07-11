@@ -1,6 +1,6 @@
 import React from 'react';
 import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
-import { IconMaximize, IconMinimize, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { IconMaximize, IconMinimize, IconChevronRight } from '@tabler/icons-react';
 
 interface WhiteboardCanvasProps {
   activeSketchId: string;
@@ -39,14 +39,16 @@ export const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({
       } ${isoGrid ? 'iso-grid-active' : ''}`}
     >
       {/* Floating Sidebar toggle button */}
-      <button
-        type="button"
-        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        className="absolute top-3.5 left-4 z-[99999] p-2.5 bg-surface hover:bg-surface-hover border border-border text-text-primary rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center"
-        title={isSidebarCollapsed ? "Show Sketch Library" : "Hide Sketch Library"}
-      >
-        {isSidebarCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
-      </button>
+      {isSidebarCollapsed && (
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(false)}
+          className="absolute top-3.5 left-[60px] z-[99999] p-2.5 bg-surface hover:bg-surface-hover border border-border text-text-primary rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+          title="Show Sketch Library"
+        >
+          <IconChevronRight size={16} />
+        </button>
+      )}
 
       {/* Floating Fullscreen toggle button */}
       <button

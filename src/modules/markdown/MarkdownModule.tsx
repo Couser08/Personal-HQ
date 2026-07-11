@@ -4,8 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { IconPlus, IconFileText, IconTrash } from '@tabler/icons-react';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Modal } from '../../components/ui/Modal';
 import { parseMarkdown } from './markdownUtils';
-import { MarkdownSidebar } from './MarkdownSidebar';
 import { MarkdownEditor } from './MarkdownEditor';
 import { MarkdownPreview } from './MarkdownPreview';
 
@@ -622,20 +622,6 @@ export default function MarkdownModule() {
         </div>
       ) : (
         <div className="w-full h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-2 relative text-left">
-          <MarkdownSidebar
-            activeDocId={activeDocId}
-            setActiveDocId={setActiveDocId}
-            markdownDocs={markdownDocs}
-            handleDeleteDoc={handleDeleteDoc}
-            isCreateModalOpen={isCreateModalOpen}
-            setIsCreateModalOpen={setIsCreateModalOpen}
-            newDocTitle={newDocTitle}
-            setNewDocTitle={setNewDocTitle}
-            selectedTemplate={selectedTemplate}
-            setSelectedTemplate={setSelectedTemplate}
-            handleCreateDocSubmit={handleCreateDocSubmit}
-            TEMPLATES={TEMPLATES}
-          />
           
           {isEditorOpen && (
             <MarkdownEditor
@@ -671,6 +657,57 @@ export default function MarkdownModule() {
           )}
         </div>
       )}
+
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create New Document"
+      >
+        <form onSubmit={handleCreateDocSubmit} className="flex flex-col gap-4 text-left font-sans select-none">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Document Title</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. project-proposal.md"
+              value={newDocTitle}
+              onChange={e => setNewDocTitle(e.target.value)}
+              className="input-field text-sm"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Template Preset</label>
+            <select
+              value={selectedTemplate}
+              onChange={e => setSelectedTemplate(e.target.value as any)}
+              className="input-field text-sm bg-surface"
+            >
+              <option value="blank">Blank Page</option>
+              <option value="dailyLog">Daily Project Log</option>
+              <option value="roadmap">Project Roadmap</option>
+              <option value="spec">RFC / Specs Template</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2 justify-end mt-2">
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(false)}
+              className="px-4 py-2 border border-border hover:bg-surface-alt rounded-xl text-xs font-bold text-text-secondary cursor-pointer transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-[0_4px_12px_rgba(244,63,94,0.15)]"
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 }

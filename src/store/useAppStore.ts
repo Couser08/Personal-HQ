@@ -3,7 +3,8 @@ import {
   noteService, linkService, stockService, subjectService,
   interestService, mediaService, countdownService, snippetService,
   budgetCategoryService, budgetTransactionService,
-  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService, habitService
+  todoProjectService, todoTaskService, journalService, mindmapService, standardCalcService, settingsService, habitService,
+  sprintService, dsaProblemService, tilLogService, roadmapService, resourceService, devGoalService
 } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -809,6 +810,12 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       standardCalcService.fetchAll(userId),
       habitService.fetchAll(userId),
       settingsService.fetch(userId),
+      sprintService.fetchAll(userId),
+      dsaProblemService.fetchAll(userId),
+      tilLogService.fetchAll(userId),
+      roadmapService.fetchAll(userId),
+      resourceService.fetchAll(userId),
+      devGoalService.fetchAll(userId),
     ]);
 
     const serviceNames = [
@@ -829,6 +836,12 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       'standard calculations history',
       'habits',
       'user settings',
+      'sprints',
+      'dsa problems',
+      'til logs',
+      'roadmaps',
+      'resources',
+      'dev goals',
     ];
 
     const failedServices = results
@@ -852,6 +865,12 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
     const habits = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
     const settingsResult = results[16].status === 'fulfilled' ? results[16].value : null;
+    const sprints = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
+    const dsaProblems = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
+    const tilLogs = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
+    const roadmaps = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
+    const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
+    const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -909,10 +928,29 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     if (results[15].status === 'fulfilled') {
       localStorage.setItem('phq_habits', JSON.stringify(habits));
     }
+    if (results[17].status === 'fulfilled') {
+      localStorage.setItem('phq_sprints', JSON.stringify(sprints));
+    }
+    if (results[18].status === 'fulfilled') {
+      localStorage.setItem('phq_dsa_problems', JSON.stringify(dsaProblems));
+    }
+    if (results[19].status === 'fulfilled') {
+      localStorage.setItem('phq_til_logs', JSON.stringify(tilLogs));
+    }
+    if (results[20].status === 'fulfilled') {
+      localStorage.setItem('phq_roadmaps', JSON.stringify(roadmaps));
+    }
+    if (results[21].status === 'fulfilled') {
+      localStorage.setItem('phq_resources', JSON.stringify(resources));
+    }
+    if (results[22].status === 'fulfilled') {
+      localStorage.setItem('phq_dev_goals', JSON.stringify(devGoals));
+    }
 
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
       budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
+      sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals,
       theme: dbTheme,
       settings: dbSettings,
       dataLoaded: true
@@ -1968,114 +2006,164 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   })(),
 
   // ── Coder Hub Actions ──
-  addSprint: (sprint) => {
+  addSprint: async (sprint) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().sprints, sprint];
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    if (uid) {
+      await sprintService.create(uid, sprint);
+    }
   },
-  updateSprint: (id, data) => {
+  updateSprint: async (id, data) => {
     const next = get().sprints.map(s => s.id === id ? { ...s, ...data } : s);
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    await sprintService.update(id, data);
   },
-  deleteSprint: (id) => {
+  deleteSprint: async (id) => {
     const next = get().sprints.filter(s => s.id !== id);
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    await sprintService.delete(id);
   },
-  addSprintTask: (sprintId, task) => {
+  addSprintTask: async (sprintId, task) => {
     const next = get().sprints.map(s => s.id === sprintId ? { ...s, tasks: [...s.tasks, task] } : s);
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    const sprint = next.find(s => s.id === sprintId);
+    if (sprint) {
+      await sprintService.update(sprintId, { tasks: sprint.tasks });
+    }
   },
-  updateSprintTask: (sprintId, taskId, data) => {
+  updateSprintTask: async (sprintId, taskId, data) => {
     const next = get().sprints.map(s => s.id === sprintId ? {
       ...s,
       tasks: s.tasks.map(t => t.id === taskId ? { ...t, ...data } : t)
     } : s);
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    const sprint = next.find(s => s.id === sprintId);
+    if (sprint) {
+      await sprintService.update(sprintId, { tasks: sprint.tasks });
+    }
   },
-  deleteSprintTask: (sprintId, taskId) => {
+  deleteSprintTask: async (sprintId, taskId) => {
     const next = get().sprints.map(s => s.id === sprintId ? {
       ...s,
       tasks: s.tasks.filter(t => t.id !== taskId)
     } : s);
     localStorage.setItem('phq_sprints', JSON.stringify(next));
     set({ sprints: next });
+    const sprint = next.find(s => s.id === sprintId);
+    if (sprint) {
+      await sprintService.update(sprintId, { tasks: sprint.tasks });
+    }
   },
-  addDsaProblem: (prob) => {
+  addDsaProblem: async (prob) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().dsaProblems, prob];
     localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
     set({ dsaProblems: next });
+    if (uid) {
+      await dsaProblemService.create(uid, prob);
+    }
   },
-  updateDsaProblem: (id, data) => {
+  updateDsaProblem: async (id, data) => {
     const next = get().dsaProblems.map(p => p.id === id ? { ...p, ...data } : p);
     localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
     set({ dsaProblems: next });
+    await dsaProblemService.update(id, data);
   },
-  deleteDsaProblem: (id) => {
+  deleteDsaProblem: async (id) => {
     const next = get().dsaProblems.filter(p => p.id !== id);
     localStorage.setItem('phq_dsa_problems', JSON.stringify(next));
     set({ dsaProblems: next });
+    await dsaProblemService.delete(id);
   },
-  addTilLog: (log) => {
+  addTilLog: async (log) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().tilLogs, log];
     localStorage.setItem('phq_til_logs', JSON.stringify(next));
     set({ tilLogs: next });
+    if (uid) {
+      await tilLogService.create(uid, log);
+    }
   },
-  deleteTilLog: (id) => {
+  deleteTilLog: async (id) => {
     const next = get().tilLogs.filter(l => l.id !== id);
     localStorage.setItem('phq_til_logs', JSON.stringify(next));
     set({ tilLogs: next });
+    await tilLogService.delete(id);
   },
-  updateRoadmapNode: (roadmapId, nodeId, completed) => {
+  updateRoadmapNode: async (roadmapId, nodeId, completed) => {
     const next = get().roadmaps.map(r => r.id === roadmapId ? {
       ...r,
       nodes: r.nodes.map(n => n.id === nodeId ? { ...n, completed } : n)
     } : r);
     localStorage.setItem('phq_roadmaps', JSON.stringify(next));
     set({ roadmaps: next });
+    const roadmap = next.find(r => r.id === roadmapId);
+    if (roadmap) {
+      await roadmapService.update(roadmapId, { nodes: roadmap.nodes });
+    }
   },
-  addRoadmap: (roadmap) => {
+  addRoadmap: async (roadmap) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().roadmaps, roadmap];
     localStorage.setItem('phq_roadmaps', JSON.stringify(next));
     set({ roadmaps: next });
+    if (uid) {
+      await roadmapService.create(uid, roadmap);
+    }
   },
-  deleteRoadmap: (id) => {
+  deleteRoadmap: async (id) => {
     const next = get().roadmaps.filter(r => r.id !== id);
     localStorage.setItem('phq_roadmaps', JSON.stringify(next));
     set({ roadmaps: next });
+    await roadmapService.delete(id);
   },
-  addResource: (res) => {
+  addResource: async (res) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().resources, res];
     localStorage.setItem('phq_resources', JSON.stringify(next));
     set({ resources: next });
+    if (uid) {
+      await resourceService.create(uid, res);
+    }
   },
-  updateResource: (id, data) => {
+  updateResource: async (id, data) => {
     const next = get().resources.map(r => r.id === id ? { ...r, ...data } : r);
     localStorage.setItem('phq_resources', JSON.stringify(next));
     set({ resources: next });
+    await resourceService.update(id, data);
   },
-  deleteResource: (id) => {
+  deleteResource: async (id) => {
     const next = get().resources.filter(r => r.id !== id);
     localStorage.setItem('phq_resources', JSON.stringify(next));
     set({ resources: next });
+    await resourceService.delete(id);
   },
-  addDevGoal: (goal) => {
+  addDevGoal: async (goal) => {
+    const uid = useAuthStore.getState().user?.id;
     const next = [...get().devGoals, goal];
     localStorage.setItem('phq_dev_goals', JSON.stringify(next));
     set({ devGoals: next });
+    if (uid) {
+      await devGoalService.create(uid, goal);
+    }
   },
-  updateDevGoal: (id, data) => {
+  updateDevGoal: async (id, data) => {
     const next = get().devGoals.map(g => g.id === id ? { ...g, ...data } : g);
     localStorage.setItem('phq_dev_goals', JSON.stringify(next));
     set({ devGoals: next });
+    await devGoalService.update(id, data);
   },
-  deleteDevGoal: (id) => {
+  deleteDevGoal: async (id) => {
     const next = get().devGoals.filter(g => g.id !== id);
     localStorage.setItem('phq_dev_goals', JSON.stringify(next));
     set({ devGoals: next });
+    await devGoalService.delete(id);
   },
 
   importData: (data) =>
