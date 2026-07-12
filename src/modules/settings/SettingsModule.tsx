@@ -5,7 +5,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import {
   IconPalette, IconBell, IconHourglass,
-  IconCheck, IconX, IconCompass, IconPlayerPlay, IconSparkles
+  IconCheck, IconX, IconCompass, IconPlayerPlay, IconSparkles,
+  IconChevronRight
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
@@ -37,16 +38,16 @@ const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
   { name: 'rose',   hex: '#f43f5e' },
   { name: 'purple', hex: '#a855f7' },
   { name: 'blue',   hex: '#3b82f6' },
-  { name: 'green',  hex: '#22c55e' },
+  { name: 'green',  hex: '#34c759' },
   { name: 'amber',  hex: '#f59e0b' },
   { name: 'teal',   hex: '#06b6d4' },
-  { name: 'gray',   hex: '#6b7280' },
+  { name: 'gray',   hex: '#8e8e93' },
 ];
 
 const THEMES = [
-  { value: 'light', label: 'Light Mode', color1: '#ffffff', color2: '#f4f4f5', accent: '#f43f5e', desc: 'Clean and bright aesthetic' },
-  { value: 'dark', label: 'Dark Mode', color1: '#0a0a0a', color2: '#111111', accent: '#f43f5e', desc: 'Classic sleek dark theme' },
-  { value: 'system', label: 'System Default', color1: '#f4f4f5', color2: '#0a0a0a', accent: '#71717a', desc: 'Syncs with your OS theme' },
+  { value: 'light', label: 'Light Mode', color1: '#ffffff', color2: '#f2f2f7', accent: '#f43f5e', desc: 'Clean and bright aesthetic' },
+  { value: 'dark', label: 'Dark Mode', color1: '#000000', color2: '#1c1c1e', accent: '#f43f5e', desc: 'Classic sleek dark theme' },
+  { value: 'system', label: 'System Default', color1: '#f2f2f7', color2: '#000000', accent: '#8e8e93', desc: 'Syncs with your OS theme' },
   { value: 'cyberpunk', label: 'Cyberpunk Neon', color1: '#06060c', color2: '#0e0f1d', accent: '#ff007f', desc: 'Vibrant neon hot-pink tones' },
   { value: 'nordic', label: 'Nordic Forest', color1: '#1b2421', color2: '#222f2b', accent: '#a3b899', desc: 'Calm evergreen and moss' },
   { value: 'sakura', label: 'Sakura Blossom', color1: '#fff0f5', color2: '#fff9fb', accent: '#db7093', desc: 'Soft pink cherry blossoms' },
@@ -60,6 +61,7 @@ export default function SettingsModule() {
     settings: state.settings,
     updateSettings: state.updateSettings
   })));
+  
   const addToast = useToastStore(s => s.addToast);
   const [toastPos, setToastPos] = useState<string>(useToastStore.getState().position || 'top-right');
 
@@ -69,45 +71,57 @@ export default function SettingsModule() {
     addToast('Position Updated', `Toast alerts will now appear at ${val.replace('-', ' ')}`, 'info');
   };
 
-  // Render a mini preview countdown card based on currently selected template style
+  const ToggleSwitch = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`w-12 h-7 rounded-full p-0.5 transition-colors duration-300 ease-in-out cursor-pointer flex items-center shrink-0 border border-transparent shadow-inner ${
+        checked ? 'bg-[#34C759] justify-end' : 'bg-zinc-300 dark:bg-zinc-700 justify-start'
+      }`}
+    >
+      <motion.div 
+        layout 
+        className="w-6 h-6 rounded-full bg-white shadow-sm border border-black/5 dark:border-white/5"
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    </button>
+  );
+
   const renderCountdownPreview = () => {
     const template = settings.countdownTemplate || 'default';
-    
-    // Base preview wrapper with theme and styling
     const isDarkTemplate = template === 'dark';
-    const wrapperBg = isDarkTemplate ? 'bg-[#111] border-[#222] text-white' : 'bg-surface border-border text-text-primary';
-    const borderL = template === 'vertical' ? 'border-l-4 border-l-primary' : '';
+    const wrapperBg = isDarkTemplate ? 'bg-[#111] border-[#333] text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100';
+    const borderL = template === 'vertical' ? 'border-l-4 border-l-blue-500' : '';
     
     return (
-      <div className={`p-4 rounded-xl border ${wrapperBg} ${borderL} flex flex-col gap-3 w-full max-w-[240px] shadow-sm select-none`}>
-        {/* Event Header (unless split or compact) */}
+      <div className={`p-4 rounded-2xl border ${wrapperBg} ${borderL} flex flex-col gap-3 w-full max-w-[240px] shadow-sm select-none transition-all`}>
         {template !== 'split' && template !== 'compact' && (
           <div className="flex items-center gap-2">
             <span className="text-lg">🎓</span>
             <div className="text-left">
-              <h4 className="text-xs font-bold leading-tight">Graduation</h4>
-              <span className="text-[9px] text-text-muted dark:text-zinc-500">12 Oct 2026</span>
+              <h4 className="text-sm font-semibold tracking-tight leading-tight">Graduation</h4>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">12 Oct 2026</span>
             </div>
           </div>
         )}
         
-        {/* Template specific countdown rendering */}
+        {/* Restored Full Switch Case for Preview */}
         {(() => {
           switch (template) {
             case 'minimal':
               return (
                 <div className="flex items-baseline gap-1 text-sm font-mono font-bold mt-1 text-left">
-                  <span>27</span><span className="text-[10px] text-text-muted mr-1">d</span>
-                  <span>08</span><span className="text-[10px] text-text-muted mr-1">h</span>
-                  <span>45</span><span className="text-[10px] text-text-muted mr-1">m</span>
-                  <span>12</span><span className="text-[10px] text-text-muted">s</span>
+                  <span>27</span><span className="text-[10px] text-zinc-500 mr-1">d</span>
+                  <span>08</span><span className="text-[10px] text-zinc-500 mr-1">h</span>
+                  <span>45</span><span className="text-[10px] text-zinc-500 mr-1">m</span>
+                  <span>12</span><span className="text-[10px] text-zinc-500">s</span>
                 </div>
               );
             case 'gradient':
               return (
                 <div className="flex gap-1 mt-1 justify-start">
                   {[{ v: '27', l: 'D' }, { v: '08', l: 'H' }, { v: '45', l: 'M' }, { v: '12', l: 'S' }].map(x => (
-                    <div key={x.l} className="flex flex-col items-center bg-gradient-to-br from-primary to-rose-400 text-white rounded p-1 min-w-[32px] text-center shadow-sm">
+                    <div key={x.l} className="flex flex-col items-center bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-lg p-1 min-w-[32px] text-center shadow-sm">
                       <span className="text-xs font-bold font-mono">{x.v}</span>
                       <span className="text-[7px] font-bold opacity-80">{x.l}</span>
                     </div>
@@ -118,22 +132,22 @@ export default function SettingsModule() {
               return (
                 <div className="flex gap-1.5 justify-start mt-1">
                   {['D', 'H', 'M', 'S'].map(x => (
-                    <div key={x} className="relative w-8 h-8 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-primary">{x}</span>
+                    <div key={x} className="relative w-8 h-8 rounded-full border-2 border-blue-500/20 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-blue-500">{x}</span>
                     </div>
                   ))}
                 </div>
               );
             case 'event':
               return (
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-2 mt-1 text-center">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">Big Event</span>
-                  <span className="text-sm font-black font-mono text-text-primary dark:text-white mt-1 block">27 Days Left</span>
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 mt-1 text-center">
+                  <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider block">Big Event</span>
+                  <span className="text-sm font-black font-mono mt-1 block">27 Days Left</span>
                 </div>
               );
             case 'sale':
               return (
-                <div className="bg-red-600 text-white rounded-lg p-2 mt-1 text-center font-bold relative overflow-hidden">
+                <div className="bg-red-500 text-white rounded-lg p-2 mt-1 text-center font-bold relative overflow-hidden">
                   <div className="text-[7px] uppercase tracking-widest bg-black/20 px-1 py-0.5 rounded w-max mx-auto mb-1">FLASH SALE</div>
                   <span className="text-xs font-mono">27d : 08h : 45m</span>
                 </div>
@@ -143,16 +157,16 @@ export default function SettingsModule() {
                 <div className="flex items-center justify-between mt-1 w-full text-left">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-sm shrink-0">🎓</span>
-                    <span className="text-xs font-bold truncate max-w-[80px]">Graduation</span>
+                    <span className="text-sm font-medium truncate max-w-[80px]">Graduation</span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-primary shrink-0 ml-2">27d 08h</span>
+                  <span className="text-xs font-mono font-medium text-blue-500 shrink-0 ml-2">27d 08h</span>
                 </div>
               );
             case 'flip':
               return (
                 <div className="flex gap-1 justify-start mt-1">
                   {['27', '08', '45', '12'].map((v, i) => (
-                    <div key={i} className="bg-zinc-850 dark:bg-zinc-905 text-zinc-100 border border-zinc-700 rounded px-1.5 py-1 text-xs font-bold font-mono text-center shadow-md relative min-w-[28px]">
+                    <div key={i} className="bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-md px-1.5 py-1 text-xs font-bold font-mono text-center shadow-md relative min-w-[28px]">
                       <div className="absolute top-1/2 left-0 right-0 h-px bg-black/40" />
                       {v}
                     </div>
@@ -162,30 +176,30 @@ export default function SettingsModule() {
             case 'progress':
               return (
                 <div className="flex flex-col gap-1.5 mt-1 text-left">
-                  <div className="flex justify-between text-[9px] font-bold text-text-muted">
+                  <div className="flex justify-between text-[9px] font-bold text-zinc-500">
                     <span>27 Days Left</span>
                     <span>70%</span>
                   </div>
-                  <div className="w-full bg-border-alt dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-primary h-full w-[70%]" />
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-blue-500 h-full w-[70%]" />
                   </div>
                 </div>
               );
             case 'vertical':
               return (
                 <div className="flex flex-col gap-1 pl-2 mt-1 text-left">
-                  <span className="text-xs font-bold font-mono text-primary">27 Days Left</span>
-                  <span className="text-[9px] text-text-muted dark:text-zinc-500">College graduation ceremony</span>
+                  <span className="text-xs font-bold font-mono text-blue-500">27 Days Left</span>
+                  <span className="text-[9px] text-zinc-500">College graduation ceremony</span>
                 </div>
               );
             case 'split':
               return (
                 <div className="flex flex-col gap-1 mt-1 text-left">
-                  <div className="text-xs font-black uppercase text-text-primary dark:text-white">Graduation</div>
-                  <div className="flex items-baseline gap-1 text-sm font-mono font-bold text-primary">
-                    <span>27</span><span className="text-[8px] text-text-muted">d</span>
-                    <span>08</span><span className="text-[8px] text-text-muted">h</span>
-                    <span>45</span><span className="text-[8px] text-text-muted">m</span>
+                  <div className="text-xs font-black uppercase">Graduation</div>
+                  <div className="flex items-baseline gap-1 text-sm font-mono font-bold text-blue-500">
+                    <span>27</span><span className="text-[8px] text-zinc-500">d</span>
+                    <span>08</span><span className="text-[8px] text-zinc-500">h</span>
+                    <span>45</span><span className="text-[8px] text-zinc-500">m</span>
                   </div>
                 </div>
               );
@@ -194,14 +208,14 @@ export default function SettingsModule() {
                 <div className="flex flex-col gap-2 mt-1 text-left">
                   <div className="flex gap-1">
                     {[{ v: '27', l: 'days' }, { v: '08', l: 'hrs' }, { v: '45', l: 'mins' }].map(x => (
-                      <div key={x.l} className="flex-1 bg-surface-alt dark:bg-zinc-800/50 border border-border rounded p-1 text-center">
-                        <span className="text-xs font-black font-mono block text-text-primary dark:text-white">{x.v}</span>
-                        <span className="text-[8px] text-text-muted uppercase font-bold">{x.l}</span>
+                      <div key={x.l} className="flex-1 bg-zinc-100 dark:bg-zinc-700/50 rounded-lg p-1 text-center">
+                        <span className="text-xs font-bold font-mono block tracking-tight">{x.v}</span>
+                        <span className="text-[8px] text-zinc-500 uppercase font-bold">{x.l}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="w-full bg-border-alt dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
-                    <div className="bg-primary h-full w-[70%]" />
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1 rounded-full overflow-hidden">
+                    <div className="bg-blue-500 h-full w-[70%]" />
                   </div>
                 </div>
               );
@@ -217,327 +231,232 @@ export default function SettingsModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       transition={{ type: 'spring', damping: 24, stiffness: 300 }}
-      className="flex flex-col gap-6 max-w-4xl"
+      className="flex flex-col gap-8 w-full max-w-3xl mx-auto pb-12"
     >
-      {/* Header Row (mockup style) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            Settings <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary" />
-          </h1>
-          <p className="text-sm text-text-secondary">Manage your preferences and customize your experience</p>
-        </div>
-
-        {/* Shortcut system dropdown at top-right */}
-        <div className="w-56 shrink-0">
-          <CustomSelect
-            value={theme}
-            onChange={(val) => setTheme(val as any)}
-            options={[
-              { value: 'system', label: 'System Default' },
-              { value: 'light',  label: 'Light Mode' },
-              { value: 'dark',   label: 'Dark Mode' },
-              { value: 'cyberpunk', label: 'Cyberpunk Neon' },
-              { value: 'nordic', label: 'Nordic Forest' },
-              { value: 'sakura', label: 'Sakura Blossom' },
-              { value: 'auraglass', label: 'Aura Glass' }
-            ]}
-          />
-        </div>
+      <div className="flex flex-col gap-2 mt-4 px-4 sm:px-0">
+        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">Settings</h1>
       </div>
 
-      {/* Main Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        {/* ── Appearance Card ── */}
-        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
-              <IconPalette className="w-5 h-5" />
+      {/* ── Appearance Section ── */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Appearance</h2>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+          
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white shadow-sm">
+                <IconPalette className="w-5 h-5" stroke={1.5} />
+              </div>
+              <div>
+                <p className="text-base font-medium text-zinc-900 dark:text-white">Theme Preset</p>
+                <p className="text-[13px] text-zinc-500">Select your workspace style</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-text-primary">Appearance</h3>
-              <p className="text-xs text-text-muted">Customize how Personal HQ looks</p>
-            </div>
-          </div>
-
-          {/* Theme selection buttons */}
-          <div className="flex flex-col gap-2.5">
-            <div>
-              <p className="text-sm font-semibold text-text-primary">Theme Preset</p>
-              <p className="text-xs text-text-secondary mt-0.5">Select a premium workspace theme preset</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {THEMES.map(t => (
                 <button
                   key={t.value}
                   onClick={() => setTheme(t.value as any)}
-                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                  className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                     theme === t.value
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border bg-surface-alt hover:bg-surface-hover'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-sm ring-1 ring-blue-500'
+                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="text-xs font-bold text-text-primary">{t.label}</span>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full border border-border/40" style={{ background: t.color1 }} title="Background" />
-                      <div className="w-2.5 h-2.5 rounded-full border border-border/40" style={{ background: t.color2 }} title="Surface" />
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: t.accent }} title="Primary Accent" />
+                    <span className="text-[14px] font-medium text-zinc-900 dark:text-white">{t.label}</span>
+                    <div className="flex items-center gap-2 shrink-0 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-full border border-zinc-200 dark:border-zinc-700">
+                      <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ background: t.color1 }} />
+                      <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ background: t.color2 }} />
+                      <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ background: t.accent }} />
                     </div>
                   </div>
-                  <span className="text-[10px] text-text-secondary mt-1">{t.desc}</span>
+                  <span className="text-xs text-zinc-500 mt-2">{t.desc}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Accent color swatches */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-4">
             <div>
-              <p className="text-sm font-semibold text-text-primary">Accent Color</p>
-              <p className="text-xs text-text-secondary mt-0.5">Select your preferred accent color</p>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Accent Color</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">Choose your primary app color</p>
             </div>
-            <div className="flex items-center gap-2">
-              {ACCENT_COLORS.map((c) => {
-                const isActive = settings.accentColor === c.name;
-                return (
-                  <button
-                    key={c.name}
-                    onClick={() => updateSettings({ accentColor: c.name })}
-                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all relative hover:scale-105 active:scale-95 shadow-sm"
-                    style={{ background: c.hex }}
-                    title={`Accent ${c.name}`}
-                  >
-                    {isActive && (
-                      <IconCheck className="w-4 h-4 text-white font-bold" />
-                    )}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2 flex-wrap">
+              {ACCENT_COLORS.map((c) => (
+                <button
+                  key={c.name}
+                  onClick={() => updateSettings({ accentColor: c.name })}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm border-[3px] ${
+                    settings.accentColor === c.name ? 'border-zinc-900 dark:border-white scale-110' : 'border-transparent'
+                  }`}
+                  style={{ background: c.hex }}
+                  title={c.name}
+                >
+                  {settings.accentColor === c.name && <IconCheck className="w-4 h-4 text-white font-bold" stroke={3} />}
+                </button>
+              ))}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* ── Notifications Card ── */}
-        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <IconBell className="w-5 h-5" />
+      {/* ── Notifications & Behavior Section ── */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Notifications & Behavior</h2>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white shadow-sm">
+                <IconBell className="w-5 h-5" stroke={1.5} />
+              </div>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Toast Position</p>
             </div>
+            <div className="w-full sm:w-48">
+              <CustomSelect value={toastPos} onChange={handleToastPos} options={TOAST_POSITIONS} />
+            </div>
+          </div>
+
+          {/* Restored Test Notification Buttons */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4 bg-zinc-50/50 dark:bg-zinc-800/20">
             <div>
-              <h3 className="text-base font-bold text-text-primary">Notifications</h3>
-              <p className="text-xs text-text-muted">Manage how you receive updates</p>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Test Notifications</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">Preview how toasts look</p>
             </div>
-          </div>
-
-          {/* Toast position selector */}
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold text-text-primary">Toast Position</p>
-            <p className="text-xs text-text-secondary mb-1">Choose where notifications appear</p>
-            <CustomSelect
-              value={toastPos}
-              onChange={handleToastPos}
-              options={TOAST_POSITIONS}
-            />
-          </div>
-
-          {/* Test notifications */}
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold text-text-primary">Test Notification</p>
-            <p className="text-xs text-text-secondary mb-1">Preview how notifications look on your screen</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={() => addToast('Success', 'Everything looks great!', 'success')}
-                className="py-2 px-4 rounded-xl border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <IconCheck className="w-4 h-4" /> Success
               </button>
               <button
                 onClick={() => addToast('Error', 'Something went wrong.', 'error')}
-                className="py-2 px-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <IconX className="w-4 h-4" /> Error
               </button>
             </div>
           </div>
 
-          {/* Premium Wavy Effect Toggle */}
-          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40 mt-1">
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-text-primary">Wavy Complete Effect</p>
-              <p className="text-xs text-text-secondary mt-0.5">Show a premium Apple AirDrop-like wavy ripple animation on task, habit, and study timer completions.</p>
+          <div className="flex items-center justify-between p-4 sm:p-5">
+             <div>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Wavy Complete Effect</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">Show ripple animation on completions</p>
             </div>
+            <ToggleSwitch 
+              checked={settings.wavyEffectEnabled !== false} 
+              onChange={() => updateSettings({ wavyEffectEnabled: settings.wavyEffectEnabled === false ? true : false })} 
+            />
+          </div>
+
+          {settings.wavyEffectEnabled !== false && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-zinc-50/50 dark:bg-zinc-800/20 gap-4">
+              <div>
+                <p className="text-base font-medium text-zinc-900 dark:text-white">Effect Quality</p>
+                <p className="text-[13px] text-zinc-500 mt-0.5 max-w-[250px] leading-snug">Choose Minimal to reduce GPU load.</p>
+              </div>
+              <div className="flex bg-zinc-200/50 dark:bg-zinc-800 p-1 rounded-lg w-full sm:w-auto">
+                <button
+                  onClick={() => updateSettings({ wavyEffectMode: 'premium' })}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                    settings.wavyEffectMode !== 'minimal' ? 'bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500'
+                  }`}
+                >
+                  Premium
+                </button>
+                <button
+                  onClick={() => updateSettings({ wavyEffectMode: 'minimal' })}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                    settings.wavyEffectMode === 'minimal' ? 'bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500'
+                  }`}
+                >
+                  Minimal
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="p-4 sm:p-5">
             <button
-              type="button"
-              onClick={() => updateSettings({ wavyEffectEnabled: settings.wavyEffectEnabled === false ? true : false })}
-              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
-                settings.wavyEffectEnabled !== false ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
-              }`}
+              onClick={() => window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'test' } }))}
+              className="w-full py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-[14px] font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
-              <motion.div 
-                layout 
-                className="w-5 h-5 rounded-full bg-white shadow-md"
-              />
+              <IconSparkles className="w-4 h-4 text-amber-500" /> Trigger Test Ripple
             </button>
           </div>
-
-          {/* Wavy Effect Mode (Premium vs Minimal) */}
-          {settings.wavyEffectEnabled !== false && (
-            <div className="flex flex-col gap-2 py-3 border-t border-border/40 text-left">
-              <div>
-                <p className="text-sm font-semibold text-text-primary">Wavy Effect Mode</p>
-                <p className="text-xs text-text-secondary mt-0.5">Select Premium for full floating bloom particles and waves, or Minimal to bypass floating particles and keep a simple background blur (reduces performance load on slower devices).</p>
-              </div>
-              <div className="flex rounded-xl bg-surface-alt p-1 border border-border mt-1.5 w-full max-w-[280px]">
-                <button
-                  type="button"
-                  onClick={() => updateSettings({ wavyEffectMode: 'premium' })}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    settings.wavyEffectMode !== 'minimal' ? 'bg-[#F43F5E] text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  Premium Bloom
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateSettings({ wavyEffectMode: 'minimal' })}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    settings.wavyEffectMode === 'minimal' ? 'bg-[#F43F5E] text-white shadow-sm' : 'text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  Minimal Wave
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Test Wavy Effect button */}
-          {settings.wavyEffectEnabled !== false && (
-            <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-              <p className="text-sm font-semibold text-text-primary">Test Wavy Complete Effect</p>
-              <p className="text-xs text-text-secondary mb-1 text-left">Click to trigger a test wavy completion ripple animation instantly.</p>
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'test' } }))}
-                className="py-2 px-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <IconSparkles className="w-4 h-4" /> Trigger Test Ripple
-              </button>
-            </div>
-          )}
         </div>
+      </section>
 
-        {/* ── Countdown Display Template Card ── full width */}
-        <div className="md:col-span-2 bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <IconHourglass className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-text-primary">Countdown Display Template</h3>
-              <p className="text-xs text-text-muted">Select how countdown cards appear globally across your app</p>
-            </div>
-          </div>
-
+      {/* ── Dashboard Cards Section ── */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Dashboard</h2>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-            <div className="w-full sm:w-80 select-none">
+            <div className="flex-1 w-full sm:w-auto">
+               <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-sm">
+                  <IconHourglass className="w-5 h-5" stroke={1.5} />
+                </div>
+                <p className="text-base font-medium text-zinc-900 dark:text-white">Countdown Layout</p>
+              </div>
               <CustomSelect
                 value={settings.countdownTemplate}
                 onChange={val => updateSettings({ countdownTemplate: val as any })}
                 options={COUNTDOWN_TEMPLATES}
               />
             </div>
-            <div className="flex flex-col gap-1.5 items-center sm:items-end w-full sm:w-auto">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-text-secondary select-none">
-                Preview
-              </span>
+            <div className="flex flex-col gap-2 items-center sm:items-end w-full sm:w-auto p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-700/50">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 select-none">Live Preview</span>
               {renderCountdownPreview()}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* ── Performance Mode Card ── */}
-        <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <IconSparkles className="w-5 h-5" />
+      {/* ── System & Performance Section ── */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">System & Performance</h2>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+          
+          <div className="flex items-center justify-between p-4 sm:p-5">
+             <div>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Reduce Transparency</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">Disables backdrop filters and blur effects</p>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-text-primary">Performance Mode</h3>
-              <p className="text-xs text-text-muted">Optimize rendering responsiveness</p>
-            </div>
+            <ToggleSwitch 
+              checked={!!settings.reduceBlur} 
+              onChange={() => updateSettings({ reduceBlur: !settings.reduceBlur })} 
+            />
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40 mt-1">
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-text-primary">Reduce Blur & Glassmorphism</p>
-              <p className="text-xs text-text-secondary mt-0.5">Disable intensive backdrop filters and semi-transparency. Essential for eliminating lag on slower devices.</p>
+          <div className="flex items-center justify-between p-4 sm:p-5">
+             <div>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Reduce Motion</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">Disables UI transitions and physics</p>
             </div>
-             <button
-              onClick={() => updateSettings({ reduceBlur: !settings.reduceBlur })}
-              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
-                settings.reduceBlur ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
-              }`}
-            >
-              <motion.div 
-                layout 
-                className="w-5 h-5 rounded-full bg-white shadow-md"
-              />
-            </button>
+            <ToggleSwitch 
+              checked={!!settings.reduceAnimations} 
+              onChange={() => updateSettings({ reduceAnimations: !settings.reduceAnimations })} 
+            />
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-2 border-t border-border/40">
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-text-primary">Reduce Animations</p>
-              <p className="text-xs text-text-secondary mt-0.5">Disable transitions, spring equations, and fade effects globally. Crucial for smooth running on older or low-end PCs.</p>
+          <button 
+            onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
+            className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+          >
+            <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white shadow-sm">
+                <IconCompass className="w-5 h-5" stroke={1.5} />
+              </div>
+              <p className="text-base font-medium text-blue-500 dark:text-blue-400">Restart Onboarding Tour</p>
             </div>
-            <button
-              type="button"
-              onClick={() => updateSettings({ reduceAnimations: !settings.reduceAnimations })}
-              className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 cursor-pointer flex items-center shrink-0 border border-transparent ${
-                settings.reduceAnimations ? 'bg-[#F43F5E] justify-end' : 'bg-border justify-start'
-              }`}
-            >
-              <motion.div 
-                layout 
-                className="w-5 h-5 rounded-full bg-white shadow-md"
-              />
-            </button>
-          </div>
+            <IconChevronRight className="w-5 h-5 text-zinc-400" />
+          </button>
+
         </div>
-
-        {/* ── App Onboarding Card ── full width */}
-        <div className="md:col-span-2 bg-surface border border-border rounded-2xl p-6 flex flex-col gap-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center">
-              <IconCompass className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-text-primary">App Onboarding</h3>
-              <p className="text-xs text-text-muted">Explore tours and guides</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-text-primary">Restart App Tour</p>
-              <p 
-                className="mt-1 text-xs text-text-secondary leading-relaxed"
-                style={{ display: 'block', width: '100%', maxWidth: '600px' }}
-              >
-                Get a quick walkthrough of all features and how to use Personal HQ effectively.
-              </p>
-            </div>
-            <button
-              onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
-              className="btn btn-primary btn-md flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center"
-            >
-              <IconPlayerPlay className="w-4 h-4 fill-current" /> Start Tour
-            </button>
-          </div>
-        </div>
-
-      </div>
+      </section>
     </motion.div>
   );
 }

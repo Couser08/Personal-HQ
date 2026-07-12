@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  IconX, 
-  IconSparkles, 
-  IconTerminal,
-  IconMovie,
-  IconFlame,
-  IconLayout,
-  IconBrush,
+import {
+  IconX,
+  IconSparkles,
+  IconComponents,
+  IconFolderCode,
+  IconBrandReact,
+  IconAtom,
+  IconLayoutGrid,
   IconDatabase,
-  IconSettings
+  IconZap
 } from '@tabler/icons-react';
 
-const APP_VERSION = '1.4.0';
+// ── Version ──────────────────────────────────────────────────────────────────
+const APP_VERSION = '2.0.0';
+const APP_CODENAME = 'Modular';
 const STORAGE_KEY = 'phq_last_seen_version';
 
-interface FeatureItem {
+// ── Types ─────────────────────────────────────────────────────────────────────
+type TabId = 'architecture' | 'features' | 'improvements';
+
+interface ChangeItem {
   icon: React.ReactNode;
   color: string;
   bg: string;
@@ -23,106 +28,157 @@ interface FeatureItem {
   desc: string;
 }
 
-const TAB_CONTENT: Record<'features' | 'uiux' | 'improvements', { desc: string; list: FeatureItem[] }> = {
-  features: {
-    desc: 'New full-featured modules designed to expand your productivity workflows.',
-    list: [
+// ── Tab Data ──────────────────────────────────────────────────────────────────
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'architecture', label: 'Architecture' },
+  { id: 'features',     label: 'Features' },
+  { id: 'improvements', label: 'Fixes' },
+];
+
+const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
+  architecture: {
+    headline: '10+ monolithic files refactored into focused, single-responsibility components.',
+    items: [
       {
-        icon: <IconTerminal className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF9500', // Apple Orange
+        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Today I Learned (TIL) Logger',
-        desc: 'Log and catalog daily micro-journal tips, technical logs, and code snippets with quick tags, smart filters, and full text search.',
+        title: 'Module Component Extraction',
+        desc: 'Budget, Condition, Habits, Journal, Mindmap, and Study modules each now have their own components/ and utils/ subdirectories.',
       },
       {
-        icon: <IconMovie className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#007AFF', // Apple Blue
+        icon: <IconAtom className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#5856D6',
+        bg: 'rgba(88, 86, 214, 0.08)',
+        title: 'Store Sliced Architecture',
+        desc: 'The monolithic useAppStore.ts is now split into domain-specific slices, a shared types.ts, and a helpers.ts utility layer.',
+      },
+      {
+        icon: <IconBrandReact className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Anime Rankings & Reviews',
-        desc: 'Organize your anime lists with scores, detailed personal notes, custom ratings, and watch logs directly inside the Media Logger.',
+        title: 'Login Page Decomposed',
+        desc: 'LoginPage.tsx is broken into dedicated src/pages/login/ sub-components for cleaner auth flows and easier testing.',
       },
-    ]
+      {
+        icon: <IconComponents className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#34C759',
+        bg: 'rgba(52, 199, 89, 0.08)',
+        title: 'Zero Regressions',
+        desc: 'All existing behaviours and user data are fully preserved — the refactor is a pure structural improvement with no feature loss.',
+      },
+    ],
   },
-  uiux: {
-    desc: 'Visual upgrades and layout updates focusing on beautiful, responsive aesthetics.',
-    list: [
+  features: {
+    headline: 'New capabilities shipped alongside the architectural overhaul.',
+    items: [
       {
-        icon: <IconFlame className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF2D55', // Apple Pink
+        icon: <IconLayoutGrid className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF2D55',
         bg: 'rgba(255, 45, 85, 0.08)',
-        title: 'Canvas Ripple Celebrations',
-        desc: 'Vibrant, concentric ripple canvas waves, star bursts, and gradient flows that trigger when completing Pomodoro sessions or habits.',
+        title: 'Today I Learned (TIL) Logger',
+        desc: 'A dedicated micro-journal to log daily coding insights, tag them, and full-text search across all entries.',
       },
       {
-        icon: <IconLayout className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#AF52DE', // Apple Violet
+        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#AF52DE',
         bg: 'rgba(175, 82, 222, 0.08)',
-        title: 'Mascot Layout Adjustments',
-        desc: 'Mascot preview logs moved to side columns in the Media section, ensuring typing fields remain completely unobstructed.',
+        title: 'Anime Rankings & Reviews',
+        desc: 'Personal anime watchlist with scores, reviews, and statistics nested inside the Media Logger tab.',
       },
       {
-        icon: <IconBrush className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF3B30', // Apple Red
-        bg: 'rgba(255, 59, 48, 0.08)',
-        title: 'Whiteboard Side Collapser',
-        desc: 'Easily collapse drawing canvas tool panels using a smooth floating chevron toggle, giving you maximum space to draw.',
+        icon: <IconZap className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Task Focus Island',
+        desc: 'A floating Dynamic Island-style HUD showing your active Pomodoro task, remaining time, and quick controls.',
       },
-    ]
+    ],
   },
   improvements: {
-    desc: 'Behind-the-scenes updates to keep your database fast, secure, and fully synced.',
-    list: [
+    headline: 'Stability, sync, and performance upgrades throughout the app.',
+    items: [
       {
         icon: <IconDatabase className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#34C759', // Apple Green
+        color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Database Deletion Syncing',
-        desc: 'Integrated transacted sync handlers and SQL schema migrations to track and sync deleted checklist items across the cloud.',
+        title: 'Supabase Schema Migrations',
+        desc: 'New migration files for Todo deletion tracking, budget payment methods, and journal sticky-note metadata.',
       },
       {
-        icon: <IconSettings className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#8E8E93', // Apple Gray
-        bg: 'rgba(142, 142, 147, 0.08)',
-        title: 'Illustration Banner Managers',
-        desc: 'Safely upload, reset, and live-update fallback greeting illustrations directly inside the Admin control workstation.',
+        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#007AFF',
+        bg: 'rgba(0, 122, 255, 0.08)',
+        title: 'Wavy Celebration Upgrades',
+        desc: 'Concentric ripple canvas rewritten for higher performance. Separate wave styles for Pomodoro, Habits, and Todo completions.',
       },
-    ]
-  }
+      {
+        icon: <IconAtom className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#8E8E93',
+        bg: 'rgba(142, 142, 147, 0.08)',
+        title: 'Admin Illustration Managers',
+        desc: 'Upload, preview, and reset Dashboard hero banners and Media mascot images live from the admin control panel.',
+      },
+    ],
+  },
 };
 
-interface UpdatePopupProps {
-  onExpand: () => void;
-  onDismiss: () => void;
-}
+// ── Stat pills shown on mini card ─────────────────────────────────────────────
+const STATS = [
+  { label: 'Files split', value: '10+' },
+  { label: 'New components', value: '40+' },
+  { label: 'Lines touched', value: '5000+' },
+];
 
-function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
+// ── Mini Notification Card ────────────────────────────────────────────────────
+interface MiniCardProps { onExpand: () => void; onDismiss: () => void }
+
+function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.94 }}
+      initial={{ opacity: 0, y: 24, scale: 0.93 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.94 }}
-      transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
-      className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/50 dark:border-stone-800/60 rounded-[24px] p-5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] w-full max-w-[340px] pointer-events-auto backdrop-blur-2xl flex flex-col gap-4 relative overflow-hidden antialiased text-left"
+      exit={{ opacity: 0, y: 20, scale: 0.93 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+      className="bg-white/90 dark:bg-[#141414]/95 border border-stone-200/60 dark:border-stone-800/50 rounded-[24px] p-5 shadow-[0_24px_56px_-12px_rgba(0,0,0,0.28)] w-full max-w-[340px] pointer-events-auto backdrop-blur-2xl flex flex-col gap-4 relative overflow-hidden antialiased text-left"
     >
+      {/* Subtle gradient orb */}
+      <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#5856D6]/10 blur-2xl pointer-events-none" />
+
       <button
         onClick={onDismiss}
         aria-label="Dismiss"
-        className="absolute flex items-center justify-center transition-all duration-200 rounded-full cursor-pointer top-4 right-4 w-7 h-7 bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400 active:scale-90"
+        className="absolute top-4 right-4 w-7 h-7 rounded-full bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 transition-colors active:scale-90 cursor-pointer"
       >
         <IconX className="w-3.5 h-3.5" />
       </button>
 
-      <div className="flex items-center gap-3.5 w-full mt-1">
-        <div className="w-11 h-11 rounded-[16px] bg-gradient-to-b from-[#FF2D55] to-[#5856D6] flex items-center justify-center shadow-md shrink-0">
-          <IconSparkles className="w-5 h-5 text-white stroke-[2]" />
+      {/* Header */}
+      <div className="flex items-center gap-3.5 w-full">
+        <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-[#5856D6] to-[#007AFF] flex items-center justify-center shadow-[0_4px_16px_rgba(88,86,214,0.3)] shrink-0">
+          <IconComponents className="w-5 h-5 text-white stroke-[2]" />
         </div>
         <div className="flex-1 min-w-0 pr-4">
-          <h3 className="font-bold text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">Version {APP_VERSION}</h3>
-          <p className="text-[12px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 truncate">Features and design updates are ready.</p>
+          <div className="flex items-center gap-2">
+            <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
+            <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
+          </div>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Biggest architectural refactor ever shipped.</p>
         </div>
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2 mt-1">
+      {/* Stats row */}
+      <div className="flex gap-2 w-full">
+        {STATS.map(s => (
+          <div key={s.label} className="flex-1 bg-stone-50 dark:bg-stone-800/60 rounded-2xl py-2 px-2 text-center border border-stone-200/40 dark:border-stone-800/40">
+            <p className="font-black text-[14px] text-stone-900 dark:text-stone-50 leading-none">{s.value}</p>
+            <p className="text-[9px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-2 w-full">
         <button
           onClick={onDismiss}
           className="h-9 text-[12px] font-bold text-stone-700 dark:text-stone-300 bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition-all active:scale-[0.97] cursor-pointer"
@@ -131,154 +187,152 @@ function MiniCard({ onExpand, onDismiss }: UpdatePopupProps) {
         </button>
         <button
           onClick={onExpand}
-          className="h-9 text-[12px] font-bold text-white dark:text-stone-950 bg-stone-950 dark:bg-stone-50 hover:opacity-90 rounded-xl transition-all active:scale-[0.97] text-center cursor-pointer"
+          className="h-9 text-[12px] font-bold text-white bg-[#5856D6] hover:bg-[#4745C0] rounded-xl transition-all active:scale-[0.97] shadow-[0_4px_12px_rgba(88,86,214,0.25)] cursor-pointer"
         >
-          See Details
+          See What's New
         </button>
       </div>
     </motion.div>
   );
 }
 
+// ── Full Modal ────────────────────────────────────────────────────────────────
 function FullModal({ onClose }: { onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<'features' | 'uiux' | 'improvements'>('features');
-  const currentTab = TAB_CONTENT[activeTab];
+  const [activeTab, setActiveTab] = useState<TabId>('architecture');
+  const tab = TAB_CONTENT[activeTab];
 
   return (
     <>
+      {/* Backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[10000]"
+        className="fixed inset-0 bg-black/65 backdrop-blur-xl z-[10000]"
       />
 
       <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 20 }}
+          initial={{ opacity: 0, scale: 0.93, y: 22 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 20 }}
-          transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
-          className="bg-white/95 dark:bg-stone-900/95 border border-stone-200/50 dark:border-stone-800/60 rounded-[28px] p-6 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-[440px] pointer-events-auto text-left backdrop-blur-2xl flex flex-col max-h-[85vh] relative overflow-hidden antialiased"
+          exit={{ opacity: 0, scale: 0.93, y: 22 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 330 }}
+          className="bg-white/96 dark:bg-[#141414]/97 border border-stone-200/50 dark:border-stone-800/50 rounded-[28px] shadow-[0_36px_80px_-16px_rgba(0,0,0,0.4)] w-full max-w-[460px] pointer-events-auto text-left backdrop-blur-2xl flex flex-col max-h-[88vh] relative overflow-hidden antialiased"
         >
-          {/* Decorative Glow */}
-          <div className="absolute w-40 h-40 rounded-full pointer-events-none -top-16 -left-16 bg-amber-500/10 blur-3xl" />
+          {/* Purple glow top-left */}
+          <div className="absolute -top-20 -left-20 w-52 h-52 rounded-full bg-[#5856D6]/8 blur-3xl pointer-events-none" />
 
+          {/* Close */}
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute z-20 flex items-center justify-center w-8 h-8 transition-all duration-200 border rounded-full cursor-pointer top-4 right-4 bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400 active:scale-90 border-stone-200/20 dark:border-stone-700/30"
+            className="absolute z-20 top-4 right-4 w-8 h-8 rounded-full border border-stone-200/30 dark:border-stone-700/30 bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 transition-colors active:scale-90 cursor-pointer"
           >
-            <IconX size={15} className="stroke-[2.5]" />
+            <IconX size={14} className="stroke-[2.5]" />
           </button>
 
-          {/* Scrollable Container */}
-          <div className="z-10 flex-1 w-full pr-1 mt-2 space-y-5 overflow-y-auto scrollbar-none flex flex-col">
-            
-            {/* Header Content */}
-            <div className="flex flex-col items-start w-full gap-3 shrink-0">
-              <div className="w-12 h-12 rounded-[18px] bg-gradient-to-b from-[#FF2D55] to-[#5856D6] flex items-center justify-center shadow-md">
-                <IconSparkles className="w-6 h-6 text-white stroke-[2]" />
+          {/* Scrollable body */}
+          <div className="z-10 flex-1 overflow-y-auto scrollbar-none flex flex-col gap-5 p-6">
+
+            {/* Header */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-[#5856D6] to-[#007AFF] flex items-center justify-center shadow-[0_6px_20px_rgba(88,86,214,0.3)] shrink-0">
+                <IconComponents className="w-6 h-6 text-white stroke-[2]" />
               </div>
-              <div>
-                <h2 className="text-[18px] font-black text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
-                  Personal HQ Release {APP_VERSION}
-                </h2>
-                <p className="text-[12.5px] text-stone-500 dark:text-stone-400 leading-normal font-medium mt-1">
-                  Explore category-wise updates using the segmented tabs below.
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-[19px] font-black text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
+                    Personal HQ v{APP_VERSION}
+                  </h2>
+                  <span className="px-2 py-0.5 bg-[#5856D6]/12 text-[#5856D6] text-[9px] font-black uppercase tracking-widest rounded-lg border border-[#5856D6]/15">
+                    {APP_CODENAME}
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
+                  The biggest internal overhaul yet — every major module refactored into clean, focused components.
                 </p>
               </div>
             </div>
 
-            {/* Segmented Tab Switch */}
-            <div className="flex bg-stone-100 dark:bg-stone-800/60 p-1 rounded-2xl border border-stone-200/30 dark:border-stone-850/40 w-full shrink-0">
-              <button 
-                onClick={() => setActiveTab('features')} 
-                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'features' 
-                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
-                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
-                }`}
-              >
-                Features
-              </button>
-              <button 
-                onClick={() => setActiveTab('uiux')} 
-                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'uiux' 
-                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
-                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
-                }`}
-              >
-                UI/UX
-              </button>
-              <button 
-                onClick={() => setActiveTab('improvements')} 
-                className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'improvements' 
-                    ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-50 shadow-sm' 
-                    : 'text-stone-500 dark:text-stone-450 hover:text-stone-700 dark:hover:text-stone-200'
-                }`}
-              >
-                Improvements
-              </button>
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {STATS.map(s => (
+                <div key={s.label} className="bg-stone-50 dark:bg-stone-800/40 rounded-2xl py-3 px-3 text-center border border-stone-200/40 dark:border-stone-800/40">
+                  <p className="font-black text-[18px] text-[#5856D6] leading-none">{s.value}</p>
+                  <p className="text-[9px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mt-1.5">{s.label}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Tab Description */}
-            <p className="text-[11.5px] text-stone-400 dark:text-stone-500 italic leading-relaxed font-medium shrink-0">
-              {currentTab.desc}
+            {/* Segmented Tab Switch */}
+            <div className="flex bg-stone-100 dark:bg-stone-800/60 p-1 rounded-2xl border border-stone-200/30 dark:border-stone-800/40 w-full shrink-0">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                    activeTab === t.id
+                      ? 'bg-white dark:bg-stone-800 text-[#5856D6] shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab headline */}
+            <p className="text-[11.5px] text-stone-400 dark:text-stone-500 italic leading-relaxed -mt-2">
+              {tab.headline}
             </p>
 
-            {/* Dynamic Tab Features List */}
-            <div className="flex-1 flex flex-col items-stretch space-y-3">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18 }}
-                  className="space-y-3"
-                >
-                  {currentTab.list.map(f => (
-                    <div 
-                      key={f.title} 
-                      className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/30 border border-stone-200/40 dark:border-stone-800/40 w-full"
+            {/* Tab items */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.16 }}
+                className="space-y-3"
+              >
+                {tab.items.map(item => (
+                  <div
+                    key={item.title}
+                    className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/30 border border-stone-200/40 dark:border-stone-800/40 w-full"
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: item.bg, color: item.color }}
                     >
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-black/[0.02] dark:border-white/[0.02]"
-                        style={{ background: f.bg, color: f.color }}
-                      >
-                        {f.icon}
-                      </div>
-                      <div className="pt-0.5 flex-1 min-w-0">
-                        <p className="font-bold text-[13px] text-stone-900 dark:text-stone-50 mb-0.5 truncate">{f.title}</p>
-                        <p className="text-[12px] text-stone-500 dark:text-stone-400 leading-normal font-medium">{f.desc}</p>
-                      </div>
+                      {item.icon}
                     </div>
-                  ))}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                    <div className="pt-0.5 flex-1 min-w-0">
+                      <p className="font-bold text-[13px] text-stone-900 dark:text-stone-50 mb-0.5 truncate">{item.title}</p>
+                      <p className="text-[12px] text-stone-500 dark:text-stone-400 leading-normal font-medium">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+
           </div>
 
-          {/* Action Footer Trigger Block */}
-          <div className="z-10 w-full pt-3 mt-4 border-t border-stone-100 dark:border-stone-800/40 shrink-0">
+          {/* Footer */}
+          <div className="px-6 pb-6 pt-3 border-t border-stone-100 dark:border-stone-800/40 shrink-0">
             <button
               onClick={onClose}
-              className="w-full py-3 bg-stone-950 dark:bg-stone-50 text-white dark:text-stone-950 rounded-2xl text-xs font-bold hover:opacity-95 active:scale-[0.97] transition-all duration-200 shadow-md cursor-pointer text-center"
+              className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Continue
+              Explore the New Architecture →
             </button>
           </div>
-
         </motion.div>
       </div>
     </>
   );
 }
 
+// ── Main Export ───────────────────────────────────────────────────────────────
 export function UpdatePopup() {
   const [step, setStep] = useState<'hidden' | 'mini' | 'full'>('hidden');
 
@@ -295,15 +349,13 @@ export function UpdatePopup() {
     setStep('hidden');
   };
 
-  const expand = () => setStep('full');
-
   return (
     <>
       <div className="fixed bottom-6 right-6 z-[9999] pointer-events-none w-full max-w-[340px] px-4 sm:px-0">
         <AnimatePresence>
           {step === 'mini' && (
             <div className="flex justify-end w-full pointer-events-auto">
-              <MiniCard onExpand={expand} onDismiss={dismiss} />
+              <MiniCard onExpand={() => setStep('full')} onDismiss={dismiss} />
             </div>
           )}
         </AnimatePresence>
