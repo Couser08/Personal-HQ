@@ -262,7 +262,7 @@ export default function DrawingModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="w-full h-[calc(100vh-140px)] flex gap-4 p-2 relative"
+      className="w-full h-[calc(100vh-180px)] md:h-[calc(100vh-140px)] flex gap-4 p-2 relative"
       style={{ background: 'var(--bg-background)' }}
     >
       {/* Scope premium glass CSS overrides for Excalidraw controls */}

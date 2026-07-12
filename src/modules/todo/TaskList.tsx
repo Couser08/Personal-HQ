@@ -5,7 +5,7 @@ import {
   IconFlag, IconTag, IconSearch,
   IconLayoutList,
   IconChevronLeft, IconChevronRight, IconClock, IconEdit,
-  IconList, IconTarget
+  IconList, IconTarget, IconSun
 } from '@tabler/icons-react';
 import type { TodoTask, TodoProject } from '../../store/useAppStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -240,7 +240,7 @@ export const TaskList: React.FC<TaskListProps> = ({
     <div className="flex-1 flex flex-col min-w-0 bg-bg-primary relative overflow-hidden text-left">
       
       {/* Top Header */}
-      <div className="h-16 border-b border-border flex items-center justify-between px-6 shrink-0 relative z-10 bg-bg-primary/80 backdrop-blur-md select-none">
+      <div className="h-16 border-b border-border hidden md:flex items-center justify-between px-6 shrink-0 relative z-10 bg-bg-primary/80 backdrop-blur-md select-none">
         <div className="flex items-center gap-2 relative w-full sm:w-64">
           {setIsSidebarOpen && (
             <button 
@@ -271,35 +271,85 @@ export const TaskList: React.FC<TaskListProps> = ({
         </div>
       </div>
 
-      {/* Mobile Horizontal Lists Selector */}
-      <div className="flex md:hidden items-center gap-2 overflow-x-auto px-6 py-3 border-b border-border bg-surface/30 scrollbar-hide shrink-0 select-none">
-        {[
-          { id: 'all', label: 'All Tasks', color: '#f43f5e' },
-          { id: 'today', label: 'Today', color: '#f97316' },
-          { id: 'upcoming', label: 'Upcoming', color: '#a855f7' },
-          { id: 'completed', label: 'Completed', color: '#10b981' },
-          { id: 'trash', label: 'Trash', color: '#6b7280' },
-          ...todoProjects.map(p => ({ id: p.id, label: p.name, color: p.color }))
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveList(item.id)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeList === item.id
-                ? 'bg-primary/10 text-primary border-primary/20 shadow-inner'
-                : 'bg-surface border-border hover:bg-surface-hover text-text-secondary'
-            }`}
-          >
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {/* Removed Horizontal Selector for Mockup Vertical Lists Card */}
 
       {/* Task Area */}
       <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-4xl mx-auto w-full relative z-0 custom-scrollbar">
         
-        <div className="flex items-center justify-between mb-8 select-none">
+        {/* Mobile Only: My Lists Card */}
+        <div className="flex md:hidden flex-col bg-surface border border-border/70 rounded-3xl p-5 mb-5 shadow-sm select-none text-left">
+          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3 pl-0.5">My Lists</span>
+          <div className="flex flex-col gap-1.5">
+            {[
+              { id: 'all', label: 'All Tasks', icon: <IconLayoutList className="w-4 h-4 text-rose-500" />, count: todoTasks.filter(t => !t.completed && !t.deleted).length },
+              { id: 'today', label: 'Today', icon: <IconSun className="w-4 h-4 text-orange-500" />, count: todoTasks.filter(t => !t.completed && !t.deleted && isToday(t.dueDate)).length },
+              { id: 'upcoming', label: 'Upcoming', icon: <IconCalendar className="w-4 h-4 text-purple-500" />, count: todoTasks.filter(t => !t.completed && !t.deleted && isUpcoming(t.dueDate)).length },
+              { id: 'completed', label: 'Completed', icon: <IconCheck className="w-4 h-4 text-emerald-500" />, count: todoTasks.filter(t => t.completed && !t.deleted).length },
+              { id: 'trash', label: 'Trash', icon: <IconTrash className="w-4 h-4 text-stone-500" />, count: todoTasks.filter(t => t.deleted).length },
+              ...todoProjects.map(p => ({
+                id: p.id,
+                label: p.name,
+                icon: <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />,
+                count: todoTasks.filter(t => t.projectId === p.id && !t.completed && !t.deleted).length
+              }))
+            ].map(item => {
+              const isActive = activeList === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveList(item.id);
+                  }}
+                  className={`flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold transition-all w-full border-none cursor-pointer ${
+                    isActive
+                      ? 'bg-rose-500/10 text-rose-500 font-bold'
+                      : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-alt'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.count !== undefined && item.count > 0 && (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? 'bg-rose-500/20 text-rose-600' : 'bg-surface-alt border border-border/50 text-text-muted'}`}>
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile Only: Search & Add Task Row */}
+        <div className="flex md:hidden items-center gap-3 mb-6 select-none w-full">
+          <div className="relative flex-1">
+            <IconSearch className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search tasks... ⌘K"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-surface border border-border/60 rounded-full pl-9 pr-3.5 py-2 text-xs focus:outline-none focus:border-primary/50 text-text-primary placeholder:text-text-muted transition-colors"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const input = document.getElementById('quick-add-task-input');
+              if (input) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (input as HTMLInputElement).focus();
+              }
+            }}
+            className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[11px] font-bold px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-subtle border-none shrink-0"
+          >
+            <IconPlus className="w-3.5 h-3.5" />
+            <span>Add Task</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-8 select-none bg-surface md:bg-transparent border border-border/70 md:border-none p-4.5 md:p-0 rounded-3xl md:rounded-none shadow-subtle md:shadow-none">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setPriorityFilter('all')}
@@ -351,6 +401,7 @@ export const TaskList: React.FC<TaskListProps> = ({
         {/* Quick Add Form */}
         <form onSubmit={handleAddTask} className="bg-surface border-none rounded-3xl p-6 mb-8 shadow-sm ring-1 ring-black/5 dark:ring-white/5 focus-within:ring-primary/30 transition-all relative">
           <input 
+            id="quick-add-task-input"
             type="text" 
             placeholder="What needs to be done?" 
             value={newTaskTitle}

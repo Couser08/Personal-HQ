@@ -502,10 +502,10 @@ export default function JournalModule() {
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start relative">
           
           {/* Left Column (featured + recent entries) */}
-          <div className="lg:col-span-2 flex flex-col gap-6 w-full">
+          <div className="lg:col-span-2 flex flex-col gap-6 w-full min-w-0">
             
             {/* Featured Entry Section */}
-            <div className="flex gap-4 items-start w-full">
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start w-full">
               {/* Featured Entry Card */}
               <div className="flex-1 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-surface border border-rose-200/20 p-6 min-h-[220px] flex flex-col justify-between hover:shadow-lifted transition-all duration-200 group">
                 {/* Wavy vector overlay */}
@@ -555,7 +555,7 @@ export default function JournalModule() {
               </div>
 
               {/* Vertical Pills stack (Visual small icon pills column next to featured card) */}
-              <div className="flex flex-col gap-2 shrink-0">
+              <div className="flex flex-row sm:flex-col gap-2 shrink-0 justify-center sm:justify-start">
                 {/* Plus / Add Pill */}
                 <button
                   onClick={createEntry}
@@ -644,7 +644,7 @@ export default function JournalModule() {
           </div>
 
           {/* Right Column (profile + sticky notes + templates) */}
-          <div className="lg:col-span-1 flex flex-col gap-6 w-full">
+          <div className="lg:col-span-1 flex flex-col gap-6 w-full min-w-0">
             
             {/* User Stats Card (Jack's avatar profile card) */}
             <div className="relative overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-950 to-stone-900 border border-neutral-800 rounded-3xl p-5 shadow-lifted text-stone-100 flex items-center gap-4 group">

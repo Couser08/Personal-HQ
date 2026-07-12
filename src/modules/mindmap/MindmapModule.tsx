@@ -480,7 +480,7 @@ export default function MindmapModule() {
       className={`flex gap-0 overflow-hidden bg-background text-text-primary transition-all duration-300 ${
         isFullScreen
           ? 'fixed inset-0 w-screen h-screen z-[150] rounded-none border-none'
-          : 'h-[calc(100vh-130px)] rounded-[32px] border border-border/60'
+          : 'h-[calc(100vh-180px)] md:h-[calc(100vh-130px)] rounded-[32px] border border-border/60'
       }`}
     >
       <MindmapSidebar
@@ -505,8 +505,8 @@ export default function MindmapModule() {
       >
         {activeMindmap ? (
           <>
-            <div className="h-14 border-b border-border/40 px-6 flex items-center justify-between bg-surface/30 backdrop-blur-md relative z-20 shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="min-h-[3.5rem] py-2 border-b border-border/40 px-4 md:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface/30 backdrop-blur-md relative z-20 shrink-0">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveMindmapId(null)}
                   className="w-8 h-8 rounded-lg border border-border/50 bg-surface flex items-center justify-center text-text-secondary hover:text-text-primary border-none cursor-pointer"
@@ -520,7 +520,7 @@ export default function MindmapModule() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+              <div className="flex items-center gap-3 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-start sm:justify-end">
                 <IconCloudCheck className="w-5 h-5 text-emerald-500 shrink-0" title="All changes saved to local space" />
                 <button
                   onClick={handleResetToDefault}

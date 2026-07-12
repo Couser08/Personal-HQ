@@ -256,7 +256,8 @@ export default function PomodoroModule() {
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
-    habits
+    habits,
+    settings
   } = useAppStore(useShallow(state => ({
     pomodoroStats: state.pomodoroStats,
     todoTasks: state.todoTasks,
@@ -274,7 +275,8 @@ export default function PomodoroModule() {
     pauseGlobalPomodoro: state.pauseGlobalPomodoro,
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
-    habits: state.habits
+    habits: state.habits,
+    settings: state.settings
   })));
 
   const addToast = useToastStore(s => s.addToast);
@@ -626,72 +628,140 @@ export default function PomodoroModule() {
       </div>
 
       {/* Main Card Layout */}
-      <div className="bg-surface border border-border rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden shadow-sm">
-        
-        {/* Left pane: digital clock */}
-        <div className="flex-1 flex flex-col justify-center h-full gap-8 text-center md:text-left w-full md:pl-10">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary block mb-4">
-              {pomodoroSessionId === 'focus' ? 'FOCUS TIME' : 'BREAK TIME'}
-            </span>
-            <div className={`text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-text-primary select-none ${fontStyle}`}>
-              {display}
-            </div>
+      {(() => {
+        const clockStyle = settings.clockStyle || 'digital';
+        const cardBgClass = clockStyle === 'analog' 
+          ? 'bg-zinc-950 border-zinc-850 text-zinc-100 shadow-[0_20px_50px_rgba(244,63,94,0.12)]' 
+          : 'bg-surface border-border text-text-primary';
+
+        const [minutesStr, secondsStr] = display.split(':');
+
+        return (
+          <div className={`${cardBgClass} border rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden shadow-sm transition-all duration-300`}>
             
-            <div className="mt-8 flex flex-col gap-2 items-center md:items-start">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20" style={{ backgroundColor: 'rgba(244,63,94,0.1)', color: 'var(--color-primary)', borderColor: 'rgba(244,63,94,0.2)' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }} />
-                {pomodoroSessionId === 'focus' ? `Focus Session ${pomodoroStreak + 1}` : 'Break Time'}
-              </span>
-              {associatedTask && (
-                <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-                  🎯 Working on: <span className="font-bold text-text-primary">{associatedTask.title}</span>
+            {/* Left pane: digital clock */}
+            <div className="flex-1 flex flex-col justify-center h-full gap-8 text-center md:text-left w-full md:pl-10">
+              <div>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] block mb-4 ${clockStyle === 'analog' ? 'text-rose-500/70' : 'text-text-secondary'}`}>
+                  {pomodoroSessionId === 'focus' ? 'FOCUS TIME' : 'BREAK TIME'}
                 </span>
-              )}
-              {associatedHabit && (
-                <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-                  🔥 Working on Habit: <span className="font-bold text-text-primary">{associatedHabit.name}</span>
-                </span>
-              )}
+                
+                {/* Custom Clock Renderers */}
+                {clockStyle === 'flip' ? (
+                  <div className="flex items-center justify-center md:justify-start gap-2 select-none">
+                    <div className="bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-2xl px-4 py-3 text-5xl sm:text-6xl md:text-7xl font-bold font-mono text-center shadow-lg relative min-w-[70px] sm:min-w-[90px] md:min-w-[110px]">
+                      <div className="absolute top-1/2 left-0 right-0 h-px bg-black/45" />
+                      {minutesStr}
+                    </div>
+                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-secondary select-none">:</span>
+                    <div className="bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-2xl px-4 py-3 text-5xl sm:text-6xl md:text-7xl font-bold font-mono text-center shadow-lg relative min-w-[70px] sm:min-w-[90px] md:min-w-[110px]">
+                      <div className="absolute top-1/2 left-0 right-0 h-px bg-black/45" />
+                      {secondsStr}
+                    </div>
+                  </div>
+                ) : clockStyle === 'analog' ? (
+                  <div 
+                    className="text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-rose-500 select-none"
+                    style={{ textShadow: '0 0 20px rgba(244,63,94,0.6), 0 0 40px rgba(244,63,94,0.3)' }}
+                  >
+                    {display}
+                  </div>
+                ) : clockStyle === 'minimal-ring' ? (
+                  <div className="text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-extralight tracking-tight text-text-primary select-none">
+                    {display}
+                  </div>
+                ) : (
+                  /* Variant 1 - Digital (default) */
+                  <div className={`text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-text-primary select-none ${fontStyle}`}>
+                    {display}
+                  </div>
+                )}
+                
+                <div className="mt-8 flex flex-col gap-2 items-center md:items-start">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20" style={{ backgroundColor: 'rgba(244,63,94,0.1)', color: 'var(--color-primary)', borderColor: 'rgba(244,63,94,0.2)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }} />
+                    {pomodoroSessionId === 'focus' ? `Focus Session ${pomodoroStreak + 1}` : 'Break Time'}
+                  </span>
+                  {associatedTask && (
+                    <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                      🎯 Working on: <span className="font-bold text-text-primary">{associatedTask.title}</span>
+                    </span>
+                  )}
+                  {associatedHabit && (
+                    <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                      🔥 Working on Habit: <span className="font-bold text-text-primary">{associatedHabit.name}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+     
+              <div>
+                <button
+                  onClick={stopGlobalPomodoro}
+                  disabled={pomodoroTimerState === 'idle'}
+                  className={`px-6 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
+                    clockStyle === 'analog' 
+                      ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
+                      : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'var(--color-primary)' }} /> Stop Focus
+                </button>
+              </div>
+            </div>
+     
+            {/* Vertical Divider */}
+            <div className={`hidden md:block w-px h-64 ${clockStyle === 'analog' ? 'bg-zinc-850' : 'bg-border/60'}`} />
+     
+            {/* Right pane: Ticked Dial Timer & Play/Pause */}
+            <div className="flex-1 flex flex-col items-center justify-center relative w-full md:pr-10">
+              <div 
+                className="relative flex items-center justify-center transition-all" 
+                style={{ 
+                  width: ringSize, 
+                  height: ringSize,
+                  filter: clockStyle === 'analog' ? 'drop-shadow(0 0 10px rgba(244,63,94,0.4))' : 'none'
+                }}
+              >
+                {/* The SVG Ring */}
+                <ProgressRing 
+                  progress={progress} 
+                  size={ringSize} 
+                  strokeWidth={8} 
+                  color={clockStyle === 'analog' ? '#f43f5e' : (pomodoroTheme !== 'default' ? 'var(--color-primary)' : session.color)} 
+                  style={
+                    clockStyle === 'flip' 
+                      ? 'dotted' 
+                      : clockStyle === 'minimal-ring' 
+                      ? 'solid' 
+                      : clockStyle === 'analog' 
+                      ? 'dashed' 
+                      : ringStyle
+                  } 
+                />
+                
+                {/* Play Button inside Ring */}
+                <button
+                  onClick={togglePlayPause}
+                  aria-label={isRunning ? 'Pause' : 'Play'}
+                  className={`absolute w-24 h-24 rounded-full border-4 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-10 cursor-pointer ${
+                    clockStyle === 'analog' 
+                      ? 'bg-zinc-900 border-rose-500/25 shadow-rose-950/40 text-rose-500' 
+                      : 'bg-surface border-zinc-100 dark:border-zinc-800 text-primary'
+                  }`}
+                  style={clockStyle !== 'analog' ? { borderColor: 'rgba(244,63,94,0.1)' } : {}}
+                >
+                  {isRunning ? (
+                    <IconPlayerPause className="w-10 h-10 animate-pulse" style={{ color: 'var(--color-primary)' }} />
+                  ) : (
+                    <IconPlayerPlay className="w-10 h-10 translate-x-0.5" style={{ color: 'var(--color-primary)' }} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
- 
-          <div>
-            <button
-              onClick={stopGlobalPomodoro}
-              disabled={pomodoroTimerState === 'idle'}
-              className="px-6 py-3 rounded-2xl border border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer"
-            >
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'var(--color-primary)' }} /> Stop Focus
-            </button>
-          </div>
-        </div>
- 
-        {/* Vertical Divider */}
-        <div className="hidden md:block w-px h-64 bg-border/60" />
- 
-        {/* Right pane: Ticked Dial Timer & Play/Pause */}
-        <div className="flex-1 flex flex-col items-center justify-center relative w-full md:pr-10">
-          <div className="relative flex items-center justify-center" style={{ width: ringSize, height: ringSize }}>
-            {/* The SVG Ring */}
-            <ProgressRing progress={progress} size={ringSize} strokeWidth={8} color={pomodoroTheme !== 'default' ? 'var(--color-primary)' : session.color} style={ringStyle} />
-            
-            {/* Play Button inside Ring */}
-            <button
-              onClick={togglePlayPause}
-              aria-label={isRunning ? 'Pause' : 'Play'}
-              className="absolute w-24 h-24 rounded-full bg-surface border-4 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-10 cursor-pointer"
-              style={{ borderColor: 'rgba(244,63,94,0.1)' }}
-            >
-              {isRunning ? (
-                <IconPlayerPause className="w-10 h-10" style={{ color: 'var(--color-primary)' }} />
-              ) : (
-                <IconPlayerPlay className="w-10 h-10 translate-x-0.5" style={{ color: 'var(--color-primary)' }} />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Stats Area */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

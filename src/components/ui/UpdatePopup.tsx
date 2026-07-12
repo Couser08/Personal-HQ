@@ -4,19 +4,18 @@ import {
   IconX,
   IconSparkles,
   IconComponents,
-  IconFolderCode,
-  IconAtom,
-  IconLayoutGrid,
-  IconDatabase,
-  IconBolt,
-  IconCurrencyRupee,
-  IconBook2,
-  IconLogin
+  IconLink,
+  IconCommand,
+  IconClock,
+  IconDeviceMobile,
+  IconPalette,
+  IconListCheck,
+  IconBrush
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const APP_VERSION = '2.1.0';
-const APP_CODENAME = 'Polish';
+const APP_VERSION = '2.2.0';
+const APP_CODENAME = 'Craft';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -32,94 +31,94 @@ interface ChangeItem {
 
 // ── Tab Data ──────────────────────────────────────────────────────────────────
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'architecture', label: 'Architecture' },
-  { id: 'features',     label: 'Features' },
+  { id: 'architecture', label: "What's New" },
+  { id: 'features',     label: 'Design' },
   { id: 'improvements', label: 'Fixes' },
 ];
 
 const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   architecture: {
-    headline: 'Budget overhauled, Journal enriched, and Login page polished — the most user-facing update yet.',
+    headline: 'New module, slash commands, clock styles — the most feature-packed update of the year.',
     items: [
       {
-        icon: <IconCurrencyRupee className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#34C759',
-        bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Multi-Currency Budget Tracker',
-        desc: 'Switch between INR ₹, USD $, EUR €, GBP £, and JPY ¥ from the Budget header. All balance displays and toast messages update instantly.',
-      },
-      {
-        icon: <IconBook2 className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#AF52DE',
-        bg: 'rgba(175, 82, 222, 0.08)',
-        title: 'Journal Writing Prompts',
-        desc: 'Stuck on what to write? Hit the prompt button to get a random thoughtful writing prompt — 9 curated prompts to spark reflection.',
-      },
-      {
-        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF9500',
-        bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Journal Entry Templates',
-        desc: '4 built-in templates: Gratitude Diary 🌸, Daily Reflection ✨, Zen Journal 🍃, and Work Log 💼 — start writing in seconds.',
-      },
-      {
-        icon: <IconLogin className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconLink className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Login Page Glassmorphism Redesign',
-        desc: 'Auth card rebuilt with Apple-style backdrop blur, snappier spring physics, and a cleaner Tailwind-first layout.',
+        title: 'Link Saver',
+        desc: 'Brand new module to save and organise your Instagram, YouTube, and Pinterest links — all in one place, always at hand.',
+      },
+      {
+        icon: <IconCommand className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#AF52DE',
+        bg: 'rgba(175, 82, 222, 0.08)',
+        title: 'Markdown Slash Commands',
+        desc: 'Type / inside the Markdown editor to trigger a command palette — insert headings, code blocks, tables, and more without lifting your hands from the keyboard.',
+      },
+      {
+        icon: <IconClock className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Pomodoro Clock Styles',
+        desc: 'Pick your perfect timer face from Settings — Minimal Ring, Classic Flip, Neon Pulse, and more. Applies live without reloading.',
+      },
+      {
+        icon: <IconBrush className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF2D55',
+        bg: 'rgba(255, 45, 85, 0.08)',
+        title: 'Brand New Design System',
+        desc: 'Consistent tokens, spacing scale, and colour palette introduced across every module for a premium, cohesive look.',
       },
     ],
   },
   features: {
-    headline: 'Carried over from v2.0.0 — still fresh and worth exploring.',
+    headline: 'A unified visual language that makes the whole app feel premium.',
     items: [
       {
-        icon: <IconLayoutGrid className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF2D55',
-        bg: 'rgba(255, 45, 85, 0.08)',
-        title: 'Today I Learned (TIL) Logger',
-        desc: 'A dedicated micro-journal to log daily coding insights, tag them, and full-text search across all entries.',
+        icon: <IconPalette className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#5856D6',
+        bg: 'rgba(88, 86, 214, 0.08)',
+        title: 'Design Tokens & Colour Palette',
+        desc: 'Every colour, radius, shadow, and spacing value now lives in a central design.md spec — zero one-off values across the codebase.',
+      },
+      {
+        icon: <IconComponents className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#34C759',
+        bg: 'rgba(52, 199, 89, 0.08)',
+        title: 'Consistent Component Language',
+        desc: 'Buttons, cards, inputs, and modals share the same border-radius, shadow, and motion curves — designed to feel like one cohesive product.',
       },
       {
         icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#AF52DE',
-        bg: 'rgba(175, 82, 222, 0.08)',
-        title: 'Anime Rankings & Reviews',
-        desc: 'Personal anime watchlist with scores, reviews, and statistics nested inside the Media Logger tab.',
-      },
-      {
-        icon: <IconBolt className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Task Focus Island',
-        desc: 'A floating Dynamic Island-style HUD showing your active Pomodoro task, remaining time, and quick controls.',
+        title: 'Micro-Animation Standards',
+        desc: 'Standardised spring presets (appleSpring, softSpring) and entrance curves applied to all modals, dropdowns, and page transitions.',
       },
     ],
   },
   improvements: {
-    headline: 'Under-the-hood improvements for a smoother, more reliable experience.',
+    headline: 'Top-requested responsive fixes — especially on mobile and larger screens.',
     items: [
       {
-        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF9500',
-        bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Budget Donut Chart',
-        desc: 'New BudgetStatsDonut component gives a visual breakdown of spending by category at a glance.',
-      },
-      {
-        icon: <IconDatabase className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconListCheck className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Journal Sidebar Consolidated',
-        desc: 'Removed the separate JournalSidebar and StickyNoteCard components — StickyNotes is now self-contained and leaner.',
+        title: 'Responsive To-Do List',
+        desc: 'Task list now stacks gracefully on all screen sizes — no more clipped rows or broken layouts on small devices.',
       },
       {
-        icon: <IconAtom className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconDeviceMobile className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#007AFF',
+        bg: 'rgba(0, 122, 255, 0.08)',
+        title: 'Mindmap & Drawing Mobile Fix',
+        desc: 'Most-requested fix: canvas-based Mindmap and Drawing modules now handle touch correctly and no longer overflow on mobile viewports.',
+      },
+      {
+        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#8E8E93',
         bg: 'rgba(142, 142, 147, 0.08)',
-        title: 'Store & Type Fixes',
-        desc: 'budgetSlice and store types updated to support selectedCurrency state; login form inputs and register flow polished.',
+        title: 'Journal Horizontal Scroll Fix',
+        desc: 'Eliminated the stray horizontal scrollbar on the Journal page that appeared on laptops and wider screens.',
       },
     ],
   },
@@ -127,9 +126,9 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stat pills shown on mini card ─────────────────────────────────────────────
 const STATS = [
-  { label: 'Currencies', value: '5' },
-  { label: 'Templates', value: '4' },
-  { label: 'Lines changed', value: '1200+' },
+  { label: 'New module', value: '1' },
+  { label: 'Clock styles', value: '4+' },
+  { label: 'Fixes shipped', value: '3' },
 ];
 
 // ── Mini Notification Card ────────────────────────────────────────────────────
@@ -165,7 +164,7 @@ function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
             <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
             <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
           </div>
-          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Multi-currency budget, journal templates & login redesign.</p>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Link Saver, slash commands, clock styles & design system.</p>
         </div>
       </div>
 
@@ -250,7 +249,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   </span>
                 </div>
                 <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
-                  Budget gets multi-currency support, Journal gains writing prompts & templates, and Login gets a glassmorphism glow-up.
+                  A new Link Saver module, Markdown slash commands, Pomodoro clock styles, a fresh design system, and the top-3 responsive fixes.
                 </p>
               </div>
             </div>
@@ -325,7 +324,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Let's Explore What's New →
+              Explore v2.2.0 Craft →
             </button>
           </div>
         </motion.div>

@@ -2,6 +2,7 @@ import { type AppSettings, type JournalEntry } from './types';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   countdownTemplate: 'default',
+  clockStyle: 'digital',
   accentColor: 'rose',
   animationSpeed: 'normal',
   compactMode: false,

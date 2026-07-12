@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import LinksModule from '../links/LinksModule';
+import LinkSaverModule from '../linksaver/LinkSaverModule';
 import CalculatorModule from '../calculator/CalculatorModule';
 import CountdownModule from '../countdowns/CountdownModule';
-import { IconLink, IconCalculator, IconHourglassEmpty } from '@tabler/icons-react';
+import { IconLink, IconCalculator, IconHourglassEmpty, IconClipboardText } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UtilitiesModule() {
-  const [currentTab, setCurrentTab] = useState<'links' | 'calculator' | 'countdown'>('links');
+  const [currentTab, setCurrentTab] = useState<'links' | 'linksaver' | 'calculator' | 'countdown'>('links');
 
   const tabs = [
     { id: 'links', label: 'Link Vault', icon: IconLink, component: <LinksModule /> },
+    { id: 'linksaver', label: 'Link Saver', icon: IconClipboardText, component: <LinkSaverModule /> },
     { id: 'calculator', label: 'Interest Calc', icon: IconCalculator, component: <CalculatorModule /> },
     { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty, component: <CountdownModule /> },
   ] as const;
@@ -24,7 +26,7 @@ export default function UtilitiesModule() {
           <h1 className="text-2xl font-black text-text-primary tracking-tight">
             Utility Workspace
           </h1>
-          <p className="text-text-secondary text-xs mt-1">Access calculator, links, and timers in one place.</p>
+          <p className="text-text-secondary text-xs mt-1">Access calculator, link vault, temp link saver, and timers in one place.</p>
         </div>
 
         {/* Segmented Tab Swapper */}

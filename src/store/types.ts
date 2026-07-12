@@ -376,11 +376,13 @@ export interface Habit {
 }
 
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
+export type ClockStyle = 'digital' | 'flip' | 'analog' | 'minimal-ring';
 export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
 
 export interface AppSettings {
   countdownTemplate: CountdownTemplate;
+  clockStyle?: ClockStyle;
   accentColor: AccentColor;
   animationSpeed: AnimationSpeed;
   compactMode: boolean;

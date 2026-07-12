@@ -34,11 +34,13 @@ Before scanning folders, refer to this mapping table to locate the exact orchest
 | :--- | :--- | :--- | :--- | :--- |
 | **Authentication / Login** | `src/pages/` | [LoginPage.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/pages/LoginPage.tsx) | `LoginForm`, `RegisterForm`, `Alert` | Local state + Supabase |
 | **Journal Module** | `src/modules/journal/` | [JournalModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/journal/JournalModule.tsx) | `JournalEditor`, `StickyNotes` (List-Style), `JournalSettingsSidebar` | `journalSlice.ts` |
+| **To-Do List** | `src/modules/todo/` | [TodoModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/todo/TodoModule.tsx) | `TodoSidebar`, [TaskList](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/todo/TaskList.tsx) (Task List Core & Mobile Layout) | `todoSlice.ts` |
 | **Habit Tracker** | `src/modules/habits/` | [HabitTrackerModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/habits/HabitTrackerModule.tsx) | `HabitStats`, `HabitCalendar`, `HabitChecklist`, `HabitCard`, `HabitModal` | `habitSlice.ts` |
 | **Condition Worksheet** | `src/modules/condition/` | [ConditionModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/condition/ConditionModule.tsx) | `VariablesPanel`, `RulesPanel`, `DecisionDiagram`, `RegexTipsModal` | `conditionSlice.ts` |
 | **Budget Ledger** | `src/modules/budget/` | [BudgetModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/budget/BudgetModule.tsx) | `BudgetStats`, `BudgetTransactionForm` (Cupertino Modal), `BudgetTransactionList` (Recent Sales Table), `BudgetStatsDonut` (Interactive Donut Stats) | `budgetSlice.ts` |
 | **Mind Map Creator** | `src/modules/mindmap/` | [MindmapModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/mindmap/MindmapModule.tsx) | `MindmapSidebar`, `MindmapCanvas`, `NodeDetailsPanel`, `MindmapModals` | `mindmapSlice.ts` |
 | **Study Tracker** | `src/modules/study/` | [StudyModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/study/StudyModule.tsx) | `SubjectCard`, `SubjectDashboard`, `TopicWorkspace`, `StudyTimer`, `FlashcardStudy`, `StudyModals` | `studySlice.ts` |
+| **Utilities Module** | `src/modules/utilities/` | [UtilitiesModule.tsx](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/utilities/UtilitiesModule.tsx) | `LinksModule` (Link Vault), [LinkSaverModule](file:///c:/Users/Rahul/OneDrive/Desktop/PersonalApp/src/modules/linksaver/LinkSaverModule.tsx) (Link Saver), `CalculatorModule`, `CountdownModule` | `utilitySlice.ts` |
 
 ---
 

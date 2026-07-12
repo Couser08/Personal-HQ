@@ -1191,7 +1191,7 @@ export function MindmapCanvas({
         </div>
 
         {/* Zoom and layout controls */}
-        <div className="absolute bottom-6 left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur z-20">
+        <div className="absolute bottom-20 md:bottom-6 left-4 md:left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur z-20 max-w-[90vw] overflow-x-auto no-scrollbar flex-nowrap shrink-0">
           <button
             type="button"
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
@@ -1309,7 +1309,7 @@ export function MindmapCanvas({
         </div>
 
         {/* Floating Apple-Style Toolbar at Top Center */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 bg-surface/90 border border-border/60 p-2 sm:p-2.5 rounded-2xl shadow-xl backdrop-blur-md max-w-[90vw] md:max-w-2xl w-fit z-20 overflow-visible">
+        <div className="absolute top-16 md:top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-3 bg-surface/90 border border-border/60 p-1.5 sm:p-2 rounded-2xl shadow-xl backdrop-blur-md max-w-[95vw] md:max-w-2xl w-fit z-20 overflow-x-auto no-scrollbar flex-nowrap shrink-0">
           <button
             onClick={() => {
               if (selectedNodeId) {
@@ -1318,7 +1318,7 @@ export function MindmapCanvas({
                 alert('Select a parent node first.');
               }
             }}
-            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all border-none bg-transparent cursor-pointer ${
+            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all border-none bg-transparent cursor-pointer shrink-0 ${
               linkingSourceId ? 'bg-amber-500 text-white' : 'bg-transparent text-text-secondary hover:bg-surface-alt'
             }`}
             title="Connect node connection line"
@@ -1329,17 +1329,17 @@ export function MindmapCanvas({
           <button
             onClick={handleAddChildNode}
             disabled={!selectedNodeId}
-            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-3 py-1.5 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none border-none"
+            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-2 sm:px-3 py-1.5 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none border-none shrink-0"
           >
-            <IconPlus className="w-3.5 h-3.5" /> Sub-topic
+            <IconPlus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sub-topic</span>
           </button>
 
           <button
             onClick={handleAddSiblingNode}
             disabled={!selectedNodeId || selectedNode?.isRoot}
-            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-3 py-1.5 border border-border bg-surface hover:bg-surface-alt transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none text-text-secondary"
+            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-2 sm:px-3 py-1.5 border border-border bg-surface hover:bg-surface-alt transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none text-text-secondary shrink-0"
           >
-            <IconPlus className="w-3.5 h-3.5 text-text-muted" /> Sibling
+            <IconPlus className="w-3.5 h-3.5 text-text-muted" /> <span className="hidden sm:inline">Sibling</span>
           </button>
 
           <button
@@ -1347,7 +1347,7 @@ export function MindmapCanvas({
               if (selectedNode) handleStartEditNode(selectedNode);
             }}
             disabled={!selectedNodeId}
-            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt disabled:opacity-40 border-none bg-transparent cursor-pointer"
+            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt disabled:opacity-40 border-none bg-transparent cursor-pointer shrink-0"
             title="Edit Node Text"
           >
             <IconEdit className="w-4 h-4" />
@@ -1356,7 +1356,7 @@ export function MindmapCanvas({
           <button
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             disabled={!selectedNodeId}
-            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40 border-none bg-transparent cursor-pointer ${
+            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40 border-none bg-transparent cursor-pointer shrink-0 ${
               isDrawerOpen ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:bg-surface-alt'
             }`}
             title="Open Advanced Notes & Media Panel"
@@ -1366,21 +1366,21 @@ export function MindmapCanvas({
 
           <button
             onClick={handleTidyLayout}
-            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt transition-colors border-none bg-transparent cursor-pointer"
+            className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt transition-colors border-none bg-transparent cursor-pointer shrink-0"
             title="Auto Align Mindmap Nodes neatly"
           >
             <IconLayout className="w-4 h-4" />
           </button>
 
-          <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-2">
+          <div className="flex gap-1 items-center bg-surface-alt border border-border/50 p-0.5 rounded-lg border-l border-r border-border/50 px-1 sm:px-2 shrink-0">
             {['solid', 'dashed', 'dotted'].map((style) => (
               <button
                 key={style}
                 onClick={() => onUpdate({ edgeStyle: style as any })}
-                className={`w-14 h-5 rounded flex items-center justify-center transition-all border-none bg-transparent cursor-pointer ${
+                className={`w-10 sm:w-14 h-5 rounded flex items-center justify-center transition-all border-none bg-transparent cursor-pointer shrink-0 ${
                   (mindmap.edgeStyle || 'solid') === style
-                    ? 'bg-surface border border-border text-text-primary font-bold text-[9px] uppercase tracking-wider shadow-sm'
-                    : 'text-text-muted hover:text-text-primary font-medium text-[9px] uppercase tracking-wider'
+                    ? 'bg-surface border border-border text-text-primary font-bold text-[8px] sm:text-[9px] uppercase tracking-wider shadow-sm'
+                    : 'text-text-muted hover:text-text-primary font-medium text-[8px] sm:text-[9px] uppercase tracking-wider'
                 }`}
               >
                 {style}
@@ -1388,7 +1388,7 @@ export function MindmapCanvas({
             ))}
           </div>
 
-          <div className="relative group/export border-l border-border/50 pl-2 flex items-center">
+          <div className="relative group/export border-l border-border/50 pl-2 flex items-center shrink-0">
             <button
               className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-alt border-none bg-transparent cursor-pointer"
               title="Export Options"
@@ -1417,7 +1417,7 @@ export function MindmapCanvas({
           {selectedNode && !selectedNode.isRoot && (
             <button
               onClick={handleDeleteSelectedNode}
-              className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors border-none bg-transparent cursor-pointer"
+              className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors border-none bg-transparent cursor-pointer shrink-0"
               title="Delete Selected Node"
             >
               <IconTrash className="w-4.5 h-4.5" />

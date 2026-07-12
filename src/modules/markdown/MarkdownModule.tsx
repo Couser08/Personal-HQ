@@ -118,12 +118,20 @@ const TEMPLATES = {
 };
 
 const SLASH_COMMANDS = [
+  { label: 'Paragraph', syntax: '', desc: 'Plain text paragraph' },
   { label: 'Heading 1', syntax: '# ', desc: 'Large title heading' },
   { label: 'Heading 2', syntax: '## ', desc: 'Medium section heading' },
   { label: 'Heading 3', syntax: '### ', desc: 'Small subsection heading' },
   { label: 'Checklist Item', syntax: '- [ ] ', desc: 'To-do list item' },
   { label: 'Bullet List', syntax: '- ', desc: 'Simple bullet point' },
   { label: 'Numbered List', syntax: '1. ', desc: 'Numbered list item' },
+  { label: 'Blockquote', syntax: '> ', desc: 'Insert quote block' },
+  { label: 'Divider', syntax: '\n---\n', desc: 'Horizontal line' },
+  { label: 'Bold Text', syntax: '**Bold Text**', desc: 'Emphasize text' },
+  { label: 'Italic Text', syntax: '*Italic Text*', desc: 'Slanted text' },
+  { label: 'Inline Code', syntax: '`code`', desc: 'Inline monospace text' },
+  { label: 'Link', syntax: '[Link Title](https://example.com)', desc: 'Web hyperlink' },
+  { label: 'Image', syntax: '![Image Caption](https://example.com/image.jpg)', desc: 'Embedded image' },
   { label: 'Table', syntax: '\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n', desc: 'Insert markdown table' },
   { label: 'Code Block', syntax: '```javascript\n\n```', desc: 'Code block syntax' },
   { label: 'Alert Note', syntax: '> [!NOTE]\n> ', desc: 'Blue notice box' },
@@ -441,21 +449,108 @@ export default function MarkdownModule() {
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const value = textarea.value;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+
     if (slashMenu.isOpen && filteredCommands.length > 0) {
       if (e.key === 'ArrowDown' || e.code === 'ArrowDown') {
         e.preventDefault();
         setActiveCommandIndex(prev => (prev + 1) % filteredCommands.length);
+        return;
       } else if (e.key === 'ArrowUp' || e.code === 'ArrowUp') {
         e.preventDefault();
         setActiveCommandIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
       } else if (e.key === 'Enter' || e.code === 'Enter') {
         e.preventDefault();
         if (filteredCommands[activeCommandIndex]) {
           handleSelectSlashCommand(filteredCommands[activeCommandIndex].syntax);
         }
+        return;
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
         setSlashMenu({ isOpen: false, triggerIndex: -1, searchQuery: '' });
+        return;
+      }
+    }
+
+    // Auto List Continuation on Enter
+    if (e.key === 'Enter') {
+      const textBeforeCursor = value.slice(0, selectionStart);
+      const lastNewLine = textBeforeCursor.lastIndexOf('\n');
+      const currentLineStart = lastNewLine === -1 ? 0 : lastNewLine + 1;
+      const currentLine = textBeforeCursor.slice(currentLineStart);
+
+      const checklistMatch = currentLine.match(/^(\s*)-\s*\[([ x])\]\s*(.*)/i);
+      const bulletMatch = currentLine.match(/^(\s*)[-*]\s+(.*)/);
+      const numberedMatch = currentLine.match(/^(\s*)(\d+)\.\s*(.*)/);
+
+      if (checklistMatch) {
+        e.preventDefault();
+        const indent = checklistMatch[1];
+        const content = checklistMatch[3].trim();
+        if (!content) {
+          const beforeLine = value.slice(0, currentLineStart);
+          const afterCursor = value.slice(selectionEnd);
+          const newContent = beforeLine + '\n' + afterCursor;
+          handleContentChange(newContent);
+          setTimeout(() => {
+            textarea.setSelectionRange(currentLineStart + 1, currentLineStart + 1);
+          }, 0);
+        } else {
+          const prefix = `\n${indent}- [ ] `;
+          const newContent = value.slice(0, selectionStart) + prefix + value.slice(selectionEnd);
+          handleContentChange(newContent);
+          setTimeout(() => {
+            const newCursor = selectionStart + prefix.length;
+            textarea.setSelectionRange(newCursor, newCursor);
+          }, 0);
+        }
+      } else if (bulletMatch) {
+        e.preventDefault();
+        const indent = bulletMatch[1];
+        const content = bulletMatch[2].trim();
+        if (!content) {
+          const beforeLine = value.slice(0, currentLineStart);
+          const afterCursor = value.slice(selectionEnd);
+          const newContent = beforeLine + '\n' + afterCursor;
+          handleContentChange(newContent);
+          setTimeout(() => {
+            textarea.setSelectionRange(currentLineStart + 1, currentLineStart + 1);
+          }, 0);
+        } else {
+          const prefix = `\n${indent}- `;
+          const newContent = value.slice(0, selectionStart) + prefix + value.slice(selectionEnd);
+          handleContentChange(newContent);
+          setTimeout(() => {
+            const newCursor = selectionStart + prefix.length;
+            textarea.setSelectionRange(newCursor, newCursor);
+          }, 0);
+        }
+      } else if (numberedMatch) {
+        e.preventDefault();
+        const indent = numberedMatch[1];
+        const number = parseInt(numberedMatch[2], 10);
+        const content = numberedMatch[3].trim();
+        if (!content) {
+          const beforeLine = value.slice(0, currentLineStart);
+          const afterCursor = value.slice(selectionEnd);
+          const newContent = beforeLine + '\n' + afterCursor;
+          handleContentChange(newContent);
+          setTimeout(() => {
+            textarea.setSelectionRange(currentLineStart + 1, currentLineStart + 1);
+          }, 0);
+        } else {
+          const prefix = `\n${indent}${number + 1}. `;
+          const newContent = value.slice(0, selectionStart) + prefix + value.slice(selectionEnd);
+          handleContentChange(newContent);
+          setTimeout(() => {
+            const newCursor = selectionStart + prefix.length;
+            textarea.setSelectionRange(newCursor, newCursor);
+          }, 0);
+        }
       }
     }
   };
