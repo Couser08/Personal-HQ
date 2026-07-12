@@ -7,7 +7,7 @@ import { useToastStore } from '../../store/useToastStore';
 import { supabase } from '../../lib/supabase';
 import {
   IconUser, IconNotes, IconLink, IconBook, IconCalendarEvent,
-  IconEdit, IconSettings, IconShieldLock, IconTrash, IconLock, IconCamera,
+  IconSettings, IconShieldLock, IconTrash, IconLock, IconCamera,
   IconChevronRight
 } from '@tabler/icons-react';
 import { Modal } from '../../components/ui/Modal';

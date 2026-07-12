@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import {
   IconPalette, IconBell, IconHourglass,
-  IconCheck, IconX, IconCompass, IconPlayerPlay, IconSparkles,
+  IconCheck, IconX, IconCompass, IconSparkles,
   IconChevronRight
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';

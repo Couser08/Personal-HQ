@@ -9,7 +9,7 @@ import {
   IconAtom,
   IconLayoutGrid,
   IconDatabase,
-  IconZap
+  IconBolt
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
         desc: 'Personal anime watchlist with scores, reviews, and statistics nested inside the Media Logger tab.',
       },
       {
-        icon: <IconZap className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconBolt className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
         title: 'Task Focus Island',
