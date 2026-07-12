@@ -5,7 +5,6 @@ import {
   IconSparkles,
   IconComponents,
   IconFolderCode,
-  IconBrandReact,
   IconAtom,
   IconLayoutGrid,
   IconDatabase,
