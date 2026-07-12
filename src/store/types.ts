@@ -495,6 +495,8 @@ export interface AppStore {
   stopGlobalPomodoro: () => void;
 
   // Budget Tracker
+  selectedCurrency: string;
+  setSelectedCurrency: (currency: string) => void;
   budgetCategories: BudgetCategory[];
   budgetTransactions: BudgetTransaction[];
   addBudgetCategory: (category: BudgetCategory) => Promise<void>;

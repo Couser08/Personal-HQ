@@ -6,6 +6,8 @@ import { useToastStore } from '../useToastStore';
 import { shouldThrottle, getStoreErrorMessage } from '../helpers';
 
 export interface BudgetSlice {
+  selectedCurrency: string;
+  setSelectedCurrency: (currency: string) => void;
   budgetCategories: BudgetCategory[];
   budgetTransactions: BudgetTransaction[];
 
@@ -23,6 +25,11 @@ export const createBudgetSlice: StateCreator<
   [],
   BudgetSlice
 > = (set, get) => ({
+  selectedCurrency: localStorage.getItem('focusflow_budget_currency') || 'INR',
+  setSelectedCurrency: (currency: string) => {
+    localStorage.setItem('focusflow_budget_currency', currency);
+    set({ selectedCurrency: currency });
+  },
   budgetCategories: [],
   budgetTransactions: [],
 

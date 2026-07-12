@@ -53,11 +53,30 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string; border:
   'Grants': { bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-100 dark:border-amber-900/30' },
 };
 
-export const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(val);
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+};
+
+export const getCurrencySymbol = (currencyCode: string = 'INR') => {
+  return CURRENCY_SYMBOLS[currencyCode] || '₹';
+};
+
+export const formatCurrency = (val: number, currencyCode: string = 'INR') => {
+  try {
+    return new Intl.NumberFormat(currencyCode === 'INR' ? 'en-IN' : 'en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val);
+  } catch (e) {
+    const sym = getCurrencySymbol(currencyCode);
+    return `${sym}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
 };
 
 export const getCategoryConfig = (categoryName: string) => {

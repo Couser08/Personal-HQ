@@ -6,10 +6,13 @@ import { useToastStore } from '../../store/useToastStore';
 import { BudgetStats } from './components/BudgetStats';
 import { BudgetTransactionForm } from './components/BudgetTransactionForm';
 import { BudgetTransactionList } from './components/BudgetTransactionList';
-import { CATEGORY_EMOJIS } from './utils/budgetUtils';
+import { BudgetStatsDonut } from './components/BudgetStatsDonut';
+import { CATEGORY_EMOJIS, getCurrencySymbol } from './utils/budgetUtils';
 
 export default function BudgetModule() {
   const {
+    selectedCurrency,
+    setSelectedCurrency,
     budgetCategories,
     addBudgetCategory,
     budgetTransactions,
@@ -18,6 +21,8 @@ export default function BudgetModule() {
     showConfirm,
   } = useAppStore(
     useShallow((state) => ({
+      selectedCurrency: state.selectedCurrency,
+      setSelectedCurrency: state.setSelectedCurrency,
       budgetCategories: state.budgetCategories,
       addBudgetCategory: state.addBudgetCategory,
       budgetTransactions: state.budgetTransactions,
@@ -64,6 +69,9 @@ export default function BudgetModule() {
   const [txAmount, setTxAmount] = useState('');
   const [txCategory, setTxCategory] = useState('');
   const [txDate, setTxDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Add Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,7 +209,8 @@ export default function BudgetModule() {
     setInitialBalance(val);
     localStorage.setItem('expense_tracker_initial_balance', String(val));
     setIsEditingBalance(false);
-    addToast('Balance Updated', `Initial balance configured to $${val.toLocaleString()}`, 'success');
+    const sym = getCurrencySymbol(selectedCurrency);
+    addToast('Balance Updated', `Initial balance configured to ${sym}${val.toLocaleString()}`, 'success');
   };
 
   const handleAddTransaction = async (e: React.FormEvent) => {
@@ -313,6 +322,22 @@ export default function BudgetModule() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Currency Selector */}
+          <div className="flex items-center gap-1.5 bg-surface border border-border rounded-xl px-3.5 py-1.5 shadow-subtle text-xs font-semibold text-text-secondary">
+            <span>Currency:</span>
+            <select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="bg-transparent font-bold focus:outline-none cursor-pointer text-text-primary border-none p-0 pr-1"
+            >
+              <option value="INR">INR (₹)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+            </select>
+          </div>
+
           <button
             onClick={handleClearAll}
             className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-surface border border-border hover:bg-surface-hover text-rose-600 dark:text-rose-400 transition-colors shadow-subtle cursor-pointer active:scale-[0.98] border-none"
@@ -323,47 +348,69 @@ export default function BudgetModule() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
-        <BudgetStats
-          remainingBalance={totals.remainingBalance}
-          initialBalance={initialBalance}
-          balanceInput={balanceInput}
-          setBalanceInput={setBalanceInput}
-          isEditingBalance={isEditingBalance}
-          setIsEditingBalance={setIsEditingBalance}
-          handleUpdateBalance={handleUpdateBalance}
-          totalIncome={totals.totalIncome}
-          totalExpenses={totals.totalExpenses}
-        />
+      {/* Layout Grid */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start relative">
+        {/* Left Column (balances + transaction list) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <BudgetStats
+            remainingBalance={totals.remainingBalance}
+            initialBalance={initialBalance}
+            balanceInput={balanceInput}
+            setBalanceInput={setBalanceInput}
+            isEditingBalance={isEditingBalance}
+            setIsEditingBalance={setIsEditingBalance}
+            handleUpdateBalance={handleUpdateBalance}
+            totalExpenses={totals.totalExpenses}
+            currencyCode={selectedCurrency}
+            activeCategoryFilter={filterCategory}
+            setActiveCategoryFilter={setFilterCategory}
+            onAddTransactionClick={() => setIsAddModalOpen(true)}
+          />
 
-        <BudgetTransactionForm
-          txType={txType}
-          setTxType={setTxType}
-          txTitle={txTitle}
-          setTxTitle={setTxTitle}
-          txAmount={txAmount}
-          setTxAmount={setTxAmount}
-          txCategory={txCategory}
-          setTxCategory={setTxCategory}
-          txDate={txDate}
-          setTxDate={setTxDate}
-          categoryOptions={categoryOptions}
-          handleAddTransaction={handleAddTransaction}
-        />
+          <BudgetTransactionList
+            filteredTransactions={filteredTransactions}
+            parsedTransactionsLength={parsedTransactions.length}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filterType={filterType}
+            setFilterType={setFilterType}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterCategoryOptions={filterCategoryOptions}
+            handleDelete={handleDelete}
+            currencyCode={selectedCurrency}
+          />
+        </div>
 
-        <BudgetTransactionList
-          filteredTransactions={filteredTransactions}
-          parsedTransactionsLength={parsedTransactions.length}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterType={filterType}
-          setFilterType={setFilterType}
-          filterCategory={filterCategory}
-          setFilterCategory={setFilterCategory}
-          filterCategoryOptions={filterCategoryOptions}
-          handleDelete={handleDelete}
-        />
+        {/* Right Column (statistics donut + recent activity log) */}
+        <div className="lg:col-span-1">
+          <BudgetStatsDonut
+            transactions={parsedTransactions}
+            totalIncome={totals.totalIncome}
+            totalExpenses={totals.totalExpenses}
+            currencyCode={selectedCurrency}
+          />
+        </div>
       </div>
+
+      {/* Slide-over Transaction Form Sheet */}
+      <BudgetTransactionForm
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        txType={txType}
+        setTxType={setTxType}
+        txTitle={txTitle}
+        setTxTitle={setTxTitle}
+        txAmount={txAmount}
+        setTxAmount={setTxAmount}
+        txCategory={txCategory}
+        setTxCategory={setTxCategory}
+        txDate={txDate}
+        setTxDate={setTxDate}
+        categoryOptions={categoryOptions}
+        handleAddTransaction={handleAddTransaction}
+        currencyCode={selectedCurrency}
+      />
     </div>
   );
 }

@@ -9,12 +9,15 @@ import {
   IconAtom,
   IconLayoutGrid,
   IconDatabase,
-  IconBolt
+  IconBolt,
+  IconCurrencyRupee,
+  IconBook2,
+  IconLogin
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const APP_VERSION = '2.0.0';
-const APP_CODENAME = 'Modular';
+const APP_VERSION = '2.1.0';
+const APP_CODENAME = 'Polish';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -37,40 +40,40 @@ const TABS: { id: TabId; label: string }[] = [
 
 const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   architecture: {
-    headline: '10+ monolithic files refactored into focused, single-responsibility components.',
+    headline: 'Budget overhauled, Journal enriched, and Login page polished — the most user-facing update yet.',
     items: [
       {
-        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF9500',
-        bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Module Component Extraction',
-        desc: 'Budget, Condition, Habits, Journal, Mindmap, and Study modules each now have their own components/ and utils/ subdirectories.',
-      },
-      {
-        icon: <IconAtom className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#5856D6',
-        bg: 'rgba(88, 86, 214, 0.08)',
-        title: 'Store Sliced Architecture',
-        desc: 'The monolithic useAppStore.ts is now split into domain-specific slices, a shared types.ts, and a helpers.ts utility layer.',
-      },
-      {
-        icon: <IconBrandReact className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#007AFF',
-        bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Login Page Decomposed',
-        desc: 'LoginPage.tsx is broken into dedicated src/pages/login/ sub-components for cleaner auth flows and easier testing.',
-      },
-      {
-        icon: <IconComponents className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconCurrencyRupee className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Zero Regressions',
-        desc: 'All existing behaviours and user data are fully preserved — the refactor is a pure structural improvement with no feature loss.',
+        title: 'Multi-Currency Budget Tracker',
+        desc: 'Switch between INR ₹, USD $, EUR €, GBP £, and JPY ¥ from the Budget header. All balance displays and toast messages update instantly.',
+      },
+      {
+        icon: <IconBook2 className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#AF52DE',
+        bg: 'rgba(175, 82, 222, 0.08)',
+        title: 'Journal Writing Prompts',
+        desc: 'Stuck on what to write? Hit the prompt button to get a random thoughtful writing prompt — 9 curated prompts to spark reflection.',
+      },
+      {
+        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Journal Entry Templates',
+        desc: '4 built-in templates: Gratitude Diary 🌸, Daily Reflection ✨, Zen Journal 🍃, and Work Log 💼 — start writing in seconds.',
+      },
+      {
+        icon: <IconLogin className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#007AFF',
+        bg: 'rgba(0, 122, 255, 0.08)',
+        title: 'Login Page Glassmorphism Redesign',
+        desc: 'Auth card rebuilt with Apple-style backdrop blur, snappier spring physics, and a cleaner Tailwind-first layout.',
       },
     ],
   },
   features: {
-    headline: 'New capabilities shipped alongside the architectural overhaul.',
+    headline: 'Carried over from v2.0.0 — still fresh and worth exploring.',
     items: [
       {
         icon: <IconLayoutGrid className="w-4.5 h-4.5 stroke-[2]" />,
@@ -96,28 +99,28 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
     ],
   },
   improvements: {
-    headline: 'Stability, sync, and performance upgrades throughout the app.',
+    headline: 'Under-the-hood improvements for a smoother, more reliable experience.',
     items: [
+      {
+        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Budget Donut Chart',
+        desc: 'New BudgetStatsDonut component gives a visual breakdown of spending by category at a glance.',
+      },
       {
         icon: <IconDatabase className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Supabase Schema Migrations',
-        desc: 'New migration files for Todo deletion tracking, budget payment methods, and journal sticky-note metadata.',
-      },
-      {
-        icon: <IconFolderCode className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#007AFF',
-        bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Wavy Celebration Upgrades',
-        desc: 'Concentric ripple canvas rewritten for higher performance. Separate wave styles for Pomodoro, Habits, and Todo completions.',
+        title: 'Journal Sidebar Consolidated',
+        desc: 'Removed the separate JournalSidebar and StickyNoteCard components — StickyNotes is now self-contained and leaner.',
       },
       {
         icon: <IconAtom className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#8E8E93',
         bg: 'rgba(142, 142, 147, 0.08)',
-        title: 'Admin Illustration Managers',
-        desc: 'Upload, preview, and reset Dashboard hero banners and Media mascot images live from the admin control panel.',
+        title: 'Store & Type Fixes',
+        desc: 'budgetSlice and store types updated to support selectedCurrency state; login form inputs and register flow polished.',
       },
     ],
   },
@@ -125,9 +128,9 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stat pills shown on mini card ─────────────────────────────────────────────
 const STATS = [
-  { label: 'Files split', value: '10+' },
-  { label: 'New components', value: '40+' },
-  { label: 'Lines touched', value: '5000+' },
+  { label: 'Currencies', value: '5' },
+  { label: 'Templates', value: '4' },
+  { label: 'Lines changed', value: '1200+' },
 ];
 
 // ── Mini Notification Card ────────────────────────────────────────────────────
@@ -163,7 +166,7 @@ function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
             <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
             <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
           </div>
-          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Biggest architectural refactor ever shipped.</p>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Multi-currency budget, journal templates & login redesign.</p>
         </div>
       </div>
 
@@ -248,7 +251,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   </span>
                 </div>
                 <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
-                  The biggest internal overhaul yet — every major module refactored into clean, focused components.
+                  Budget gets multi-currency support, Journal gains writing prompts & templates, and Login gets a glassmorphism glow-up.
                 </p>
               </div>
             </div>
@@ -323,7 +326,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Explore the New Architecture →
+              Let's Explore What's New →
             </button>
           </div>
         </motion.div>

@@ -4,7 +4,7 @@ import { IconMail, IconLock, IconUserPlus } from '@tabler/icons-react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { Alert } from './Alert';
 import { Field } from './InputField';
-import { PrimaryBtn, GoogleBtn, Divider } from './Buttons';
+import { PrimaryBtn } from './Buttons';
 import { mapError } from '../utils';
 
 const softSpring = { type: 'spring' as const, stiffness: 200, damping: 28 };
@@ -89,8 +89,6 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           </label>
         </motion.div>
         <PrimaryBtn loading={loading} label="Create account" Icon={IconUserPlus} />
-        <Divider />
-        <GoogleBtn label="Continue with Google" />
         <motion.p variants={itemIn} style={{ textAlign: 'center', fontSize: 13, color: '#64748b', margin: 0 }}>
           Already have an account?{' '}
           <button type="button" onClick={onSwitchToLogin}

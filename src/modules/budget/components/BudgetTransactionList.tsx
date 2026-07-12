@@ -14,6 +14,7 @@ export function BudgetTransactionList({
   setFilterCategory,
   filterCategoryOptions,
   handleDelete,
+  currencyCode,
 }: {
   filteredTransactions: any[];
   parsedTransactionsLength: number;
@@ -25,17 +26,18 @@ export function BudgetTransactionList({
   setFilterCategory: (val: string) => void;
   filterCategoryOptions: Array<{ value: string; label: string }>;
   handleDelete: (id: string) => void;
+  currencyCode: string;
 }) {
   return (
-    <div className="lg:col-span-2 flex flex-col gap-4 text-left">
-      <div className="bg-surface border border-border rounded-2xl p-5 shadow-subtle flex flex-col gap-4 h-full min-h-[500px]">
+    <div className="lg:col-span-2 flex flex-col gap-4 text-left h-full">
+      <div className="bg-surface border border-border rounded-[24px] p-5 shadow-subtle flex flex-col gap-4 h-full min-h-[500px]">
         {/* List Header controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
           <div>
             <h2 className="text-sm font-bold tracking-tight text-text-primary uppercase">
               Recent Ledger
             </h2>
-            <p className="text-[10px] text-text-muted font-medium mt-0.5">
+            <p className="text-[10px] text-text-muted font-bold mt-0.5">
               Showing {filteredTransactions.length} of {parsedTransactionsLength} items
             </p>
           </div>
@@ -56,13 +58,13 @@ export function BudgetTransactionList({
         {/* List Filters row */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">
-            Filter Type:
+            Flow Type:
           </span>
           <button
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none ${
+            className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none shadow-subtle ${
               filterType === 'all'
-                ? 'bg-text-primary text-background'
+                ? 'bg-stone-900 text-stone-100 dark:bg-stone-100 dark:text-stone-900'
                 : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
             }`}
           >
@@ -70,7 +72,7 @@ export function BudgetTransactionList({
           </button>
           <button
             onClick={() => setFilterType('income')}
-            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none ${
+            className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none shadow-subtle ${
               filterType === 'income'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
@@ -80,7 +82,7 @@ export function BudgetTransactionList({
           </button>
           <button
             onClick={() => setFilterType('expense')}
-            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none ${
+            className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold transition-all cursor-pointer border-none shadow-subtle ${
               filterType === 'expense'
                 ? 'bg-rose-600 text-white'
                 : 'bg-surface-alt text-text-secondary border border-border hover:bg-surface-hover'
@@ -102,8 +104,16 @@ export function BudgetTransactionList({
           </div>
         </div>
 
+        {/* Table Headers (Recent Sales table style) */}
+        <div className="grid grid-cols-4 sm:grid-cols-5 text-[9px] font-bold text-text-muted uppercase tracking-wider px-3 mt-4 mb-1">
+          <span className="col-span-2">Transaction</span>
+          <span>Date</span>
+          <span>Status</span>
+          <span className="text-right pr-4">Amount</span>
+        </div>
+
         {/* Ledger Transactions list container */}
-        <div className="flex-1 overflow-y-auto max-h-[460px] pr-1 mt-2">
+        <div className="flex-1 overflow-y-auto max-h-[460px] pr-1">
           <AnimatePresence initial={false}>
             {filteredTransactions.length === 0 ? (
               <motion.div
@@ -137,9 +147,10 @@ export function BudgetTransactionList({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-surface-alt hover:bg-surface-hover/80 border border-border transition-colors group"
+                      className="grid grid-cols-4 sm:grid-cols-5 items-center p-3 rounded-2xl bg-surface-alt/70 hover:bg-surface-hover/80 border border-transparent hover:border-border transition-all duration-150 group"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      {/* Transaction Column (Emoji + Title + Category subtext) */}
+                      <div className="col-span-2 flex items-center gap-3 min-w-0">
                         {/* Emoji Badge icon */}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border text-base ${catStyle.bg} ${catStyle.border}`}>
                           {CATEGORY_EMOJIS[t.parsedCategory] || '🏷️'}
@@ -149,33 +160,48 @@ export function BudgetTransactionList({
                           <h4 className="text-xs font-bold text-text-primary truncate pr-1">
                             {t.parsedTitle}
                           </h4>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wide ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
-                              {t.parsedCategory}
-                            </span>
-                            <span className="text-[9px] text-text-muted font-medium">
-                              {new Date(t.date).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </span>
-                          </div>
+                          <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block mt-0.5">
+                            {t.parsedCategory}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3.5 pl-2 shrink-0">
+                      {/* Date Column */}
+                      <span className="text-[10px] text-text-muted font-semibold">
+                        {new Date(t.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+
+                      {/* Status Column (Green Success badge for Income, Gray Process for Expense) */}
+                      <div>
+                        {isIncome ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                            • Success
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700/50">
+                            • Process
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Amount Column */}
+                      <div className="flex items-center justify-end gap-2 pl-2 shrink-0">
                         <span
                           className={`text-xs font-extrabold tracking-tight ${
                             isIncome
                               ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-rose-600 dark:text-rose-400'
+                              : 'text-text-primary'
                           }`}
                         >
                           {isIncome ? '+' : '-'}
-                          {formatCurrency(t.amount)}
+                          {formatCurrency(t.amount, currencyCode)}
                         </span>
 
+                        {/* Hover delete button */}
                         <button
                           onClick={() => handleDelete(t.id)}
                           className="p-1 rounded-lg text-text-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer duration-150 border-none bg-transparent"
