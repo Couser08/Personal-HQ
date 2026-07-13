@@ -18,7 +18,8 @@ import {
   tilLogService,
   roadmapService,
   resourceService,
-  devGoalService
+  devGoalService,
+  settingsService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
@@ -446,5 +447,9 @@ export const createStudySlice: StateCreator<
       localStorage.removeItem('phq_active_focus_item');
     }
     set({ activeFocusItem: item } as any);
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      settingsService.upsert(uid, { active_focus_item: item }).catch((e) => console.error('Failed to sync active focus item:', e));
+    }
   },
 });

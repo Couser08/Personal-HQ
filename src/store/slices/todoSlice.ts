@@ -106,6 +106,14 @@ export const createTodoSlice: StateCreator<
     const next = previous.map(t => t.id === id ? { ...t, ...data } : t);
     localStorage.setItem('phq_todo_tasks', JSON.stringify(next));
     set({ todoTasks: next });
+
+    if (data.completed === true || data.deleted === true) {
+      const activeFocusItem = get().activeFocusItem;
+      if (activeFocusItem && activeFocusItem.type === 'todo' && activeFocusItem.id === id) {
+        get().setActiveFocusItem(null);
+      }
+    }
+
     try {
       await todoTaskService.update(id, data);
     } catch (error) {
@@ -119,6 +127,11 @@ export const createTodoSlice: StateCreator<
     const task = get().todoTasks.find(t => t.id === id);
     if (!task) return;
     const previous = get().todoTasks;
+
+    const activeFocusItem = get().activeFocusItem;
+    if (activeFocusItem && activeFocusItem.type === 'todo' && activeFocusItem.id === id) {
+      get().setActiveFocusItem(null);
+    }
 
     if (task.deleted) {
       const next = previous.filter(t => t.id !== id);

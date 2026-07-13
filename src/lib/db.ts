@@ -650,6 +650,55 @@ export const todoProjectService = {
   },
 };
 
+const TODO_OPTIONAL_COLUMNS = ['subtasks', 'deleted', 'start_time', 'end_time', 'pomodoro_count'];
+
+const isMissingTodoColumnError = (error: unknown) => {
+  const text = [
+    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message ?? '') : '',
+    typeof error === 'object' && error !== null && 'details' in error ? String((error as { details?: unknown }).details ?? '') : '',
+    typeof error === 'object' && error !== null && 'hint' in error ? String((error as { hint?: unknown }).hint ?? '') : '',
+  ].join(' ').toLowerCase();
+
+  return TODO_OPTIONAL_COLUMNS.some((column) => text.includes(column));
+};
+
+const buildTodoTaskBasePayload = (userId: string, task: TodoTask) => ({
+  id: task.id,
+  user_id: userId,
+  project_id: task.projectId,
+  title: task.title,
+  completed: task.completed,
+  priority: task.priority,
+  tags: task.tags,
+  due_date: task.dueDate,
+  created_at: task.createdAt,
+});
+
+const buildTodoTaskOptionalPayload = (task: TodoTask) => ({
+  start_time: task.startTime,
+  end_time: task.endTime,
+  pomodoro_count: task.pomodoroCount ?? 0,
+  deleted: task.deleted ?? false,
+  subtasks: task.subtasks ?? [],
+});
+
+const buildTodoTaskUpdateBasePayload = (data: Partial<TodoTask>) => ({
+  ...(data.projectId !== undefined && { project_id: data.projectId }),
+  ...(data.title !== undefined && { title: data.title }),
+  ...(data.completed !== undefined && { completed: data.completed }),
+  ...(data.priority !== undefined && { priority: data.priority }),
+  ...(data.tags !== undefined && { tags: data.tags }),
+  ...(data.dueDate !== undefined && { due_date: data.dueDate }),
+});
+
+const buildTodoTaskUpdateOptionalPayload = (data: Partial<TodoTask>) => ({
+  ...(data.startTime !== undefined && { start_time: data.startTime }),
+  ...(data.endTime !== undefined && { end_time: data.endTime }),
+  ...(data.pomodoroCount !== undefined && { pomodoro_count: data.pomodoroCount }),
+  ...(data.deleted !== undefined && { deleted: data.deleted }),
+  ...(data.subtasks !== undefined && { subtasks: data.subtasks }),
+});
+
 // ─── To-Do Tasks ───────────────────────────────────────────────────────────────
 
 export const todoTaskService = {
@@ -684,22 +733,15 @@ export const todoTaskService = {
 
   async create(userId: string, task: TodoTask): Promise<boolean> {
     try {
-      const { error } = await supabase.from('todo_tasks').insert({
-        id: task.id,
-        user_id: userId,
-        project_id: task.projectId,
-        title: task.title,
-        completed: task.completed,
-        priority: task.priority,
-        tags: task.tags,
-        due_date: task.dueDate,
-        start_time: task.startTime,
-        end_time: task.endTime,
-        pomodoro_count: task.pomodoroCount ?? 0,
-        deleted: task.deleted ?? false,
-        created_at: task.createdAt,
-        subtasks: task.subtasks ?? [],
-      });
+      const basePayload = buildTodoTaskBasePayload(userId, task);
+      const primaryPayload = { ...basePayload, ...buildTodoTaskOptionalPayload(task) };
+
+      let { error } = await supabase.from('todo_tasks').insert(primaryPayload);
+
+      if (error && isMissingTodoColumnError(error)) {
+        ({ error } = await supabase.from('todo_tasks').insert(basePayload));
+      }
+
       if (error) {
         console.warn('TodoTask Create Error:', error);
         return false;
@@ -713,20 +755,21 @@ export const todoTaskService = {
 
   async update(id: string, data: Partial<TodoTask>) {
     try {
-      const payload: any = {};
-      if (data.projectId !== undefined) payload.project_id = data.projectId;
-      if (data.title !== undefined) payload.title = data.title;
-      if (data.completed !== undefined) payload.completed = data.completed;
-      if (data.priority !== undefined) payload.priority = data.priority;
-      if (data.tags !== undefined) payload.tags = data.tags;
-      if (data.dueDate !== undefined) payload.due_date = data.dueDate;
-      if (data.startTime !== undefined) payload.start_time = data.startTime;
-      if (data.endTime !== undefined) payload.end_time = data.endTime;
-      if (data.pomodoroCount !== undefined) payload.pomodoro_count = data.pomodoroCount;
-      if (data.deleted !== undefined) payload.deleted = data.deleted;
-      if (data.subtasks !== undefined) payload.subtasks = data.subtasks;
+      const basePayload = buildTodoTaskUpdateBasePayload(data);
+      const primaryPayload = { ...basePayload, ...buildTodoTaskUpdateOptionalPayload(data) };
 
-      const { error } = await supabase.from('todo_tasks').update(payload).eq('id', id);
+      if (Object.keys(primaryPayload).length === 0) return;
+
+      let { error } = await supabase.from('todo_tasks').update(primaryPayload).eq('id', id);
+
+      if (error && isMissingTodoColumnError(error)) {
+        if (Object.keys(basePayload).length > 0) {
+          ({ error } = await supabase.from('todo_tasks').update(basePayload).eq('id', id));
+        } else {
+          return;
+        }
+      }
+
       if (error) {
         console.warn('TodoTask Update Error:', error);
       }

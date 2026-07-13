@@ -65,6 +65,12 @@ export const createHabitSlice: StateCreator<
     const updated = previous.filter((h) => h.id !== id);
     set({ habits: updated });
     localStorage.setItem('phq_habits', JSON.stringify(updated));
+
+    const activeFocusItem = get().activeFocusItem;
+    if (activeFocusItem && activeFocusItem.type === 'habit' && activeFocusItem.id === id) {
+      get().setActiveFocusItem(null);
+    }
+
     try {
       await habitService.delete(id);
       useToastStore.getState().addToast('Success', 'Habit deleted', 'success');

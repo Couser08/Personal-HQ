@@ -231,6 +231,7 @@ export const createCoreSlice: StateCreator<
 
     let dbSettings = get().settings;
     let dbTheme = get().theme;
+    let dbActiveFocusItem = get().activeFocusItem;
 
     if (settingsResult) {
       dbTheme = (settingsResult.theme as Theme) || dbTheme;
@@ -248,6 +249,15 @@ export const createCoreSlice: StateCreator<
         reduceAnimations: settingsResult.reduce_animations !== undefined ? settingsResult.reduce_animations : dbSettings.reduceAnimations,
       };
       
+      if (settingsResult.active_focus_item !== undefined) {
+        dbActiveFocusItem = settingsResult.active_focus_item;
+        if (dbActiveFocusItem) {
+          localStorage.setItem('phq_active_focus_item', JSON.stringify(dbActiveFocusItem));
+        } else {
+          localStorage.removeItem('phq_active_focus_item');
+        }
+      }
+      
       localStorage.setItem('theme', dbTheme);
       localStorage.setItem('settings', JSON.stringify(dbSettings));
     } else {
@@ -264,6 +274,7 @@ export const createCoreSlice: StateCreator<
         media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
         reduce_blur: dbSettings.reduceBlur,
         reduce_animations: dbSettings.reduceAnimations,
+        active_focus_item: dbActiveFocusItem,
       }).catch((e) => console.error('Failed to initialize settings:', e));
     }
 
@@ -304,17 +315,39 @@ export const createCoreSlice: StateCreator<
       localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(journalStickyNotes));
     }
 
+    // Validate active focus item
+    if (dbActiveFocusItem) {
+      const activeItem = dbActiveFocusItem;
+      if (activeItem.type === 'todo') {
+        const matched = todoTasks.find(t => t.id === activeItem.id);
+        if (!matched || matched.completed || matched.deleted) {
+          dbActiveFocusItem = null;
+          localStorage.removeItem('phq_active_focus_item');
+          settingsService.upsert(userId, { active_focus_item: null }).catch((e) => console.error('Failed to clear invalid focus item:', e));
+        }
+      } else if (activeItem.type === 'habit') {
+        const matched = habits.find(h => h.id === activeItem.id);
+        if (!matched) {
+          dbActiveFocusItem = null;
+          localStorage.removeItem('phq_active_focus_item');
+          settingsService.upsert(userId, { active_focus_item: null }).catch((e) => console.error('Failed to clear invalid focus item:', e));
+        }
+      }
+    }
+
     set({
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
       budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
       sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
       theme: dbTheme,
       settings: dbSettings,
+      activeFocusItem: dbActiveFocusItem,
       dataLoaded: true
     } as any);
   },
 
-  clearAllData: () =>
+  clearAllData: () => {
+    localStorage.removeItem('phq_active_focus_item');
     set({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],
@@ -323,7 +356,8 @@ export const createCoreSlice: StateCreator<
       sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [],
       journalStickyNotes: [], activeFocusItem: null,
       dataLoaded: false,
-    } as any),
+    } as any);
+  },
 
   drawingElements: [],
   drawingAppState: {},
