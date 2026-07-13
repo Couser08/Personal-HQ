@@ -12,7 +12,8 @@ import {
   createUtilitySlice,
   globalPomodoroTick,
   globalPomodoroStartTime,
-  globalPomodoroSecondsAtStart
+  globalPomodoroSecondsAtStart,
+  syncPomodoroFromStorage
 } from './slices/utilitySlice';
 
 export * from './types';
@@ -66,5 +67,17 @@ if (typeof window !== 'undefined') {
   window.addEventListener('focus', () => {
     syncTimer();
     syncData();
+  });
+
+  // Listen for Pomodoro state changes in other tabs
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'focusflow_pomodoro_sync_state' && event.newValue) {
+      try {
+        const payload = JSON.parse(event.newValue);
+        syncPomodoroFromStorage(payload, useAppStore.setState, useAppStore.getState);
+      } catch (e) {
+        console.error('Failed to sync Pomodoro from storage:', e);
+      }
+    }
   });
 }

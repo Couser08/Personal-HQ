@@ -141,12 +141,213 @@ const stopTimer = () => {
   }
 };
 
+const syncPomodoroStateToLocalStorage = (state: any) => {
+  if (typeof window === 'undefined') return;
+  const payload = {
+    pomodoroSecondsLeft: state.pomodoroSecondsLeft,
+    pomodoroTotalSeconds: state.pomodoroTotalSeconds,
+    pomodoroTimerState: state.pomodoroTimerState,
+    pomodoroSessionId: state.pomodoroSessionId,
+    pomodoroStreak: state.pomodoroStreak,
+    pomodoroAssociatedTaskId: state.pomodoroAssociatedTaskId,
+    globalPomodoroStartTime,
+    globalPomodoroSecondsAtStart,
+    timestamp: Date.now()
+  };
+  localStorage.setItem('focusflow_pomodoro_sync_state', JSON.stringify(payload));
+};
+
+export const syncPomodoroFromStorage = (payload: any, set: any, get: any) => {
+  if (typeof window === 'undefined') return;
+
+  globalPomodoroStartTime = payload.globalPomodoroStartTime;
+  globalPomodoroSecondsAtStart = payload.globalPomodoroSecondsAtStart;
+
+  set({
+    pomodoroSecondsLeft: payload.pomodoroSecondsLeft,
+    pomodoroTotalSeconds: payload.pomodoroTotalSeconds,
+    pomodoroTimerState: payload.pomodoroTimerState,
+    pomodoroSessionId: payload.pomodoroSessionId,
+    pomodoroStreak: payload.pomodoroStreak,
+    pomodoroAssociatedTaskId: payload.pomodoroAssociatedTaskId,
+  });
+
+  if (payload.pomodoroTimerState === 'running') {
+    stopTimer();
+
+    const tick = () => {
+      const { 
+        pomodoroSessionId, 
+        pomodoroStreak, 
+        pomodoroAssociatedTaskId, 
+        todoTasks, 
+        updateTodoTask, 
+        recordPomodoroSession, 
+        pomodoroTotalSeconds 
+      } = get();
+
+      const elapsedMs = Date.now() - globalPomodoroStartTime;
+      const elapsedSecs = Math.floor(elapsedMs / 1000);
+      const secondsLeft = Math.max(0, globalPomodoroSecondsAtStart - elapsedSecs);
+
+      if (secondsLeft <= 0) {
+        stopTimer();
+        globalPomodoroTick = null;
+        set({ pomodoroTimerState: 'idle', pomodoroSecondsLeft: 0 });
+
+        const addToast = useToastStore.getState().addToast;
+        let completionNotification: PomodoroCompletionNotification;
+
+        if (pomodoroSessionId === 'focus') {
+          const nextStreak = pomodoroStreak + 1;
+          set({ pomodoroStreak: nextStreak });
+          recordPomodoroSession(Math.round(pomodoroTotalSeconds / 60));
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'pomodoro' } }));
+          }
+
+          if (pomodoroAssociatedTaskId) {
+            if (pomodoroAssociatedTaskId.startsWith('habit-')) {
+              const habitId = pomodoroAssociatedTaskId.replace('habit-', '');
+              const matchedHabit = (get().habits as any[]).find((h: any) => h.id === habitId);
+              if (matchedHabit) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                get().toggleHabitCompletion(habitId, todayStr);
+                addToast('🔥 Habit Completed', `Completed Pomodoro session for "${matchedHabit.name}"`, 'success');
+              }
+            } else {
+              const matchedTask = (todoTasks as any[]).find((t: any) => t.id === pomodoroAssociatedTaskId);
+              if (matchedTask) {
+                updateTodoTask(pomodoroAssociatedTaskId, {
+                  pomodoroCount: (matchedTask.pomodoroCount || 0) + 1
+                });
+                addToast('🍅 Session Logged', `Logged focus session to "${matchedTask.title}"`, 'success');
+              }
+            }
+          } else {
+            addToast('🎉 Focus Complete!', 'Great work! Time for a break.', 'success');
+          }
+
+          completionNotification = {
+            id: crypto.randomUUID(),
+            sessionId: pomodoroSessionId,
+            title: 'Focus Complete',
+            subtitle: 'Great work. Break starts now.',
+            icon: 'confetti',
+            variant: 'success',
+            timestamp: Date.now(),
+          };
+
+          const nextSid = nextStreak % 4 === 0 ? 'long-break' : 'short-break';
+          const breakMins = nextSid === 'short-break' ? 5 : 15;
+          set({ 
+            pomodoroSessionId: nextSid, 
+            pomodoroSecondsLeft: breakMins * 60,
+            pomodoroTotalSeconds: breakMins * 60
+          });
+        } else {
+          addToast('⏰ Break Over!', 'Ready to focus again? 🚀', 'info');
+
+          completionNotification = {
+            id: crypto.randomUUID(),
+            sessionId: pomodoroSessionId,
+            title: 'Break Complete',
+            subtitle: 'Ready to focus again?',
+            icon: 'award',
+            variant: 'achievement',
+            timestamp: Date.now(),
+          };
+
+          set({ 
+            pomodoroSessionId: 'focus', 
+            pomodoroSecondsLeft: 25 * 60,
+            pomodoroTotalSeconds: 25 * 60
+          });
+        }
+
+        notifyPomodoroCompletion(completionNotification);
+        showPomodoroDesktopNotification(completionNotification);
+
+        // Sync completed/next state
+        const nextState = get();
+        const nextPayload = {
+          pomodoroSecondsLeft: nextState.pomodoroSecondsLeft,
+          pomodoroTotalSeconds: nextState.pomodoroTotalSeconds,
+          pomodoroTimerState: nextState.pomodoroTimerState,
+          pomodoroSessionId: nextState.pomodoroSessionId,
+          pomodoroStreak: nextState.pomodoroStreak,
+          pomodoroAssociatedTaskId: nextState.pomodoroAssociatedTaskId,
+          globalPomodoroStartTime: 0,
+          globalPomodoroSecondsAtStart: nextState.pomodoroSecondsLeft,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('focusflow_pomodoro_sync_state', JSON.stringify(nextPayload));
+      } else {
+        set({ pomodoroSecondsLeft: secondsLeft });
+      }
+    };
+
+    globalPomodoroTick = tick;
+    startTimer(tick);
+  } else {
+    stopTimer();
+    globalPomodoroTick = null;
+  }
+};
+
 export const createUtilitySlice: StateCreator<
   AppStore,
   [],
   [],
   UtilitySlice
-> = (set, get) => ({
+> = (set, get) => {
+  // Load initial values from localStorage
+  let initialSecondsLeft = 25 * 60;
+  let initialTotalSeconds = 25 * 60;
+  let initialTimerState: 'idle' | 'running' | 'paused' = 'idle';
+  let initialSessionId: 'focus' | 'short-break' | 'long-break' = 'focus';
+  let initialStreak = 0;
+  let initialAssociatedTaskId: string | null = null;
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('focusflow_pomodoro_sync_state');
+      if (raw) {
+        const payload = JSON.parse(raw);
+        initialSecondsLeft = payload.pomodoroSecondsLeft;
+        initialTotalSeconds = payload.pomodoroTotalSeconds;
+        initialTimerState = payload.pomodoroTimerState;
+        initialSessionId = payload.pomodoroSessionId;
+        initialStreak = payload.pomodoroStreak;
+        initialAssociatedTaskId = payload.pomodoroAssociatedTaskId;
+        
+        if (initialTimerState === 'running') {
+          globalPomodoroStartTime = payload.globalPomodoroStartTime;
+          globalPomodoroSecondsAtStart = payload.globalPomodoroSecondsAtStart;
+          const elapsed = Math.floor((Date.now() - globalPomodoroStartTime) / 1000);
+          initialSecondsLeft = Math.max(0, globalPomodoroSecondsAtStart - elapsed);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to restore initial pomodoro state:', e);
+    }
+  }
+
+  // Restore ticking on start if running
+  if (typeof window !== 'undefined' && initialTimerState === 'running' && initialSecondsLeft > 0) {
+    setTimeout(() => {
+      const raw = localStorage.getItem('focusflow_pomodoro_sync_state');
+      if (raw) {
+        try {
+          const payload = JSON.parse(raw);
+          syncPomodoroFromStorage(payload, set, get);
+        } catch {}
+      }
+    }, 150);
+  }
+
+  return {
   notes: [],
   addNote: async (note) => {
     if (shouldThrottle('addNote')) return;
@@ -409,21 +610,39 @@ export const createUtilitySlice: StateCreator<
 
   // ── Pomodoro ──────────────────────────────────────────────────────────────
   pomodoroStats: { totalSessions: 0, totalMinutes: 0 },
-  pomodoroSecondsLeft: 25 * 60,
-  pomodoroTotalSeconds: 25 * 60,
-  pomodoroTimerState: 'idle',
-  pomodoroSessionId: 'focus',
-  pomodoroStreak: 0,
-  pomodoroAssociatedTaskId: null,
+  pomodoroSecondsLeft: initialSecondsLeft,
+  pomodoroTotalSeconds: initialTotalSeconds,
+  pomodoroTimerState: initialTimerState,
+  pomodoroSessionId: initialSessionId,
+  pomodoroStreak: initialStreak,
+  pomodoroAssociatedTaskId: initialAssociatedTaskId,
   pomodoroPipWindow: null,
   pomodoroPipEnabled: false,
 
-  setPomodoroSecondsLeft: (secs) => set({ pomodoroSecondsLeft: secs }),
-  setPomodoroTotalSeconds: (secs) => set({ pomodoroTotalSeconds: secs }),
-  setPomodoroTimerState: (state) => set({ pomodoroTimerState: state }),
-  setPomodoroSessionId: (id) => set({ pomodoroSessionId: id }),
-  setPomodoroStreak: (streak) => set({ pomodoroStreak: streak }),
-  setPomodoroAssociatedTaskId: (id) => set({ pomodoroAssociatedTaskId: id }),
+  setPomodoroSecondsLeft: (secs) => {
+    set({ pomodoroSecondsLeft: secs });
+    syncPomodoroStateToLocalStorage(get());
+  },
+  setPomodoroTotalSeconds: (secs) => {
+    set({ pomodoroTotalSeconds: secs });
+    syncPomodoroStateToLocalStorage(get());
+  },
+  setPomodoroTimerState: (state) => {
+    set({ pomodoroTimerState: state });
+    syncPomodoroStateToLocalStorage(get());
+  },
+  setPomodoroSessionId: (id) => {
+    set({ pomodoroSessionId: id });
+    syncPomodoroStateToLocalStorage(get());
+  },
+  setPomodoroStreak: (streak) => {
+    set({ pomodoroStreak: streak });
+    syncPomodoroStateToLocalStorage(get());
+  },
+  setPomodoroAssociatedTaskId: (id) => {
+    set({ pomodoroAssociatedTaskId: id });
+    syncPomodoroStateToLocalStorage(get());
+  },
   setPomodoroPipWindow: (win) => set({ pomodoroPipWindow: win }),
   setPomodoroPipEnabled: (enabled) => set({ pomodoroPipEnabled: enabled }),
 
@@ -544,12 +763,14 @@ export const createUtilitySlice: StateCreator<
 
     globalPomodoroTick = tick;
     startTimer(tick);
+    syncPomodoroStateToLocalStorage(get());
   },
 
   pauseGlobalPomodoro: () => {
     stopTimer();
     globalPomodoroTick = null;
     set({ pomodoroTimerState: 'paused' });
+    syncPomodoroStateToLocalStorage(get());
   },
 
   resumeGlobalPomodoro: () => {
@@ -568,6 +789,7 @@ export const createUtilitySlice: StateCreator<
       pomodoroPipWindow.close();
       set({ pomodoroPipWindow: null });
     }
+    syncPomodoroStateToLocalStorage(get());
   },
 
   skipGlobalPomodoro: () => {
@@ -685,6 +907,8 @@ export const createUtilitySlice: StateCreator<
       pomodoroPipWindow.close();
       set({ pomodoroPipWindow: null });
     }
+    syncPomodoroStateToLocalStorage(get());
   },
-});
+};
+};
 
