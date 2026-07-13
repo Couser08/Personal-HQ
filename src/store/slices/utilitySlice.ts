@@ -89,6 +89,7 @@ export interface UtilitySlice {
   pauseGlobalPomodoro: () => void;
   resumeGlobalPomodoro: () => void;
   stopGlobalPomodoro: () => void;
+  skipGlobalPomodoro: () => void;
 }
 
 export let globalPomodoroInterval: any = null;
@@ -563,6 +564,123 @@ export const createUtilitySlice: StateCreator<
       pomodoroTimerState: 'idle', 
       pomodoroSecondsLeft: pomodoroTotalSeconds 
     });
+    if (pomodoroPipWindow) {
+      pomodoroPipWindow.close();
+      set({ pomodoroPipWindow: null });
+    }
+  },
+
+  skipGlobalPomodoro: () => {
+    stopTimer();
+    globalPomodoroTick = null;
+    
+    const { 
+      pomodoroSessionId, 
+      pomodoroSecondsLeft, 
+      pomodoroTotalSeconds, 
+      pomodoroStreak, 
+      pomodoroAssociatedTaskId, 
+      todoTasks, 
+      updateTodoTask, 
+      recordPomodoroSession, 
+      pomodoroPipWindow 
+    } = get();
+
+    const addToast = useToastStore.getState().addToast;
+    let completionNotification: PomodoroCompletionNotification;
+
+    if (pomodoroSessionId === 'focus') {
+      // Condition: if < 2 minutes (120 seconds) remains in a focus session, it counts as completed
+      if (pomodoroSecondsLeft < 120) {
+        const nextStreak = pomodoroStreak + 1;
+        set({ pomodoroStreak: nextStreak });
+        recordPomodoroSession(Math.round(pomodoroTotalSeconds / 60));
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'pomodoro' } }));
+        }
+
+        if (pomodoroAssociatedTaskId) {
+          if (pomodoroAssociatedTaskId.startsWith('habit-')) {
+            const habitId = pomodoroAssociatedTaskId.replace('habit-', '');
+            const matchedHabit = get().habits.find(h => h.id === habitId);
+            if (matchedHabit) {
+              const todayStr = new Date().toISOString().split('T')[0];
+              get().toggleHabitCompletion(habitId, todayStr);
+              addToast('🔥 Habit Completed', `Completed Pomodoro session for "${matchedHabit.name}"`, 'success');
+            }
+          } else {
+            const matchedTask = todoTasks.find(t => t.id === pomodoroAssociatedTaskId);
+            if (matchedTask) {
+              updateTodoTask(pomodoroAssociatedTaskId, {
+                pomodoroCount: (matchedTask.pomodoroCount || 0) + 1
+              });
+              addToast('🍅 Session Logged (Skipped < 2m left)', `Logged focus session to "${matchedTask.title}"`, 'success');
+            }
+          }
+        } else {
+          addToast('🎉 Focus Complete! (Skipped < 2m left)', 'Great work! Time for a break.', 'success');
+        }
+
+        completionNotification = {
+          id: crypto.randomUUID(),
+          sessionId: pomodoroSessionId,
+          title: 'Focus Complete',
+          subtitle: 'Great work. Break starts now.',
+          icon: 'confetti',
+          variant: 'success',
+          timestamp: Date.now(),
+        };
+
+        const nextSid = nextStreak % 4 === 0 ? 'long-break' : 'short-break';
+        const breakMins = nextSid === 'short-break' ? 5 : 15;
+        set({ 
+          pomodoroTimerState: 'idle',
+          pomodoroSessionId: nextSid, 
+          pomodoroSecondsLeft: breakMins * 60,
+          pomodoroTotalSeconds: breakMins * 60
+        });
+
+        notifyPomodoroCompletion(completionNotification);
+        showPomodoroDesktopNotification(completionNotification);
+      } else {
+        // Skipped with >= 2m left: do not count in stats, just skip to break
+        addToast('Focus Skipped', 'Skipped focus session.', 'info');
+        const nextStreak = pomodoroStreak; // stays same
+        const nextSid = (nextStreak + 1) % 4 === 0 ? 'long-break' : 'short-break';
+        const breakMins = nextSid === 'short-break' ? 5 : 15;
+        set({
+          pomodoroTimerState: 'idle',
+          pomodoroSessionId: nextSid,
+          pomodoroSecondsLeft: breakMins * 60,
+          pomodoroTotalSeconds: breakMins * 60
+        });
+      }
+    } else {
+      // Skipping short-break or long-break: skip directly back to focus (25m)
+      addToast('⏰ Break Over!', 'Ready to focus again? 🚀', 'info');
+
+      completionNotification = {
+        id: crypto.randomUUID(),
+        sessionId: pomodoroSessionId,
+        title: 'Break Complete',
+        subtitle: 'Ready to focus again?',
+        icon: 'award',
+        variant: 'achievement',
+        timestamp: Date.now(),
+      };
+
+      set({ 
+        pomodoroTimerState: 'idle',
+        pomodoroSessionId: 'focus', 
+        pomodoroSecondsLeft: 25 * 60,
+        pomodoroTotalSeconds: 25 * 60
+      });
+
+      notifyPomodoroCompletion(completionNotification);
+      showPomodoroDesktopNotification(completionNotification);
+    }
+
     if (pomodoroPipWindow) {
       pomodoroPipWindow.close();
       set({ pomodoroPipWindow: null });

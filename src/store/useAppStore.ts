@@ -7,6 +7,7 @@ import { createStudySlice } from './slices/studySlice';
 import { createBudgetSlice } from './slices/budgetSlice';
 import { createTodoSlice } from './slices/todoSlice';
 import { createHabitSlice } from './slices/habitSlice';
+import { useAuthStore } from './useAuthStore';
 import {
   createUtilitySlice,
   globalPomodoroTick,
@@ -28,6 +29,7 @@ export const useAppStore = create<AppStore>()((...a) => ({
 }));
 
 if (typeof window !== 'undefined') {
+  let lastSyncTime = 0;
   const syncTimer = () => {
     const state = useAppStore.getState();
     if (state.pomodoroTimerState === 'running' && globalPomodoroTick) {
@@ -43,10 +45,26 @@ if (typeof window !== 'undefined') {
     }
   };
 
+  const syncData = () => {
+    const now = Date.now();
+    if (now - lastSyncTime < 10000) return; // 10s throttle
+    lastSyncTime = now;
+
+    const state = useAppStore.getState();
+    const user = useAuthStore.getState().user;
+    if (user && state.loadAllData) {
+      state.loadAllData(user.id).catch((e) => console.error('Failed to sync on visibility/focus:', e));
+    }
+  };
+
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       syncTimer();
+      syncData();
     }
   });
-  window.addEventListener('focus', syncTimer);
+  window.addEventListener('focus', () => {
+    syncTimer();
+    syncData();
+  });
 }

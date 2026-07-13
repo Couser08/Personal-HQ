@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   IconPlayerPlay, IconPlayerPause, IconEdit, IconCheck,
-  IconFlame, IconClock, IconTarget, IconSparkles
+  IconFlame, IconClock, IconTarget, IconSparkles, IconArrowRight
 } from '@tabler/icons-react';
 import { useAppStore, type Habit } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -256,6 +256,7 @@ export default function PomodoroModule() {
     pauseGlobalPomodoro,
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
+    skipGlobalPomodoro,
     habits,
     settings
   } = useAppStore(useShallow(state => ({
@@ -275,6 +276,7 @@ export default function PomodoroModule() {
     pauseGlobalPomodoro: state.pauseGlobalPomodoro,
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
+    skipGlobalPomodoro: state.skipGlobalPomodoro,
     habits: state.habits,
     settings: state.settings
   })));
@@ -695,19 +697,31 @@ export default function PomodoroModule() {
                 </div>
               </div>
      
-              <div>
-                <button
-                  onClick={stopGlobalPomodoro}
-                  disabled={pomodoroTimerState === 'idle'}
-                  className={`px-6 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
-                    clockStyle === 'analog' 
-                      ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
-                      : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
-                  }`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'var(--color-primary)' }} /> Stop Focus
-                </button>
-              </div>
+               <div className="flex items-center gap-3">
+                 <button
+                   onClick={stopGlobalPomodoro}
+                   disabled={pomodoroTimerState === 'idle'}
+                   className={`px-5 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
+                     clockStyle === 'analog' 
+                       ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
+                       : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
+                   }`}
+                 >
+                   <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'var(--color-primary)' }} /> Stop
+                 </button>
+                 <button
+                   onClick={skipGlobalPomodoro}
+                   disabled={pomodoroTimerState === 'idle'}
+                   className={`px-5 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
+                     clockStyle === 'analog' 
+                       ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
+                       : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
+                   }`}
+                   title={pomodoroSessionId === 'focus' && pomodoroSecondsLeft < 120 ? 'Skip & log as completed session (< 2 min left)' : 'Skip this session'}
+                 >
+                   <IconArrowRight className="w-4 h-4 text-text-secondary" /> Skip
+                 </button>
+               </div>
             </div>
      
             {/* Vertical Divider */}
@@ -801,55 +815,94 @@ export default function PomodoroModule() {
         </div>
       </div>
 
-      {/* Daily Progress & Settings */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-stretch gap-6">
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="flex items-end justify-between mb-4">
+      {/* Daily Progress, Weekly Chart & settings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* Card 1: Today's Progress */}
+        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
+          <div>
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-bold text-text-primary">Today's Progress</h3>
                 <p className="text-xs text-text-muted mt-1">{Math.floor((todaySessions / dailyGoal) * 100)}% Complete</p>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">Daily Goal</span>
-                {isEditingGoal ? (
-                  <div className="flex items-center gap-2">
-                    <input type="number" min={1} value={tempGoal} onChange={e => setTempGoal(Number(e.target.value))} className="w-16 bg-surface-alt border border-border rounded px-2 py-1 text-sm outline-none text-text-primary" />
-                    <button onClick={saveGoal} className="text-primary hover:text-primary-hover cursor-pointer"><IconCheck className="w-4 h-4" /></button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-text-primary">{todaySessions} / {dailyGoal} sessions</span>
-                    <button onClick={() => { setTempGoal(dailyGoal); setIsEditingGoal(true); }} className="px-3 py-1 rounded-lg border border-border text-xs font-bold flex items-center gap-1.5 hover:bg-surface-hover text-text-secondary cursor-pointer"><IconEdit className="w-3 h-3" /> Edit Goal</button>
-                  </div>
-                )}
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Goal</span>
+            </div>
+            
+            {/* Apple style progress bar */}
+            <div className="mt-6">
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="text-2xl font-extrabold text-text-primary">
+                  {todaySessions} <span className="text-xs font-medium text-text-secondary">/ {dailyGoal} sessions</span>
+                </span>
+                <span className="text-xs font-bold text-primary">{todaySessions >= dailyGoal ? 'Goal Achieved! 🎉' : 'Keep pushing!'}</span>
+              </div>
+              <div className="w-full h-3 bg-surface-alt rounded-full overflow-hidden p-0.5 border border-border/20">
+                <div 
+                  className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-rose-500 to-amber-500" 
+                  style={{ width: `${Math.min(100, (todaySessions / dailyGoal) * 100)}%` }} 
+                />
               </div>
             </div>
-            <div className="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (todaySessions / dailyGoal) * 100)}%`, backgroundColor: 'var(--color-primary)' }} />
-            </div>
-            <p className="text-xs text-text-secondary mt-4">Keep going! You've got this.</p>
           </div>
 
-          {/* SVG Weekly Bar Chart */}
-          <div className="flex-1 min-w-[200px] h-32 flex flex-col gap-2 border-t md:border-t-0 md:border-l border-border/40 pt-4 md:pt-0 md:pl-6 justify-end select-none">
-            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Weekly Focus Trend</span>
-            <div className="flex items-end justify-between h-20 gap-2 mt-1">
+          <div className="border-t border-border/40 pt-4 flex items-center justify-between">
+            {isEditingGoal ? (
+              <div className="flex items-center gap-2 w-full justify-between">
+                <span className="text-xs text-text-secondary">Set Daily Goal:</span>
+                <div className="flex items-center gap-1.5">
+                  <input 
+                    type="number" 
+                    min={1} 
+                    value={tempGoal} 
+                    onChange={e => setTempGoal(Number(e.target.value))} 
+                    className="w-14 bg-surface-alt border border-border rounded-lg px-2 py-1 text-xs outline-none text-text-primary text-center font-bold" 
+                  />
+                  <button onClick={saveGoal} className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center cursor-pointer hover:bg-emerald-500/20"><IconCheck className="w-4 h-4" /></button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <span className="text-xs text-text-secondary">Current target: {dailyGoal} daily</span>
+                <button 
+                  onClick={() => { setTempGoal(dailyGoal); setIsEditingGoal(true); }} 
+                  className="px-2.5 py-1.5 rounded-xl border border-border text-[10px] font-bold flex items-center gap-1 hover:bg-surface-hover text-text-secondary cursor-pointer"
+                >
+                  <IconEdit className="w-3.5 h-3.5" /> Edit Goal
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Card 2: Weekly Focus Trend */}
+        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
+          <div>
+            <h3 className="text-sm font-bold text-text-primary mb-1">Weekly Focus Trend</h3>
+            <p className="text-xs text-text-muted">Daily distribution of focus minutes</p>
+          </div>
+
+          <div className="h-36 flex flex-col justify-end select-none">
+            <div className="flex items-end justify-between h-28 gap-2 mt-1">
               {weeklyFocusData.map((day: { label: string; minutes: number; isToday: boolean }, idx: number) => {
                 const maxMinutes = Math.max(...weeklyFocusData.map((d: { minutes: number }) => d.minutes), 60);
                 const barHeightPct = Math.round((day.minutes / maxMinutes) * 100);
                 return (
                   <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative">
-                    <div className="absolute bottom-full mb-1 bg-neutral-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow z-30">
-                      {day.minutes} min
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-800 text-white text-[9px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-30">
+                      {day.minutes} mins
                     </div>
+                    {/* Bar */}
                     <div 
-                      className={`w-full rounded-t-md transition-all duration-500 cursor-pointer ${
-                        day.isToday ? 'bg-primary shadow-sm hover:brightness-110' : 'bg-surface-alt border border-border/50 hover:bg-primary/20'
+                      className={`w-full rounded-t-lg transition-all duration-300 cursor-pointer ${
+                        day.isToday 
+                          ? 'bg-gradient-to-t from-rose-500 to-rose-400 shadow-md shadow-rose-500/10 hover:brightness-110' 
+                          : 'bg-surface-alt border border-border/40 hover:bg-primary/10 hover:border-primary/20'
                       }`}
                       style={{ height: `${Math.max(8, barHeightPct)}%` }}
                     />
-                    <span className="text-[9px] font-bold text-text-muted">{day.label}</span>
+                    <span className="text-[9px] font-bold text-text-muted mt-0.5">{day.label}</span>
                   </div>
                 );
               })}
@@ -857,39 +910,41 @@ export default function PomodoroModule() {
           </div>
         </div>
 
-        {/* Customization Settings */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col gap-5">
+        {/* Card 3: Customization Settings */}
+        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
           <h3 className="text-sm font-bold text-text-primary">Timer Settings</h3>
           
-          <div>
-            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-2">Aesthetic Theme (This Page Only)</span>
-            <div className="flex gap-2">
-              <button onClick={() => handleThemeChange('default')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${pomodoroTheme === 'default' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Default</button>
-              <button onClick={() => handleThemeChange('tokyo-sakura')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${pomodoroTheme === 'tokyo-sakura' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Sakura</button>
-              <button onClick={() => handleThemeChange('dark-academia')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${pomodoroTheme === 'dark-academia' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Academia</button>
+          <div className="flex flex-col gap-2.5">
+            <div>
+              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Aesthetic Theme</span>
+              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
+                <button onClick={() => handleThemeChange('default')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'default' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Default</button>
+                <button onClick={() => handleThemeChange('tokyo-sakura')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'tokyo-sakura' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Sakura</button>
+                <button onClick={() => handleThemeChange('dark-academia')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'dark-academia' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Academia</button>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Font Style</span>
+              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
+                <button onClick={() => setFontStyle('font-mono')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-mono' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Mono</button>
+                <button onClick={() => setFontStyle('font-sans')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-sans' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Sans</button>
+                <button onClick={() => setFontStyle('font-serif')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-serif' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Serif</button>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Progress Ring Style</span>
+              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
+                <button onClick={() => setRingStyle('solid')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'solid' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Solid</button>
+                <button onClick={() => setRingStyle('dashed')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'dashed' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Dashed</button>
+                <button onClick={() => setRingStyle('dotted')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'dotted' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Dotted</button>
+              </div>
             </div>
           </div>
 
-          <div>
-            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-2">Font Style</span>
-            <div className="flex gap-2">
-              <button onClick={() => setFontStyle('font-mono')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${fontStyle === 'font-mono' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Mono</button>
-              <button onClick={() => setFontStyle('font-sans')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${fontStyle === 'font-sans' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Sans</button>
-              <button onClick={() => setFontStyle('font-serif')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${fontStyle === 'font-serif' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Serif</button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-2">Ring Style</span>
-            <div className="flex gap-2">
-              <button onClick={() => setRingStyle('solid')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${ringStyle === 'solid' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Solid</button>
-              <button onClick={() => setRingStyle('dashed')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${ringStyle === 'dashed' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Dashed</button>
-              <button onClick={() => setRingStyle('dotted')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${ringStyle === 'dotted' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Dotted</button>
-              <button onClick={() => setRingStyle('double')} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${ringStyle === 'double' ? 'bg-primary/10 border-primary/30 text-primary font-bold' : 'border-border bg-surface-alt text-text-secondary'}`}>Double</button>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface-alt px-3 py-2 text-[11px] text-text-secondary">
-            Dashboard dynamic island now handles the compact timer overlay while Pomodoro stays in-page.
+          <div className="rounded-xl border border-border bg-surface-alt px-2.5 py-1 text-[9px] text-text-secondary">
+            Island handles the compact timer while Pomodoro stays in-page.
           </div>
         </div>
       </div>

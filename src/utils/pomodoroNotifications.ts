@@ -26,6 +26,32 @@ export const notifyPomodoroCompletion = (notification: PomodoroCompletionNotific
   );
 };
 
+export const showPomodoroDesktopNotification = (notification: PomodoroCompletionNotification) => {
+  if (typeof window === 'undefined' || !('Notification' in window)) return false;
+  if (Notification.permission !== 'granted') return false;
+
+  // Prevent duplicate notifications across multiple open tabs
+  const shownKey = `phq_shown_notification_${notification.id}`;
+  if (localStorage.getItem(shownKey) === 'true') {
+    return false;
+  }
+  localStorage.setItem(shownKey, 'true');
+
+  new Notification(notification.title, {
+    body: notification.subtitle,
+    tag: `pomodoro-${notification.sessionId}-${notification.id}`,
+  });
+
+  // Clean up the key after 1 minute
+  setTimeout(() => {
+    try {
+      localStorage.removeItem(shownKey);
+    } catch (e) {}
+  }, 60000);
+
+  return true;
+};
+
 export const subscribePomodoroCompletion = (
   handler: (notification: PomodoroCompletionNotification) => void
 ) => {
@@ -34,6 +60,7 @@ export const subscribePomodoroCompletion = (
   const handleCustomEvent = (event: Event) => {
     const customEvent = event as CustomEvent<PomodoroCompletionNotification>;
     if (customEvent.detail) {
+      showPomodoroDesktopNotification(customEvent.detail);
       handler(customEvent.detail);
     }
   };
@@ -44,6 +71,7 @@ export const subscribePomodoroCompletion = (
     try {
       const notification = JSON.parse(event.newValue) as PomodoroCompletionNotification;
       if (notification?.id) {
+        showPomodoroDesktopNotification(notification);
         handler(notification);
       }
     } catch {
@@ -80,16 +108,4 @@ export const requestPomodoroNotificationPermission = async () => {
   } catch {
     return Notification.permission;
   }
-};
-
-export const showPomodoroDesktopNotification = (notification: PomodoroCompletionNotification) => {
-  if (typeof window === 'undefined' || !('Notification' in window)) return false;
-  if (Notification.permission !== 'granted') return false;
-
-  new Notification(notification.title, {
-    body: notification.subtitle,
-    tag: `pomodoro-${notification.sessionId}-${notification.id}`,
-  });
-
-  return true;
 };

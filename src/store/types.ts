@@ -495,6 +495,7 @@ export interface AppStore {
   pauseGlobalPomodoro: () => void;
   resumeGlobalPomodoro: () => void;
   stopGlobalPomodoro: () => void;
+  skipGlobalPomodoro: () => void;
 
   // Budget Tracker
   selectedCurrency: string;

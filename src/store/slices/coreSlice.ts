@@ -267,6 +267,12 @@ export const createCoreSlice: StateCreator<
       }).catch((e) => console.error('Failed to initialize settings:', e));
     }
 
+    if (results[10].status === 'fulfilled') {
+      localStorage.setItem('phq_todo_projects', JSON.stringify(todoProjects));
+    }
+    if (results[11].status === 'fulfilled') {
+      localStorage.setItem('phq_todo_tasks', JSON.stringify(todoTasks));
+    }
     if (results[12].status === 'fulfilled') {
       localStorage.setItem('phq_journals', JSON.stringify(journals));
     }

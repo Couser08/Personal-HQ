@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   IconPlus,
   IconTrash,
@@ -30,6 +30,12 @@ export default function LinkSaverModule() {
   const [detectedLink, setDetectedLink] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [lastDismissedLink, setLastDismissedLink] = useState<string | null>(null);
+
+  // Use a ref to prevent re-triggering the checkClipboard useEffect on savedLinks changes
+  const savedLinksRef = useRef<SavedLink[]>(savedLinks);
+  useEffect(() => {
+    savedLinksRef.current = savedLinks;
+  }, [savedLinks]);
 
   // Load from localStorage
   useEffect(() => {
@@ -78,7 +84,7 @@ export default function LinkSaverModule() {
       if (
         cleanedText &&
         isValidLink(cleanedText) &&
-        !savedLinks.some((l) => l.url === cleanedText) &&
+        !savedLinksRef.current.some((l) => l.url === cleanedText) &&
         cleanedText !== lastDismissedLink
       ) {
         setDetectedLink(cleanedText);
@@ -90,11 +96,10 @@ export default function LinkSaverModule() {
   };
 
   useEffect(() => {
-    // Check when component mounts or tab focus changes
     void checkClipboard();
     window.addEventListener('focus', checkClipboard);
     return () => window.removeEventListener('focus', checkClipboard);
-  }, [savedLinks, lastDismissedLink]);
+  }, [lastDismissedLink]);
 
   // Action handlers
   const handleAddLink = (url: string) => {
@@ -171,62 +176,62 @@ export default function LinkSaverModule() {
   }, [savedLinks, activeTab]);
 
   return (
-    <div className="flex flex-col gap-6 text-left select-none">
+    <div className="flex flex-col gap-5 text-left select-none max-h-[calc(100vh-180px)] overflow-hidden">
       
       {/* Clipboard Popup Banner */}
       {showPopup && detectedLink && (
-        <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-stone-900 to-neutral-950 text-white p-4 border border-primary/20 shadow-high flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              <IconClipboardText className="w-5 h-5 text-primary" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-zinc-900 to-black text-white p-3.5 border border-primary/20 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <IconClipboardText className="w-4.5 h-4.5 text-primary" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Detected Copied Link</span>
-              <p className="text-xs font-bold text-white truncate max-w-sm sm:max-w-md md:max-w-lg mt-0.5" title={detectedLink}>
+              <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Pasted Link Detected</span>
+              <p className="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-md mt-0.5" title={detectedLink}>
                 {detectedLink}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
             <button
               onClick={handleDismissClipboard}
-              className="text-[10px] font-black uppercase text-stone-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+              className="text-[10px] font-bold uppercase text-zinc-450 hover:text-white px-2.5 py-1.5 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
             >
               Dismiss
             </button>
             <button
               onClick={handleSaveClipboardLink}
-              className="bg-primary hover:bg-primary-hover text-white text-[10px] font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-subtle border-none"
+              className="bg-primary hover:bg-primary-hover text-white text-[10px] font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm"
             >
-              Save Link
+              Save
             </button>
           </div>
         </div>
       )}
 
       {/* Manual Input form */}
-      <form onSubmit={handleManualSubmit} className="flex gap-2">
+      <form onSubmit={handleManualSubmit} className="flex gap-2 shrink-0">
         <input
           type="text"
           placeholder="Paste YouTube, Instagram, or Pinterest URL..."
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
-          className="input-field flex-1 font-sans text-xs bg-surface"
+          className="input-field flex-1 font-sans text-xs bg-surface border border-border/60 rounded-xl px-3 py-2.5 outline-none focus:border-primary/50"
         />
         <button
           type="submit"
           disabled={!inputUrl.trim() || !isValidLink(inputUrl)}
-          className="btn btn-primary btn-md shrink-0 flex items-center gap-1 h-auto py-2.5 rounded-xl cursor-pointer"
+          className="btn btn-primary btn-md shrink-0 flex items-center gap-1.5 px-4 h-auto py-2 rounded-xl cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
         >
-          <IconPlus size={16} />
+          <IconPlus size={15} />
           <span className="hidden sm:inline">Save</span>
         </button>
       </form>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-border/40 pb-4">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 border-b border-border/40 shrink-0">
         {([
-          { id: 'all', label: 'All Links' },
+          { id: 'all', label: 'All' },
           { id: 'youtube', label: 'YouTube' },
           { id: 'instagram', label: 'Instagram' },
           { id: 'pinterest', label: 'Pinterest' },
@@ -235,10 +240,10 @@ export default function LinkSaverModule() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border border-transparent ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border border-transparent whitespace-nowrap ${
               activeTab === tab.id
                 ? 'bg-primary/10 text-primary border-primary/20'
-                : 'bg-surface text-text-secondary hover:text-text-primary hover:bg-surface-hover border-border/60'
+                : 'bg-surface text-text-secondary hover:text-text-primary hover:bg-surface-hover border-border/50'
             }`}
           >
             {tab.label}
@@ -246,103 +251,100 @@ export default function LinkSaverModule() {
         ))}
       </div>
 
-      {/* Cards List Grid */}
-      {filteredLinks.length === 0 ? (
-        <div className="py-16 text-center text-xs text-text-muted italic border border-dashed border-border/50 rounded-[32px] bg-surface-alt/20">
-          No saved links found in this category.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLinks.map((link) => {
+      {/* Bookmarks List Container (scrolls independently to prevent keyboard overflow) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pr-1 pb-16 flex flex-col gap-2.5">
+        {filteredLinks.length === 0 ? (
+          <div className="py-12 text-center text-xs text-text-muted italic border border-dashed border-border/50 rounded-2xl bg-surface-alt/10">
+            No saved links found.
+          </div>
+        ) : (
+          filteredLinks.map((link) => {
             const ytId = link.type === 'youtube' ? getYouTubeId(link.url) : null;
             const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
 
             return (
               <div
                 key={link.id}
-                className="group relative bg-surface border border-border/70 rounded-[28px] overflow-hidden flex flex-col justify-between shadow-subtle hover:shadow-lifted hover:-translate-y-0.5 transition-all duration-200 min-h-[220px]"
+                className="group relative bg-surface border border-border/70 rounded-2xl p-2.5 flex items-center justify-between gap-3 shadow-sm hover:shadow-md hover:border-border transition-all duration-200"
               >
-                {/* Visual Header / Cover */}
-                <div className="relative h-28 w-full bg-stone-100 dark:bg-stone-900/50 overflow-hidden shrink-0 flex items-center justify-center">
+                {/* Left Side: Small cover thumbnail */}
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-900/50 shrink-0 flex items-center justify-center relative">
                   {thumbUrl ? (
-                    <img src={thumbUrl} alt="YouTube thumbnail" className="w-full h-full object-cover" />
+                    <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
                   ) : link.type === 'instagram' ? (
-                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white">
-                      <IconBrandInstagram className="w-12 h-12 stroke-[1.2] opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-650 flex items-center justify-center text-white">
+                      <IconBrandInstagram className="w-5 h-5 stroke-[1.5]" />
                     </div>
                   ) : link.type === 'pinterest' ? (
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white">
-                      <IconBrandPinterest className="w-12 h-12 stroke-[1.2] opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white">
+                      <IconBrandPinterest className="w-5 h-5 stroke-[1.5]" />
                     </div>
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-stone-950 flex items-center justify-center text-white">
-                      <IconLink className="w-12 h-12 stroke-[1.2] opacity-60" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-white">
+                      <IconLink className="w-5 h-5 stroke-[1.5]" />
                     </div>
                   )}
+                </div>
 
-                  {/* Open Link hover overlay button (Apple style) */}
+                {/* Center Content: Title and URL description */}
+                <div className="flex-1 min-w-0 text-left flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-text-primary truncate">
+                      {link.title}
+                    </span>
+                    {/* Tiny Platform Icon */}
+                    {link.type === 'youtube' && <IconBrandYoutube className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    {link.type === 'instagram' && <IconBrandInstagram className="w-3.5 h-3.5 text-pink-500 shrink-0" />}
+                    {link.type === 'pinterest' && <IconBrandPinterest className="w-3.5 h-3.5 text-red-600 shrink-0" />}
+                  </div>
+                  
+                  <span className="text-[10px] text-text-secondary truncate block hover:text-primary transition-colors">
+                    <a href={link.url} target="_blank" rel="noreferrer" className="no-underline text-inherit cursor-pointer">
+                      {link.url}
+                    </a>
+                  </span>
+                  
+                  <span className="text-[8px] font-semibold text-text-muted mt-0.5">
+                    {new Date(link.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+
+                {/* Right Side: Quick Action Buttons */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {/* Open Link */}
                   <a
                     href={link.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white cursor-pointer no-underline"
+                    className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
+                    title="Open Link"
                   >
-                    <div className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur-md flex items-center justify-center shadow-lg transition-transform transform scale-90 group-hover:scale-100 duration-200">
-                      <IconExternalLink className="w-5 h-5 text-white" />
-                    </div>
+                    <IconExternalLink size={14} />
                   </a>
+
+                  {/* Copy Link */}
+                  <button
+                    onClick={() => handleCopyLink(link.id, link.url)}
+                    className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer border-none bg-transparent"
+                    title="Copy URL"
+                  >
+                    {copiedId === link.id ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
+                  </button>
+
+                  {/* Delete Link */}
+                  <button
+                    onClick={() => handleDeleteLink(link.id)}
+                    className="p-2 rounded-xl text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer border-none bg-transparent"
+                    title="Delete Link"
+                  >
+                    <IconTrash size={14} />
+                  </button>
                 </div>
-
-                {/* Card Details */}
-                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
-                  <div>
-                    {/* Platform Badge */}
-                    <div className="flex items-center gap-1.5">
-                      {link.type === 'youtube' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase bg-red-500/10 text-red-500"><IconBrandYoutube className="w-3.5 h-3.5 shrink-0" />YouTube</span>}
-                      {link.type === 'instagram' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase bg-pink-500/10 text-pink-500"><IconBrandInstagram className="w-3.5 h-3.5 shrink-0" />Instagram</span>}
-                      {link.type === 'pinterest' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase bg-red-600/10 text-red-600"><IconBrandPinterest className="w-3.5 h-3.5 shrink-0" />Pinterest</span>}
-                      {link.type === 'other' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase bg-neutral-500/10 text-neutral-500"><IconLink className="w-3.5 h-3.5 shrink-0" />Web</span>}
-                    </div>
-
-                    {/* URL Snippet */}
-                    <p className="text-xs font-bold text-text-primary mt-2 break-all line-clamp-2 leading-relaxed" title={link.url}>
-                      {link.url}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                    <span className="text-[9px] font-semibold text-text-muted">
-                      {new Date(link.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-
-                    <div className="flex items-center gap-1">
-                      {/* Copy Button */}
-                      <button
-                        onClick={() => handleCopyLink(link.id, link.url)}
-                        className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer border-none bg-transparent"
-                        title="Copy Link URL"
-                      >
-                        {copiedId === link.id ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
-                      </button>
-
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => handleDeleteLink(link.id)}
-                        className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer border-none bg-transparent"
-                        title="Delete Link"
-                      >
-                        <IconTrash size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }
