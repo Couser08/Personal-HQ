@@ -1,4 +1,4 @@
-import { IconSearch, IconPlus, IconFolder, IconEdit, IconTrash, IconChevronDown } from '@tabler/icons-react';
+import { IconSearch, IconPlus, IconFolder, IconEdit, IconTrash, IconChevronDown, IconChevronLeft } from '@tabler/icons-react';
 import { type Mindmap } from '../../../store/types';
 
 export function MindmapSidebar({
@@ -14,6 +14,7 @@ export function MindmapSidebar({
   deleteMindmap,
   showConfirm,
   isLeftSidebarOpen,
+  setIsLeftSidebarOpen,
 }: {
   filteredMindmaps: Mindmap[];
   search: string;
@@ -27,30 +28,50 @@ export function MindmapSidebar({
   deleteMindmap: (id: string) => Promise<void>;
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
   isLeftSidebarOpen: boolean;
+  setIsLeftSidebarOpen: (val: boolean) => void;
 }) {
   return (
-    <div
-      className={`bg-surface/40 border-r border-border/50 flex flex-col shrink-0 transition-all duration-300 ${
-        isLeftSidebarOpen
-          ? activeMindmapId
-            ? 'hidden md:flex w-[260px]'
-            : 'flex w-full md:w-[260px]'
-          : 'w-0 overflow-hidden border-r-0 hidden'
-      }`}
-    >
-      {/* Workspace Brand Selector */}
-      <div className="p-4 border-b border-border/40 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-sm">
-            FF
+    <>
+      {/* Backdrop overlay for mobile drawer */}
+      {isLeftSidebarOpen && activeMindmapId && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[130] md:hidden cursor-pointer"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+
+      <div
+        className={`border-r border-border/50 transition-all duration-300 flex flex-col shrink-0 ${
+          isLeftSidebarOpen
+            ? activeMindmapId
+              ? 'absolute md:relative inset-y-0 left-0 w-[280px] md:w-[260px] bg-surface md:bg-surface/40 shadow-2xl md:shadow-none z-[140] md:z-10 flex'
+              : 'flex w-full md:w-[260px] bg-surface/40'
+            : 'w-0 overflow-hidden border-r-0 hidden'
+        }`}
+      >
+        {/* Workspace Brand Selector */}
+        <div className="p-4 border-b border-border/40 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-sm">
+              FF
+            </div>
+            <div className="text-left leading-none">
+              <p className="font-extrabold text-[13px] text-text-primary">FocusFlow</p>
+              <p className="text-[10px] text-text-secondary mt-0.5">Personal Space</p>
+            </div>
           </div>
-          <div className="text-left leading-none">
-            <p className="font-extrabold text-[13px] text-text-primary">FocusFlow</p>
-            <p className="text-[10px] text-text-secondary mt-0.5">Personal Space</p>
-          </div>
+          {activeMindmapId ? (
+            <button
+              onClick={() => setIsLeftSidebarOpen(false)}
+              className="md:hidden w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary cursor-pointer border-none bg-transparent"
+              title="Close Sidebar"
+            >
+              <IconChevronLeft className="w-5 h-5" />
+            </button>
+          ) : (
+            <IconChevronDown className="w-4 h-4 text-text-secondary" />
+          )}
         </div>
-        <IconChevronDown className="w-4 h-4 text-text-secondary" />
-      </div>
 
       {/* Sidebar Search */}
       <div className="p-3">
@@ -182,5 +203,6 @@ export function MindmapSidebar({
         Recently Deleted
       </div>
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { IconX, IconCheck } from '@tabler/icons-react';
 // ── Patch identity — bump this ID whenever you ship a new set of bug fixes ──
 const PATCH_ID = 'bugfix-2026-07-13-a';
 const STORAGE_KEY = 'phq_seen_bugfix';
+const ENABLED = false; // ← set true to show, false to retire this patch banner
 
 // ── Fix items ─────────────────────────────────────────────────────────────────
 const FIXES = [
@@ -64,6 +65,7 @@ export function BugFixBanner() {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (!ENABLED) return;
     const seen = localStorage.getItem(STORAGE_KEY);
     if (seen !== PATCH_ID) {
       const t = setTimeout(() => setVisible(true), 1800);

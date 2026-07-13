@@ -20,7 +20,6 @@ import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { JournalEditor } from './components/JournalEditor';
 import { JournalSettingsSidebar } from './components/JournalSettingsSidebar';
-import { StickyNotes } from './components/StickyNotes';
 import {
   STYLE_PRESETS,
   buildBlankEntry,
@@ -676,15 +675,6 @@ export default function JournalModule() {
               </div>
             </div>
 
-            {/* Redesigned Sticky Notes List */}
-            <StickyNotes
-              journalStickyNotes={journalStickyNotes}
-              addJournalStickyNote={addJournalStickyNote}
-              updateJournalStickyNote={updateJournalStickyNote}
-              deleteJournalStickyNote={deleteJournalStickyNote}
-              isDark={resolvedTheme === 'dark'}
-            />
-
             {/* Writing Templates Slider ("Party planning" section) */}
             <div className="flex flex-col gap-2.5">
               <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider pl-0.5">Writing Templates</span>
@@ -839,6 +829,11 @@ export default function JournalModule() {
             createEntry={createEntry}
             setIsSettingsOpen={setIsSettingsOpen}
             forceSave={forceSave}
+            journalStickyNotes={journalStickyNotes}
+            addJournalStickyNote={addJournalStickyNote}
+            updateJournalStickyNote={updateJournalStickyNote}
+            deleteJournalStickyNote={deleteJournalStickyNote}
+            resolvedTheme={resolvedTheme}
           />
         )}
       </div>

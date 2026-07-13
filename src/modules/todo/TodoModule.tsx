@@ -126,6 +126,15 @@ export default function TodoModule() {
     setShowSubtasksDropdown(false);
   };
 
+  const isToday = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const today = new Date();
+    return d.getDate() === today.getDate() &&
+           d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
+  };
+
   const handleToggleTask = (id: string) => {
     const t = todoTasks.find(x => x.id === id);
     if (!t) return;
@@ -134,9 +143,16 @@ export default function TodoModule() {
       setTimeout(() => {
         updateTodoTask(id, { completed: true });
         setCompletingIds(prev => prev.filter(x => x !== id));
-        // Trigger premium wavy effect
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'todo' } }));
+        
+        // Check if all today's tasks are completed
+        const todayTasks = todoTasks.filter(task => !task.deleted && isToday(task.dueDate));
+        const uncompletedTodayTasks = todayTasks.filter(task => !task.completed && task.id !== id);
+
+        if (todayTasks.length > 0 && uncompletedTodayTasks.length === 0) {
+          // Trigger premium wavy effect only on full daily completion
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('trigger-wavy-effect', { detail: { type: 'todo' } }));
+          }
         }
       }, 600);
     } else {

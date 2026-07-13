@@ -4,18 +4,18 @@ import {
   IconX,
   IconSparkles,
   IconComponents,
-  IconLink,
-  IconCommand,
-  IconClock,
+  IconCards,
+  IconConfetti,
+  IconWand,
   IconDeviceMobile,
-  IconPalette,
-  IconListCheck,
-  IconBrush
+  IconHighlight,
+  IconLayoutSidebarLeftCollapse,
+  IconStack2
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const APP_VERSION = '2.2.0';
-const APP_CODENAME = 'Craft';
+const APP_VERSION = '2.3.0';
+const APP_CODENAME = 'Flow';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -32,93 +32,93 @@ interface ChangeItem {
 // ── Tab Data ──────────────────────────────────────────────────────────────────
 const TABS: { id: TabId; label: string }[] = [
   { id: 'architecture', label: "What's New" },
-  { id: 'features',     label: 'Design' },
+  { id: 'features',     label: 'Refinements' },
   { id: 'improvements', label: 'Fixes' },
 ];
 
 const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   architecture: {
-    headline: 'New module, slash commands, clock styles — the most feature-packed update of the year.',
+    headline: 'Smarter canvas controls, Link Saver arc view, and a more satisfying completion moment.',
     items: [
       {
-        icon: <IconLink className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconLayoutSidebarLeftCollapse className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#5856D6',
+        bg: 'rgba(88, 86, 214, 0.08)',
+        title: 'Canvas Popover Controls',
+        desc: 'Mindmap and Drawing module controls now live in a clean vertical popover at the edge of the canvas — sidebar toggle moved to the top-left floating button.',
+      },
+      {
+        icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Link Saver',
-        desc: 'Brand new module to save and organise your Instagram, YouTube, and Pinterest links — all in one place, always at hand.',
+        title: 'Link Saver Arc View & Pagination',
+        desc: 'Links now display in a paginated arc card layout. Selecting a card opens its detail view instantly. Page resets cleanly when switching tabs.',
       },
       {
-        icon: <IconCommand className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#AF52DE',
-        bg: 'rgba(175, 82, 222, 0.08)',
-        title: 'Markdown Slash Commands',
-        desc: 'Type / inside the Markdown editor to trigger a command palette — insert headings, code blocks, tables, and more without lifting your hands from the keyboard.',
-      },
-      {
-        icon: <IconClock className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconConfetti className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Pomodoro Clock Styles',
-        desc: 'Pick your perfect timer face from Settings — Minimal Ring, Classic Flip, Neon Pulse, and more. Applies live without reloading.',
+        title: 'Smart Daily Completion Celebration',
+        desc: "The wavy celebration now only fires when you complete ALL of today's tasks — not on every single checkbox. Makes it feel earned.",
       },
       {
-        icon: <IconBrush className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF2D55',
-        bg: 'rgba(255, 45, 85, 0.08)',
-        title: 'Brand New Design System',
-        desc: 'Consistent tokens, spacing scale, and colour palette introduced across every module for a premium, cohesive look.',
+        icon: <IconHighlight className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#AF52DE',
+        bg: 'rgba(175, 82, 222, 0.08)',
+        title: '5 New Highlight Colors',
+        desc: 'Rich Text Editor gains Purple, Red, Cyan, Teal, and Lime highlights. Color picker now uses a grid layout for quick selection.',
       },
     ],
   },
   features: {
-    headline: 'A unified visual language that makes the whole app feel premium.',
+    headline: 'Quality-of-life refinements that make everyday use more delightful.',
     items: [
       {
-        icon: <IconPalette className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#5856D6',
-        bg: 'rgba(88, 86, 214, 0.08)',
-        title: 'Design Tokens & Colour Palette',
-        desc: 'Every colour, radius, shadow, and spacing value now lives in a central design.md spec — zero one-off values across the codebase.',
+        icon: <IconStack2 className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#34C759',
+        bg: 'rgba(52, 199, 89, 0.08)',
+        title: 'Mindmap Sidebar Toggle',
+        desc: 'The sidebar toggle button is now a floating pill at the top-left of the canvas — always visible, never blocking your nodes.',
+      },
+      {
+        icon: <IconWand className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF2D55',
+        bg: 'rgba(255, 45, 85, 0.08)',
+        title: 'Drawing Canvas Controls Revamped',
+        desc: 'Whiteboard controls moved to a compact vertical popover at bottom-right — less clutter on the canvas, more room to think.',
       },
       {
         icon: <IconComponents className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#34C759',
-        bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Consistent Component Language',
-        desc: 'Buttons, cards, inputs, and modals share the same border-radius, shadow, and motion curves — designed to feel like one cohesive product.',
-      },
-      {
-        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Micro-Animation Standards',
-        desc: 'Standardised spring presets (appleSpring, softSpring) and entrance curves applied to all modals, dropdowns, and page transitions.',
+        title: 'Journal & Mindmap Sidebar Polish',
+        desc: 'JournalSettingsSidebar and MindmapSidebar refined with tighter spacing, cleaner typography, and better responsive behaviour.',
       },
     ],
   },
   improvements: {
-    headline: 'Top-requested responsive fixes — especially on mobile and larger screens.',
+    headline: 'Bug fixes and sync improvements from the previous patch, now fully stable.',
     items: [
       {
-        icon: <IconListCheck className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Responsive To-Do List',
-        desc: 'Task list now stacks gracefully on all screen sizes — no more clipped rows or broken layouts on small devices.',
+        title: 'Todo Cross-Device Sync Fixed',
+        desc: 'Tasks now sync reliably across all your devices — no more stale state or missing completions after switching.',
       },
       {
         icon: <IconDeviceMobile className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Mindmap & Drawing Mobile Fix',
-        desc: 'Most-requested fix: canvas-based Mindmap and Drawing modules now handle touch correctly and no longer overflow on mobile viewports.',
+        title: 'Pomodoro Notification & Layout',
+        desc: "Finish notification now fires every time on all devices. Today's Goal and Weekly Focus Trend layout fixed on all screen sizes.",
       },
       {
-        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#8E8E93',
         bg: 'rgba(142, 142, 147, 0.08)',
-        title: 'Journal Horizontal Scroll Fix',
-        desc: 'Eliminated the stray horizontal scrollbar on the Journal page that appeared on laptops and wider screens.',
+        title: 'Link Saver Performance',
+        desc: 'Laggy scrolling eliminated and link cards redesigned — faster load, smoother interactions.',
       },
     ],
   },
@@ -126,9 +126,9 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stat pills shown on mini card ─────────────────────────────────────────────
 const STATS = [
-  { label: 'New module', value: '1' },
-  { label: 'Clock styles', value: '4+' },
-  { label: 'Fixes shipped', value: '3' },
+  { label: 'Canvas upgrades', value: '2' },
+  { label: 'New colors', value: '5' },
+  { label: 'Fixes', value: '3' },
 ];
 
 // ── Mini Notification Card ────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
             <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
             <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
           </div>
-          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Link Saver, slash commands, clock styles & design system.</p>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Canvas popovers, arc view, smarter celebrations & new colors.</p>
         </div>
       </div>
 
@@ -249,7 +249,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   </span>
                 </div>
                 <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
-                  A new Link Saver module, Markdown slash commands, Pomodoro clock styles, a fresh design system, and the top-3 responsive fixes.
+                  Canvas controls overhauled, Link Saver gets arc view, daily celebration got smarter, and 5 new highlight colours.
                 </p>
               </div>
             </div>
@@ -324,7 +324,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Explore v2.2.0 Craft →
+              Explore v2.3.0 Flow →
             </button>
           </div>
         </motion.div>

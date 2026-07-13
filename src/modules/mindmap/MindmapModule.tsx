@@ -480,7 +480,7 @@ export default function MindmapModule() {
       className={`flex gap-0 overflow-hidden bg-background text-text-primary transition-all duration-300 ${
         isFullScreen
           ? 'fixed inset-0 w-screen h-screen z-[150] rounded-none border-none'
-          : 'h-[calc(100vh-180px)] md:h-[calc(100vh-130px)] rounded-[32px] border border-border/60'
+          : 'h-[calc(100vh-130px)] md:h-[calc(100vh-130px)] rounded-[32px] border border-border/60'
       }`}
     >
       <MindmapSidebar
@@ -496,6 +496,7 @@ export default function MindmapModule() {
         deleteMindmap={deleteMindmap}
         showConfirm={showConfirm}
         isLeftSidebarOpen={isLeftSidebarOpen}
+        setIsLeftSidebarOpen={setIsLeftSidebarOpen}
       />
 
       <div

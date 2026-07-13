@@ -15,6 +15,11 @@ const HIGHLIGHT_COLORS = [
   { hex: '#bfdbfe', label: 'Blue' },
   { hex: '#fbcfe8', label: 'Pink' },
   { hex: '#fed7aa', label: 'Orange' },
+  { hex: '#ddd6fe', label: 'Purple' },
+  { hex: '#fecdd3', label: 'Red' },
+  { hex: '#cffafe', label: 'Cyan' },
+  { hex: '#ccfbf1', label: 'Teal' },
+  { hex: '#d9f99d', label: 'Lime' },
 ];
 
 const LANG_OPTIONS = [
@@ -424,7 +429,7 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
                     {showColorPicker && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowColorPicker(false)} />
-                        <div className="absolute top-full left-0 mt-1.5 p-1.5 bg-surface border border-border rounded-xl shadow-high flex gap-1.5 z-50">
+                        <div className="absolute top-full left-0 mt-1.5 p-2 bg-surface border border-border rounded-2xl shadow-high grid grid-cols-5 gap-2 z-50 w-max">
                           {HIGHLIGHT_COLORS.map(color => (
                             <button
                               key={color.hex}
@@ -435,7 +440,7 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
                                 setShowColorPicker(false);
                                 exec('hiliteColor', color.hex);
                               }}
-                              className="w-6 h-6 rounded-full border border-border-alt hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-sm"
+                              className="w-6 h-6 rounded-full border border-border hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-sm"
                               style={{ backgroundColor: color.hex }}
                             />
                           ))}

@@ -162,6 +162,7 @@ export function MindmapCanvas({
 
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const [linkingSourceId, setLinkingSourceId] = useState<string | null>(null);
@@ -1165,6 +1166,18 @@ export function MindmapCanvas({
 
         {/* Floating Canvas UI Indicators (Zoom state & Node search) */}
         <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+          {/* Sidebar Toggle Button on top left */}
+          <button
+            type="button"
+            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+            className={`w-8 h-8 rounded-2xl flex items-center justify-center transition-all border border-border/50 shadow-md backdrop-blur cursor-pointer shrink-0 ${
+              isLeftSidebarOpen ? 'bg-primary text-white border-primary' : 'bg-surface/85 text-text-secondary hover:bg-surface-alt'
+            }`}
+            title={isLeftSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+          >
+            {isLeftSidebarOpen ? <IconChevronLeft className="w-4 h-4" /> : <IconChevronRight className="w-4 h-4" />}
+          </button>
+
           <div className="bg-surface/80 border border-border/50 px-3 py-1.5 rounded-2xl text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
             {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
           </div>
@@ -1190,80 +1203,104 @@ export function MindmapCanvas({
           </div>
         </div>
 
-        {/* Zoom and layout controls */}
-        <div className="absolute bottom-20 md:bottom-6 left-4 md:left-6 bg-surface/90 border border-border/60 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur z-20 max-w-[90vw] overflow-x-auto no-scrollbar flex-nowrap shrink-0">
+        {/* Zoom and layout controls vertical popover menu */}
+        <div className="absolute bottom-4 left-4 z-20 flex flex-col items-center gap-2.5">
+          {/* Expanded Zoom Popover Items */}
+          {isZoomMenuOpen && (
+            <div className="flex flex-col gap-2 animate-fade-in-up">
+              {/* Auto-Arrange Layout */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleTidyLayout();
+                  setIsZoomMenuOpen(false);
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Auto-Arrange Layout"
+              >
+                <IconLayout className="w-5 h-5" />
+              </button>
+
+              {/* Center Camera */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCenterCamera();
+                  setIsZoomMenuOpen(false);
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Center Camera"
+              >
+                <IconFocusCentered className="w-5 h-5" />
+              </button>
+
+              {/* Expand All Branches */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenAll();
+                  setIsZoomMenuOpen(false);
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Expand All Branches"
+              >
+                <IconChevronDown className="w-5 h-5" />
+              </button>
+
+              {/* Collapse All Branches */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCloseAll();
+                  setIsZoomMenuOpen(false);
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Collapse All Branches"
+              >
+                <IconChevronUp className="w-5 h-5" />
+              </button>
+
+              {/* Zoom In */}
+              <button
+                type="button"
+                onClick={() => {
+                  setZoom((prev) => Math.min(prev * 1.15, 2.5));
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Zoom In"
+              >
+                <IconZoomIn className="w-5 h-5" />
+              </button>
+
+              {/* Zoom Percentage Indicator */}
+              <div className="w-10 h-7 rounded-lg bg-surface-alt border border-border/40 text-text-primary text-[10px] font-extrabold flex items-center justify-center shadow-sm select-none">
+                {Math.round(zoom * 100)}%
+              </div>
+
+              {/* Zoom Out */}
+              <button
+                type="button"
+                onClick={() => {
+                  setZoom((prev) => Math.max(prev / 1.15, 0.4));
+                }}
+                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                title="Zoom Out"
+              >
+                <IconZoomOut className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Trigger Button */}
           <button
             type="button"
-            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
-            title={isLeftSidebarOpen ? 'Collapse Left Panel' : 'Expand Left Panel'}
+            onClick={() => setIsZoomMenuOpen(!isZoomMenuOpen)}
+            className={`w-10 h-10 rounded-2xl border border-border/80 text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer ${
+              isZoomMenuOpen ? 'bg-primary text-white border-primary' : 'bg-surface hover:bg-surface-hover'
+            }`}
+            title="Zoom controls"
           >
-            {isLeftSidebarOpen ? <IconChevronLeft className="w-4 h-4" /> : <IconChevronRight className="w-4 h-4" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsFullScreen(!isFullScreen)}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2 border-none bg-transparent cursor-pointer"
-            title={isFullScreen ? 'Exit Full Screen' : 'Zen Full Screen Mode'}
-          >
-            {isFullScreen ? <IconMinimize className="w-4 h-4" /> : <IconMaximize className="w-4 h-4" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setZoom((prev) => Math.max(prev / 1.15, 0.4))}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
-            title="Zoom Out"
-          >
-            <IconZoomOut className="w-4 h-4" />
-          </button>
-
-          <span className="text-xs font-black text-text-primary min-w-[36px] text-center">{Math.round(zoom * 100)}%</span>
-
-          <button
-            type="button"
-            onClick={() => setZoom((prev) => Math.min(prev * 1.15, 2.5))}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2 border-none bg-transparent cursor-pointer"
-            title="Zoom In"
-          >
-            <IconZoomIn className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCenterCamera}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
-            title="Center Canvas"
-          >
-            <IconFocusCentered className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTidyLayout}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-r border-border/50 pr-2 border-none bg-transparent cursor-pointer"
-            title="Auto-Arrange Layout"
-          >
-            <IconLayout className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenAll}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
-            title="Expand All Branches"
-          >
-            <IconChevronDown className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCloseAll}
-            className="w-7 h-7 rounded-lg hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
-            title="Collapse All Branches"
-          >
-            <IconChevronUp className="w-4 h-4" />
+            <IconChevronUp size={18} className={`transition-transform duration-200 ${isZoomMenuOpen ? 'rotate-180' : ''}`} />
           </button>
         </div>
 
@@ -1310,6 +1347,18 @@ export function MindmapCanvas({
 
         {/* Floating Apple-Style Toolbar at Top Center */}
         <div className="absolute top-16 md:top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-3 bg-surface/90 border border-border/60 p-1.5 sm:p-2 rounded-2xl shadow-xl backdrop-blur-md max-w-[95vw] md:max-w-2xl w-fit z-20 overflow-x-auto no-scrollbar flex-nowrap shrink-0">
+          <button
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all border-none bg-transparent cursor-pointer shrink-0 ${
+              isFullScreen ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:bg-surface-alt'
+            }`}
+            title={isFullScreen ? 'Exit Zen Mode' : 'Zen Mode'}
+          >
+            {isFullScreen ? <IconMinimize className="w-4 h-4" /> : <IconMaximize className="w-4 h-4" />}
+          </button>
+
+          <div className="w-px h-5 bg-border/40 shrink-0 mx-0.5" />
+
           <button
             onClick={() => {
               if (selectedNodeId) {

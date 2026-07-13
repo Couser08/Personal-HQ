@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
-import { IconMaximize, IconMinimize, IconChevronRight } from '@tabler/icons-react';
+import { IconMaximize, IconMinimize, IconChevronRight, IconChevronUp } from '@tabler/icons-react';
 
 interface WhiteboardCanvasProps {
   activeSketchId: string;
@@ -29,6 +29,8 @@ export const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({
   setExcalidrawAPI,
   onChange,
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <div 
       key={activeSketchId} 
@@ -38,27 +40,52 @@ export const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({
           : 'flex-grow h-full rounded-[32px] border border-border/50 shadow-[0_15px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]'
       } ${isoGrid ? 'iso-grid-active' : ''}`}
     >
-      {/* Floating Sidebar toggle button */}
-      {isSidebarCollapsed && (
+      {/* Floating Canvas Controls vertical popover placed at bottom-right */}
+      <div className="absolute bottom-20 md:bottom-6 right-4 z-[99999] flex flex-col items-center gap-2.5">
+        
+        {/* Expanded Popover Items */}
+        {isMenuOpen && (
+          <div className="flex flex-col gap-2 animate-fade-in-up">
+            {/* Toggle Sidebar Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSidebarCollapsed(!isSidebarCollapsed);
+                setIsMenuOpen(false);
+              }}
+              className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+              title={isSidebarCollapsed ? "Show Sketch Library" : "Hide Sketch Library"}
+            >
+              <IconChevronRight size={18} className={isSidebarCollapsed ? "" : "rotate-180"} />
+            </button>
+
+            {/* Toggle Full Screen Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsFullScreen(!isFullScreen);
+                setIsMenuOpen(false);
+              }}
+              className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+              title={isFullScreen ? "Exit Full Screen" : "Full Screen Mode"}
+            >
+              {isFullScreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
+            </button>
+          </div>
+        )}
+
+        {/* Trigger Button */}
         <button
           type="button"
-          onClick={() => setIsSidebarCollapsed(false)}
-          className="absolute top-3.5 left-[60px] z-[99999] p-2.5 bg-surface hover:bg-surface-hover border border-border text-text-primary rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center"
-          title="Show Sketch Library"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className={`w-10 h-10 rounded-2xl border border-border/80 text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer ${
+            isMenuOpen ? 'bg-primary text-white border-primary' : 'bg-surface hover:bg-surface-hover'
+          }`}
+          title="Canvas Options"
         >
-          <IconChevronRight size={16} />
+          <IconChevronUp size={18} className={`transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
         </button>
-      )}
-
-      {/* Floating Fullscreen toggle button */}
-      <button
-        type="button"
-        onClick={() => setIsFullScreen(!isFullScreen)}
-        className="absolute top-3.5 right-16 z-[99999] p-2.5 bg-surface hover:bg-surface-hover border border-border text-text-primary rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center"
-        title={isFullScreen ? "Exit Full Screen" : "Full Screen Mode"}
-      >
-        {isFullScreen ? <IconMinimize size={16} /> : <IconMaximize size={16} />}
-      </button>
+      </div>
 
       <Excalidraw
         theme={resolvedTheme}

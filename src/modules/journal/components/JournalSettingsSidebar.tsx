@@ -15,6 +15,8 @@ import {
 
 import { CustomSelect } from '../../../components/ui/CustomSelect';
 import { TagInput } from '../../../components/ui/TagInput';
+import { StickyNotes } from './StickyNotes';
+import { type JournalStickyNote } from '../../../store/types';
 import {
   STYLE_PRESETS,
   PAGE_STYLE_OPTIONS,
@@ -51,6 +53,12 @@ export function JournalSettingsSidebar({
   createEntry,
   setIsSettingsOpen,
   forceSave,
+  
+  journalStickyNotes,
+  addJournalStickyNote,
+  updateJournalStickyNote,
+  deleteJournalStickyNote,
+  resolvedTheme,
 }: {
   stylePreset: EntryStylePreset;
   setStylePreset: (val: EntryStylePreset) => void;
@@ -78,9 +86,15 @@ export function JournalSettingsSidebar({
   createEntry: () => void;
   setIsSettingsOpen: (val: boolean) => void;
   forceSave: () => void;
+
+  journalStickyNotes: JournalStickyNote[];
+  addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
+  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
+  deleteJournalStickyNote: (id: string) => Promise<void>;
+  resolvedTheme: string;
 }) {
   return (
-    <aside className="relative group/settings flex flex-col gap-4 rounded-[28px] border border-border/60 bg-surface/90 p-4 shadow-[0_16px_45px_-24px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-y-auto max-h-[calc(100vh-2rem)] transition-all duration-300">
+    <aside className="relative group/settings flex flex-col gap-4 rounded-[28px] border border-border/60 bg-surface/90 p-4 shadow-[0_16px_45px_-24px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-y-auto max-h-[calc(100vh-2rem)] transition-all duration-300 w-full sm:w-[320px]">
       {/* Hover Collapse Slider Handle */}
       <div className="absolute top-1/2 -left-3 -translate-y-1/2 z-20 opacity-0 group-hover/settings:opacity-100 transition-opacity duration-200">
         <button
@@ -309,6 +323,15 @@ export function JournalSettingsSidebar({
           </div>
         </div>
       </div>
+
+      {/* Sticky Notes inside Journal Workspace Editor */}
+      <StickyNotes
+        journalStickyNotes={journalStickyNotes}
+        addJournalStickyNote={addJournalStickyNote}
+        updateJournalStickyNote={updateJournalStickyNote}
+        deleteJournalStickyNote={deleteJournalStickyNote}
+        isDark={resolvedTheme === 'dark'}
+      />
 
       {/* Quick Actions */}
       <div className="rounded-[24px] border border-border/60 bg-surface-alt/35 p-4">
