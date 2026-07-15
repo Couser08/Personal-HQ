@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useAppStore, type SavedLink } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   IconPlus,
   IconTrash,
@@ -10,20 +13,17 @@ import {
   IconClipboardText,
   IconCheck,
   IconExternalLink,
-  IconChevronLeft,
-  IconChevronRight,
 } from '@tabler/icons-react';
 
-interface SavedLink {
-  id: string;
-  url: string;
-  title: string;
-  type: 'youtube' | 'instagram' | 'pinterest' | 'other';
-  savedAt: string;
-}
-
 export default function LinkSaverModule() {
-  const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
+  const { savedLinks, addSavedLink, deleteSavedLink } = useAppStore(
+    useShallow((state) => ({
+      savedLinks: state.savedLinks,
+      addSavedLink: state.addSavedLink,
+      deleteSavedLink: state.deleteSavedLink,
+    }))
+  );
+
   const [inputUrl, setInputUrl] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'youtube' | 'instagram' | 'pinterest' | 'other'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -36,40 +36,18 @@ export default function LinkSaverModule() {
   // Active Selected Link for Details view
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
-  // Pagination for the curved arc cards (5 per page)
-  const [arcPage, setArcPage] = useState(0);
-
   // Use a ref to prevent re-triggering the checkClipboard useEffect on savedLinks changes
   const savedLinksRef = useRef<SavedLink[]>(savedLinks);
   useEffect(() => {
     savedLinksRef.current = savedLinks;
   }, [savedLinks]);
 
-  // Load from localStorage
+  // Set initial selected link
   useEffect(() => {
-    const raw = localStorage.getItem('focusflow-link-saver');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        setSavedLinks(parsed);
-        if (parsed.length > 0) {
-          setSelectedLinkId(parsed[0].id);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved links', e);
-      }
+    if (savedLinks.length > 0 && !selectedLinkId) {
+      setSelectedLinkId(savedLinks[0].id);
     }
-  }, []);
-
-  // Reset page when tab changes
-  useEffect(() => {
-    setArcPage(0);
-  }, [activeTab]);
-
-  const saveLinksList = (list: SavedLink[]) => {
-    setSavedLinks(list);
-    localStorage.setItem('focusflow-link-saver', JSON.stringify(list));
-  };
+  }, [savedLinks, selectedLinkId]);
 
   // Helper functions
   const isYouTube = (url: string) => /youtube\.com|youtu\.be/i.test(url);
@@ -119,7 +97,7 @@ export default function LinkSaverModule() {
   }, [lastDismissedLink]);
 
   // Action handlers
-  const handleAddLink = (url: string) => {
+  const handleAddLink = async (url: string) => {
     const cleaned = url.trim();
     if (!cleaned || !isValidLink(cleaned)) return;
 
@@ -146,19 +124,24 @@ export default function LinkSaverModule() {
       savedAt: new Date().toISOString(),
     };
 
-    const next = [newLink, ...savedLinks];
-    saveLinksList(next);
-    setSelectedLinkId(newLink.id);
-    setInputUrl('');
+    try {
+      await addSavedLink(newLink);
+      setSelectedLinkId(newLink.id);
+      setInputUrl('');
+    } catch (err) {
+      console.error('Failed to add saved link', err);
+    }
   };
 
-  const handleDeleteLink = (id: string) => {
-    const next = savedLinks.filter((l) => l.id !== id);
-    saveLinksList(next);
-    
-    // Auto-adjust selected link ID
-    if (selectedLinkId === id) {
-      setSelectedLinkId(next.length > 0 ? next[0].id : null);
+  const handleDeleteLink = async (id: string) => {
+    try {
+      await deleteSavedLink(id);
+      if (selectedLinkId === id) {
+        const remaining = savedLinks.filter((l) => l.id !== id);
+        setSelectedLinkId(remaining.length > 0 ? remaining[0].id : null);
+      }
+    } catch (err) {
+      console.error('Failed to delete saved link', err);
     }
   };
 
@@ -174,18 +157,19 @@ export default function LinkSaverModule() {
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleAddLink(inputUrl);
+    void handleAddLink(inputUrl);
   };
 
   const handleSaveClipboardLink = () => {
     if (detectedLink) {
-      handleAddLink(detectedLink);
+      void handleAddLink(detectedLink);
       setShowPopup(false);
       setDetectedLink(null);
     }
   };
 
-  const handleDismissClipboard = () => {
+  const handleDismissClipboard = (e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent triggering the save click
     if (detectedLink) {
       setLastDismissedLink(detectedLink);
     }
@@ -198,13 +182,6 @@ export default function LinkSaverModule() {
     return savedLinks.filter((l) => (activeTab === 'all' ? true : l.type === activeTab));
   }, [savedLinks, activeTab]);
 
-  // Paginated links for the curved arc (5 per page)
-  const arcLinks = useMemo(() => {
-    return filteredLinks.slice(arcPage * 5, (arcPage + 1) * 5);
-  }, [filteredLinks, arcPage]);
-
-  const maxArcPages = Math.ceil(filteredLinks.length / 5);
-
   const activeLink = useMemo(() => {
     return savedLinks.find((l) => l.id === selectedLinkId) || null;
   }, [savedLinks, selectedLinkId]);
@@ -213,38 +190,62 @@ export default function LinkSaverModule() {
   const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
 
   return (
-    <div className="flex flex-col gap-4 text-left select-none max-h-[calc(100vh-130px)] overflow-hidden">
+    <div className="flex flex-col gap-4 text-left select-none max-h-[calc(100vh-130px)] overflow-hidden relative">
       
-      {/* Clipboard Popup Banner */}
-      {showPopup && detectedLink && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-zinc-900 to-black text-white p-3 border border-primary/20 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              <IconClipboardText className="w-4 h-4 text-primary" />
+      {/* ── Floating "Flying on Air" Clipboard Card ── */}
+      <AnimatePresence>
+        {showPopup && detectedLink && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 80, x: '-50%', rotate: -6 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: [0, -10, 0],
+              x: '-50%',
+              rotate: [2, -2, 2],
+              transition: {
+                y: { repeat: Infinity, duration: 4, ease: 'easeInOut' },
+                rotate: { repeat: Infinity, duration: 8, ease: 'easeInOut' },
+              }
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.6,
+              y: 200,
+              x: '-50%',
+              rotate: -12,
+              transition: { duration: 0.35, ease: 'easeIn' }
+            }}
+            onClick={handleSaveClipboardLink}
+            className="fixed bottom-24 left-1/2 z-[9999] w-[90%] max-w-sm cursor-pointer p-4 bg-gradient-to-br from-zinc-900/95 via-stone-900/98 to-black text-white border border-primary/30 rounded-3xl shadow-[0_24px_60px_rgba(244,63,94,0.35)] backdrop-blur-md flex flex-col gap-3 hover:border-primary/60 transition-colors"
+          >
+            {/* Header info */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                <IconClipboardText className="w-5 h-5 text-primary" />
+              </div>
+              <div className="min-w-0 text-left">
+                <span className="text-[9px] font-black uppercase tracking-widest text-primary/80">Clipboard Link Caught</span>
+                <h4 className="text-xs font-bold text-white truncate w-[200px]" title={detectedLink}>
+                  {detectedLink}
+                </h4>
+              </div>
             </div>
-            <div className="min-w-0">
-              <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Pasted Link Detected</span>
-              <p className="text-xs font-bold text-white truncate max-w-[180px] sm:max-w-md mt-0.5" title={detectedLink}>
-                {detectedLink}
-              </p>
+
+            {/* Hint & Actions */}
+            <div className="flex items-center justify-between border-t border-white/10 pt-2.5 mt-1">
+              <span className="text-[9px] text-zinc-400 font-bold uppercase">👆 Click Card to Save</span>
+              
+              <button
+                onClick={handleDismissClipboard}
+                className="text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl transition-colors border-none bg-white/5 cursor-pointer hover:bg-white/10"
+              >
+                Dismiss
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-            <button
-              onClick={handleDismissClipboard}
-              className="text-[10px] font-bold uppercase text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
-            >
-              Dismiss
-            </button>
-            <button
-              onClick={handleSaveClipboardLink}
-              className="bg-primary hover:bg-primary-hover text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Top Details Container (Dual-State Card) ── */}
       <div className="bg-surface border border-border/70 rounded-3xl p-4.5 shadow-sm min-h-[170px] flex flex-col justify-between shrink-0 relative overflow-hidden transition-all duration-300">
@@ -395,120 +396,95 @@ export default function LinkSaverModule() {
         ))}
       </div>
 
-      {/* ── Middle: Curved Arc Carousel ── */}
-      <div className="relative flex-grow flex items-center justify-center min-h-[170px] max-h-[220px] select-none mt-2 overflow-visible">
-        
-        {/* Pagination Left button */}
-        {maxArcPages > 1 && (
-          <button
-            onClick={() => setArcPage((prev) => Math.max(prev - 1, 0))}
-            disabled={arcPage === 0}
-            className="absolute left-1.5 top-1/2 -translate-y-1/2 z-[110] w-8 h-8 rounded-xl bg-surface hover:bg-surface-hover border border-border text-text-secondary disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center cursor-pointer shadow-md"
-          >
-            <IconChevronLeft size={16} />
-          </button>
-        )}
-
-        {/* Empty State */}
+      {/* ── Middle: Normal Responsive Grid Layout (Replaced circular carousel) ── */}
+      <div className="flex-grow overflow-y-auto no-scrollbar max-h-[300px] mt-2 pr-1 pb-4">
         {filteredLinks.length === 0 ? (
-          <div className="py-8 text-center text-xs text-text-muted italic border border-dashed border-border/50 rounded-2xl bg-surface-alt/10 w-full mx-4">
-            No bookmarks saved.
+          <div className="py-12 text-center text-xs text-text-muted italic border border-dashed border-border/50 rounded-2xl bg-surface-alt/10 w-full mx-auto">
+            No bookmarks saved in this category.
           </div>
         ) : (
-          /* Circular Arc representation */
-          <div className="relative w-full h-full flex items-center justify-center overflow-visible">
-            {arcLinks.map((link, idx) => {
-              const N = arcLinks.length;
-              // Normalize coordinate x from -1 to +1
-              const x = N === 1 ? 0 : -1 + (2 * idx) / (N - 1);
-              
-              // Spacing horizontal width based on N count
-              const horizontalSpread = N === 5 ? 38 : N === 4 ? 34 : N === 3 ? 28 : N === 2 ? 18 : 0;
-              const leftPct = 50 + x * horizontalSpread;
-              
-              // Parabolic curve: translateY goes down on sides (ends are lowest)
-              const depth = 28; // px vertical offset
-              const translateY = Math.pow(x, 2) * depth;
-              
-              // Rotational angle along circular path
-              const rotation = x * 10; // degrees
-              
-              const active = link.id === selectedLinkId;
-              const linkYtId = link.type === 'youtube' ? getYouTubeId(link.url) : null;
-              const linkThumbUrl = linkYtId ? `https://img.youtube.com/vi/${linkYtId}/hqdefault.jpg` : null;
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+            <AnimatePresence>
+              {filteredLinks.map((link) => {
+                const active = link.id === selectedLinkId;
+                const linkYtId = link.type === 'youtube' ? getYouTubeId(link.url) : null;
+                const linkThumbUrl = linkYtId ? `https://img.youtube.com/vi/${linkYtId}/hqdefault.jpg` : null;
 
-              return (
-                <div
-                  key={link.id}
-                  onClick={() => setSelectedLinkId(link.id)}
-                  style={{
-                    left: `${leftPct}%`,
-                    transform: `translateX(-50%) translateY(${translateY}px) rotate(${rotation}deg)`,
-                    transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  className={`absolute w-13 h-13 sm:w-15 sm:h-15 rounded-2xl overflow-hidden cursor-pointer flex items-center justify-center shadow-md select-none group border-2 z-[100] ${
-                    active 
-                      ? 'border-primary ring-4 ring-primary/10 z-[105] scale-105' 
-                      : 'border-border bg-surface hover:border-primary/40 hover:scale-103'
-                  }`}
-                >
-                  {/* Miniature Cover Thumbnail */}
-                  {linkThumbUrl ? (
-                    <img src={linkThumbUrl} alt="Bookmark" className="w-full h-full object-cover" />
-                  ) : link.type === 'instagram' ? (
-                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white">
-                      <IconBrandInstagram className="w-5.5 h-5.5" />
-                    </div>
-                  ) : link.type === 'pinterest' ? (
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white">
-                      <IconBrandPinterest className="w-5.5 h-5.5" />
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-white">
-                      <IconLink className="w-5.5 h-5.5" />
-                    </div>
-                  )}
+                return (
+                  <motion.div
+                    key={link.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => setSelectedLinkId(link.id)}
+                    className={`p-3 rounded-2xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 group relative ${
+                      active
+                        ? 'border-primary bg-primary/5 shadow-sm shadow-primary/5 ring-1 ring-primary/20'
+                        : 'border-border bg-surface hover:border-primary/30 hover:bg-surface-hover'
+                    }`}
+                  >
+                    {/* Media Thumbnail or Platform Icon */}
+                    <div className="relative w-full h-24 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-900/50 flex items-center justify-center shrink-0 shadow-inner">
+                      {linkThumbUrl ? (
+                        <img src={linkThumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                      ) : link.type === 'instagram' ? (
+                        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white">
+                          <IconBrandInstagram className="w-8 h-8 stroke-[1.5]" />
+                        </div>
+                      ) : link.type === 'pinterest' ? (
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white">
+                          <IconBrandPinterest className="w-8 h-8 stroke-[1.5]" />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-white">
+                          <IconLink className="w-8 h-8 stroke-[1.5]" />
+                        </div>
+                      )}
 
-                  {/* Micro Badge for active */}
-                  {active && (
-                    <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-surface animate-pulse" />
-                  )}
+                      {/* Small badge representing active */}
+                      {active && (
+                        <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-primary border-2 border-surface animate-pulse" />
+                      )}
+                    </div>
 
-                  {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-2 bg-neutral-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow z-[999]">
-                    {link.title}
-                  </div>
-                </div>
-              );
-            })}
+                    {/* Title & Platform details */}
+                    <div className="flex flex-col gap-0.5 text-left min-w-0">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-xs font-black text-text-primary truncate w-full" title={link.title}>
+                          {link.title}
+                        </span>
+                        {link.type === 'youtube' && <IconBrandYoutube className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                        {link.type === 'instagram' && <IconBrandInstagram className="w-3.5 h-3.5 text-pink-500 shrink-0" />}
+                        {link.type === 'pinterest' && <IconBrandPinterest className="w-3.5 h-3.5 text-red-600 shrink-0" />}
+                      </div>
+                      <span className="text-[9px] text-primary truncate font-bold block">{link.url}</span>
+                      
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[8px] text-text-muted">
+                          {new Date(link.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteLink(link.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-500 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                          title="Delete Bookmark"
+                        >
+                          <IconTrash size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
-
-        {/* Pagination Right button */}
-        {maxArcPages > 1 && (
-          <button
-            onClick={() => setArcPage((prev) => Math.min(prev + 1, maxArcPages - 1))}
-            disabled={arcPage === maxArcPages - 1}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 z-[110] w-8 h-8 rounded-xl bg-surface hover:bg-surface-hover border border-border text-text-secondary disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center cursor-pointer shadow-md"
-          >
-            <IconChevronRight size={16} />
-          </button>
-        )}
       </div>
-
-      {/* Arc Page Indicator dots */}
-      {maxArcPages > 1 && (
-        <div className="flex justify-center gap-1.5 mt-0.5 shrink-0">
-          {Array.from({ length: maxArcPages }).map((_, i) => (
-            <div
-              key={i}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${
-                i === arcPage ? 'bg-primary w-3' : 'bg-border'
-              }`}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Spacer to push content above mobile virtual keyboards */}
       <div className="h-6 shrink-0" />

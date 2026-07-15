@@ -3,6 +3,8 @@ import {
   type AppStore,
   type Note,
   type Link,
+  type SavedLink,
+  type AppTag,
   type StockEntry,
   type InterestRecord,
   type StandardCalculation,
@@ -14,6 +16,8 @@ import {
 import {
   noteService,
   linkService,
+  linkSaverService,
+  tagService,
   stockService,
   interestService,
   standardCalcService,
@@ -420,6 +424,78 @@ export const createUtilitySlice: StateCreator<
     } catch (error) {
       set({ links: previous });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete link'), 'error');
+      throw error;
+    }
+  },
+
+  savedLinks: [],
+  addSavedLink: async (link) => {
+    if (shouldThrottle('addSavedLink')) return;
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().savedLinks;
+    set((state) => ({ savedLinks: [link, ...state.savedLinks] }));
+    try {
+      await linkSaverService.create(uid, link);
+      useToastStore.getState().addToast('Success', 'Link saved to database', 'success');
+    } catch (error) {
+      set({ savedLinks: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save link'), 'error');
+      throw error;
+    }
+  },
+  deleteSavedLink: async (id) => {
+    const previous = get().savedLinks;
+    set((state) => ({ savedLinks: state.savedLinks.filter((l) => l.id !== id) }));
+    try {
+      await linkSaverService.delete(id);
+      useToastStore.getState().addToast('Success', 'Link deleted from database', 'success');
+    } catch (error) {
+      set({ savedLinks: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete link'), 'error');
+      throw error;
+    }
+  },
+
+  appTags: [],
+  addAppTag: async (tag) => {
+    if (shouldThrottle('addAppTag')) return;
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().appTags;
+    set((state) => ({ appTags: [...state.appTags, tag] }));
+    try {
+      await tagService.create(uid, tag);
+      useToastStore.getState().addToast('Success', 'Tag created in database', 'success');
+    } catch (error) {
+      set({ appTags: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not create tag'), 'error');
+      throw error;
+    }
+  },
+  updateAppTag: async (id, updates) => {
+    const previous = get().appTags;
+    set((state) => ({
+      appTags: state.appTags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    }));
+    try {
+      await tagService.update(id, updates);
+      useToastStore.getState().addToast('Success', 'Tag updated', 'success');
+    } catch (error) {
+      set({ appTags: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update tag'), 'error');
+      throw error;
+    }
+  },
+  deleteAppTag: async (id) => {
+    const previous = get().appTags;
+    set((state) => ({ appTags: state.appTags.filter((t) => t.id !== id) }));
+    try {
+      await tagService.delete(id);
+      useToastStore.getState().addToast('Success', 'Tag deleted', 'success');
+    } catch (error) {
+      set({ appTags: previous });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete tag'), 'error');
       throw error;
     }
   },

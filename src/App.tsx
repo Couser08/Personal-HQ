@@ -74,23 +74,37 @@ function LoadingSplash() {
 
 function ModuleFallback() {
   return (
-    <div className="min-h-80 flex flex-col items-center justify-center gap-4">
-      <div className="relative w-12 h-12">
-        <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.2s' }} viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" stroke="var(--border-border-alt)" strokeWidth="6" fill="none" opacity="0.3" />
-          <circle
-            cx="50"
-            cy="50"
-            r="42"
-            stroke="var(--text-primary)"
-            strokeWidth="6"
-            strokeDasharray="60 200"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
+    <div className="w-full flex flex-col gap-6 animate-pulse p-4 text-left">
+      {/* Premium Apple-style Header Skeleton */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/40">
+        <div className="flex flex-col gap-2">
+          <div className="h-7 w-48 shimmer-skeleton rounded-lg" />
+          <div className="h-4 w-72 shimmer-skeleton rounded-md" />
+        </div>
+        <div className="h-10 w-36 shimmer-skeleton rounded-xl" />
       </div>
-      <div className="text-[10px] uppercase tracking-[0.2em] font-medium text-text-muted">Loading module</div>
+
+      {/* Grid Content Skeletons */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 flex flex-col gap-5">
+          {/* Main Card Skeleton */}
+          <div className="h-48 shimmer-skeleton rounded-[24px]" />
+          
+          {/* List Skeletons */}
+          <div className="flex flex-col gap-3">
+            <div className="h-5 w-32 shimmer-skeleton rounded-md" />
+            <div className="h-14 shimmer-skeleton rounded-2xl" />
+            <div className="h-14 shimmer-skeleton rounded-2xl" />
+            <div className="h-14 shimmer-skeleton rounded-2xl" />
+          </div>
+        </div>
+
+        {/* Sidebar Skeletons */}
+        <div className="flex flex-col gap-5">
+          <div className="h-40 shimmer-skeleton rounded-[24px]" />
+          <div className="h-64 shimmer-skeleton rounded-[24px]" />
+        </div>
+      </div>
     </div>
   );
 }

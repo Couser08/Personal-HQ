@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import type {
-  Note, Link, StockEntry, Subject, InterestRecord,
+  Note, Link, SavedLink, AppTag, StockEntry, Subject, InterestRecord,
   MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal
@@ -91,6 +91,86 @@ export const linkService = {
 
   async delete(id: string) {
     const { error } = await supabase.from('links').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ─── Link Saver ───────────────────────────────────────────────────────────────
+
+export const linkSaverService = {
+  async fetchAll(userId: string): Promise<SavedLink[]> {
+    const { data, error } = await supabase
+      .from('link_saver')
+      .select('*')
+      .eq('user_id', userId)
+      .order('saved_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      url: r.url,
+      title: r.title,
+      type: r.type as SavedLink['type'],
+      savedAt: r.saved_at,
+    }));
+  },
+
+  async create(userId: string, link: SavedLink) {
+    const { error } = await supabase.from('link_saver').insert({
+      id: link.id,
+      user_id: userId,
+      url: link.url,
+      title: link.title,
+      type: link.type,
+      saved_at: link.savedAt,
+    });
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('link_saver').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+
+export const tagService = {
+  async fetchAll(userId: string): Promise<AppTag[]> {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      color: r.color,
+      createdAt: r.created_at,
+    }));
+  },
+
+  async create(userId: string, tag: AppTag) {
+    const { error } = await supabase.from('tags').insert({
+      id: tag.id,
+      user_id: userId,
+      name: tag.name,
+      color: tag.color,
+      created_at: tag.createdAt,
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, updates: Partial<Omit<AppTag, 'id' | 'createdAt'>>) {
+    const { error } = await supabase.from('tags').update({
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.color !== undefined && { color: updates.color }),
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('tags').delete().eq('id', id);
     if (error) throw error;
   },
 };

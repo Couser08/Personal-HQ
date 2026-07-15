@@ -42,6 +42,21 @@ export interface Link {
   savedAt: string;
 }
 
+export interface SavedLink {
+  id: string;
+  url: string;
+  title: string;
+  type: 'youtube' | 'instagram' | 'pinterest' | 'other';
+  savedAt: string;
+}
+
+export interface AppTag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
 export interface StockEntry {
   id: string;
   ticker: string;
@@ -442,6 +457,15 @@ export interface AppStore {
   links: Link[];
   addLink: (link: Link, userId?: string) => Promise<void>;
   deleteLink: (id: string) => Promise<void>;
+
+  savedLinks: SavedLink[];
+  addSavedLink: (link: SavedLink) => Promise<void>;
+  deleteSavedLink: (id: string) => Promise<void>;
+
+  appTags: AppTag[];
+  addAppTag: (tag: AppTag) => Promise<void>;
+  updateAppTag: (id: string, updates: Partial<Omit<AppTag, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteAppTag: (id: string) => Promise<void>;
 
   stocks: StockEntry[];
   addStock: (entry: StockEntry, userId?: string) => Promise<void>;

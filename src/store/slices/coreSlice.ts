@@ -21,10 +21,10 @@ import {
   sprintService,
   dsaProblemService,
   tilLogService,
-  roadmapService,
-  resourceService,
   devGoalService,
-  journalStickyNoteService
+  journalStickyNoteService,
+  linkSaverService,
+  tagService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
@@ -162,6 +162,8 @@ export const createCoreSlice: StateCreator<
       resourceService.fetchAll(userId),
       devGoalService.fetchAll(userId),
       journalStickyNoteService.fetchAll(userId),
+      linkSaverService.fetchAll(userId),
+      tagService.fetchAll(userId),
     ]);
 
     const serviceNames = [
@@ -189,6 +191,8 @@ export const createCoreSlice: StateCreator<
       'resources',
       'dev goals',
       'journal sticky notes',
+      'link saver links',
+      'tags',
     ];
 
     const failedServices = results
@@ -219,6 +223,8 @@ export const createCoreSlice: StateCreator<
     const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
     const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
     const journalStickyNotes = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
+    const savedLinks = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
+    const appTags = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
 
     if (failedServices.length > 0) {
       console.warn('Supabase sync skipped some modules:', failedServices);
@@ -314,6 +320,12 @@ export const createCoreSlice: StateCreator<
     if (results[23].status === 'fulfilled') {
       localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(journalStickyNotes));
     }
+    if (results[24].status === 'fulfilled') {
+      localStorage.setItem('phq_saved_links', JSON.stringify(savedLinks));
+    }
+    if (results[25].status === 'fulfilled') {
+      localStorage.setItem('phq_app_tags', JSON.stringify(appTags));
+    }
 
     // Validate active focus item
     if (dbActiveFocusItem) {
@@ -339,6 +351,7 @@ export const createCoreSlice: StateCreator<
       notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
       budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
       sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
+      savedLinks, appTags,
       theme: dbTheme,
       settings: dbSettings,
       activeFocusItem: dbActiveFocusItem,
@@ -354,7 +367,7 @@ export const createCoreSlice: StateCreator<
       snippets: [], budgetCategories: [], budgetTransactions: [],
       todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [], habits: [],
       sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [],
-      journalStickyNotes: [], activeFocusItem: null,
+      journalStickyNotes: [], savedLinks: [], appTags: [], activeFocusItem: null,
       dataLoaded: false,
     } as any);
   },
@@ -371,6 +384,12 @@ export const createCoreSlice: StateCreator<
       }
       if (data.journals) {
         localStorage.setItem('phq_journals', JSON.stringify(nextState.journals));
+      }
+      if (data.savedLinks) {
+        localStorage.setItem('phq_saved_links', JSON.stringify(nextState.savedLinks));
+      }
+      if (data.appTags) {
+        localStorage.setItem('phq_app_tags', JSON.stringify(nextState.appTags));
       }
       return nextState;
     }),
