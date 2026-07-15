@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconPlus, IconTrash, IconTag, IconCheck, IconEdit3 } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconTag, IconCheck, IconEdit } from '@tabler/icons-react';
 
 interface ColorOption {
   name: string;
@@ -200,7 +200,7 @@ export default function TagsModule() {
                       className="p-1 rounded-lg text-text-secondary hover:text-primary transition-colors cursor-pointer border-none bg-transparent"
                       title="Edit Tag"
                     >
-                      <IconEdit3 size={11} />
+                      <IconEdit size={11} />
                     </button>
                     <button
                       onClick={() => deleteAppTag(tag.id)}

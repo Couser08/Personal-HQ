@@ -21,6 +21,8 @@ import {
   sprintService,
   dsaProblemService,
   tilLogService,
+  roadmapService,
+  resourceService,
   devGoalService,
   journalStickyNoteService,
   linkSaverService,

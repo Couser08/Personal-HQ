@@ -45,6 +45,15 @@ export interface UtilitySlice {
   addLink: (link: Link, userId?: string) => Promise<void>;
   deleteLink: (id: string) => Promise<void>;
 
+  savedLinks: SavedLink[];
+  addSavedLink: (link: SavedLink) => Promise<void>;
+  deleteSavedLink: (id: string) => Promise<void>;
+
+  appTags: AppTag[];
+  addAppTag: (tag: AppTag) => Promise<void>;
+  updateAppTag: (id: string, updates: Partial<Omit<AppTag, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteAppTag: (id: string) => Promise<void>;
+
   stocks: StockEntry[];
   addStock: (entry: StockEntry, userId?: string) => Promise<void>;
   deleteStock: (id: string) => Promise<void>;
@@ -429,7 +438,7 @@ export const createUtilitySlice: StateCreator<
   },
 
   savedLinks: [],
-  addSavedLink: async (link) => {
+  addSavedLink: async (link: SavedLink) => {
     if (shouldThrottle('addSavedLink')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
@@ -444,7 +453,7 @@ export const createUtilitySlice: StateCreator<
       throw error;
     }
   },
-  deleteSavedLink: async (id) => {
+  deleteSavedLink: async (id: string) => {
     const previous = get().savedLinks;
     set((state) => ({ savedLinks: state.savedLinks.filter((l) => l.id !== id) }));
     try {
@@ -458,7 +467,7 @@ export const createUtilitySlice: StateCreator<
   },
 
   appTags: [],
-  addAppTag: async (tag) => {
+  addAppTag: async (tag: AppTag) => {
     if (shouldThrottle('addAppTag')) return;
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
@@ -473,7 +482,7 @@ export const createUtilitySlice: StateCreator<
       throw error;
     }
   },
-  updateAppTag: async (id, updates) => {
+  updateAppTag: async (id: string, updates: Partial<Omit<AppTag, 'id' | 'createdAt'>>) => {
     const previous = get().appTags;
     set((state) => ({
       appTags: state.appTags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
@@ -487,7 +496,7 @@ export const createUtilitySlice: StateCreator<
       throw error;
     }
   },
-  deleteAppTag: async (id) => {
+  deleteAppTag: async (id: string) => {
     const previous = get().appTags;
     set((state) => ({ appTags: state.appTags.filter((t) => t.id !== id) }));
     try {
