@@ -5,7 +5,6 @@ import {
   IconSparkles,
   IconComponents,
   IconCards,
-  IconConfetti,
   IconWand,
   IconDeviceMobile,
   IconHighlight,
