@@ -14,8 +14,8 @@ import {
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const APP_VERSION = '2.3.0';
-const APP_CODENAME = 'Flow';
+const APP_VERSION = '2.3.1';
+const APP_CODENAME = 'Flow·P1';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -97,28 +97,28 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
     ],
   },
   improvements: {
-    headline: 'Bug fixes and sync improvements from the previous patch, now fully stable.',
+    headline: 'Animation performance pass — every motion in the app now runs on the GPU compositor.',
     items: [
       {
         icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Todo Cross-Device Sync Fixed',
-        desc: 'Tasks now sync reliably across all your devices — no more stale state or missing completions after switching.',
+        title: 'willChange Compositor Hints',
+        desc: 'Added willChange: transform, opacity to Sidebar, Modal, Toast, and Link Saver — animations now run on a dedicated GPU layer with zero jank.',
       },
       {
         icon: <IconDeviceMobile className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Pomodoro Notification & Layout',
-        desc: "Finish notification now fires every time on all devices. Today's Goal and Weekly Focus Trend layout fixed on all screen sizes.",
+        title: 'Dynamic Island Animation Fix',
+        desc: 'Replaced blur-based enter/exit transitions with a clean y-slide — no more compositing cost from backdrop-filter on every notification.',
       },
       {
         icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#8E8E93',
-        bg: 'rgba(142, 142, 147, 0.08)',
-        title: 'Link Saver Performance',
-        desc: 'Laggy scrolling eliminated and link cards redesigned — faster load, smoother interactions.',
+        color: '#AF52DE',
+        bg: 'rgba(175, 82, 222, 0.08)',
+        title: 'Link Saver Clipboard Popup',
+        desc: 'Moved x-offset to a static style prop so the floating card never triggers unnecessary re-layouts during its floating animation.',
       },
     ],
   },
@@ -126,9 +126,9 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stat pills shown on mini card ─────────────────────────────────────────────
 const STATS = [
-  { label: 'Canvas upgrades', value: '2' },
-  { label: 'New colors', value: '5' },
-  { label: 'Fixes', value: '3' },
+  { label: 'Perf fixes', value: '5' },
+  { label: 'Compositor', value: '✓' },
+  { label: 'Smoother', value: '100%' },
 ];
 
 // ── Mini Notification Card ────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
             <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
             <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
           </div>
-          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Canvas popovers, arc view, smarter celebrations & new colors.</p>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">GPU compositor pass — every animation now runs at 60fps.</p>
         </div>
       </div>
 
@@ -249,7 +249,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   </span>
                 </div>
                 <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
-                  Canvas controls overhauled, Link Saver gets arc view, daily celebration got smarter, and 5 new highlight colours.
+                  willChange hints added to all animated components, DynamicIsland blur removed, and Link Saver clipboard popup re-layout eliminated.
                 </p>
               </div>
             </div>
@@ -324,7 +324,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Explore v2.3.0 Flow →
+              Silky smooth — v2.3.1 Flow·P1 →
             </button>
           </div>
         </motion.div>

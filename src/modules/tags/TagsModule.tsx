@@ -120,6 +120,7 @@ export default function TagsModule() {
                     {isSelected && (
                       <motion.div
                         layoutId="active-tag-color"
+                        style={{ willChange: 'transform, opacity' }}
                         className="absolute inset-0 rounded-full border-2 border-white dark:border-background flex items-center justify-center"
                         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                       >
@@ -179,7 +180,7 @@ export default function TagsModule() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2 }}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border shadow-sm group hover:shadow-md transition-all duration-200"
-                  style={{ backgroundColor: `${tag.color}12`, borderColor: `${tag.color}40` }}
+                  style={{ backgroundColor: `${tag.color}12`, borderColor: `${tag.color}40`, willChange: 'transform, opacity' }}
                 >
                   {/* Color Dot indicator */}
                   <span

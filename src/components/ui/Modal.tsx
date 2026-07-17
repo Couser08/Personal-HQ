@@ -32,6 +32,7 @@ export const Modal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            style={{ willChange: 'opacity' }}
             onClick={onClose}
             className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md z-50 transition-all duration-300 pointer-events-auto"
           />
@@ -45,6 +46,7 @@ export const Modal = ({
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               // Apple's custom snappy spring setup
               transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+              style={{ willChange: 'transform, opacity' }}
               className={`bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] w-[94vw] sm:w-full min-w-[320px] ${maxWidthClassName} max-h-[85vh] overflow-y-auto pointer-events-auto flex flex-col backdrop-blur-xl`}
             >
               {/* Header Grid System */}

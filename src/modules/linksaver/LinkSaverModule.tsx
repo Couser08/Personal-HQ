@@ -196,12 +196,11 @@ export default function LinkSaverModule() {
       <AnimatePresence>
         {showPopup && detectedLink && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 80, x: '-50%', rotate: -6 }}
+            initial={{ opacity: 0, scale: 0.8, y: 80, rotate: -6 }}
             animate={{
               opacity: 1,
               scale: 1,
               y: [0, -10, 0],
-              x: '-50%',
               rotate: [2, -2, 2],
               transition: {
                 y: { repeat: Infinity, duration: 4, ease: 'easeInOut' },
@@ -212,12 +211,12 @@ export default function LinkSaverModule() {
               opacity: 0,
               scale: 0.6,
               y: 200,
-              x: '-50%',
               rotate: -12,
               transition: { duration: 0.35, ease: 'easeIn' }
             }}
+            style={{ x: '-50%', willChange: 'transform, opacity' }}
             onClick={handleSaveClipboardLink}
-            className="fixed bottom-24 left-1/2 z-[9999] w-[90%] max-w-sm cursor-pointer p-4 bg-gradient-to-br from-zinc-900/95 via-stone-900/98 to-black text-white border border-primary/30 rounded-3xl shadow-[0_24px_60px_rgba(244,63,94,0.35)] backdrop-blur-md flex flex-col gap-3 hover:border-primary/60 transition-colors"
+            className="fixed bottom-24 left-1/2 z-[9999] w-[90%] max-w-sm cursor-pointer p-4 bg-gradient-to-br from-zinc-950 via-stone-900 to-black text-white border border-primary/30 rounded-3xl shadow-[0_24px_60px_rgba(244,63,94,0.35)] flex flex-col gap-3 hover:border-primary/60 transition-colors"
           >
             {/* Header info */}
             <div className="flex items-center gap-3">
@@ -418,6 +417,7 @@ export default function LinkSaverModule() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
+                    style={{ willChange: 'transform, opacity' }}
                     onClick={() => setSelectedLinkId(link.id)}
                     className={`p-3 rounded-2xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 group relative ${
                       active

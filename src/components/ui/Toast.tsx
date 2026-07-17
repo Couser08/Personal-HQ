@@ -71,7 +71,8 @@ export const ToastContainer = () => {
             }`}
             style={{
               // Subtle top bar intersection blending shadow
-              borderTop: 'none'
+              borderTop: 'none',
+              willChange: 'transform, opacity'
             }}
           >
             {/* Minimal Icon Core */}

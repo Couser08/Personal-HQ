@@ -44,6 +44,7 @@ const NAV_ITEM_STYLE = (active: boolean) => ({
   textAlign: 'left' as const, width: '100%',
   transition: 'background 0.15s, color 0.15s',
   position: 'relative' as const,
+  willChange: 'transform',
 });
 
 export const Sidebar = () => {
@@ -279,7 +280,7 @@ export const MobileBottomNav = () => {
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            style={{ position: 'fixed', bottom: 70, left: 16, right: 16, zIndex: 45, background: 'var(--bg-surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border-border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', maxHeight: '60vh', overflowY: 'auto' }}
+            style={{ position: 'fixed', bottom: 70, left: 16, right: 16, zIndex: 45, background: 'var(--bg-surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border-border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', maxHeight: '60vh', overflowY: 'auto', willChange: 'transform, opacity' }}
           >
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--text-secondary)' }}>More Features</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>

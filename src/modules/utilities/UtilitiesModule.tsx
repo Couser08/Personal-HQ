@@ -49,6 +49,7 @@ export default function UtilitiesModule() {
                 {isActive && (
                   <motion.div
                     layoutId="active-utility-tab"
+                    style={{ willChange: 'transform, opacity' }}
                     className="absolute inset-0 bg-surface rounded-xl border border-border/60 shadow-sm z-0"
                     transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
                   />
@@ -70,6 +71,7 @@ export default function UtilitiesModule() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
+            style={{ willChange: 'transform, opacity' }}
             className="w-full"
           >
             {activeTabObj.component}
