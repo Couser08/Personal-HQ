@@ -190,7 +190,8 @@ export function MediaEntryModal() {
               </div>
               <button
                 onClick={closeMediaEntryModal}
-                className="w-8 h-8 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer active:scale-95 transition-all"
+                aria-label="Close modal"
+                className="w-8 h-8 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-primary/45"
               >
                 <IconX size={14} style={{ strokeWidth: 2.5 }} />
               </button>
@@ -198,8 +199,9 @@ export function MediaEntryModal() {
 
             {/* Title Block */}
             <div>
-              <label className={labelClassName}>Title</label>
+              <label htmlFor="media-title" className={labelClassName}>Title</label>
               <input
+                id="media-title"
                 type="text"
                 autoFocus
                 placeholder={isAnime ? 'e.g. Attack on Titan' : 'e.g. Elden Ring'}
@@ -222,8 +224,9 @@ export function MediaEntryModal() {
             {isAnime && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClassName}>Season</label>
+                  <label htmlFor="media-season" className={labelClassName}>Season</label>
                   <input
+                    id="media-season"
                     type="number"
                     min={1}
                     placeholder="e.g. 1"
@@ -233,8 +236,9 @@ export function MediaEntryModal() {
                   />
                 </div>
                 <div>
-                  <label className={labelClassName}>Total Episodes</label>
+                  <label htmlFor="media-episodes" className={labelClassName}>Total Episodes</label>
                   <input
+                    id="media-episodes"
                     type="number"
                     min={0}
                     placeholder="e.g. 12"
@@ -271,7 +275,9 @@ export function MediaEntryModal() {
                       key={val}
                       type="button"
                       onClick={() => setRating(rating === val && val === 1 ? 0 : val)}
-                      className={`h-9 rounded-xl border-none cursor-pointer font-black text-[12px] flex items-center justify-center transition-all duration-200 ${btnClasses}`}
+                      aria-label={`Rate ${val} out of 10`}
+                      aria-pressed={rating === val}
+                      className={`h-9 rounded-xl border-none cursor-pointer font-black text-[12px] flex items-center justify-center transition-all duration-200 ${btnClasses} focus-visible:ring-2 focus-visible:ring-primary/45`}
                     >
                       {val}
                     </button>
@@ -282,8 +288,9 @@ export function MediaEntryModal() {
 
             {/* Review Frame */}
             <div>
-              <label className={labelClassName}>Review Notes</label>
+              <label htmlFor="media-notes" className={labelClassName}>Review Notes</label>
               <textarea
+                id="media-notes"
                 placeholder="Your thoughts, impressions, or review..."
                 value={notes}
                 onChange={e => setNotes(e.target.value)}

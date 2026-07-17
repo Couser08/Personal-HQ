@@ -139,10 +139,11 @@ const SLASH_COMMANDS = [
 ];
 
 export default function MarkdownModule() {
-  const { notes, addNote, updateNote, deleteNote, theme, showConfirm } = useAppStore(useShallow(state => ({
+  const { notes, addNote, updateNote, updateNoteLocally, deleteNote, theme, showConfirm } = useAppStore(useShallow(state => ({
     notes: state.notes,
     addNote: state.addNote,
     updateNote: state.updateNote,
+    updateNoteLocally: state.updateNoteLocally,
     deleteNote: state.deleteNote,
     theme: state.theme,
     showConfirm: state.showConfirm,
@@ -226,11 +227,11 @@ export default function MarkdownModule() {
   const handleTitleChange = (newVal: string) => {
     if (!activeDocId) return;
     setTitle(newVal);
-    updateNote(activeDocId, { title: newVal }, true);
+    updateNoteLocally(activeDocId, { title: newVal });
     
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      updateNote(activeDocId, { title: newVal });
+      void updateNote(activeDocId, { title: newVal }, true);
     }, 1500);
   };
 
@@ -238,11 +239,11 @@ export default function MarkdownModule() {
   const handleContentChange = (newVal: string) => {
     if (!activeDocId) return;
     setContent(newVal);
-    updateNote(activeDocId, { content: newVal }, true);
+    updateNoteLocally(activeDocId, { content: newVal });
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      updateNote(activeDocId, { content: newVal });
+      void updateNote(activeDocId, { content: newVal }, true);
     }, 1500);
   };
 

@@ -948,8 +948,8 @@ export const TaskList: React.FC<TaskListProps> = ({
                   {monthNames[calendarMonth]} {calendarYear}
                 </h3>
                 <div className="flex gap-1">
-                  <button type="button" onClick={handlePrevMonth} className="btn btn-secondary btn-sm btn-square cursor-pointer"><IconChevronLeft className="w-4 h-4"/></button>
-                  <button type="button" onClick={handleNextMonth} className="btn btn-secondary btn-sm btn-square cursor-pointer"><IconChevronRight className="w-4 h-4"/></button>
+                  <button type="button" onClick={handlePrevMonth} aria-label="Previous month" className="btn btn-secondary btn-sm btn-square cursor-pointer"><IconChevronLeft className="w-4 h-4"/></button>
+                  <button type="button" onClick={handleNextMonth} aria-label="Next month" className="btn btn-secondary btn-sm btn-square cursor-pointer"><IconChevronRight className="w-4 h-4"/></button>
                 </div>
               </div>
               

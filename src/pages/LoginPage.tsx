@@ -39,24 +39,24 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
       <motion.div 
         animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute w-[500px] h-[500px] rounded-full -top-[150px] -left-[150px] bg-pink-500/10 blur-[80px] pointer-events-none" 
+        className="absolute w-[500px] h-[500px] rounded-full -top-[150px] -left-[150px] bg-primary/10 blur-[80px] pointer-events-none" 
       />
       <motion.div 
         animate={{ scale: [1, 1.05, 1], opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute w-[400px] h-[400px] rounded-full -bottom-[100px] -right-[100px] bg-purple-500/10 blur-[80px] pointer-events-none" 
+        className="absolute w-[400px] h-[400px] rounded-full -bottom-[100px] -right-[100px] bg-primary-muted/5 blur-[80px] pointer-events-none" 
       />
 
       {/* ── Outer card wrapper ── */}
       <motion.div 
         variants={cardIn}
-        className="w-full max-w-[980px] min-h-[600px] flex flex-col md:flex-row bg-white/70 backdrop-blur-2xl rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden"
+        className="w-full max-w-[980px] min-h-[600px] flex flex-col md:flex-row bg-white/70 backdrop-blur-2xl rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden"
       >
         {/* ── LEFT COLUMN: Branding + Illustration ── */}
         <div className="hidden md:flex flex-col justify-between w-[38%] shrink-0 p-8 relative overflow-hidden bg-gradient-to-br from-slate-50/50 to-slate-100/50 border-r border-slate-200/50">
           
           {/* Decorative circle */}
-          <div className="absolute w-[300px] h-[300px] rounded-full -top-[80px] -right-[80px] bg-pink-500/5 blur-[40px] pointer-events-none" />
+          <div className="absolute w-[300px] h-[300px] rounded-full -top-[80px] -right-[80px] bg-primary/5 blur-[40px] pointer-events-none" />
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 relative z-10">
@@ -79,10 +79,10 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
           </motion.div>
 
           {/* Quote card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 relative z-10 shadow-sm border border-slate-100">
+          <div className="bg-white/80 backdrop-blur-md rounded-lg p-4 relative z-10 shadow-sm border border-slate-100">
             <div className="flex gap-0.5 mb-2">
               {[0,1,2,3,4].map((i) => (
-                <svg key={i} className="w-3 h-3 text-pink-500 fill-current" viewBox="0 0 24 24">
+                <svg key={i} className="w-3 h-3 text-primary fill-current" viewBox="0 0 24 24">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
               ))}
@@ -91,7 +91,7 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
               "Organize your life, stay productive, and achieve more every day."
             </p>
             <div className="flex items-center gap-2 mt-3">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-rose-400 flex items-center justify-center shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
                 <span className="text-[11px] text-white font-bold">P</span>
               </div>
               <span className="text-[12px] font-semibold text-slate-400">Personal HQ</span>
@@ -102,8 +102,8 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
           <div className="flex flex-col gap-2 mt-5 relative z-10">
             {features.map(({ Icon, text }) => (
               <div key={text} className="flex items-center gap-2">
-                <div className="w-[26px] h-[26px] rounded-lg bg-pink-500/10 flex items-center justify-center shrink-0">
-                  <Icon size={14} className="text-pink-500" />
+                <div className="w-[26px] h-[26px] rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon size={14} className="text-primary" />
                 </div>
                 <span className="text-[12px] text-slate-500 font-medium">{text}</span>
               </div>
@@ -143,7 +143,7 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
                 >
                   <h2 className="text-3xl font-extrabold text-slate-900 mb-1 tracking-tight">
                     Create{' '}
-                    <span className="bg-gradient-to-br from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-primary to-primary-muted bg-clip-text text-transparent">
                       your account
                     </span>
                   </h2>

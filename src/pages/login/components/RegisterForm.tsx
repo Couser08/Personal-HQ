@@ -67,8 +67,12 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
       <AnimatePresence>
         {alert && <Alert key="al" message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />}
       </AnimatePresence>
-      <motion.div variants={stagger} initial="hidden" animate="visible"
-        style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+      <motion.div 
+        variants={stagger} 
+        initial="hidden" 
+        animate="visible"
+        className="flex flex-col gap-3"
+      >
         <Field id="reg-email" label="Email" type="email" value={email}
           onChange={(v) => { setEmail(v); if (errs.email) setErrs((p) => ({ ...p, email: false })); }}
           placeholder="you@example.com" LeadIcon={IconMail} hasError={!!errs.email} />
@@ -79,20 +83,29 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           onChange={(v) => { setConfirm(v); if (errs.confirm) setErrs((p) => ({ ...p, confirm: false })); }}
           placeholder="Re-enter your password" LeadIcon={IconLock} hasError={!!errs.confirm} />
         <motion.div variants={itemIn}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
-            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
-              style={{ accentColor: '#f43f5e', width: 14, height: 14, marginTop: 1, flexShrink: 0 }} />
-            I agree to the{' '}
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>Terms of Service</span>
-            {' '}and{' '}
-            <span style={{ color: '#f43f5e', fontWeight: 600 }}>Privacy Policy</span>
+          <label className="flex items-start gap-2 text-[12px] text-zinc-500 dark:text-zinc-400 cursor-pointer leading-normal">
+            <input 
+              type="checkbox" 
+              checked={agreed} 
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="w-3.5 h-3.5 mt-0.5 rounded border border-border accent-primary cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:outline-none" 
+            />
+            <span>
+              I agree to the{' '}
+              <span className="text-primary font-semibold hover:text-primary-muted transition-colors">Terms of Service</span>
+              {' '}and{' '}
+              <span className="text-primary font-semibold hover:text-primary-muted transition-colors">Privacy Policy</span>
+            </span>
           </label>
         </motion.div>
         <PrimaryBtn loading={loading} label="Create account" Icon={IconUserPlus} />
-        <motion.p variants={itemIn} style={{ textAlign: 'center', fontSize: 13, color: '#64748b', margin: 0 }}>
+        <motion.p variants={itemIn} className="text-center text-[13px] text-zinc-500 dark:text-zinc-400 m-0">
           Already have an account?{' '}
-          <button type="button" onClick={onSwitchToLogin}
-            style={{ color: '#f43f5e', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button 
+            type="button" 
+            onClick={onSwitchToLogin}
+            className="text-primary font-bold hover:text-primary-muted transition-colors bg-transparent border-none cursor-pointer"
+          >
             Log in
           </button>
         </motion.p>

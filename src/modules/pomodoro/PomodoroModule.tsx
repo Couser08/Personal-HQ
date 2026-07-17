@@ -858,7 +858,7 @@ export default function PomodoroModule() {
                     onChange={e => setTempGoal(Number(e.target.value))} 
                     className="w-14 bg-surface-alt border border-border rounded-lg px-2 py-1 text-xs outline-none text-text-primary text-center font-bold" 
                   />
-                  <button onClick={saveGoal} className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center cursor-pointer hover:bg-emerald-500/20"><IconCheck className="w-4 h-4" /></button>
+                  <button onClick={saveGoal} aria-label="Save goal" className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center cursor-pointer hover:bg-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500/40"><IconCheck className="w-4 h-4" /></button>
                 </div>
               </div>
             ) : (

@@ -7,29 +7,6 @@ import { TagInput } from './TagInput';
 import { IconX, IconTrash } from '@tabler/icons-react';
 import type { SubTask } from '../../store/useAppStore';
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: 'var(--bg-surface-alt)',
-  border: '1px solid var(--border-border)',
-  borderRadius: '14px',
-  padding: '12px 16px',
-  fontSize: '15px',
-  color: 'var(--text-primary)',
-  outline: 'none',
-  fontFamily: 'inherit',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: 'var(--text-secondary)',
-  display: 'block',
-  marginBottom: '8px',
-};
-
 export function TodoTaskModal() {
   const { 
     todoTaskModal, 
@@ -114,8 +91,7 @@ export function TodoTaskModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }}
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 dark:bg-black/70 backdrop-blur-sm"
           onClick={closeTodoTaskModal}
         >
           <motion.div
@@ -125,50 +101,33 @@ export function TodoTaskModal() {
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: 'spring', damping: 26, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: '440px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-border)',
-              borderRadius: '32px',
-              padding: '32px',
-              boxShadow: '0 32px 96px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.2)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
-            }}
+            className="w-full max-w-[440px] max-h-[90vh] overflow-y-auto bg-surface border border-border rounded-xl p-8 shadow-high flex flex-col gap-5 custom-scrollbar"
           >
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '22px', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: 0 }}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-[22px] font-black text-text-primary tracking-tight m-0">
                 Edit Task
               </h3>
               <button
                 onClick={closeTodoTaskModal}
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'var(--bg-surface-alt)',
-                  border: '1px solid var(--border-border)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-muted)',
-                }}
+                aria-label="Close modal"
+                className="w-8 h-8 rounded-full bg-surface-alt border border-border-alt flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/45"
               >
                 <IconX size={16} />
               </button>
             </div>
 
             {/* Task Name */}
-            <div>
-              <label style={labelStyle}>Task Title</label>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="task-title" className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">Task Title</label>
               <input
+                id="task-title"
                 type="text"
                 autoFocus
                 placeholder="What needs to be done?"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                style={inputStyle}
+                className="w-full bg-surface-alt border border-border-alt rounded-xl px-4 py-2.5 text-sm font-medium text-text-primary placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all min-h-[42px]"
               />
             </div>
 
@@ -189,14 +148,14 @@ export function TodoTaskModal() {
             />
 
             {/* Tags */}
-            <div>
-              <label style={labelStyle}>Tags (Press Enter)</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">Tags (Press Enter)</label>
               <TagInput tags={tags} onChange={setTags} placeholder="Add labels..." />
             </div>
 
             {/* Subtasks Editor */}
             <div className="flex flex-col gap-2">
-              <label style={labelStyle}>Subtasks</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">Subtasks</label>
               
               {subtasks.length > 0 && (
                 <div className="flex flex-col gap-2.5 bg-surface-alt/40 p-4 rounded-[20px] border border-border/40 max-h-48 overflow-y-auto custom-scrollbar">
@@ -208,7 +167,8 @@ export function TodoTaskModal() {
                         onChange={(e) => {
                           setSubtasks(subtasks.map(s => s.id === st.id ? { ...s, completed: e.target.checked } : s));
                         }}
-                        className="w-4 h-4 rounded border-border accent-primary cursor-pointer shrink-0"
+                        aria-label="Mark subtask as completed"
+                        className="w-4 h-4 rounded border-border accent-primary cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-primary/45"
                       />
                       <input
                         type="text"
@@ -216,13 +176,15 @@ export function TodoTaskModal() {
                         onChange={(e) => {
                           setSubtasks(subtasks.map(s => s.id === st.id ? { ...s, title: e.target.value } : s));
                         }}
+                        aria-label="Subtask title"
                         className="flex-1 bg-transparent border-none text-xs text-text-primary outline-none focus:underline"
                         placeholder="Subtask name..."
                       />
                       <button
                         type="button"
                         onClick={() => setSubtasks(subtasks.filter(s => s.id !== st.id))}
-                        className="p-1 hover:bg-rose-500/10 text-text-muted hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                        aria-label={`Delete subtask: ${st.title || 'unnamed'}`}
+                        className="p-1 hover:bg-rose-500/10 text-text-muted hover:text-rose-500 rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-rose-500/40"
                       >
                         <IconTrash size={12} />
                       </button>
@@ -236,6 +198,7 @@ export function TodoTaskModal() {
                   type="text"
                   id="new-subtask-input"
                   placeholder="Add new subtask..."
+                  aria-label="Add new subtask name"
                   className="flex-1 bg-surface border border-border/30 text-xs px-3 py-1.5 rounded-xl outline-none focus:border-primary/50 text-text-primary"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -260,7 +223,7 @@ export function TodoTaskModal() {
                       }
                     }
                   }}
-                  className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-xl transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/45"
                 >
                   Add
                 </button>
@@ -269,59 +232,58 @@ export function TodoTaskModal() {
 
             {/* Due Date & Times */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-[1.2]">
-                <label style={labelStyle}>Due Date</label>
+              <div className="flex-[1.2] flex flex-col gap-1.5">
+                <label htmlFor="task-due-date" className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">Due Date</label>
                 <input
+                  id="task-due-date"
                   type="date"
                   value={dueDate}
                   onChange={e => setDueDate(e.target.value)}
-                  style={inputStyle}
+                  className="w-full bg-surface-alt border border-border-alt rounded-xl px-4 py-2.5 text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all min-h-[42px]"
                 />
               </div>
-              <div className="flex-1">
-                <label style={labelStyle}>Start Time</label>
+              <div className="flex-1 flex flex-col gap-1.5">
+                <label htmlFor="task-start-time" className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">Start Time</label>
                 <input
+                  id="task-start-time"
                   type="text"
                   placeholder="e.g. 10:00 AM"
                   value={startTime}
                   onChange={e => setStartTime(e.target.value)}
-                  style={inputStyle}
+                  className="w-full bg-surface-alt border border-border-alt rounded-xl px-4 py-2.5 text-sm font-medium text-text-primary placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all min-h-[42px]"
                 />
               </div>
-              <div className="flex-1">
-                <label style={labelStyle}>End Time</label>
+              <div className="flex-1 flex flex-col gap-1.5">
+                <label htmlFor="task-end-time" className="text-xs font-semibold uppercase tracking-wider text-text-secondary pl-0.5">End Time</label>
                 <input
+                  id="task-end-time"
                   type="text"
                   placeholder="e.g. 11:30 AM"
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
-                  style={inputStyle}
+                  className="w-full bg-surface-alt border border-border-alt rounded-xl px-4 py-2.5 text-sm font-medium text-text-primary placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all min-h-[42px]"
                 />
               </div>
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-border)' }}>
+            <div className="flex justify-end gap-2.5 pt-2.5 border-t border-border">
               <button
+                type="button"
                 onClick={closeTodoTaskModal}
-                style={{
-                  padding: '10px 20px', borderRadius: '999px', border: 'none',
-                  background: 'var(--bg-surface-alt)', color: 'var(--text-secondary)',
-                  fontWeight: 700, fontSize: '14px', cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className="px-5 py-2.5 rounded-full border-none bg-surface-alt text-text-secondary font-bold text-sm cursor-pointer hover:bg-surface-hover transition-colors focus-visible:ring-2 focus-visible:ring-primary/45"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={!title.trim()}
-                className={`btn btn-md rounded-full px-6 font-bold transition-all duration-200 ${
+                className={`px-5 py-2.5 rounded-full border-none font-bold text-sm flex items-center justify-center transition-all duration-200 ${
                   title.trim()
-                    ? 'btn-primary cursor-pointer hover:brightness-105 active:scale-98'
-                    : 'bg-zinc-200/70 dark:bg-zinc-800/70 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50'
+                    ? 'bg-primary hover:bg-primary-muted text-white cursor-pointer hover:brightness-105 active:scale-98 shadow-sm shadow-primary/15'
+                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50'
                 }`}
-                style={{ fontFamily: 'inherit' }}
               >
                 Save Changes
               </button>

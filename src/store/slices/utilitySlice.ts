@@ -39,6 +39,7 @@ export interface UtilitySlice {
   notes: Note[];
   addNote: (note: Note, userId?: string) => Promise<void>;
   updateNote: (id: string, data: Partial<Note>, silent?: boolean) => Promise<void>;
+  updateNoteLocally: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => Promise<void>;
 
   links: Link[];
@@ -394,6 +395,11 @@ export const createUtilitySlice: StateCreator<
       }
       throw error;
     }
+  },
+  updateNoteLocally: (id: string, data: Partial<Note>) => {
+    set((state) => ({
+      notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
+    }));
   },
   deleteNote: async (id) => {
     const previous = get().notes;

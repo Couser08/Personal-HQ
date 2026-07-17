@@ -14,8 +14,8 @@ import {
 } from '@tabler/icons-react';
 
 // ── Version ──────────────────────────────────────────────────────────────────
-const APP_VERSION = '2.3.1';
-const APP_CODENAME = 'Flow·P1';
+const APP_VERSION = '2.4.0';
+const APP_CODENAME = 'Accessible';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -32,93 +32,93 @@ interface ChangeItem {
 // ── Tab Data ──────────────────────────────────────────────────────────────────
 const TABS: { id: TabId; label: string }[] = [
   { id: 'architecture', label: "What's New" },
-  { id: 'features',     label: 'Refinements' },
+  { id: 'features',     label: 'Quality' },
   { id: 'improvements', label: 'Fixes' },
 ];
 
 const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   architecture: {
-    headline: 'Smarter canvas controls, Link Saver arc view, and a more satisfying completion moment.',
+    headline: 'Keyboard accessibility, Journal debounce, and a Tailwind-polished auth flow.',
     items: [
       {
         icon: <IconLayoutSidebarLeftCollapse className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#5856D6',
-        bg: 'rgba(88, 86, 214, 0.08)',
-        title: 'Canvas Popover Controls',
-        desc: 'Mindmap and Drawing module controls now live in a clean vertical popover at the edge of the canvas — sidebar toggle moved to the top-left floating button.',
-      },
-      {
-        icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Link Saver Arc View & Pagination',
-        desc: 'Links now display in a paginated arc card layout. Selecting a card opens its detail view instantly. Page resets cleanly when switching tabs.',
+        title: 'Modal Keyboard Trap',
+        desc: 'Modals now trap Tab focus inside themselves and restore focus to the trigger on close. Escape key always dismisses. Full WCAG 2.1 compliance.',
       },
       {
-        icon: <IconConfetti className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF9500',
-        bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Smart Daily Completion Celebration',
-        desc: "The wavy celebration now only fires when you complete ALL of today's tasks — not on every single checkbox. Makes it feel earned.",
-      },
-      {
-        icon: <IconHighlight className="w-4.5 h-4.5 stroke-[2]" />,
+        icon: <IconWand className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#AF52DE',
         bg: 'rgba(175, 82, 222, 0.08)',
-        title: '5 New Highlight Colors',
-        desc: 'Rich Text Editor gains Purple, Red, Cyan, Teal, and Lime highlights. Color picker now uses a grid layout for quick selection.',
+        title: 'Journal Editor Debounce',
+        desc: 'Title and content edits are now debounced with local state — no more laggy typing. Saves fire after you pause, not on every keystroke.',
       },
-    ],
-  },
-  features: {
-    headline: 'Quality-of-life refinements that make everyday use more delightful.',
-    items: [
       {
         icon: <IconStack2 className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'Mindmap Sidebar Toggle',
-        desc: 'The sidebar toggle button is now a floating pill at the top-left of the canvas — always visible, never blocking your nodes.',
-      },
-      {
-        icon: <IconWand className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#FF2D55',
-        bg: 'rgba(255, 45, 85, 0.08)',
-        title: 'Drawing Canvas Controls Revamped',
-        desc: 'Whiteboard controls moved to a compact vertical popover at bottom-right — less clutter on the canvas, more room to think.',
+        title: 'Sidebar ARIA Labels',
+        desc: 'Every sidebar button now has aria-label, aria-expanded, and aria-haspopup attributes — screen readers and keyboard navigators get full context.',
       },
       {
         icon: <IconComponents className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#FF9500',
         bg: 'rgba(255, 149, 0, 0.08)',
-        title: 'Journal & Mindmap Sidebar Polish',
-        desc: 'JournalSettingsSidebar and MindmapSidebar refined with tighter spacing, cleaner typography, and better responsive behaviour.',
+        title: 'Register Form Polish',
+        desc: 'Inline styles replaced with Tailwind. Checkbox has focus-visible ring, Terms links have hover transitions, and dark mode works properly.',
+      },
+    ],
+  },
+  features: {
+    headline: 'Smaller touches that raise the bar for everyday quality.',
+    items: [
+      {
+        icon: <IconHighlight className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#5856D6',
+        bg: 'rgba(88, 86, 214, 0.08)',
+        title: 'Code Snippet Module Updates',
+        desc: 'CodeSnippetModule received layout and interaction improvements for a cleaner copy-paste experience.',
+      },
+      {
+        icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF2D55',
+        bg: 'rgba(255, 45, 85, 0.08)',
+        title: 'Todo & Project Modal Tightening',
+        desc: 'TodoProjectModal and TodoTaskModal refined with better spacing and animation cleanup.',
+      },
+      {
+        icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
+        color: '#FF9500',
+        bg: 'rgba(255, 149, 0, 0.08)',
+        title: 'Pomodoro & Markdown Minor Fixes',
+        desc: 'Minor state and render improvements in PomodoroModule and MarkdownModule for consistency.',
       },
     ],
   },
   improvements: {
-    headline: 'Animation performance pass — every motion in the app now runs on the GPU compositor.',
+    headline: 'Bug fixes and syntax corrections for a rock-solid build.',
     items: [
       {
         icon: <IconSparkles className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#34C759',
         bg: 'rgba(52, 199, 89, 0.08)',
-        title: 'willChange Compositor Hints',
-        desc: 'Added willChange: transform, opacity to Sidebar, Modal, Toast, and Link Saver — animations now run on a dedicated GPU layer with zero jank.',
+        title: 'TodoTaskModal Syntax Fix',
+        desc: 'Fixed a duplicate JSX closing tag (</AnimatePresence>) that could cause render errors in certain edge cases.',
       },
       {
         icon: <IconDeviceMobile className="w-4.5 h-4.5 stroke-[2]" />,
         color: '#007AFF',
         bg: 'rgba(0, 122, 255, 0.08)',
-        title: 'Dynamic Island Animation Fix',
-        desc: 'Replaced blur-based enter/exit transitions with a clean y-slide — no more compositing cost from backdrop-filter on every notification.',
+        title: 'Login & Input Dark Mode',
+        desc: 'LoginPage, InputField, LoginForm and RegisterForm all migrated from hardcoded colours to Tailwind dark-mode-aware classes.',
       },
       {
         icon: <IconCards className="w-4.5 h-4.5 stroke-[2]" />,
-        color: '#AF52DE',
-        bg: 'rgba(175, 82, 222, 0.08)',
-        title: 'Link Saver Clipboard Popup',
-        desc: 'Moved x-offset to a static style prop so the floating card never triggers unnecessary re-layouts during its floating animation.',
+        color: '#8E8E93',
+        bg: 'rgba(142, 142, 147, 0.08)',
+        title: 'MediaEntryModal Refresh',
+        desc: 'MediaEntryModal got spacing and interaction improvements aligned with the updated Modal base component.',
       },
     ],
   },
@@ -126,9 +126,9 @@ const TAB_CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stat pills shown on mini card ─────────────────────────────────────────────
 const STATS = [
-  { label: 'Perf fixes', value: '5' },
-  { label: 'Compositor', value: '✓' },
-  { label: 'Smoother', value: '100%' },
+  { label: 'a11y fixes', value: '6+' },
+  { label: 'Keyboard', value: '✓ Trap' },
+  { label: 'Dark mode', value: '✓ Fixed' },
 ];
 
 // ── Mini Notification Card ────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ function MiniCard({ onExpand, onDismiss }: MiniCardProps) {
             <h3 className="font-black text-[14px] text-stone-900 dark:text-stone-50 tracking-tight leading-none">v{APP_VERSION}</h3>
             <span className="px-1.5 py-0.5 bg-[#5856D6]/10 text-[#5856D6] text-[9px] font-black uppercase tracking-wider rounded-md">{APP_CODENAME}</span>
           </div>
-          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">GPU compositor pass — every animation now runs at 60fps.</p>
+          <p className="text-[11.5px] text-stone-500 dark:text-stone-400 font-semibold mt-1.5 leading-tight">Keyboard trap, ARIA labels, Journal debounce & dark mode polish.</p>
         </div>
       </div>
 
@@ -249,7 +249,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
                   </span>
                 </div>
                 <p className="text-[12.5px] text-stone-500 dark:text-stone-400 font-medium mt-1.5 leading-relaxed">
-                  willChange hints added to all animated components, DynamicIsland blur removed, and Link Saver clipboard popup re-layout eliminated.
+                  Modals now trap keyboard focus, Sidebar got full ARIA, Journal typing is debounced, and auth forms are dark-mode ready.
                 </p>
               </div>
             </div>
@@ -324,7 +324,7 @@ function FullModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="w-full py-3 bg-[#5856D6] hover:bg-[#4745C0] text-white rounded-2xl text-xs font-bold active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(88,86,214,0.25)] cursor-pointer text-center"
             >
-              Silky smooth — v2.3.1 Flow·P1 →
+              All-access — v2.4.0 Accessible →
             </button>
           </div>
         </motion.div>

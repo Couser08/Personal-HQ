@@ -154,6 +154,8 @@ export const Sidebar = () => {
         <button 
           onClick={toggleCollapse} 
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-expanded={!isCollapsed}
           className="w-7 h-7 rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors shadow-sm"
         >
           {isCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
@@ -200,7 +202,7 @@ export const Sidebar = () => {
           </div>
           {!isCollapsed && (
             <div style={{ marginLeft: 'auto' }}>
-              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" className="btn btn-ghost btn-sm btn-square">
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" aria-label="Toggle dark/light theme" className="btn btn-ghost btn-sm btn-square">
                 {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
               </button>
             </div>
@@ -211,6 +213,7 @@ export const Sidebar = () => {
           <button 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
             title="Toggle theme" 
+            aria-label="Toggle dark/light theme"
             className="w-10 h-10 mx-auto rounded-lg border border-border bg-surface hover:bg-surface-hover text-text-secondary flex items-center justify-center cursor-pointer transition-colors shadow-sm mb-2"
           >
             {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
@@ -225,6 +228,7 @@ export const Sidebar = () => {
           className="sidebar-footer-btn"
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}
           title={isCollapsed ? "Export Data" : undefined}
+          aria-label="Export Data"
         >
           <IconDownload size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Export Data</span>
         </button>
@@ -234,6 +238,7 @@ export const Sidebar = () => {
           className="sidebar-footer-btn"
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', textAlign: 'left' }}
           title={isCollapsed ? "Import Data" : undefined}
+          aria-label="Import Data"
         >
           <IconUpload size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Import Data</span>
         </button>
@@ -244,6 +249,7 @@ export const Sidebar = () => {
           className="sidebar-footer-btn"
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: '#f43f5e', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', textAlign: 'left' }}
           title={isCollapsed ? "Logout" : undefined}
+          aria-label="Logout"
         >
           <IconLogout size={16} style={{ flexShrink: 0 }} /> <span className="sidebar-label">Logout</span>
         </button>
@@ -329,7 +335,13 @@ export const MobileBottomNav = () => {
             </motion.button>
           );
         })}
-        <motion.button onClick={() => setIsMoreOpen(!isMoreOpen)} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreOpen ? 'var(--color-primary)' : 'var(--text-muted)', minWidth: 48 }}>
+        <motion.button 
+          onClick={() => setIsMoreOpen(!isMoreOpen)} 
+          whileTap={{ scale: 0.9 }} 
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreOpen ? 'var(--color-primary)' : 'var(--text-muted)', minWidth: 48 }}
+          aria-haspopup="true"
+          aria-expanded={isMoreOpen}
+        >
           <IconDots size={22} />
           <span style={{ fontSize: 10, fontWeight: isMoreOpen ? 700 : 500 }}>More</span>
         </motion.button>

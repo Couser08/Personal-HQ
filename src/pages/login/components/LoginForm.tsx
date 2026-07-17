@@ -62,8 +62,8 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
       className="relative w-full mx-auto"
     >
       {/* Background glow effect behind the form */}
-      <div className="absolute -top-24 -left-20 w-72 h-72 bg-rose-500/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-24 -right-20 w-72 h-72 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -top-24 -left-20 w-72 h-72 bg-primary/15 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -bottom-24 -right-20 w-72 h-72 bg-primary-muted/5 rounded-full blur-[100px] pointer-events-none" />
 
       <AnimatePresence mode="wait">
         {alert && (
@@ -83,11 +83,11 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
         variants={stagger} 
         initial="hidden" 
         animate="visible"
-        className="relative= z-10 flex flex-col gap-6 bg-white/60 dark:bg-[#111113]/60 backdrop-blur-2xl p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl shadow-zinc-200/40 dark:shadow-black/60"
+        className="relative z-10 flex flex-col gap-6 bg-white/60 dark:bg-[#111113]/60 backdrop-blur-2xl p-8 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl shadow-zinc-200/40 dark:shadow-black/60"
       >
         <motion.div variants={itemIn} className="text-center mb-2">
           <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center justify-center gap-2">
-            Welcome Back <IconSparkles className="w-6 h-6 text-rose-500" />
+            Welcome Back <IconSparkles className="w-6 h-6 text-primary" />
           </h2>
           <p className="text-[14px] text-zinc-500 font-medium mt-1">Enter your details to sign in.</p>
         </motion.div>
@@ -120,7 +120,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
             <div className="relative flex items-center justify-center">
               <input 
                 type="checkbox" 
-                className="peer appearance-none w-4 h-4 rounded border-2 border-zinc-300 dark:border-zinc-700 checked:bg-rose-500 checked:border-rose-500 bg-transparent transition-all cursor-pointer" 
+                className="peer appearance-none w-4 h-4 rounded border-2 border-zinc-300 dark:border-zinc-700 checked:bg-primary checked:border-primary bg-transparent transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:outline-none" 
               />
               <IconLock className="w-2.5 h-2.5 text-white absolute opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
             </div>
@@ -128,7 +128,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           </label>
           <button 
             type="button"
-            className="text-[13px] font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors bg-transparent border-none cursor-pointer"
+            className="text-[13px] font-bold text-primary hover:text-primary-muted transition-colors bg-transparent border-none cursor-pointer"
           >
             Forgot password?
           </button>

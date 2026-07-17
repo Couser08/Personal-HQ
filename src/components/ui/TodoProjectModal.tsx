@@ -69,10 +69,11 @@ export function TodoProjectModal() {
 
             {/* Input Row */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 tracking-tight pl-0.5">
+              <label htmlFor="project-name" className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 tracking-tight pl-0.5">
                 Project Name
               </label>
               <input
+                id="project-name"
                 type="text"
                 autoFocus
                 placeholder="e.g., Design, Homework"
@@ -83,7 +84,7 @@ export function TodoProjectModal() {
                            border border-zinc-200/80 dark:border-zinc-700/60 rounded-lg 
                            px-3 py-2 text-[13px] text-zinc-900 dark:text-zinc-100 
                            placeholder:text-zinc-400/80 focus:outline-none 
-                           focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 
+                           focus:border-primary focus:ring-1 focus:ring-primary/20 
                            transition-all duration-150 font-normal"
               />
             </div>
@@ -100,11 +101,13 @@ export function TodoProjectModal() {
                     type="button"
                     onClick={() => setColor(c)}
                     style={{ backgroundColor: c }}
+                    aria-label={`Select color ${c}`}
+                    aria-pressed={color === c}
                     className={`w-5 h-5 rounded-full transition-all duration-200 ease-out relative cursor-pointer
                                ${color === c 
-                                 ? 'scale-110 shadow-[0_0_0_2px_#fff,0_0_0_4px_rgba(0,122,255,0.8)] dark:shadow-[0_0_0_2px_#18181b,0_0_0_4px_rgba(0,122,255,0.8)]' 
+                                 ? 'scale-110 shadow-[0_0_0_2px_#fff,0_0_0_4px_var(--color-primary)] dark:shadow-[0_0_0_2px_#18181b,0_0_0_4px_var(--color-primary)]' 
                                  : 'hover:scale-105 opacity-90'
-                               }`}
+                               } focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2`}
                   />
                 ))}
               </div>

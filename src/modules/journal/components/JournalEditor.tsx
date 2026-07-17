@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { type JournalEntry } from '../../../store/types';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
 import { formatDateTime, wordCount } from '../utils';
@@ -5,10 +6,10 @@ import { formatDateTime, wordCount } from '../utils';
 export function JournalEditor({
   activeEntry,
   previewMode,
-  title,
-  setTitle,
-  content,
-  setContent,
+  title: parentTitle,
+  setTitle: parentSetTitle,
+  content: parentContent,
+  setContent: parentSetContent,
   mood,
   tags,
   currentStyle,
@@ -27,6 +28,58 @@ export function JournalEditor({
   editorPaperStyle: any;
   forceSave: () => void;
 }) {
+  const [localTitle, setLocalTitle] = useState(parentTitle);
+  const [localContent, setLocalContent] = useState(parentContent);
+
+  const titleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // When swapping entries or parent finishes save, synchronize local state
+  useEffect(() => {
+    setLocalTitle(parentTitle);
+  }, [activeEntry.id, parentTitle]);
+
+  useEffect(() => {
+    setLocalContent(parentContent);
+  }, [activeEntry.id, parentContent]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+      if (contentDebounceRef.current) clearTimeout(contentDebounceRef.current);
+    };
+  }, []);
+
+  // Debounced parent updates
+  const handleTitleChange = (val: string) => {
+    setLocalTitle(val);
+    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    titleDebounceRef.current = setTimeout(() => {
+      parentSetTitle(val);
+    }, 400); // Debounce parent state updates
+  };
+
+  const handleContentChange = (val: string) => {
+    setLocalContent(val);
+    if (contentDebounceRef.current) clearTimeout(contentDebounceRef.current);
+    contentDebounceRef.current = setTimeout(() => {
+      parentSetContent(val);
+    }, 400); // Debounce parent state updates
+  };
+
+  // Immediate save on blur to prevent data loss
+  const handleBlur = () => {
+    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    if (contentDebounceRef.current) clearTimeout(contentDebounceRef.current);
+    parentSetTitle(localTitle);
+    parentSetContent(localContent);
+    // Let the parent trigger its own auto-save immediately
+    setTimeout(() => {
+      forceSave();
+    }, 50);
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       {/* Immersive Paper Sheet */}
@@ -43,7 +96,7 @@ export function JournalEditor({
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-text-muted">
               <span>{formatDateTime(activeEntry.date)}</span>
               <span>•</span>
-              <span>{wordCount(content)} words</span>
+              <span>{wordCount(localContent)} words</span>
               <span>•</span>
               <span className="text-primary font-bold">{mood.toUpperCase()}</span>
             </div>
@@ -60,9 +113,9 @@ export function JournalEditor({
 
           {/* Title input directly on paper */}
           <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={forceSave}
+            value={localTitle}
+            onChange={(event) => handleTitleChange(event.target.value)}
+            onBlur={handleBlur}
             placeholder="Untitled Entry"
             className="w-full border-none bg-transparent text-3xl font-extrabold tracking-tight text-text-primary outline-none placeholder:text-text-muted/20 mb-4"
           />
@@ -105,15 +158,15 @@ export function JournalEditor({
               <article className="max-w-none text-text-primary">
                 <div
                   className="min-h-80 text-[15px] leading-7"
-                  dangerouslySetInnerHTML={{ __html: content || '<p class="text-text-muted">Nothing written yet.</p>' }}
+                  dangerouslySetInnerHTML={{ __html: localContent || '<p class="text-text-muted">Nothing written yet.</p>' }}
                 />
               </article>
             ) : (
               <RichTextEditor
                 key={activeEntry.id}
-                value={content}
-                onChange={(nextValue) => setContent(nextValue)}
-                onBlur={forceSave}
+                value={localContent}
+                onChange={handleContentChange}
+                onBlur={handleBlur}
                 placeholder="Start writing your thoughts..."
               />
             )}

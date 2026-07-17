@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { IconX } from '@tabler/icons-react';
 import { createPortal } from 'react-dom';
@@ -20,6 +21,64 @@ export const Modal = ({
   maxWidthClassName = 'max-w-xl',
   bodyClassName = 'p-6'
 }: ModalProps) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        previousActiveElement?.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      if (!modalRef.current) return;
+
+      const focusableSelector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]';
+      const focusableElements = modalRef.current.querySelectorAll(focusableSelector);
+      const elements = Array.from(focusableElements) as HTMLElement[];
+      if (elements.length === 0) return;
+
+      const firstEl = elements[0];
+      const lastEl = elements[elements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Initial focus: Focus autofocus element or first focusable element
+    const autofocusEl = modalRef.current?.querySelector('[autofocus]') as HTMLElement | null;
+    if (autofocusEl) {
+      autofocusEl.focus();
+    } else {
+      const firstFocusable = modalRef.current?.querySelector(
+        'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]'
+      ) as HTMLElement | null;
+      firstFocusable?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousActiveElement) {
+        previousActiveElement.focus();
+      }
+    };
+  }, [isOpen, onClose]);
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -40,6 +99,7 @@ export const Modal = ({
           {/* Modal Centering Wrapper */}
           <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none p-4 sm:p-6">
             <motion.div
+              ref={modalRef}
               key="modal-content"
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

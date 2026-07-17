@@ -231,19 +231,23 @@ export default function CodeSnippetModule() {
                     }`}
                   >
                     <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
+                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-sm text-text-primary line-clamp-1">{snippet.title}</h3>
                         <span className="uppercase text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
                           {snippet.language}
                         </span>
                       </div>
-                      <button onClick={(e) => toggleFavorite(e, snippet)} className="btn btn-ghost btn-sm btn-square hover:text-amber-500">
+                      <button 
+                        onClick={(e) => toggleFavorite(e, snippet)} 
+                        aria-label={snippet.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                        className="btn btn-ghost btn-sm btn-square hover:text-amber-500"
+                      >
                         {snippet.isFavorite ? <IconStarFilled className="w-4 h-4 text-amber-500" /> : <IconStar className="w-4 h-4" />}
                       </button>
                     </div>
                     
                     <p className="text-xs text-text-secondary line-clamp-2 m-0 h-8">
-                      {snippet.description || 'No description provided.'}
+                       {snippet.description || 'No description provided.'}
                     </p>
                     
                     <div className="flex justify-between items-center mt-2 pt-3 border-t border-border-alt">
@@ -251,11 +255,12 @@ export default function CodeSnippetModule() {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleCopy(snippet.code, snippet.id); }}
+                          aria-label={copiedId === snippet.id ? "Copied" : "Copy code snippet"}
                           className="btn btn-ghost btn-sm btn-square"
                         >
                           {copiedId === snippet.id ? <IconCheck className="w-4 h-4 text-green-500" /> : <IconCopy className="w-4 h-4" />}
                         </button>
-                        <button className="btn btn-ghost btn-sm btn-square">
+                        <button className="btn btn-ghost btn-sm btn-square" aria-label="More snippet options">
                           <IconDots className="w-4 h-4" />
                         </button>
                       </div>
@@ -274,6 +279,7 @@ export default function CodeSnippetModule() {
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button 
                       onClick={() => setSelectedSnippetId(null)}
+                      aria-label="Back to snippet list"
                       className="lg:hidden flex items-center justify-center p-1.5 rounded-lg hover:bg-surface-hover text-text-secondary transition-colors"
                     >
                       <IconArrowLeft className="w-5 h-5" />
