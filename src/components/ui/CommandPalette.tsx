@@ -5,15 +5,19 @@ import { useShallow } from 'zustand/react/shallow';
 import { 
   IconSearch, IconLayout, IconChecklist, IconBook, IconWallet, 
   IconCode, IconClockPlay, IconSitemap, IconSettings, IconSun, 
-  IconMoon, IconEye, IconTerminal, IconCornerDownLeft 
+  IconMoon, IconEye, IconTerminal, IconCornerDownLeft,
+  IconPencil, IconPlus, IconLink, IconFlame, IconNotebook, IconBook2
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from './DynamicIsland';
 
 export function CommandPalette() {
-  const { setActiveModule, theme, setTheme } = useAppStore(useShallow(state => ({
+  const { setActiveModule, theme, setTheme, addJournalEntry, addTodoTask, addBook } = useAppStore(useShallow(state => ({
     setActiveModule: state.setActiveModule,
     theme: state.theme,
     setTheme: state.setTheme,
+    addJournalEntry: state.addJournalEntry,
+    addTodoTask: state.addTodoTask,
+    addBook: state.addBook,
   })));
 
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +49,41 @@ export function CommandPalette() {
   }, [isOpen]);
 
   const items = [
+    // ── Quick-Add ─────────────────────────────────────────────────────────
+    { id: 'new-journal', label: 'New Journal Entry', category: 'Quick-Add', icon: IconBook2, action: () => {
+        setActiveModule('journal');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('phq-new-journal-entry')), 200);
+        triggerDynamicIsland('New Entry', 'Journal opened', 'success', 'confetti');
+      }
+    },
+    { id: 'new-todo', label: 'New To-Do Task', category: 'Quick-Add', icon: IconChecklist, action: () => {
+        setActiveModule('todo');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('phq-new-todo-task')), 200);
+        triggerDynamicIsland('New Task', 'Todo opened', 'success', 'confetti');
+      }
+    },
+    { id: 'new-notebook', label: 'New Book / Notebook', category: 'Quick-Add', icon: IconNotebook, action: () => {
+        setActiveModule('books');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('phq-new-book')), 200);
+        triggerDynamicIsland('New Book', 'Library opened', 'success', 'confetti');
+      }
+    },
+    { id: 'new-habit', label: 'Log a Habit', category: 'Quick-Add', icon: IconFlame, action: () => {
+        setActiveModule('habits');
+        triggerDynamicIsland('Habits', 'Track your streak', 'success', 'award');
+      }
+    },
+    { id: 'new-link', label: 'Save a Link', category: 'Quick-Add', icon: IconLink, action: () => {
+        setActiveModule('linksaver');
+        triggerDynamicIsland('Link Saver', 'Save a link', 'success', 'confetti');
+      }
+    },
+    { id: 'new-note', label: 'New Drawing / Sketch', category: 'Quick-Add', icon: IconPencil, action: () => {
+        setActiveModule('drawing');
+        triggerDynamicIsland('Drawing', 'Canvas ready', 'success', 'confetti');
+      }
+    },
+    // ── Navigation ────────────────────────────────────────────────────────
     { id: 'dashboard', label: 'Go to Home', category: 'Navigation', icon: IconLayout, action: () => setActiveModule('dashboard') },
     { id: 'projects', label: 'Go to Projects', category: 'Navigation', icon: IconTerminal, action: () => setActiveModule('projects') },
     { id: 'todo', label: 'Go to To-Do List', category: 'Navigation', icon: IconChecklist, action: () => setActiveModule('todo') },
