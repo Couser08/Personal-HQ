@@ -5,7 +5,7 @@ import {
   IconWallet, IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
-  IconArrowRight, IconTag, IconChartBar, IconBrush, IconX
+  IconArrowRight, IconTag, IconChartBar, IconBrush, IconX, IconPlus
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
