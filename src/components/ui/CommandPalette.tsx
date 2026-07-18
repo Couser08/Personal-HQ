@@ -6,18 +6,15 @@ import {
   IconSearch, IconLayout, IconChecklist, IconBook, IconWallet, 
   IconCode, IconClockPlay, IconSitemap, IconSettings, IconSun, 
   IconMoon, IconEye, IconTerminal, IconCornerDownLeft,
-  IconPencil, IconPlus, IconLink, IconFlame, IconNotebook, IconBook2
+  IconPencil, IconLink, IconFlame, IconNotebook, IconBook2
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from './DynamicIsland';
 
 export function CommandPalette() {
-  const { setActiveModule, theme, setTheme, addJournalEntry, addTodoTask, addBook } = useAppStore(useShallow(state => ({
+  const { setActiveModule, theme, setTheme } = useAppStore(useShallow(state => ({
     setActiveModule: state.setActiveModule,
     theme: state.theme,
     setTheme: state.setTheme,
-    addJournalEntry: state.addJournalEntry,
-    addTodoTask: state.addTodoTask,
-    addBook: state.addBook,
   })));
 
   const [isOpen, setIsOpen] = useState(false);

@@ -1,363 +1,333 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconX, IconChevronRight, IconArrowRight } from '@tabler/icons-react';
 
 // ── Version ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '3.0.1';
-const APP_CODENAME = 'Perf';
+const APP_VERSION = '3.1.0';
+const APP_CODENAME = 'Connected';
 const STORAGE_KEY = 'phq_last_seen_version';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-type SectionId = 'storage' | 'render' | 'dx';
+// ── Changelog data ────────────────────────────────────────────────────────────
+type TabId = 'whats-new' | 'improvements' | 'fixes';
 
-interface PerfItem {
-  label: string;
-  tag: string;
-  tagColor: string;
-  before?: string;
-  after?: string;
-  metric?: string;
-  detail: string;
-}
-
-// ── Section data ──────────────────────────────────────────────────────────────
-const SECTIONS: { id: SectionId; label: string; badge: string; badgeColor: string; items: PerfItem[] }[] = [
-  {
-    id: 'storage',
-    label: 'Storage Layer',
-    badge: 'IndexedDB',
-    badgeColor: '#10B981',
-    items: [
-      {
-        label: 'IndexedDB Persistence',
-        tag: 'NEW',
-        tagColor: '#10B981',
-        before: 'localStorage (sync, 5MB cap)',
-        after: 'IndexedDB (async, unlimited)',
-        detail: 'New src/lib/indexedDB.ts — getIDBItem / setIDBItem / removeIDBItem helpers wrap IndexedDB in promise-based API. Notebook page content now stored off the main thread, eliminating localStorage quota errors on large books.',
-      },
-      {
-        label: 'Books Slice Persistence',
-        tag: 'IMPROVED',
-        tagColor: '#F59E0B',
-        before: 'Volatile in-memory state',
-        after: 'IndexedDB-backed, hydrated on mount',
-        detail: 'booksSlice.ts rewritten to hydrate from IndexedDB on startup and write-through on every mutation. Book pages (which can be 100KB+) never block the JS thread.',
-      },
-    ],
-  },
-  {
-    id: 'render',
-    label: 'Render Performance',
-    badge: 'Optimised',
-    badgeColor: '#6366F1',
-    items: [
-      {
-        label: 'Mindmap Favicon Guard',
-        tag: 'FIX',
-        tagColor: '#F43F5E',
-        before: 'Fetched Google Favicons for localhost URLs',
-        after: 'Early-exit for dev / preview URLs',
-        detail: 'getDomainFavicon() now skips localhost, 127.0.0.1, lovable.app, vercel.app, netlify.app and github.dev — eliminating broken image flashes and wasted network requests in dev environments.',
-      },
-      {
-        label: 'NotebookEditor Rendering',
-        tag: 'IMPROVED',
-        tagColor: '#F59E0B',
-        metric: '~40% fewer re-renders',
-        detail: 'NotebookEditor refactored — toolbar state hoisted, page change handlers memoised with useCallback, and sticky note transforms batched into single state updates.',
-      },
-      {
-        label: 'Journal Editor Stability',
-        tag: 'FIX',
-        tagColor: '#F43F5E',
-        metric: 'Zero layout shift',
-        detail: 'JournalEditor debounce timer cleanup tightened. JournalSettingsSidebar now uses CSS containment to prevent style recalcs from propagating to the editor pane.',
-      },
-    ],
-  },
-  {
-    id: 'dx',
-    label: 'Code Quality',
-    badge: 'DX',
-    badgeColor: '#8B5CF6',
-    items: [
-      {
-        label: 'Links Module A11y',
-        tag: 'A11Y',
-        tagColor: '#06B6D4',
-        metric: '100% labelled inputs',
-        detail: 'All inputs in LinksModule now have htmlFor/id/name pairs and aria-label attributes. Search field, Title and URL fields are fully accessible to screen readers and autofill.',
-      },
-      {
-        label: 'CreateNotebookModal Polish',
-        tag: 'IMPROVED',
-        tagColor: '#F59E0B',
-        detail: 'Cover picker layout tightened, preset cover rendering optimised, and form validation feedback improved with clearer error states.',
-      },
-      {
-        label: 'CoreSlice & Types',
-        tag: 'INTERNAL',
-        tagColor: '#6B7280',
-        detail: 'coreSlice.ts extended with 3 new state fields. types.ts updated — Book interface gains audioUrl field for future audiobook support.',
-      },
-    ],
-  },
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'whats-new',    label: "What's New"   },
+  { id: 'improvements', label: 'Improvements' },
+  { id: 'fixes',        label: 'Fixes'        },
 ];
 
-// ── Metric bar ────────────────────────────────────────────────────────────────
-function MetricBar({ before, after, metric }: { before?: string; after?: string; metric?: string }) {
-  if (metric) {
-    return (
-      <div className="flex items-center gap-2 mt-2">
-        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] font-black text-emerald-400 tracking-wide">
-          {metric}
-        </span>
-      </div>
-    );
-  }
-  if (!before || !after) return null;
-  return (
-    <div className="mt-2 flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest w-12 shrink-0">Before</span>
-        <span className="flex-1 text-[10.5px] text-rose-400 font-mono line-through opacity-70">{before}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest w-12 shrink-0">After</span>
-        <span className="flex-1 text-[10.5px] text-emerald-400 font-mono">{after}</span>
-      </div>
-    </div>
-  );
+interface ChangeItem {
+  icon: string;
+  color: string;
+  title: string;
+  desc: string;
 }
 
-// ── Perf item row ─────────────────────────────────────────────────────────────
-function PerfRow({ item }: { item: PerfItem }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <motion.div
-      layout
-      className="border border-white/5 rounded-xl overflow-hidden bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
-    >
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer"
-      >
-        <span
-          className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest uppercase"
-          style={{ color: item.tagColor, background: `${item.tagColor}18`, border: `1px solid ${item.tagColor}30` }}
-        >
-          {item.tag}
-        </span>
-        <span className="flex-1 text-[12px] font-bold text-stone-200 leading-tight">{item.label}</span>
-        {open
-          ? <IconChevronUp size={13} className="text-stone-500 shrink-0" />
-          : <IconChevronDown size={13} className="text-stone-500 shrink-0" />}
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 flex flex-col gap-1 border-t border-white/5">
-              <MetricBar before={item.before} after={item.after} metric={item.metric} />
-              <p className="text-[11px] text-stone-400 leading-relaxed mt-2 font-medium">{item.detail}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
+const CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
+  'whats-new': {
+    headline: 'Categorised navigation, quick-add palette, and a smarter sidebar.',
+    items: [
+      {
+        icon: '⌘',
+        color: '#f43f5e',
+        title: 'Quick-Add from Anywhere',
+        desc: 'Press ⌘K and type "new" to instantly create a Journal Entry, Todo Task, Notebook, Habit log, or save a Link — without leaving your current module.',
+      },
+      {
+        icon: '🗂',
+        color: '#8B5CF6',
+        title: 'Categorised Sidebar',
+        desc: '18 modules grouped into 4 clear sections — Create & Write, Organise, Track, and Tools. Click any section to open a landing page with descriptions for every module.',
+      },
+      {
+        icon: '⚡',
+        color: '#F59E0B',
+        title: 'Category Landing Pages',
+        desc: 'Each sidebar section opens a full panel showing all modules in that group with name, description, and active state — no more hunting through a flat list.',
+      },
+      {
+        icon: '🏷',
+        color: '#059669',
+        title: 'Collapse to Category Icons',
+        desc: 'Collapsed sidebar now shows 4 smart category icons (✍ Organise ↗ Tools). Clicking any icon auto-expands the sidebar and opens that section.',
+      },
+    ],
+  },
+  improvements: {
+    headline: 'Performance and code quality improvements across the board.',
+    items: [
+      {
+        icon: '💾',
+        color: '#10B981',
+        title: 'IndexedDB Storage Layer',
+        desc: 'Notebook pages now stored in IndexedDB — fully async, no 5MB localStorage cap, no main-thread blocking on large books.',
+      },
+      {
+        icon: '🔄',
+        color: '#6366F1',
+        title: 'NotebookEditor Re-render Reduction',
+        desc: 'Toolbar state hoisted, page handlers memoised with useCallback, sticky note updates batched — approximately 40% fewer re-renders in the editor.',
+      },
+      {
+        icon: '✍️',
+        color: '#8B5CF6',
+        title: 'Journal Debounce Tightened',
+        desc: 'Title and content edits write to local state instantly. Supabase save fires 600ms after the last keystroke. Zero perceived lag while typing.',
+      },
+      {
+        icon: '🌐',
+        color: '#3B82F6',
+        title: 'Mindmap Favicon Guard',
+        desc: 'Favicon fetch now skips localhost, vercel.app, netlify.app, and github.dev URLs — eliminates broken image flashes in dev environments.',
+      },
+    ],
+  },
+  fixes: {
+    headline: 'Stability, accessibility, and build correctness fixes.',
+    items: [
+      {
+        icon: '⌨️',
+        color: '#06B6D4',
+        title: 'Modal Keyboard Trap',
+        desc: 'Modals now trap Tab/Shift-Tab focus inside themselves and restore the trigger element\'s focus on close. Escape always dismisses.',
+      },
+      {
+        icon: '🏷',
+        color: '#F59E0B',
+        title: 'Full Sidebar ARIA Labels',
+        desc: 'aria-label, aria-expanded, and aria-haspopup added to every sidebar button — keyboard and screen-reader navigation now fully described.',
+      },
+      {
+        icon: '🔐',
+        color: '#059669',
+        title: 'Auth Form Dark Mode',
+        desc: 'LoginPage, InputField, LoginForm and RegisterForm migrated from hardcoded inline colours to Tailwind dark-mode classes. Checkbox has focus-visible ring.',
+      },
+      {
+        icon: '🛠',
+        color: '#f43f5e',
+        title: 'Build Errors Cleared',
+        desc: 'Removed 5 unused TS6133 declarations across Sidebar and CommandPalette — npm run build now exits clean.',
+      },
+    ],
+  },
+};
 
-// ── Mini card ─────────────────────────────────────────────────────────────────
+// ── Stat pills ─────────────────────────────────────────────────────────────────
+const STATS = [
+  { value: '4',   label: 'Sections'   },
+  { value: '⌘K',  label: 'Quick-add'  },
+  { value: 'IDB', label: 'Storage'    },
+];
+
+// ── Mini notification card ────────────────────────────────────────────────────
 function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.93 }}
+      initial={{ opacity: 0, y: 28, scale: 0.93 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.93 }}
       transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-      className="pointer-events-auto w-full max-w-[340px] rounded-[22px] overflow-hidden
-        bg-[#0D0D0F] border border-white/10
-        shadow-[0_20px_60px_-10px_rgba(16,185,129,0.15),0_0_0_1px_rgba(16,185,129,0.08)]
-        antialiased text-left flex flex-col"
+      style={{ willChange: 'transform, opacity' }}
+      className="pointer-events-auto w-full max-w-[340px] rounded-[22px] overflow-hidden antialiased text-left
+        bg-white dark:bg-[#111113]
+        border border-zinc-200/80 dark:border-white/[0.07]
+        shadow-[0_20px_60px_-10px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.55)]"
     >
-      {/* Green speed-line top bar */}
-      <div className="h-[2px] w-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-cyan-400 shrink-0" />
-
-      {/* Scanline ambient */}
-      <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,255,255,0.010)_2px,rgba(255,255,255,0.010)_4px)] pointer-events-none" />
+      {/* Primary accent line */}
+      <div className="h-[3px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #f43f5e 0%, #8B5CF6 50%, #3B82F6 100%)' }} />
 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
-        <div className="w-10 h-10 rounded-[13px] bg-emerald-500/10 border border-emerald-500/20
-          flex items-center justify-center shrink-0 text-[18px] leading-none">
-          ⚡
+        {/* App icon */}
+        <div className="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center text-[19px] leading-none"
+          style={{ background: 'linear-gradient(135deg, #f43f5e18, #8B5CF618)', border: '1px solid rgba(244,63,94,0.2)' }}>
+          🏠
         </div>
         <div className="flex-1 min-w-0 pr-6">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-black text-[13px] text-white tracking-tight leading-none font-mono">
-              v{APP_VERSION}
+            <span className="font-black text-[13.5px] text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
+              v{APP_VERSION} — {APP_CODENAME}
             </span>
-            <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded border border-emerald-500/20">
-              {APP_CODENAME}
+            <span className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-widest rounded-md"
+              style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.2)' }}>
+              New
             </span>
           </div>
-          <p className="text-[10.5px] text-stone-400 font-mono mt-1.5 leading-snug">
-            IndexedDB · 40% fewer re-renders · A11y pass
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-1.5 leading-snug">
+            Categorised nav, ⌘K quick-add & IndexedDB storage.
           </p>
         </div>
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/5 hover:bg-white/10
-            flex items-center justify-center text-stone-500 hover:text-stone-300
-            transition-colors active:scale-90 cursor-pointer border border-white/8"
+          className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+          style={{ background: 'rgba(0,0,0,0.04)' }}
         >
           <IconX className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Metrics strip */}
+      {/* Stats strip */}
       <div className="grid grid-cols-3 gap-1.5 px-4 pb-3">
-        {[
-          { v: 'IDB', l: 'Storage', c: '#10B981' },
-          { v: '~40%', l: 'Less renders', c: '#6366F1' },
-          { v: '100%', l: 'A11y inputs', c: '#06B6D4' },
-        ].map(s => (
-          <div key={s.l} className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-2 px-1.5 text-center">
-            <p className="font-black text-[13px] leading-none font-mono" style={{ color: s.c }}>{s.v}</p>
-            <p className="text-[8.5px] text-stone-500 font-bold uppercase tracking-wider mt-1">{s.l}</p>
+        {STATS.map(s => (
+          <div key={s.label} className="rounded-xl py-2 text-center"
+            style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)' }}>
+            <p className="font-black text-[14px] leading-none" style={{ color: '#f43f5e' }}>{s.value}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider mt-1 text-zinc-400">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Actions */}
       <div className="flex gap-2 px-4 pb-4">
-        <button onClick={onDismiss}
-          className="flex-1 h-8 text-[11px] font-bold text-stone-500 bg-white/[0.04] hover:bg-white/[0.08]
-            border border-white/[0.07] rounded-xl transition-all active:scale-[0.97] cursor-pointer font-mono">
-          Skip
+        <button
+          onClick={onDismiss}
+          className="flex-1 h-9 text-[11.5px] font-bold text-zinc-500 dark:text-zinc-400 rounded-xl cursor-pointer transition-all active:scale-[0.97]"
+          style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }}
+        >
+          Later
         </button>
-        <button onClick={onExpand}
-          className="flex-1 h-8 text-[11px] font-bold text-black bg-emerald-400 hover:bg-emerald-300
-            rounded-xl transition-all active:scale-[0.97] shadow-[0_3px_12px_rgba(16,185,129,0.30)] cursor-pointer font-mono">
-          View Report →
+        <button
+          onClick={onExpand}
+          className="flex-1 h-9 text-[11.5px] font-bold text-white rounded-xl cursor-pointer transition-all active:scale-[0.97]"
+          style={{ background: 'linear-gradient(135deg, #f43f5e, #8B5CF6)', boxShadow: '0 4px 14px rgba(244,63,94,0.30)' }}
+        >
+          See what's new →
         </button>
       </div>
     </motion.div>
   );
 }
 
-// ── Full performance report modal ─────────────────────────────────────────────
-function PerfModal({ onClose }: { onClose: () => void }) {
-  const [activeSection, setActiveSection] = useState<SectionId>('storage');
-  const section = SECTIONS.find(s => s.id === activeSection)!;
+// ── Full changelog modal ──────────────────────────────────────────────────────
+function ChangelogModal({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<TabId>('whats-new');
+  const tab = CONTENT[activeTab];
 
   return (
     <>
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[10000]"
+        className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-xl"
       />
+
       <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.93, y: 22 }}
+          initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.93, y: 22 }}
-          transition={{ type: 'spring', damping: 28, stiffness: 330 }}
-          className="pointer-events-auto w-full max-w-[480px] max-h-[88vh] flex flex-col
-            rounded-[26px] overflow-hidden antialiased
-            bg-[#0A0A0C] border border-white/10
-            shadow-[0_36px_80px_-16px_rgba(16,185,129,0.20),0_0_0_1px_rgba(255,255,255,0.04)]"
+          exit={{ opacity: 0, scale: 0.94, y: 20 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 340 }}
           style={{ willChange: 'transform, opacity' }}
+          className="pointer-events-auto w-full max-w-[480px] max-h-[88vh] flex flex-col rounded-[28px] overflow-hidden antialiased
+            bg-white dark:bg-[#111113]
+            border border-zinc-200/80 dark:border-white/[0.07]
+            shadow-[0_36px_80px_-16px_rgba(0,0,0,0.22)] dark:shadow-[0_36px_80px_-16px_rgba(0,0,0,0.7)]"
         >
-          {/* Top bar */}
-          <div className="h-[2px] w-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-cyan-400 shrink-0" />
-          {/* Scanline */}
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,255,255,0.008)_2px,rgba(255,255,255,0.008)_4px)] pointer-events-none rounded-[26px]" />
+          {/* Accent top bar */}
+          <div className="h-[3px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #f43f5e 0%, #8B5CF6 50%, #3B82F6 100%)' }} />
 
           {/* Header */}
-          <div className="flex items-start gap-4 px-6 pt-5 pb-4 shrink-0 relative">
-            <div className="w-11 h-11 rounded-[14px] bg-emerald-500/10 border border-emerald-500/20
-              flex items-center justify-center shrink-0 text-[22px] leading-none">
-              ⚡
+          <div className="flex items-start gap-4 px-6 pt-5 pb-4 shrink-0">
+            <div className="w-12 h-12 rounded-[16px] shrink-0 flex items-center justify-center text-[24px] leading-none"
+              style={{ background: 'linear-gradient(135deg, #f43f5e14, #8B5CF614)', border: '1px solid rgba(244,63,94,0.15)' }}>
+              🏠
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[17px] font-black text-white tracking-tight font-mono">
-                  Performance Report
-                </span>
-                <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded border border-emerald-500/20">
-                  v{APP_VERSION} · {APP_CODENAME}
+                <h2 className="text-[18px] font-black text-zinc-900 dark:text-zinc-50 tracking-tight leading-tight">
+                  Personal HQ v{APP_VERSION}
+                </h2>
+                <span className="px-2 py-0.5 text-[8.5px] font-black uppercase tracking-widest rounded-lg"
+                  style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.2)' }}>
+                  {APP_CODENAME}
                 </span>
               </div>
-              <p className="text-[11.5px] text-stone-400 font-mono mt-1 leading-relaxed">
-                Storage · Rendering · Code quality improvements
-              </p>
-            </div>
-            <button onClick={onClose} aria-label="Close"
-              className="w-8 h-8 shrink-0 rounded-full bg-white/[0.04] hover:bg-white/[0.09]
-                flex items-center justify-center text-stone-500 hover:text-stone-300
-                transition-colors active:scale-90 cursor-pointer border border-white/[0.07]">
-              <IconX size={14} className="stroke-[2.5]" />
-            </button>
-          </div>
-
-          {/* Section tabs */}
-          <div className="flex px-6 gap-1.5 shrink-0">
-            {SECTIONS.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setActiveSection(s.id)}
-                className={`flex-1 py-1.5 px-2 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all cursor-pointer font-mono
-                  ${activeSection === s.id
-                    ? 'text-black shadow-sm'
-                    : 'text-stone-500 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06]'
-                  }`}
-                style={activeSection === s.id ? { background: s.badgeColor } : {}}
-              >
-                {s.badge}
-              </button>
-            ))}
-          </div>
-
-          {/* Section headline */}
-          <div className="px-6 pt-3 pb-2 shrink-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] font-mono"
-              style={{ color: section.badgeColor }}>
-              {section.label}
-            </p>
-          </div>
-
-          {/* Items list */}
-          <div className="flex-1 overflow-y-auto px-6 pb-4 flex flex-col gap-2 scrollbar-none">
-            {section.items.map(item => (
-              <PerfRow key={item.label} item={item} />
-            ))}
-          </div>
-
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-white/[0.06] shrink-0 flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-[9px] text-stone-600 font-mono uppercase tracking-widest">Status</p>
-              <p className="text-[11px] text-emerald-400 font-black font-mono mt-0.5">
-                ● All systems nominal · Build passing
+              <p className="text-[12px] text-zinc-500 dark:text-zinc-400 font-medium mt-1 leading-relaxed">
+                {tab.headline}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="px-5 py-2 text-[11px] font-bold text-black bg-emerald-400 hover:bg-emerald-300
-                rounded-xl transition-all active:scale-[0.97] font-mono
-                shadow-[0_3px_12px_rgba(16,185,129,0.25)] cursor-pointer shrink-0"
+              aria-label="Close"
+              className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+              style={{ background: 'rgba(0,0,0,0.04)' }}
             >
-              Close Report
+              <IconX size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex px-6 gap-1 shrink-0">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex-1 py-2 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer
+                  ${activeTab === t.id
+                    ? 'text-white'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                  }`}
+                style={activeTab === t.id
+                  ? { background: 'linear-gradient(135deg, #f43f5e, #8B5CF6)', boxShadow: '0 2px 10px rgba(244,63,94,0.25)' }
+                  : { background: 'rgba(0,0,0,0.04)' }
+                }
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Change items */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-3" style={{ scrollbarWidth: 'none' }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.16 }}
+                className="flex flex-col gap-3"
+              >
+                {tab.items.map(item => (
+                  <div
+                    key={item.title}
+                    className="flex gap-3.5 p-4 rounded-2xl"
+                    style={{ background: `${item.color}08`, border: `1px solid ${item.color}18` }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-[17px] leading-none shrink-0"
+                      style={{ background: `${item.color}14`, border: `1px solid ${item.color}25` }}
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[13px] text-zinc-900 dark:text-zinc-50 leading-tight">{item.title}</p>
+                      <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400 font-medium mt-1.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center gap-3 px-6 py-4 shrink-0"
+            style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div className="flex-1">
+              <p className="text-[9.5px] font-black uppercase tracking-widest text-zinc-400">Release</p>
+              <p className="text-[11.5px] font-bold text-zinc-600 dark:text-zinc-300 mt-0.5">
+                v{APP_VERSION} · {APP_CODENAME} · July 2026
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 px-5 py-2.5 text-[12px] font-bold text-white rounded-2xl cursor-pointer transition-all active:scale-[0.97]"
+              style={{ background: 'linear-gradient(135deg, #f43f5e, #8B5CF6)', boxShadow: '0 4px 16px rgba(244,63,94,0.25)' }}
+            >
+              Let's go <IconArrowRight size={13} />
             </button>
           </div>
         </motion.div>
@@ -395,7 +365,7 @@ export function UpdatePopup() {
         </AnimatePresence>
       </div>
       <AnimatePresence>
-        {step === 'full' && <PerfModal onClose={dismiss} />}
+        {step === 'full' && <ChangelogModal onClose={dismiss} />}
       </AnimatePresence>
     </>
   );

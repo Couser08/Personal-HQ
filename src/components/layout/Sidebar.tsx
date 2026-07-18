@@ -79,7 +79,6 @@ const NAV_GROUPS = [
   },
 ];
 
-const ALL_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 // ── NAV item style (uses CSS vars, no broken Tailwind tokens) ──────────────────
 const navItemStyle = (active: boolean): React.CSSProperties => ({
