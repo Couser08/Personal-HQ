@@ -1,5 +1,5 @@
 import {
-  IconBook, IconBook2, IconLayout,
+  IconBook, IconBook2, IconLayout, IconNotebook,
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Home', icon: IconLayout },
+  { id: 'books', label: 'My Library', icon: IconNotebook },
   { id: 'journal', label: 'Journal', icon: IconBook2 },
   { id: 'projects', label: 'Projects', icon: IconFolder },
   { id: 'todo', label: 'To-Do List', icon: IconChecklist },
@@ -38,11 +39,11 @@ const NAV_ITEMS = [
 const NAV_ITEM_STYLE = (active: boolean) => ({
   display: 'flex', alignItems: 'center', gap: 10,
   padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
-  background: active ? 'var(--bg-surface-hover)' : 'transparent',
+  background: 'transparent',
   color: active ? 'var(--color-primary)' : 'var(--text-secondary)',
   fontWeight: active ? 700 : 500, fontSize: 13,
   textAlign: 'left' as const, width: '100%',
-  transition: 'background 0.15s, color 0.15s',
+  transition: 'color 0.15s',
   position: 'relative' as const,
   willChange: 'transform',
 });
@@ -88,8 +89,8 @@ export const Sidebar = () => {
   };
 
   const userEmail = user?.email ?? 'User';
-  const userName = userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
-  const userInitial = userEmail.charAt(0).toUpperCase();
+  const userName = user?.user_metadata?.full_name 
+    || (userEmail !== 'User' ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1) : 'User');
 
   return (
     <aside
@@ -170,8 +171,15 @@ export const Sidebar = () => {
             const active = activeModule === id;
             return (
               <motion.button key={id} id={'tour-' + id} onClick={() => setActiveModule(id)} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(active)} title={isCollapsed ? label : undefined}>
-                <Icon size={18} style={{ flexShrink: 0 }} />
-                <span className="sidebar-label" style={{ whiteSpace: 'nowrap' }}>{label}</span>
+                {active && (
+                  <motion.div
+                    layoutId="sidebar-active-indicator"
+                    className="absolute inset-0 bg-surface-hover rounded-[10px] z-0 pointer-events-none"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Icon size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
+                <span className="sidebar-label" style={{ whiteSpace: 'nowrap', position: 'relative', zIndex: 1 }}>{label}</span>
               </motion.button>
             );
           });
@@ -180,28 +188,42 @@ export const Sidebar = () => {
         <div style={{ height: 1, background: 'var(--border-border)', margin: isCollapsed ? '8px 16px' : '12px 4px' }} />
 
         <motion.button id="tour-settings" onClick={() => setActiveModule('settings')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'settings')} title={isCollapsed ? "Settings" : undefined}>
-          <IconSettings size={18} style={{ flexShrink: 0 }} />
-          <span className="sidebar-label">Settings</span>
+          {activeModule === 'settings' && (
+            <motion.div
+              layoutId="sidebar-active-indicator"
+              className="absolute inset-0 bg-surface-hover rounded-[10px] z-0 pointer-events-none"
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          )}
+          <IconSettings size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
+          <span className="sidebar-label" style={{ position: 'relative', zIndex: 1 }}>Settings</span>
         </motion.button>
 
         <motion.button id="tour-profile" onClick={() => setActiveModule('profile')} whileTap={{ scale: 0.97 }} style={NAV_ITEM_STYLE(activeModule === 'profile')} title={isCollapsed ? "Profile" : undefined}>
-          <IconUser size={18} style={{ flexShrink: 0 }} />
-          <span className="sidebar-label">Profile</span>
+          {activeModule === 'profile' && (
+            <motion.div
+              layoutId="sidebar-active-indicator"
+              className="absolute inset-0 bg-surface-hover rounded-[10px] z-0 pointer-events-none"
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          )}
+          <IconUser size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
+          <span className="sidebar-label" style={{ position: 'relative', zIndex: 1 }}>Profile</span>
         </motion.button>
       </nav>
 
       <div style={{ borderTop: '1px solid var(--border-border)', padding: isCollapsed ? '16px 0' : '16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div className="sidebar-user-row" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 6px', marginBottom: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }} title={userName}>
-            {userInitial}
-          </div>
-          <div className="sidebar-label" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="sidebar-user-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', marginBottom: 12 }}>
+          <div className="sidebar-label" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userName}
+            </span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.email}
             </span>
           </div>
           {!isCollapsed && (
-            <div style={{ marginLeft: 'auto' }}>
+            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
               <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" aria-label="Toggle dark/light theme" className="btn btn-ghost btn-sm btn-square">
                 {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
               </button>
@@ -330,8 +352,15 @@ export const MobileBottomNav = () => {
           const active = activeModule === id;
           return (
             <motion.button key={id} onClick={() => { setActiveModule(id); setIsMoreOpen(false); }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: active ? 'var(--color-primary)' : 'var(--text-muted)', position: 'relative', minWidth: 48 }}>
+              {active && (
+                <motion.div
+                  layoutId="mobile-active-indicator"
+                  className="absolute inset-0 bg-surface-hover rounded-[10px] z-0 pointer-events-none"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
               <Icon size={22} style={{ position: 'relative', zIndex: 1 }} />
-              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>{label.split(' ')[0]}</span>
+              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap', position: 'relative', zIndex: 1 }}>{label.split(' ')[0]}</span>
             </motion.button>
           );
         })}

@@ -7,6 +7,7 @@ import { createStudySlice } from './slices/studySlice';
 import { createBudgetSlice } from './slices/budgetSlice';
 import { createTodoSlice } from './slices/todoSlice';
 import { createHabitSlice } from './slices/habitSlice';
+import { createBooksSlice } from './slices/booksSlice';
 import { useAuthStore } from './useAuthStore';
 import {
   createUtilitySlice,
@@ -27,6 +28,7 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createTodoSlice(...a),
   ...createHabitSlice(...a),
   ...createUtilitySlice(...a),
+  ...createBooksSlice(...a),
 }));
 
 if (typeof window !== 'undefined') {

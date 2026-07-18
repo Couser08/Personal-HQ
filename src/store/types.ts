@@ -418,6 +418,55 @@ export interface PomodoroStats {
   totalMinutes: number;
 }
 
+export interface BookTopic {
+  id: string;
+  title: string;
+  pageNumber: number;
+  color: string;
+}
+
+export interface BookStickyNote {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  color?: string;
+  pageNumber: number;
+  position?: 'middle-left' | 'bottom-right' | 'top-right';
+  styleTheme?: 'hand-drawn' | 'terminal' | 'default';
+}
+
+export interface BookHighlight {
+  id: string;
+  text: string;
+  color: string;
+  pageNumber: number;
+  startOffset: number;
+  endOffset: number;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  tagline: string;
+  rating: number;
+  coverImage: string;
+  pagesCount: number;
+  category: string;
+  isFavorite: boolean;
+  readingList: boolean;
+  audiobook: boolean;
+  progress: number;
+  currentPage: number;
+  pages: { [pageNumber: number]: string };
+  topics: BookTopic[];
+  stickyNotes: BookStickyNote[];
+  bookmarks: number[];
+  highlights: BookHighlight[];
+  createdAt: string;
+}
+
 export interface AppStore {
   activeModule: string;
   setActiveModule: (module: string) => void;
@@ -611,6 +660,12 @@ export interface AppStore {
 
   activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
   setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
+
+  // Books & Notebooks
+  books: Book[];
+  addBook: (book: Book) => Promise<void>;
+  updateBook: (id: string, data: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
 
   importData: (data: Partial<AppStore>) => void;
 }

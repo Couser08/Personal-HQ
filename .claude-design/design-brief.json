@@ -1,0 +1,33 @@
+{
+  "scope": "page",
+  "isRedesign": true,
+  "targetPath": "src/modules/books/components/LibraryDashboard.tsx",
+  "targetName": "LibraryDashboard",
+  "painPoints": [
+    "Too cluttered/dense",
+    "Unclear hierarchy (primary actions aren't obvious)",
+    "Poor mobile experience",
+    "Outdated look / theme drift (e.g. indigo vs rose-red)"
+  ],
+  "inspiration": {
+    "visual": ["Apple", "Stripe", "Linear", "Notion"],
+    "functional": []
+  },
+  "brand": {
+    "adjectives": ["Minimal", "Premium"],
+    "density": "comfortable",
+    "darkMode": true
+  },
+  "persona": {
+    "primary": "Save books they read",
+    "context": "both desktop and mobile equally",
+    "keyTasks": ["View library list", "Search and filter books", "Monitor reading progress", "Create a new book/notebook"]
+  },
+  "constraints": {
+    "mustKeep": ["all existing elements (book list, search/filter, cover visuals, progress bar, create notebook trigger)"],
+    "technical": ["use existing UI system", "Tailwind v4", "Vite React"]
+  },
+  "framework": "vite-react",
+  "packageManager": "npm",
+  "stylingSystem": "tailwind"
+}

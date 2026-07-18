@@ -26,6 +26,8 @@ const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
 const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
 const TilModule = lazy(() => import('./modules/til/TilModule'));
+const BooksModule = lazy(() => import('./modules/books/BooksModule'));
+const DesignLabPage = lazy(() => import('./pages/design-lab/DesignLabPage'));
 
 function LoadingSplash() {
   return (
@@ -110,6 +112,15 @@ function ModuleFallback() {
 }
 
 function App() {
+  const isDesignLab = typeof window !== 'undefined' && window.location.search.includes('design_lab=true');
+  if (isDesignLab) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">Loading Design Lab...</div>}>
+        <DesignLabPage />
+      </Suspense>
+    );
+  }
+
   const { user, initialized, initialize } = useAuthStore();
   const { theme, settings, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
     theme: state.theme,
@@ -193,6 +204,7 @@ function AppContent() {
 
     switch (activeModule) {
       case 'dashboard': return <DashboardModule />;
+      case 'books': return <BooksModule />;
       case 'journal': return <JournalModule />;
       case 'projects': return <ProjectsModule />;
       case 'utilities': return <UtilitiesModule />;
@@ -218,7 +230,24 @@ function AppContent() {
   return (
     <>
       <Layout>
-        <Suspense fallback={<ModuleFallback />}>{renderModule()}</Suspense>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeModule}
+            initial={{ opacity: 0, y: 12, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.985 }}
+            transition={{
+              type: 'spring',
+              stiffness: 420,
+              damping: 30,
+              mass: 0.8
+            }}
+            className="w-full"
+            style={{ willChange: 'transform, opacity' }}
+          >
+            <Suspense fallback={<ModuleFallback />}>{renderModule()}</Suspense>
+          </motion.div>
+        </AnimatePresence>
       </Layout>
       <ConfirmDialog />
     </>

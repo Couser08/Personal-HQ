@@ -92,7 +92,7 @@ export default function ConditionModule() {
   useEffect(() => {
     if (!isPreviewOpen || !previewCanvasRef.current) return;
     const canvas = previewCanvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
     
     // Trigger redraw
@@ -110,7 +110,7 @@ export default function ConditionModule() {
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
     if (!tempCtx) return;
 
     const isDark = document.documentElement.classList.contains('dark');

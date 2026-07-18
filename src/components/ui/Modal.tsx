@@ -22,6 +22,11 @@ export const Modal = ({
   bodyClassName = 'p-6'
 }: ModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -30,7 +35,7 @@ export const Modal = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         previousActiveElement?.focus();
         return;
       }
@@ -77,7 +82,7 @@ export const Modal = ({
         previousActiveElement.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (typeof document === 'undefined') return null;
 

@@ -1,4 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
@@ -66,6 +70,12 @@
     --accent-primary-muted: #be123c;
 
     color-scheme: light;
+
+    /* Premium Cubic Easing Tokens */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Dark mode */
@@ -239,7 +249,7 @@
   gap: 8px;
   font-weight: 600;
   border-radius: 14px;
-  transition: all 0.15s ease;
+  transition: all 0.2s var(--ease-out);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
@@ -247,7 +257,10 @@
   line-height: 1;
   border: 1px solid transparent;
 }
-.btn:active { transform: scale(0.98); }
+.btn:active {
+  transform: scale(0.97);
+  transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -296,7 +309,7 @@ select {
   color: var(--text-primary);
   min-height: 42px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), background 0.2s var(--ease-out);
 }
 
 .textarea-field {
@@ -490,4 +503,176 @@ select:focus {
   animation: shimmer 1.5s infinite linear;
   border-radius: 8px;
 }
+
+/* Notebook Content Rich Text Overrides */
+.notebook-content ul {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  padding-left: 0.5rem !important;
+}
+.notebook-content ol {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  padding-left: 0.5rem !important;
+}
+.notebook-content li {
+  display: list-item !important;
+  margin-bottom: 0.25rem !important;
+}
+.notebook-content div[style*="text-align: center"],
+.notebook-content p[style*="text-align: center"] {
+  text-align: center !important;
+}
+.notebook-content div[style*="text-align: right"],
+.notebook-content p[style*="text-align: right"] {
+  text-align: right !important;
+}
+.notebook-content div[style*="text-align: justify"],
+.notebook-content p[style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+/* ─── Reading Mode Theme-Specific Styles ─────────────────────────────── */
+
+/* Warm Lora theme - paragraph spacing and drop-cap feel */
+.read-theme-warm .notebook-content p:first-of-type::first-letter {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  float: left;
+  line-height: 0.85;
+  margin-right: 0.1em;
+  margin-top: 0.05em;
+  color: #9b6e3d;
+}
+.read-theme-warm .notebook-content p {
+  margin-bottom: 1rem;
+  text-align: justify;
+}
+.read-theme-warm .notebook-content blockquote {
+  border-left: 3px solid #C0956A;
+  padding: 0.5rem 1rem;
+  margin: 1.2rem 0;
+  background: rgba(192, 149, 106, 0.08);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #7a5432;
+}
+
+/* Scholar dark theme */
+.read-theme-scholar .notebook-content p {
+  margin-bottom: 1.1rem;
+  text-align: justify;
+  text-indent: 1.5em;
+}
+.read-theme-scholar .notebook-content p:first-of-type {
+  text-indent: 0;
+}
+.read-theme-scholar .notebook-content blockquote {
+  border-left: 3px solid #c9a84c;
+  padding: 0.5rem 1rem;
+  margin: 1.2rem 0;
+  background: rgba(201, 168, 76, 0.06);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #d4b97e;
+}
+
+/* Minimal theme */
+.read-theme-minimal .notebook-content p {
+  margin-bottom: 1.25rem;
+  color: #1a1a2e;
+}
+.read-theme-minimal .notebook-content blockquote {
+  border-left: 2px solid #cbd5e1;
+  padding: 0.5rem 1rem;
+  margin: 1.2rem 0;
+  color: #64748b;
+  font-style: italic;
+}
+.read-theme-minimal .notebook-content h1,
+.read-theme-minimal .notebook-content h2,
+.read-theme-minimal .notebook-content h3 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+/* Sage forest theme */
+.read-theme-sage .notebook-content p {
+  margin-bottom: 1rem;
+  text-align: justify;
+}
+.read-theme-sage .notebook-content blockquote {
+  border-left: 3px solid #6a9e74;
+  padding: 0.5rem 1rem;
+  margin: 1.2rem 0;
+  background: rgba(106, 158, 116, 0.08);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #3d6644;
+}
+
+/* Subtle ruled line effect for edit mode */
+.notebook-ruled-lines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 23px,
+    rgba(100, 116, 139, 0.1) 23px,
+    rgba(100, 116, 139, 0.1) 24px
+  );
+}
+
+/* Tactile 3D stacked pages under cover card */
+.notebook-page-stack {
+  position: relative;
+  z-index: 1;
+}
+.notebook-page-stack::before,
+.notebook-page-stack::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  right: 4px;
+  left: 12px;
+  height: 3px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: -1;
+  transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  opacity: 0.9;
+}
+.notebook-page-stack::after {
+  bottom: -6px;
+  right: 8px;
+  left: 20px;
+  height: 3px;
+  opacity: 0.55;
+  z-index: -2;
+}
+
+/* Hover scales the card and fans out the pages slightly */
+.notebook-page-stack:hover::before {
+  transform: translateY(1.5px) scaleX(0.99);
+}
+.notebook-page-stack:hover::after {
+  transform: translateY(3px) scaleX(0.98);
+}
+
+/* Vellum parchment paper texturing */
+.bg-vellum {
+  background-color: #fbf8f3;
+  background-image: radial-gradient(rgba(139, 92, 26, 0.015) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+.dark .bg-vellum {
+  background-color: #121214;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.008) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
 

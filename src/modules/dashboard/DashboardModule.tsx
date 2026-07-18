@@ -8,6 +8,7 @@ import {
   IconCheck, IconArrowRight, IconFlame, IconCalendar,
   IconChevronDown, IconRocket, IconLayoutList, IconTarget
 } from '@tabler/icons-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DashboardModule() {
   const {
@@ -197,11 +198,41 @@ export default function DashboardModule() {
 
   const currentMonthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.05
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 300,
+        damping: 24,
+        mass: 0.8
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col w-full max-w-6xl gap-6 px-4 pb-24 mx-auto antialiased text-left md:px-8">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="flex flex-col w-full max-w-6xl gap-6 px-4 pb-24 mx-auto antialiased text-left md:px-8"
+    >
       
       {/* Redesigned Minimal & Premium Header */}
-      <div className="flex flex-col justify-between gap-4 mt-2 md:flex-row md:items-center">
+      <motion.div variants={itemVariants} className="flex flex-col justify-between gap-4 mt-2 md:flex-row md:items-center">
         <div>
           <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] leading-none">{greeting} 👋</span>
           <h1 className="text-2xl font-black text-text-primary tracking-tight mt-1.5">Welcome to command center</h1>
@@ -226,10 +257,10 @@ export default function DashboardModule() {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Redesigned Premium Glassmorphic Hero Banner */}
-      <div className="relative overflow-hidden rounded-[32px] border border-border/50 bg-surface/30 backdrop-blur-md shadow-sm grid grid-cols-12 items-center p-8 md:p-10 lg:p-12 gap-6 min-h-[340px]">
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-[32px] border border-border/50 bg-surface/30 backdrop-blur-md shadow-sm grid grid-cols-12 items-center p-8 md:p-10 lg:p-12 gap-6 min-h-[340px]">
         <div className="z-10 flex flex-col w-full col-span-12 gap-2 text-left lg:col-span-7 animate-fade-in">
           <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl text-text-primary">
             Focus on<br />what matters<span className="text-rose-500">.</span>
@@ -239,7 +270,10 @@ export default function DashboardModule() {
           </p>
           
           <div className="flex flex-wrap gap-3 mt-5">
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={() => {
                 if (pomodoroTimerState !== 'running') {
                   if (pomodoroTimerState === 'paused') {
@@ -250,16 +284,19 @@ export default function DashboardModule() {
                 }
                 setActiveModule('pomodoro');
               }}
-              className="flex items-center h-10 gap-2 px-5 text-xs font-bold text-white transition-all shadow-sm cursor-pointer bg-rose-500 hover:bg-rose-600 rounded-xl active:scale-95"
+              className="flex items-center h-10 gap-2 px-5 text-xs font-bold text-white transition-all shadow-sm cursor-pointer bg-rose-500 hover:bg-rose-600 rounded-xl"
             >
               <IconRocket className="w-4 h-4" /> Start Focus Session
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={() => setActiveModule('todo')}
-              className="flex items-center h-10 gap-2 px-5 text-xs font-bold transition-all border cursor-pointer bg-surface border-border hover:bg-surface-hover text-text-primary rounded-xl active:scale-95"
+              className="flex items-center h-10 gap-2 px-5 text-xs font-bold transition-all border cursor-pointer bg-surface border-border hover:bg-surface-hover text-text-primary rounded-xl"
             >
               <IconLayoutList className="w-4 h-4 text-text-secondary" /> View My Tasks
-            </button>
+            </motion.button>
           </div>
 
           <div className="mt-6 flex flex-col gap-1.5 text-left">
@@ -291,10 +328,10 @@ export default function DashboardModule() {
         {/* Premium ambient glows */}
         <div className="absolute -right-24 -top-24 w-72 h-72 rounded-full bg-rose-500/[0.04] blur-[100px] pointer-events-none" />
         <div className="absolute left-1/4 -bottom-16 w-56 h-56 rounded-full bg-blue-500/[0.03] blur-[80px] pointer-events-none" />
-      </div>
+      </motion.div>
 
       {/* Redesigned KPI metrics summary bar */}
-      <div className="grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
+      <motion.div variants={itemVariants} className="grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="bg-surface border border-border/50 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
           <div className="flex items-center justify-center border w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shrink-0">
             <IconClockPlay className="w-4 h-4" />
@@ -334,10 +371,10 @@ export default function DashboardModule() {
             <p className="text-lg font-black text-text-primary font-mono tracking-tight mt-0.5">{pomodoroStreak} days</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main content grid */}
-      <div className="grid items-start w-full grid-cols-1 gap-6 lg:grid-cols-3">
+      <motion.div variants={itemVariants} className="grid items-start w-full grid-cols-1 gap-6 lg:grid-cols-3">
         
         {/* Column 1: Focus Control Dock */}
         <div className="bg-surface border border-border/50 rounded-3xl p-6 flex flex-col gap-6 shadow-sm relative overflow-hidden h-full min-h-[380px]">
@@ -381,21 +418,38 @@ export default function DashboardModule() {
 
           <div className="flex w-full gap-2 mt-auto">
             {pomodoroTimerState === 'running' ? (
-              <button onClick={pauseGlobalPomodoro}
-                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm">
+              <motion.button 
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                onClick={pauseGlobalPomodoro}
+                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+              >
                 <IconPlayerPause className="w-3.5 h-3.5 fill-white" /> Pause
-              </button>
+              </motion.button>
             ) : (
-              <button onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
-                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm">
+              <motion.button 
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
+                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+              >
                 <IconPlayerPlay className="w-3.5 h-3.5 fill-white" />
                 {pomodoroTimerState === 'paused' ? 'Resume' : 'Start Focus'}
-              </button>
+              </motion.button>
             )}
-            <button onClick={stopGlobalPomodoro} disabled={pomodoroTimerState === 'idle'} title="Reset Timer"
-              className="flex items-center justify-center w-10 h-10 transition-all border cursor-pointer rounded-xl bg-surface-alt hover:bg-surface-hover border-border text-text-secondary disabled:opacity-30 shrink-0 active:scale-95">
+            <motion.button 
+              whileHover={pomodoroTimerState !== 'idle' ? { scale: 1.05, rotate: 15 } : {}}
+              whileTap={pomodoroTimerState !== 'idle' ? { scale: 0.95 } : {}}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              onClick={stopGlobalPomodoro} 
+              disabled={pomodoroTimerState === 'idle'} 
+              title="Reset Timer"
+              className="flex items-center justify-center w-10 h-10 transition-all border cursor-pointer rounded-xl bg-surface-alt hover:bg-surface-hover border-border text-text-secondary disabled:opacity-30 shrink-0"
+            >
               <IconRefresh className="w-3.5 h-3.5" />
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -435,38 +489,61 @@ export default function DashboardModule() {
                 <p className="text-[11px] text-text-muted font-bold tracking-tight italic text-center">All clear for today!</p>
               </div>
             ) : (
-              visibleTasks.map(task => (
-                <div key={task.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group">
-                  <button onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
-                    className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
-                    <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                      task.completed ? 'bg-rose-500 border-rose-500 scale-90' : 'border-border group-hover:border-rose-500'
-                    }`}>
-                      {task.completed && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                    <span className={`text-xs font-semibold truncate flex-grow ${
-                      task.completed ? 'line-through text-text-muted font-normal' : 'text-text-primary'
-                    }`}>{task.title}</span>
-                  </button>
-                  {!task.completed && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const isActive = activeFocusItem?.id === task.id;
-                        setActiveFocusItem(isActive ? null : { type: 'todo', id: task.id, title: task.title });
-                      }}
-                      className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
-                        activeFocusItem?.id === task.id
-                          ? 'text-blue-500 bg-blue-500/10'
-                          : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100'
-                      }`}
-                      title={activeFocusItem?.id === task.id ? "Deactivate focus" : "Focus on this task"}
+              <div className="flex flex-col gap-2 w-full relative">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {visibleTasks.map(task => (
+                    <motion.div 
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -20, transition: { duration: 0.15 } }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group"
                     >
-                      <IconTarget size={13} />
-                    </button>
-                  )}
-                </div>
-              ))
+                      <button onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
+                        className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
+                        <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
+                          task.completed ? 'bg-rose-500 border-rose-500' : 'border-border group-hover:border-rose-500'
+                        }`}>
+                          <AnimatePresence>
+                            {task.completed && (
+                              <motion.div
+                                initial={{ scale: 0, rotate: -20 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                exit={{ scale: 0 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                              >
+                                <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        <span className={`text-xs font-semibold truncate flex-grow transition-all duration-300 ${
+                          task.completed ? 'line-through text-text-muted font-normal' : 'text-text-primary'
+                        }`}>{task.title}</span>
+                      </button>
+                      {!task.completed && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const isActive = activeFocusItem?.id === task.id;
+                            setActiveFocusItem(isActive ? null : { type: 'todo', id: task.id, title: task.title });
+                          }}
+                          className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
+                            activeFocusItem?.id === task.id
+                              ? 'text-blue-500 bg-blue-500/10'
+                              : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100'
+                          }`}
+                          title={activeFocusItem?.id === task.id ? "Deactivate focus" : "Focus on this task"}
+                        >
+                          <IconTarget size={13} />
+                        </button>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             )}
           </div>
 
@@ -504,11 +581,22 @@ export default function DashboardModule() {
                     <button onClick={() => toggleHabitCompletion(habit.id, todayStr)}
                       className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
                       <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                        isCompleted ? 'bg-orange-500 border-orange-500 scale-90' : 'border-border group-hover:border-orange-500'
+                        isCompleted ? 'bg-orange-500 border-orange-500' : 'border-border group-hover:border-orange-500'
                       }`}>
-                        {isCompleted && <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                        <AnimatePresence>
+                          {isCompleted && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                            >
+                              <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      <span className={`text-xs font-semibold truncate flex-grow ${
+                      <span className={`text-xs font-semibold truncate flex-grow transition-all duration-300 ${
                         isCompleted ? 'line-through text-text-muted font-normal' : 'text-text-primary'
                       }`}>{habit.name}</span>
                     </button>
@@ -576,8 +664,8 @@ export default function DashboardModule() {
 
         </div>
 
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 }

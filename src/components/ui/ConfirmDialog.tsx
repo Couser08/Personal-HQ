@@ -8,9 +8,6 @@ export const ConfirmDialog = () => {
     closeConfirm: state.closeConfirm
   })));
 
-  // Guard clause agar dialog open hi nahi hai toh unnecessary state evaluation nahi hogi
-  if (!confirmDialog.isOpen) return null;
-
   const handleConfirm = () => {
     confirmDialog.onConfirm();
     closeConfirm();

@@ -139,23 +139,14 @@ const SLASH_COMMANDS = [
 ];
 
 export default function MarkdownModule() {
-  const { notes, addNote, updateNote, updateNoteLocally, deleteNote, theme, showConfirm } = useAppStore(useShallow(state => ({
+  const { notes, addNote, updateNote, updateNoteLocally, deleteNote, showConfirm } = useAppStore(useShallow(state => ({
     notes: state.notes,
     addNote: state.addNote,
     updateNote: state.updateNote,
     updateNoteLocally: state.updateNoteLocally,
     deleteNote: state.deleteNote,
-    theme: state.theme,
     showConfirm: state.showConfirm,
   })));
-  
-  // Resolve theme to light/dark
-  const resolvedTheme = useMemo(() => {
-    if (theme === 'system') {
-      return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return theme === 'dark' ? 'dark' : 'light';
-  }, [theme]);
 
   // Obsidian-like workspace state
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
@@ -247,7 +238,6 @@ export default function MarkdownModule() {
     }, 1500);
   };
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'sketch' | 'mermaid'>('preview');
   const [copied, setCopied] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(true);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
@@ -743,10 +733,7 @@ export default function MarkdownModule() {
 
           {isWorkspaceOpen && (
             <MarkdownPreview
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
               parsedHtml={parsedHtml}
-              resolvedTheme={resolvedTheme}
               isEditorOpen={isEditorOpen}
               setIsEditorOpen={setIsEditorOpen}
             />
