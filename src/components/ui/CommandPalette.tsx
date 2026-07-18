@@ -140,7 +140,7 @@ export function CommandPalette() {
     // CRITICAL: AnimatePresence wrapper moves to top layer to correctly orchestrate the exit phase
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-28 px-4 select-none">
+        <div className=" w-full fixed inset-0 z-[9999] flex items-start justify-center pt-28 px-4 select-none">
           {/* Backdrop Overlay */}
           <motion.div 
             initial={{ opacity: 0 }}

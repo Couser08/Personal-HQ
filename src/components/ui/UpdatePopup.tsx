@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconChevronRight, IconArrowRight } from '@tabler/icons-react';
+import { IconX, IconArrowRight } from '@tabler/icons-react';
 
 // ── Version ───────────────────────────────────────────────────────────────────
 const APP_VERSION = '3.1.0';
