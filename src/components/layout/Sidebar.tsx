@@ -5,7 +5,8 @@ import {
   IconWallet, IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
-  IconArrowRight, IconTag, IconChartBar, IconBrush, IconX, IconPlus
+  IconArrowRight, IconTag, IconChartBar, IconBrush, IconX, IconPlus,
+  IconWriting, IconListCheck, IconTrendingUp, IconTool
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -22,6 +23,7 @@ const NAV_GROUPS = [
     id: 'create',
     label: 'Create & Write',
     emoji: '✍️',
+    icon: IconWriting,
     color: '#8B5CF6',
     desc: 'Journals, notes, books and markdown.',
     items: [
@@ -36,6 +38,7 @@ const NAV_GROUPS = [
     id: 'organise',
     label: 'Organise',
     emoji: '📋',
+    icon: IconListCheck,
     color: '#059669',
     desc: 'Tasks, projects, habits and tags.',
     items: [
@@ -49,6 +52,7 @@ const NAV_GROUPS = [
     id: 'track',
     label: 'Track',
     emoji: '📊',
+    icon: IconTrendingUp,
     color: '#F59E0B',
     desc: 'Focus, study and finances.',
     items: [
@@ -61,6 +65,7 @@ const NAV_GROUPS = [
     id: 'tools',
     label: 'Tools',
     emoji: '🛠️',
+    icon: IconTool,
     color: '#3B82F6',
     desc: 'Canvas, diagrams, media and utilities.',
     items: [
@@ -318,22 +323,32 @@ export const Sidebar = () => {
           const isOpen = activeCategoryPage === group.id;
 
           if (isCollapsed) {
-            // Icon-only collapsed: show first icon of group as a group entry point
+            // Collapsed: show one category icon per group, clicking expands + opens category
+            const CatIcon = group.icon;
+            const groupActive = group.items.some(i => i.id === activeModule);
             return (
-              <button
+              <motion.button
                 key={group.id}
+                whileTap={{ scale: 0.93 }}
                 title={group.label}
-                onClick={() => { /* noop in collapsed — groups not expandable */ }}
+                onClick={() => {
+                  setIsCollapsed(false);
+                  localStorage.setItem('sidebar_collapsed', 'false');
+                  setActiveCategoryPage(group.id);
+                }}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 40, height: 40, margin: '0 auto', borderRadius: 10,
-                  border: 'none', background: groupActive ? 'var(--bg-surface-hover, rgba(255,255,255,0.08))' : 'transparent',
-                  cursor: 'default', color: groupActive ? 'var(--color-primary)' : 'var(--text-secondary)',
-                  fontSize: 18, lineHeight: 1,
+                  border: 'none',
+                  background: groupActive
+                    ? group.color + '18'
+                    : 'transparent',
+                  color: groupActive ? group.color : 'var(--text-secondary)',
+                  cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
-                {group.emoji}
-              </button>
+                <CatIcon size={19} />
+              </motion.button>
             );
           }
 
@@ -393,31 +408,7 @@ export const Sidebar = () => {
           );
         })}
 
-        {/* Collapsed: show individual items */}
-        {isCollapsed && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
-            {ALL_ITEMS.map(({ id, label, icon: Icon }) => {
-              const active = activeModule === id;
-              return (
-                <motion.button
-                  key={id}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => setActiveModule(id)}
-                  title={label}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 40, height: 40, margin: '0 auto', borderRadius: 10,
-                    border: 'none', background: active ? 'var(--bg-surface-hover, rgba(255,255,255,0.08))' : 'transparent',
-                    color: active ? 'var(--color-primary)' : 'var(--text-secondary)', cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <Icon size={17} />
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
+        {/* Collapsed: NO individual item list — categories above are enough */}
       </nav>
 
       {/* ── Footer ── */}
