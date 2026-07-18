@@ -6,6 +6,7 @@ import {
   IconShieldCheck, IconDeviceGamepad2, IconMovie 
 } from '@tabler/icons-react';
 import { useToastStore } from '../../store/useToastStore';
+import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
 
 export default function AdminModule() {
   const { user } = useAuthStore();
@@ -53,11 +54,20 @@ export default function AdminModule() {
     else if (isBanner) setBannerUploading(true);
 
     try {
+      let optimizedFile: Blob | File = file;
+      try {
+        const maxWidth = isMascot ? 400 : 1000;
+        optimizedFile = await compressAndConvertToWebP(file, maxWidth, 0.82);
+      } catch (err) {
+        console.warn('[AdminModule] Client-side image compression failed:', err);
+      }
+
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, {
+        .upload(path, optimizedFile, {
           cacheControl: '0', // no caching for instant update
-          upsert: true
+          upsert: true,
+          contentType: 'image/webp'
         });
 
       if (uploadError) {

@@ -140,7 +140,7 @@ export function CommandPalette() {
     // CRITICAL: AnimatePresence wrapper moves to top layer to correctly orchestrate the exit phase
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className=" w-full fixed inset-0 z-[9999] flex items-start justify-center pt-28 px-4 select-none">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-4 select-none pt-28">
           {/* Backdrop Overlay */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -158,7 +158,7 @@ export function CommandPalette() {
             // Fixed exit params: Removed structural layout collapse vulnerabilities
             exit={{ scale: 0.97, opacity: 0, y: -8 }}
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-            className="relative bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/60 dark:border-zinc-800/60 w-full max-w-xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden z-10 backdrop-blur-xl flex flex-col"
+            className="relative bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/60 dark:border-zinc-800/60 w-full max-w-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden z-10 backdrop-blur-xl flex flex-col"
           >
             {/* Header Search Matrix */}
             <div className="flex items-center px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/60 gap-3">
@@ -201,7 +201,7 @@ export function CommandPalette() {
                           : 'bg-transparent hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
                     }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 z-10">
+                      <div className="z-10 flex items-center min-w-0 gap-3">
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all shrink-0 ${
                           isSelected 
                             ? 'bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100' 
@@ -216,7 +216,7 @@ export function CommandPalette() {
                         </span>
                       </div>
 
-                      <div className="flex items-center z-10">
+                      <div className="z-10 flex items-center">
                         {isSelected ? (
                           <motion.span 
                             layoutId="command-return-hint"
@@ -240,9 +240,9 @@ export function CommandPalette() {
             <div className="px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 flex justify-between items-center text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest shrink-0">
               <div className="flex items-center gap-1">
                 <span>Navigate with</span>
-                <kbd className="px-1 bg-white dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">↑↓</kbd>
+                <kbd className="px-1 bg-white border rounded dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">↑↓</kbd>
                 <span>and select via</span>
-                <kbd className="px-1 bg-white dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">Enter</kbd>
+                <kbd className="px-1 bg-white border rounded dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">Enter</kbd>
               </div>
               <span>Esc to close</span>
             </div>

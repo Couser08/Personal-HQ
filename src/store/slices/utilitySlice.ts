@@ -414,7 +414,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
 
-  links: [],
+  links: (() => {
+    try {
+      const stored = localStorage.getItem('phq_links');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addLink: async (link) => {
     if (shouldThrottle('addLink')) return;
     const uid = useAuthStore.getState().user?.id;
@@ -443,7 +450,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
 
-  savedLinks: [],
+  savedLinks: (() => {
+    try {
+      const stored = localStorage.getItem('phq_saved_links');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addSavedLink: async (link: SavedLink) => {
     if (shouldThrottle('addSavedLink')) return;
     const uid = useAuthStore.getState().user?.id;
@@ -472,7 +486,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
 
-  appTags: [],
+  appTags: (() => {
+    try {
+      const stored = localStorage.getItem('phq_app_tags');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addAppTag: async (tag: AppTag) => {
     if (shouldThrottle('addAppTag')) return;
     const uid = useAuthStore.getState().user?.id;
@@ -604,7 +625,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
 
-  mediaLogs: [],
+  mediaLogs: (() => {
+    try {
+      const stored = localStorage.getItem('phq_media_logs');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addMediaLog: async (log) => {
     if (shouldThrottle('addMediaLog')) return;
     const uid = useAuthStore.getState().user?.id;
@@ -633,7 +661,14 @@ export const createUtilitySlice: StateCreator<
     useToastStore.getState().addToast('Success', 'Media log deleted', 'success');
   },
 
-  countdowns: [],
+  countdowns: (() => {
+    try {
+      const stored = localStorage.getItem('phq_countdowns');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addCountdown: async (countdown) => {
     if (shouldThrottle('addCountdown')) return;
     const uid = useAuthStore.getState().user?.id;

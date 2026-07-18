@@ -29,6 +29,7 @@ import { type BookTopic, type BookStickyNote } from '../../../store/types';
 import { PRESET_COVERS, BookCover } from '../utils/presetCovers';
 import { supabase } from '../../../lib/supabase';
 import { useAuthStore } from '../../../store/useAuthStore';
+import { compressAndConvertToWebP } from '../../../utils/imageOptimizer';
 
 const highlightMatches = (html: string, query: string) => {
   if (!query || !query.trim()) return html;
@@ -2046,25 +2047,41 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                             if (file) {
                               const user = useAuthStore.getState().user;
                               if (user) {
-                                const fileExt = file.name.split('.').pop() || 'png';
-                                const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.${fileExt}`;
-                                supabase.storage
-                                  .from('avatars')
-                                  .upload(fileName, file, { cacheControl: '3600', upsert: true })
-                                  .then(({ error }) => {
-                                    if (error) {
-                                      console.error('Upload error:', error);
-                                      const reader = new FileReader();
-                                      reader.onload = () => {
-                                        if (typeof reader.result === 'string') {
-                                          setBookCoverInput(reader.result);
+                                compressAndConvertToWebP(file, 800, 0.8)
+                                  .then((optimizedFile) => {
+                                    const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.webp`;
+                                    supabase.storage
+                                      .from('avatars')
+                                      .upload(fileName, optimizedFile, { 
+                                        cacheControl: '31536000', 
+                                        upsert: true,
+                                        contentType: 'image/webp'
+                                      })
+                                      .then(({ error }) => {
+                                        if (error) {
+                                          console.error('Upload error:', error);
+                                          const reader = new FileReader();
+                                          reader.onload = () => {
+                                            if (typeof reader.result === 'string') {
+                                              setBookCoverInput(reader.result);
+                                            }
+                                          };
+                                          reader.readAsDataURL(file);
+                                        } else {
+                                          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                                          setBookCoverInput(data.publicUrl);
                                         }
-                                      };
-                                      reader.readAsDataURL(file);
-                                    } else {
-                                      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-                                      setBookCoverInput(data.publicUrl);
-                                    }
+                                      });
+                                  })
+                                  .catch((err) => {
+                                    console.error('[NotebookEditor] Compression error:', err);
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      if (typeof reader.result === 'string') {
+                                        setBookCoverInput(reader.result);
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
                                   });
                               } else {
                                 const reader = new FileReader();

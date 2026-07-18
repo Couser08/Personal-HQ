@@ -5,6 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { type Book } from '../../../store/types';
 import { supabase } from '../../../lib/supabase';
 import { useAuthStore } from '../../../store/useAuthStore';
+import { compressAndConvertToWebP } from '../../../utils/imageOptimizer';
 
 interface CreateNotebookModalProps {
   isOpen: boolean;
@@ -200,25 +201,41 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
                     if (file) {
                       const user = useAuthStore.getState().user;
                       if (user) {
-                        const fileExt = file.name.split('.').pop() || 'png';
-                        const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.${fileExt}`;
-                        supabase.storage
-                          .from('avatars')
-                          .upload(fileName, file, { cacheControl: '3600', upsert: true })
-                          .then(({ error }) => {
-                            if (error) {
-                              console.error('Upload error:', error);
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                if (typeof reader.result === 'string') {
-                                  setSelectedPresetId(reader.result);
+                        compressAndConvertToWebP(file, 800, 0.8)
+                          .then((optimizedFile) => {
+                            const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.webp`;
+                            supabase.storage
+                              .from('avatars')
+                              .upload(fileName, optimizedFile, { 
+                                cacheControl: '31536000', 
+                                upsert: true,
+                                contentType: 'image/webp'
+                              })
+                              .then(({ error }) => {
+                                if (error) {
+                                  console.error('Upload error:', error);
+                                  const reader = new FileReader();
+                                  reader.onload = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setSelectedPresetId(reader.result);
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                } else {
+                                  const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                                  setSelectedPresetId(data.publicUrl);
                                 }
-                              };
-                              reader.readAsDataURL(file);
-                            } else {
-                              const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-                              setSelectedPresetId(data.publicUrl);
-                            }
+                              });
+                          })
+                          .catch((err) => {
+                            console.error('[CreateNotebookModal] Compression error:', err);
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === 'string') {
+                                setSelectedPresetId(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
                           });
                       } else {
                         const reader = new FileReader();

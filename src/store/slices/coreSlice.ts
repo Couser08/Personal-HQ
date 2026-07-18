@@ -31,6 +31,20 @@ import {
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
+import { clearRestCache } from '../../lib/supabase';
+
+const isIsolatedDate = () => {
+  return new Date() < new Date('2026-08-15T23:59:59');
+};
+
+const getLocalArray = (key: string): any[] => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
 
 export interface CoreSlice {
   activeModule: string;
@@ -59,7 +73,9 @@ export interface CoreSlice {
   closeTodoTaskModal: () => void;
 
   dataLoaded: boolean;
+  isSyncing: boolean;
   loadAllData: (userId: string) => Promise<void>;
+  forceSync: (userId: string) => Promise<void>;
   clearAllData: () => void;
 
   drawingElements: readonly any[];
@@ -137,35 +153,38 @@ export const createCoreSlice: StateCreator<
   closeTodoTaskModal: () => set({ todoTaskModal: { isOpen: false, task: null } }),
 
   dataLoaded: false,
+  isSyncing: false,
 
   loadAllData: async (userId: string) => {
+    set({ isSyncing: true });
+    const isIsolated = isIsolatedDate();
     const results = await Promise.allSettled([
       noteService.fetchAll(userId),
-      linkService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_links')) : linkService.fetchAll(userId),
       stockService.fetchAll(userId),
-      subjectService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_subjects')) : subjectService.fetchAll(userId),
       interestService.fetchAll(userId),
-      mediaService.fetchAll(userId),
-      countdownService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_media_logs')) : mediaService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_countdowns')) : countdownService.fetchAll(userId),
       snippetService.fetchAll(userId),
-      budgetCategoryService.fetchAll(userId),
-      budgetTransactionService.fetchAll(userId),
-      todoProjectService.fetchAll(userId),
-      todoTaskService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_budget_categories')) : budgetCategoryService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_budget_transactions')) : budgetTransactionService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_todo_projects')) : todoProjectService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_todo_tasks')) : todoTaskService.fetchAll(userId),
       journalService.fetchAll(userId),
-      mindmapService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_mindmaps')) : mindmapService.fetchAll(userId),
       standardCalcService.fetchAll(userId),
-      habitService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_habits')) : habitService.fetchAll(userId),
       settingsService.fetch(userId),
-      sprintService.fetchAll(userId),
-      dsaProblemService.fetchAll(userId),
-      tilLogService.fetchAll(userId),
-      roadmapService.fetchAll(userId),
-      resourceService.fetchAll(userId),
-      devGoalService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_sprints')) : sprintService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_dsa_problems')) : dsaProblemService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_til_logs')) : tilLogService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_roadmaps')) : roadmapService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_resources')) : resourceService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_dev_goals')) : devGoalService.fetchAll(userId),
       journalStickyNoteService.fetchAll(userId),
-      linkSaverService.fetchAll(userId),
-      tagService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_saved_links')) : linkSaverService.fetchAll(userId),
+      isIsolated ? Promise.resolve(getLocalArray('phq_app_tags')) : tagService.fetchAll(userId),
       get().loadBooks(),
     ]);
 
@@ -288,6 +307,24 @@ export const createCoreSlice: StateCreator<
       }).catch((e) => console.error('Failed to initialize settings:', e));
     }
 
+    if (results[1].status === 'fulfilled') {
+      localStorage.setItem('phq_links', JSON.stringify(links));
+    }
+    if (results[3].status === 'fulfilled') {
+      localStorage.setItem('phq_subjects', JSON.stringify(subjects));
+    }
+    if (results[5].status === 'fulfilled') {
+      localStorage.setItem('phq_media_logs', JSON.stringify(mediaLogs));
+    }
+    if (results[6].status === 'fulfilled') {
+      localStorage.setItem('phq_countdowns', JSON.stringify(countdowns));
+    }
+    if (results[8].status === 'fulfilled') {
+      localStorage.setItem('phq_budget_categories', JSON.stringify(budgetCategories));
+    }
+    if (results[9].status === 'fulfilled') {
+      localStorage.setItem('phq_budget_transactions', JSON.stringify(budgetTransactions));
+    }
     if (results[10].status === 'fulfilled') {
       localStorage.setItem('phq_todo_projects', JSON.stringify(todoProjects));
     }
@@ -359,12 +396,19 @@ export const createCoreSlice: StateCreator<
       theme: dbTheme,
       settings: dbSettings,
       activeFocusItem: dbActiveFocusItem,
-      dataLoaded: true
+      dataLoaded: true,
+      isSyncing: false
     } as any);
+  },
+
+  forceSync: async (userId: string) => {
+    await clearRestCache();
+    await get().loadAllData(userId);
   },
 
   clearAllData: () => {
     localStorage.removeItem('phq_active_focus_item');
+    clearRestCache().catch((e) => console.error('[Cache] Failed to clear rest cache:', e));
     set({
       notes: [], links: [], stocks: [], subjects: [],
       interestHistory: [], mediaLogs: [], countdowns: [],

@@ -6,7 +6,7 @@ import {
   IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
   IconArrowRight, IconTag, IconChartBar, IconBrush, IconX, IconPlus,
-  IconWriting, IconListCheck, IconTrendingUp, IconTool
+  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -167,12 +167,14 @@ function CategoryPage({
 
 // ── Desktop Sidebar ────────────────────────────────────────────────────────────
 export const Sidebar = () => {
-  const { activeModule, setActiveModule, theme, setTheme, showConfirm } = useAppStore(useShallow(state => ({
+  const { activeModule, setActiveModule, theme, setTheme, showConfirm, isSyncing, forceSync } = useAppStore(useShallow(state => ({
     activeModule: state.activeModule,
     setActiveModule: state.setActiveModule,
     theme: state.theme,
     setTheme: state.setTheme,
     showConfirm: state.showConfirm,
+    isSyncing: state.isSyncing,
+    forceSync: state.forceSync,
   })));
   const { user, signOut } = useAuthStore();
   const addToast = useToastStore((s) => s.addToast);
@@ -192,6 +194,18 @@ export const Sidebar = () => {
 
   const handleLogout = () => {
     showConfirm('Sign Out', 'Are you sure you want to sign out?', async () => { await signOut(); });
+  };
+
+  const handleForceSync = async () => {
+    if (!user) return;
+    try {
+      addToast('Syncing', 'Fetching latest data from Supabase...', 'success');
+      await forceSync(user.id);
+      addToast('Success', 'Data synced successfully!', 'success');
+    } catch (e) {
+      console.error('Sync failed:', e);
+      addToast('Sync Failed', 'Could not sync data. Check connection.', 'error');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -455,18 +469,28 @@ export const Sidebar = () => {
           </button>
         )}
 
-        {/* Export / Import / Logout */}
+        {/* Sync / Export / Import / Logout */}
         {[
+          {
+            label: isSyncing ? 'Syncing...' : 'Sync Now',
+            icon: IconRefresh,
+            color: 'var(--text-secondary)',
+            fw: 500,
+            onClick: handleForceSync,
+            disabled: isSyncing,
+            iconClass: isSyncing ? 'animate-spin' : ''
+          },
           { label: 'Export', icon: IconDownload, color: 'var(--text-secondary)', fw: 500,
             onClick: () => { const ok = exportData(); addToast(ok ? 'Success' : 'Export Failed', ok ? 'Data exported!' : 'Sign in first.', ok ? 'success' : 'error'); } },
           { label: 'Import', icon: IconUpload, color: 'var(--text-secondary)', fw: 500,
             onClick: () => fileInputRef.current?.click() },
           { label: 'Logout', icon: IconLogout, color: '#f43f5e', fw: 600,
             onClick: handleLogout },
-        ].map(({ label, icon: Icon, color, fw, onClick }) => (
+        ].map(({ label, icon: Icon, color, fw, onClick, disabled, iconClass }) => (
           <button
             key={label}
             onClick={onClick}
+            disabled={disabled}
             aria-label={label}
             title={isCollapsed ? label : undefined}
             className="sidebar-footer-btn"
@@ -478,9 +502,10 @@ export const Sidebar = () => {
               borderRadius: 8, border: 'none', background: 'transparent',
               color, fontSize: 13, fontWeight: fw, cursor: 'pointer',
               textAlign: 'left' as const,
+              opacity: disabled ? 0.6 : 1,
             }}
           >
-            <Icon size={16} style={{ flexShrink: 0 }} />
+            <Icon size={16} className={iconClass} style={{ flexShrink: 0 }} />
             {!isCollapsed && <span className="sidebar-label">{label}</span>}
           </button>
         ))}

@@ -30,8 +30,22 @@ export const createBudgetSlice: StateCreator<
     localStorage.setItem('focusflow_budget_currency', currency);
     set({ selectedCurrency: currency });
   },
-  budgetCategories: [],
-  budgetTransactions: [],
+  budgetCategories: (() => {
+    try {
+      const stored = localStorage.getItem('phq_budget_categories');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  budgetTransactions: (() => {
+    try {
+      const stored = localStorage.getItem('phq_budget_transactions');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
 
   addBudgetCategory: async (category) => {
     if (shouldThrottle('addBudgetCategory')) return;

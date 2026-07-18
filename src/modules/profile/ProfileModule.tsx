@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { supabase } from '../../lib/supabase';
+import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
 import {
   IconUser, IconNotes, IconLink, IconBook, IconCalendarEvent,
   IconSettings, IconShieldLock, IconTrash, IconLock, IconCamera,
@@ -114,12 +115,27 @@ export default function ProfileModule() {
     }
 
     setIsUpdating(true);
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-    const filePath = user.id + '/' + Date.now() + '-' + safeName;
+    let optimizedFile: Blob | File = file;
+    let extension = 'webp';
+    try {
+      optimizedFile = await compressAndConvertToWebP(file, 300, 0.85);
+    } catch (e) {
+      console.warn('[ProfileModule] Client-side image compression failed:', e);
+      extension = file.name.split('.').pop() || 'png';
+    }
+
+    const dotIndex = file.name.lastIndexOf('.');
+    const rawSafeName = dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
+    const safeName = rawSafeName.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const filePath = user.id + '/' + Date.now() + '-' + safeName + '.' + extension;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+      .upload(filePath, optimizedFile, { 
+        cacheControl: '31536000', 
+        upsert: true,
+        contentType: extension === 'webp' ? 'image/webp' : file.type
+      });
 
     if (uploadError) {
       setIsUpdating(false);

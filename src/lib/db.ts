@@ -12,7 +12,7 @@ export const noteService = {
   async fetchAll(userId: string): Promise<Note[]> {
     const { data, error } = await supabase
       .from('notes')
-      .select('*')
+      .select('id, title, content, tags, pinned, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -64,7 +64,7 @@ export const linkService = {
   async fetchAll(userId: string): Promise<Link[]> {
     const { data, error } = await supabase
       .from('links')
-      .select('*')
+      .select('id, url, title, tags, saved_at')
       .eq('user_id', userId)
       .order('saved_at', { ascending: false });
     if (error) throw error;
@@ -101,7 +101,7 @@ export const linkSaverService = {
   async fetchAll(userId: string): Promise<SavedLink[]> {
     const { data, error } = await supabase
       .from('link_saver')
-      .select('*')
+      .select('id, url, title, type, saved_at')
       .eq('user_id', userId)
       .order('saved_at', { ascending: false });
     if (error) throw error;
@@ -138,7 +138,7 @@ export const tagService = {
   async fetchAll(userId: string): Promise<AppTag[]> {
     const { data, error } = await supabase
       .from('tags')
-      .select('*')
+      .select('id, name, color, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
     if (error) throw error;
@@ -181,7 +181,7 @@ export const stockService = {
   async fetchAll(userId: string): Promise<StockEntry[]> {
     const { data, error } = await supabase
       .from('stocks')
-      .select('*')
+      .select('id, ticker, entry_price, quantity, action, notes, date')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) throw error;
@@ -222,7 +222,7 @@ export const subjectService = {
   async fetchAll(userId: string): Promise<Subject[]> {
     const { data, error } = await supabase
       .from('subjects')
-      .select('*')
+      .select('id, name, semester, topics')
       .eq('user_id', userId);
     if (error) throw error;
     return (data ?? []).map((r) => ({
@@ -265,7 +265,7 @@ export const interestService = {
   async fetchAll(userId: string): Promise<InterestRecord[]> {
     const { data, error } = await supabase
       .from('interest_records')
-      .select('*')
+      .select('id, type, principal, rate, time, time_unit, interest, total_amount, compound_frequency, label, calculated_at')
       .eq('user_id', userId)
       .order('calculated_at', { ascending: false });
     if (error) throw error;
@@ -314,7 +314,7 @@ export const mediaService = {
   async fetchAll(userId: string): Promise<MediaLog[]> {
     const { data, error } = await supabase
       .from('media_logs')
-      .select('*')
+      .select('id, type, title, status, rating, episodes, notes, added_at')
       .eq('user_id', userId)
       .order('added_at', { ascending: false });
     if (error) throw error;
@@ -368,7 +368,7 @@ export const countdownService = {
   async fetchAll(userId: string): Promise<Countdown[]> {
     const { data, error } = await supabase
       .from('countdowns')
-      .select('*')
+      .select('id, label, target_date, emoji, color, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -502,7 +502,7 @@ export const snippetService = {
   async fetchAll(userId: string): Promise<CodeSnippet[]> {
     const { data, error } = await supabase
       .from('snippets')
-      .select('*')
+      .select('id, title, description, language, code, tags, is_favorite, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -560,7 +560,7 @@ export const budgetCategoryService = {
   async fetchAll(userId: string): Promise<BudgetCategory[]> {
     const { data, error } = await supabase
       .from('budget_categories')
-      .select('*')
+      .select('id, name, budget, color, icon')
       .eq('user_id', userId);
     if (error) {
       if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
@@ -617,7 +617,7 @@ export const budgetTransactionService = {
   async fetchAll(userId: string): Promise<BudgetTransaction[]> {
     const { data, error } = await supabase
       .from('budget_transactions')
-      .select('*')
+      .select('id, category_id, amount, description, date, type, payment_method')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) {
@@ -676,7 +676,7 @@ export const todoProjectService = {
   async fetchAll(userId: string): Promise<TodoProject[]> {
     const { data, error } = await supabase
       .from('todo_projects')
-      .select('*')
+      .select('id, name, color')
       .eq('user_id', userId);
     if (error) {
       if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('relation') || error.details?.includes('404')) {
@@ -785,7 +785,7 @@ export const todoTaskService = {
   async fetchAll(userId: string): Promise<TodoTask[]> {
     const { data, error } = await supabase
       .from('todo_tasks')
-      .select('*')
+      .select('id, project_id, title, completed, priority, tags, due_date, start_time, end_time, pomodoro_count, deleted, created_at, subtasks')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -876,7 +876,7 @@ export const journalService = {
   async fetchAll(userId: string): Promise<JournalEntry[]> {
     const { data, error } = await supabase
       .from('journals')
-      .select('*')
+      .select('id, title, content, date, mood, tags, pinned, focus_list, page_style, images, reflection, attachments, location, reminder, style_preset')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) {
@@ -965,7 +965,7 @@ export const mindmapService = {
   async fetchAll(userId: string): Promise<Mindmap[]> {
     const { data, error } = await supabase
       .from('mindmaps')
-      .select('*')
+      .select('id, title, nodes, links, edge_style, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1038,7 +1038,7 @@ export const standardCalcService = {
   async fetchAll(userId: string): Promise<StandardCalculation[]> {
     const { data, error } = await supabase
       .from('standard_calculations')
-      .select('*')
+      .select('id, expression, result, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1079,7 +1079,7 @@ export const settingsService = {
   async fetch(userId: string): Promise<any> {
     const { data, error } = await supabase
       .from('user_settings')
-      .select('*')
+      .select('theme, countdown_template, accent_color, animation_speed, compact_mode, sound_enabled, initial_bank_balance, initial_cash_balance, currency_symbol, media_quote, reduce_blur, reduce_animations, active_focus_item')
       .eq('user_id', userId)
       .maybeSingle();
     if (error) throw error;
@@ -1104,7 +1104,7 @@ export const habitService = {
   async fetchAll(userId: string): Promise<Habit[]> {
     const { data, error } = await supabase
       .from('habits')
-      .select('*')
+      .select('id, name, description, frequency_type, frequency_days, frequency_count, completed_dates, streak, best_streak, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1170,7 +1170,7 @@ export const sprintService = {
   async fetchAll(userId: string): Promise<Sprint[]> {
     const { data, error } = await supabase
       .from('sprints')
-      .select('*')
+      .select('id, title, start_date, end_date, tasks, status')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
     if (error) {
@@ -1234,7 +1234,7 @@ export const dsaProblemService = {
   async fetchAll(userId: string): Promise<DsaProblem[]> {
     const { data, error } = await supabase
       .from('dsa_problems')
-      .select('*')
+      .select('id, title, platform, difficulty, topic, link, status, notes, solved_at')
       .eq('user_id', userId)
       .order('solved_at', { ascending: false });
     if (error) {
@@ -1306,7 +1306,7 @@ export const tilLogService = {
   async fetchAll(userId: string): Promise<TilLog[]> {
     const { data, error } = await supabase
       .from('til_logs')
-      .select('*')
+      .select('id, title, content, tags, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1352,7 +1352,7 @@ export const roadmapService = {
   async fetchAll(userId: string): Promise<LearningRoadmap[]> {
     const { data, error } = await supabase
       .from('roadmaps')
-      .select('*')
+      .select('id, title, description, nodes')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1410,7 +1410,7 @@ export const resourceService = {
   async fetchAll(userId: string): Promise<ResourceBookmark[]> {
     const { data, error } = await supabase
       .from('resources')
-      .select('*')
+      .select('id, title, url, description, tags, status, saved_at')
       .eq('user_id', userId)
       .order('saved_at', { ascending: false });
     if (error) {
@@ -1475,7 +1475,7 @@ export const devGoalService = {
   async fetchAll(userId: string): Promise<DevGoal[]> {
     const { data, error } = await supabase
       .from('dev_goals')
-      .select('*')
+      .select('id, title, target, current, metric, due_date, completed')
       .eq('user_id', userId)
       .order('due_date', { ascending: true });
     if (error) {
@@ -1549,7 +1549,7 @@ export const journalStickyNoteService = {
   async fetchAll(userId: string): Promise<JournalStickyNote[]> {
     const { data, error } = await supabase
       .from('journal_sticky_notes')
-      .select('*')
+      .select('id, content, x, y, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
     if (error) {

@@ -495,7 +495,9 @@ export interface AppStore {
 
   // Supabase sync
   dataLoaded: boolean;
+  isSyncing: boolean;
   loadAllData: (userId: string) => Promise<void>;
+  forceSync: (userId: string) => Promise<void>;
   clearAllData: () => void;
 
   notes: Note[];

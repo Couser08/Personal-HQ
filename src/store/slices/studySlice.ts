@@ -72,7 +72,14 @@ export const createStudySlice: StateCreator<
   [],
   StudySlice
 > = (set, get) => ({
-  subjects: [],
+  subjects: (() => {
+    try {
+      const stored = localStorage.getItem('phq_subjects');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  })(),
   sprints: (() => {
     try {
       const stored = localStorage.getItem('phq_sprints');
