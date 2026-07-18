@@ -27,7 +27,8 @@ import {
 import { useAppStore } from '../../../store/useAppStore';
 import { type BookTopic, type BookStickyNote } from '../../../store/types';
 import { PRESET_COVERS, BookCover } from '../utils/presetCovers';
-
+import { supabase } from '../../../lib/supabase';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 const highlightMatches = (html: string, query: string) => {
   if (!query || !query.trim()) return html;
@@ -38,6 +39,7 @@ const highlightMatches = (html: string, query: string) => {
   });
 };
 
+
 interface NotebookEditorProps {
   bookId: string;
   onBack: () => void;
@@ -47,23 +49,11 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   const { books, updateBook, deleteBook } = useAppStore();
   const book = books.find((b) => b.id === bookId);
 
-  // Fallback if book deleted
-  if (!book) {
-    return (
-      <div className="p-8 text-center border bg-surface rounded-2xl border-border">
-        <h3 className="font-bold text-text-primary">Notebook not found</h3>
-        <button onClick={onBack} className="px-4 py-2 mt-4 text-xs font-bold text-white bg-rose-500 rounded-xl active:scale-[0.97] transition-transform duration-100">
-          Go Back
-        </button>
-      </div>
-    );
-  }
-
   // Local editor states
   const [isEditMode, setIsEditMode] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
-  const [titleInput, setTitleInput] = useState(book.title);
-  const [taglineInput, setTaglineInput] = useState(book.tagline);
+  const [titleInput, setTitleInput] = useState(book?.title ?? '');
+  const [taglineInput, setTaglineInput] = useState(book?.tagline ?? '');
 
   // Sidebars display toggles
   const [showTopicsPanel, setShowTopicsPanel] = useState(true);
@@ -91,8 +81,8 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
 
   // Custom Modal State for Topics, Notes, and Delete confirmations
   const [activeModal, setActiveModal] = useState<'add-topic' | 'edit-topic' | 'add-sticky' | 'edit-sticky' | 'delete-confirm' | 'edit-book-details' | null>(null);
-  const [bookCoverInput, setBookCoverInput] = useState(book.coverImage);
-  const [bookAuthorInput, setBookAuthorInput] = useState(book.author || '');
+  const [bookCoverInput, setBookCoverInput] = useState(book?.coverImage ?? '');
+  const [bookAuthorInput, setBookAuthorInput] = useState(book?.author || '');
   
   // Custom Modal Form Fields
   const [modalTopicTitle, setModalTopicTitle] = useState('');
@@ -120,7 +110,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   };
 
   // Inner text state
-  const [pageText, setPageText] = useState(book.pages[book.currentPage] || '');
+  const [pageText, setPageText] = useState(book?.pages?.[book?.currentPage] || '');
 
   // Search inside book (slide-out inline layout)
   const [searchInnerQuery, setSearchInnerQuery] = useState('');
@@ -136,6 +126,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
 
   // Formatting operations
   const executeFormatting = (command: string, value: string = '') => {
+    if (!book) return;
     const activeEditor = lastFocusedEditorRef.current === 'left' ? editorRefLeft.current : editorRefRight.current;
     if (activeEditor) {
       activeEditor.focus();
@@ -174,6 +165,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
 
   // Sync pageText when currentPage changes
   useEffect(() => {
+    if (!book) return;
     const leftVal = book.pages[book.currentPage] || '';
     const rightVal = book.pages[book.currentPage + 1] || '';
     
@@ -185,10 +177,22 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
     if (editorRefRight.current) {
       editorRefRight.current.innerHTML = rightVal;
     }
-  }, [book.currentPage, book.id]);
+  }, [book?.currentPage, book?.id]);
 
   // Simulated Auto-Save
   const saveTimerRef = useRef<any>(null);
+
+  // Fallback if book deleted
+  if (!book) {
+    return (
+      <div className="p-8 text-center border bg-surface rounded-2xl border-border">
+        <h3 className="font-bold text-text-primary">Notebook not found</h3>
+        <button onClick={onBack} className="px-4 py-2 mt-4 text-xs font-bold text-white bg-rose-500 rounded-xl active:scale-[0.97] transition-transform duration-100">
+          Go Back
+        </button>
+      </div>
+    );
+  }
   const handleTextChange = (newVal: string) => {
     setPageText(newVal);
     setSaveStatus('saving');
@@ -1990,8 +1994,10 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                 <div className="flex flex-col gap-5 py-6 overflow-y-auto px-7 max-h-[50vh] scrollbar-thin">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Notebook Title</label>
+                      <label htmlFor="edit-notebook-title" className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Notebook Title</label>
                       <input
+                        id="edit-notebook-title"
+                        name="title"
                         type="text"
                         value={titleInput}
                         onChange={(e) => setTitleInput(e.target.value)}
@@ -2000,8 +2006,10 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Author Name</label>
+                      <label htmlFor="edit-notebook-author" className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Author Name</label>
                       <input
+                        id="edit-notebook-author"
+                        name="author"
                         type="text"
                         value={bookAuthorInput}
                         onChange={(e) => setBookAuthorInput(e.target.value)}
@@ -2012,8 +2020,10 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Subtitle / Tagline</label>
+                    <label htmlFor="edit-notebook-tagline" className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Subtitle / Tagline</label>
                     <input
+                      id="edit-notebook-tagline"
+                      name="tagline"
                       type="text"
                       value={taglineInput}
                       onChange={(e) => setTaglineInput(e.target.value)}
@@ -2034,13 +2044,37 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                if (typeof reader.result === 'string') {
-                                  setBookCoverInput(reader.result);
-                                }
-                              };
-                              reader.readAsDataURL(file);
+                              const user = useAuthStore.getState().user;
+                              if (user) {
+                                const fileExt = file.name.split('.').pop() || 'png';
+                                const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.${fileExt}`;
+                                supabase.storage
+                                  .from('avatars')
+                                  .upload(fileName, file, { cacheControl: '3600', upsert: true })
+                                  .then(({ error }) => {
+                                    if (error) {
+                                      console.error('Upload error:', error);
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        if (typeof reader.result === 'string') {
+                                          setBookCoverInput(reader.result);
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    } else {
+                                      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                                      setBookCoverInput(data.publicUrl);
+                                    }
+                                  });
+                              } else {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setBookCoverInput(reader.result);
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
                             }
                           }}
                         />
@@ -2063,7 +2097,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                         </button>
                       ))}
 
-                      {bookCoverInput.startsWith('data:image/') && (
+                      {(bookCoverInput.startsWith('data:image/') || bookCoverInput.startsWith('http')) && (
                         <button
                           type="button"
                           className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-rose-500 scale-[1.03] shadow-md p-0.5 cursor-default"

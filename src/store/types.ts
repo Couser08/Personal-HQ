@@ -663,6 +663,7 @@ export interface AppStore {
 
   // Books & Notebooks
   books: Book[];
+  loadBooks: () => Promise<void>;
   addBook: (book: Book) => Promise<void>;
   updateBook: (id: string, data: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;

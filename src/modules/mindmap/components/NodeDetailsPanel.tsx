@@ -154,7 +154,10 @@ export function NodeDetailsPanel({
                           src={getDomainFavicon(url)}
                           alt=""
                           className="w-4.5 h-4.5 rounded-md"
-                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/favicon.svg';
+                          }}
                         />
                       ) : (
                         <IconLink className="w-4 h-4" />

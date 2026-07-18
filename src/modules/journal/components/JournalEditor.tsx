@@ -112,7 +112,10 @@ export function JournalEditor({
           </div>
 
           {/* Title input directly on paper */}
+          <label htmlFor="journal-title-input" className="sr-only">Journal Title</label>
           <input
+            id="journal-title-input"
+            name="title"
             value={localTitle}
             onChange={(event) => handleTitleChange(event.target.value)}
             onBlur={handleBlur}

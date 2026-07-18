@@ -105,6 +105,9 @@ export default function LinksModule() {
         <div className="relative w-full">
           <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
+            id="search-links"
+            name="searchLinks"
+            aria-label="Search links"
             type="search"
             placeholder="Search links…"
             value={search}
@@ -157,8 +160,10 @@ export default function LinksModule() {
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-secondary">Title</label>
+            <label htmlFor="link-title" className="text-sm font-medium text-text-secondary">Title</label>
             <input
+              id="link-title"
+              name="title"
               type="text"
               placeholder="e.g. React Documentation"
               value={title}
@@ -167,8 +172,10 @@ export default function LinksModule() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-secondary">URL</label>
+            <label htmlFor="link-url" className="text-sm font-medium text-text-secondary">URL</label>
             <input
+              id="link-url"
+              name="url"
               type="url"
               placeholder="e.g. https://react.dev"
               value={url}
@@ -200,6 +207,20 @@ export default function LinksModule() {
   );
 }
 
+const isDevOrPreviewDomain = (domain: string) => {
+  const d = domain.toLowerCase();
+  return (
+    d.includes('localhost') ||
+    d.includes('127.0.0.1') ||
+    d.includes('lovable.app') ||
+    d.includes('vercel.app') ||
+    d.includes('netlify.app') ||
+    d.includes('github.dev') ||
+    d.includes('preview') ||
+    !d.includes('.')
+  );
+};
+
 // Modern grid item card for Link Vault
 function LinkCard({ 
   link, 
@@ -210,8 +231,9 @@ function LinkCard({
   onDelete: (id: string) => void; 
   getDomain: (url: string) => string; 
 }) {
+  const domain = getDomain(link.url);
   const [copied, setCopied] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  const [imgError, setImgError] = useState(() => isDevOrPreviewDomain(domain));
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -219,8 +241,6 @@ function LinkCard({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const domain = getDomain(link.url);
 
   return (
     <motion.div

@@ -160,19 +160,27 @@ export default function JournalModule() {
     }
   }, [journals, activeEntryId]);
 
+  const lastActiveEntryIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (activeEntry) {
-      setTitle(activeEntry.title);
-      setContent(activeEntry.content);
-      setMood(activeEntry.mood);
-      setTags(activeEntry.tags);
-      setPageStyle(activeEntry.pageStyle);
-      setLocation(activeEntry.location || '');
-      setReminder(activeEntry.reminder || '');
-      setStylePreset(activeEntry.stylePreset || 'calm');
-      setFocusItems(activeEntry.focusList || []);
-      setPreviewMode(false);
+      const isDifferentEntry = lastActiveEntryIdRef.current !== activeEntry.id;
+      lastActiveEntryIdRef.current = activeEntry.id;
+
+      if (isDifferentEntry) {
+        setTitle(activeEntry.title);
+        setContent(activeEntry.content);
+        setMood(activeEntry.mood);
+        setTags(activeEntry.tags);
+        setPageStyle(activeEntry.pageStyle);
+        setLocation(activeEntry.location || '');
+        setReminder(activeEntry.reminder || '');
+        setStylePreset(activeEntry.stylePreset || 'calm');
+        setFocusItems(activeEntry.focusList || []);
+        setPreviewMode(false);
+      }
     } else {
+      lastActiveEntryIdRef.current = null;
       setTitle('');
       setContent('');
       setMood('good');
@@ -234,6 +242,8 @@ export default function JournalModule() {
     const nextState = { title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusList: focusItems };
     if (!isDirty(activeEntry, nextState)) return;
 
+    if (!title.trim() && !content.trim()) return;
+
     if (autoSaveTimer.current) {
       window.clearTimeout(autoSaveTimer.current);
       autoSaveTimer.current = null;
@@ -260,6 +270,8 @@ export default function JournalModule() {
     const nextState = { title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusList: focusItems };
     if (!isDirty(activeEntry, nextState)) return;
 
+    if (!title.trim() && !content.trim()) return;
+
     if (autoSaveTimer.current) {
       window.clearTimeout(autoSaveTimer.current);
     }
@@ -272,7 +284,7 @@ export default function JournalModule() {
           window.setTimeout(() => setSaveStatus('idle'), 2400);
         })
         .catch(() => setSaveStatus('error'));
-    }, 1200);
+    }, 2000);
 
     return () => {
       if (autoSaveTimer.current) {

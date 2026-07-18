@@ -3,6 +3,8 @@ import { IconX, IconBook, IconUser, IconStar, IconPhoto, IconPlus } from '@table
 import { PRESET_COVERS, BookCover } from '../utils/presetCovers';
 import { useAppStore } from '../../../store/useAppStore';
 import { type Book } from '../../../store/types';
+import { supabase } from '../../../lib/supabase';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 interface CreateNotebookModalProps {
   isOpen: boolean;
@@ -83,12 +85,14 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Notebook Name */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+              <label htmlFor="notebook-name" className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
                 <IconBook size={13} className="text-rose-500 dark:text-rose-400" />
                 Notebook Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="notebook-name"
+                  name="name"
                   type="text"
                   maxLength={50}
                   value={name}
@@ -104,11 +108,13 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
 
             {/* Author */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+              <label htmlFor="notebook-author" className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
                 <IconUser size={13} className="text-rose-500 dark:text-rose-400" />
                 Author
               </label>
               <input
+                id="notebook-author"
+                name="author"
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
@@ -122,11 +128,13 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Category */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+              <label htmlFor="notebook-category" className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
                 <IconBook size={13} className="text-rose-500 dark:text-rose-400" />
                 Category
               </label>
               <select
+                id="notebook-category"
+                name="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3 py-2 text-sm transition-all border appearance-none cursor-pointer bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/80 rounded-xl focus:outline-none focus:border-rose-500 dark:focus:border-rose-400 text-zinc-900 dark:text-zinc-100"
@@ -190,13 +198,37 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        if (typeof reader.result === 'string') {
-                          setSelectedPresetId(reader.result);
-                        }
-                      };
-                      reader.readAsDataURL(file);
+                      const user = useAuthStore.getState().user;
+                      if (user) {
+                        const fileExt = file.name.split('.').pop() || 'png';
+                        const fileName = `${user.id}/book-covers/${crypto.randomUUID()}.${fileExt}`;
+                        supabase.storage
+                          .from('avatars')
+                          .upload(fileName, file, { cacheControl: '3600', upsert: true })
+                          .then(({ error }) => {
+                            if (error) {
+                              console.error('Upload error:', error);
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === 'string') {
+                                  setSelectedPresetId(reader.result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            } else {
+                              const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                              setSelectedPresetId(data.publicUrl);
+                            }
+                          });
+                      } else {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === 'string') {
+                            setSelectedPresetId(reader.result);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
                     }
                   }}
                 />
@@ -219,8 +251,8 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
                 </button>
               ))}
 
-              {/* Show Custom Upload Cover Option if selectedPresetId is Base64 */}
-              {selectedPresetId.startsWith('data:image/') && (
+              {/* Show Custom Upload Cover Option if selectedPresetId is Custom */}
+              {(selectedPresetId.startsWith('data:image/') || selectedPresetId.startsWith('http')) && (
                 <button
                   type="button"
                   onClick={() => {}}
@@ -242,7 +274,7 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Active Theme</span>
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  {selectedPresetId.startsWith('data:image/') 
+                  {(selectedPresetId.startsWith('data:image/') || selectedPresetId.startsWith('http'))
                     ? 'Uploaded Custom Image Cover' 
                     : `${PRESET_COVERS.find((c) => c.id === selectedPresetId)?.name || 'Default'} Style`}
                 </span>

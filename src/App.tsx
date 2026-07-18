@@ -113,13 +113,6 @@ function ModuleFallback() {
 
 function App() {
   const isDesignLab = typeof window !== 'undefined' && window.location.search.includes('design_lab=true');
-  if (isDesignLab) {
-    return (
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">Loading Design Lab...</div>}>
-        <DesignLabPage />
-      </Suspense>
-    );
-  }
 
   const { user, initialized, initialize } = useAuthStore();
   const { theme, settings, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
@@ -172,6 +165,14 @@ function App() {
     }
     if (!user) clearAllData();
   }, [user, dataLoaded, loadAllData, clearAllData]);
+
+  if (isDesignLab) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">Loading Design Lab...</div>}>
+        <DesignLabPage />
+      </Suspense>
+    );
+  }
 
   if (!initialized) {
     return <AnimatePresence><LoadingSplash key="splash" /></AnimatePresence>;

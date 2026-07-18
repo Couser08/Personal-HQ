@@ -191,10 +191,12 @@ export function JournalSettingsSidebar({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Location</label>
+            <label htmlFor="journal-location" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Location</label>
             <div className="relative">
               <IconMapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
+                id="journal-location"
+                name="location"
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
                 onBlur={forceSave}
@@ -205,10 +207,12 @@ export function JournalSettingsSidebar({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Reminder</label>
+            <label htmlFor="journal-reminder" className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Reminder</label>
             <div className="relative">
               <IconBell className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
+                id="journal-reminder"
+                name="reminder"
                 value={reminder}
                 onChange={(event) => setReminder(event.target.value)}
                 onBlur={forceSave}
@@ -264,6 +268,9 @@ export function JournalSettingsSidebar({
 
         <div className="mt-3 flex gap-2">
           <input
+            id="new-focus-item"
+            name="newFocusItem"
+            aria-label="Add a focus item"
             value={newFocusText}
             onChange={(event) => setNewFocusText(event.target.value)}
             onKeyDown={(event) => {

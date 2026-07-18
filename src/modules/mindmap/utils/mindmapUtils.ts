@@ -23,7 +23,19 @@ export const getDomainName = (urlStr: string) => {
 
 export const getDomainFavicon = (urlStr: string) => {
   try {
-    const domain = new URL(urlStr).hostname;
+    const domain = new URL(urlStr).hostname.toLowerCase();
+    if (
+      domain.includes('localhost') ||
+      domain.includes('127.0.0.1') ||
+      domain.includes('lovable.app') ||
+      domain.includes('vercel.app') ||
+      domain.includes('netlify.app') ||
+      domain.includes('github.dev') ||
+      domain.includes('preview') ||
+      !domain.includes('.')
+    ) {
+      return '';
+    }
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
   } catch {
     return '';

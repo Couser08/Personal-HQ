@@ -1003,7 +1003,10 @@ export function MindmapCanvas({
                               src={getDomainFavicon(node.links[0])}
                               alt=""
                               className="w-3.5 h-3.5 rounded-sm"
-                              onError={(e) => (e.currentTarget.style.display = 'none')}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/favicon.svg';
+                              }}
                             />
                           ) : (
                             <IconExternalLink className="w-3.5 h-3.5" />

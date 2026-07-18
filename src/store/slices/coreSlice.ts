@@ -166,6 +166,7 @@ export const createCoreSlice: StateCreator<
       journalStickyNoteService.fetchAll(userId),
       linkSaverService.fetchAll(userId),
       tagService.fetchAll(userId),
+      get().loadBooks(),
     ]);
 
     const serviceNames = [
@@ -195,6 +196,7 @@ export const createCoreSlice: StateCreator<
       'journal sticky notes',
       'link saver links',
       'tags',
+      'books',
     ];
 
     const failedServices = results
@@ -370,6 +372,7 @@ export const createCoreSlice: StateCreator<
       todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [], habits: [],
       sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [],
       journalStickyNotes: [], savedLinks: [], appTags: [], activeFocusItem: null,
+      books: [],
       dataLoaded: false,
     } as any);
   },

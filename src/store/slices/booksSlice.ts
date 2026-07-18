@@ -4,9 +4,11 @@
 import { type StateCreator } from 'zustand';
 import { type AppStore, type Book } from '../types';
 import { useToastStore } from '../useToastStore';
+import { getIDBItem, setIDBItem } from '../../lib/indexedDB';
 
 export interface BooksSlice {
   books: Book[];
+  loadBooks: () => Promise<void>;
   addBook: (book: Book) => Promise<void>;
   updateBook: (id: string, data: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
@@ -133,48 +135,81 @@ export const createBooksSlice: StateCreator<
   [],
   BooksSlice
 > = (set, get) => ({
-  books: (() => {
+  books: INITIAL_BOOKS,
+
+  loadBooks: async () => {
     try {
-      const raw = localStorage.getItem('phq_books');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasOldData = parsed.some((b) => b.id === 'book-1' && b.pagesCount === 240);
-          if (!hasOldData) {
-            return parsed;
+      // 1. Try loading from IndexedDB
+      let booksData = await getIDBItem<Book[]>('phq_books');
+
+      // 2. Migration fallback: check if localStorage has books
+      const localRaw = localStorage.getItem('phq_books');
+      if (localRaw) {
+        try {
+          const parsed = JSON.parse(localRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // If we don't have books in IDB yet, migrate them
+            if (!booksData || booksData.length === 0) {
+              booksData = parsed;
+              await setIDBItem('phq_books', booksData);
+            }
+            // Remove from localStorage to prevent duplicate loading/wasted quota
+            localStorage.removeItem('phq_books');
           }
+        } catch (e) {
+          console.warn('Failed to parse/migrate books from localStorage:', e);
         }
       }
-      localStorage.setItem('phq_books', JSON.stringify(INITIAL_BOOKS));
-      return INITIAL_BOOKS;
-    } catch {
-      return INITIAL_BOOKS;
+
+      // 3. Fallback to INITIAL_BOOKS if nothing in either store
+      if (!booksData || booksData.length === 0) {
+        booksData = INITIAL_BOOKS;
+        await setIDBItem('phq_books', booksData);
+      }
+
+      set({ books: booksData });
+    } catch (error) {
+      console.error('Failed to load books from IndexedDB:', error);
+      set({ books: INITIAL_BOOKS });
     }
-  })(),
+  },
 
   addBook: async (book) => {
     const previous = get().books;
     const next = [...previous, book];
-    localStorage.setItem('phq_books', JSON.stringify(next));
-    set({ books: next });
-    useToastStore.getState().addToast('Book Created', `"${book.title}" was added to your library.`, 'success');
+    try {
+      await setIDBItem('phq_books', next);
+      set({ books: next });
+      useToastStore.getState().addToast('Book Created', `"${book.title}" was added to your library.`, 'success');
+    } catch (error) {
+      console.error('Failed to add book to IndexedDB:', error);
+      useToastStore.getState().addToast('Storage Error', 'Could not save book locally.', 'error');
+    }
   },
 
   updateBook: async (id, data) => {
     const previous = get().books;
     const next = previous.map((b) => (b.id === id ? { ...b, ...data } : b));
-    localStorage.setItem('phq_books', JSON.stringify(next));
-    set({ books: next });
+    try {
+      await setIDBItem('phq_books', next);
+      set({ books: next });
+    } catch (error) {
+      console.error('Failed to update book in IndexedDB:', error);
+    }
   },
 
   deleteBook: async (id) => {
     const previous = get().books;
     const bookToDelete = previous.find((b) => b.id === id);
     const next = previous.filter((b) => b.id !== id);
-    localStorage.setItem('phq_books', JSON.stringify(next));
-    set({ books: next });
-    if (bookToDelete) {
-      useToastStore.getState().addToast('Book Deleted', `"${bookToDelete.title}" was deleted.`, 'info');
+    try {
+      await setIDBItem('phq_books', next);
+      set({ books: next });
+      if (bookToDelete) {
+        useToastStore.getState().addToast('Book Deleted', `"${bookToDelete.title}" was deleted.`, 'info');
+      }
+    } catch (error) {
+      console.error('Failed to delete book from IndexedDB:', error);
     }
   }
 });
