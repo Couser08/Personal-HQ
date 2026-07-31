@@ -13,6 +13,9 @@ import { DynamicIsland, triggerDynamicIsland } from '../ui/DynamicIsland';
 import { CommandPalette } from '../ui/CommandPalette';
 import { TaskFocusIsland } from '../ui/TaskFocusIsland';
 import { WavyEffectOverlay } from '../ui/WavyEffectOverlay';
+import { AiFloatingButton } from '../ui/AiFloatingButton';
+import { AiAssistantModal } from '../ui/AiAssistantModal';
+import { useAppStore } from '../../store/useAppStore';
 
 interface LayoutProps {
   children: ReactNode;
@@ -20,6 +23,9 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const [isFocusMode, setIsFocusMode] = useState(() => localStorage.getItem('phq_focus_mode') === 'true');
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiInitialAction, setAiInitialAction] = useState<string | undefined>(undefined);
+  const geminiApiKey = useAppStore(state => state.settings?.geminiApiKey);
 
   useEffect(() => {
     const checkFocusMode = () => {
@@ -63,6 +69,23 @@ export const Layout = ({ children }: LayoutProps) => {
       <DynamicIsland />
       <TaskFocusIsland />
       <CommandPalette />
+
+      {/* Mini AI Floating Trigger & Assistant Modal */}
+      <AiFloatingButton
+        hasApiKey={!!geminiApiKey}
+        onClick={(actionType) => {
+          setAiInitialAction(actionType);
+          setIsAiModalOpen(true);
+        }}
+      />
+      <AiAssistantModal
+        isOpen={isAiModalOpen}
+        onClose={() => {
+          setIsAiModalOpen(false);
+          setAiInitialAction(undefined);
+        }}
+        initialAction={aiInitialAction}
+      />
 
       {/* Toast notifications */}
       <ToastContainer />

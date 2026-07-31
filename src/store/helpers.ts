@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   wavyEffectEnabled: true,
   wavyEffectMode: 'premium',
   todoCompletionAnimation: 'circle-fill-confetti',
+  geminiApiKey: '',
+  geminiModel: 'gemini-2.5-flash',
 };
 
 export const sanitizeActiveModule = (module: string) => {

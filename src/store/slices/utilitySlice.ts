@@ -362,20 +362,32 @@ export const createUtilitySlice: StateCreator<
   }
 
   return {
-  notes: [],
+  notes: (() => {
+    try {
+      const raw = localStorage.getItem('phq_notes');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
   addNote: async (note) => {
     if (shouldThrottle('addNote')) return;
-    const uid = useAuthStore.getState().user?.id;
-    if (!uid) return;
     const previous = get().notes;
-    set((state) => ({ notes: [note, ...state.notes] }));
+    const next = [note, ...previous];
+    localStorage.setItem('phq_notes', JSON.stringify(next));
+    set({ notes: next });
+
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) {
+      useToastStore.getState().addToast('Success', 'Note saved locally', 'success');
+      return;
+    }
+
     try {
       await noteService.create(uid, note);
-      useToastStore.getState().addToast('Success', 'Note saved', 'success');
+      useToastStore.getState().addToast('Success', 'Note saved to cloud', 'success');
     } catch (error) {
-      set({ notes: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save note'), 'error');
-      throw error;
+      useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
     }
   },
   updateNote: async (id, data, silent = false) => {

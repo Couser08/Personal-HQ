@@ -33,18 +33,7 @@ import { useToastStore } from '../useToastStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
 import { clearRestCache } from '../../lib/supabase';
 
-const isIsolatedDate = () => {
-  return new Date() < new Date('2026-08-15T23:59:59');
-};
 
-const getLocalArray = (key: string): any[] => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-};
 
 export interface CoreSlice {
   activeModule: string;
@@ -157,34 +146,33 @@ export const createCoreSlice: StateCreator<
 
   loadAllData: async (userId: string) => {
     set({ isSyncing: true });
-    const isIsolated = isIsolatedDate();
     const results = await Promise.allSettled([
       noteService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_links')) : linkService.fetchAll(userId),
+      linkService.fetchAll(userId),
       stockService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_subjects')) : subjectService.fetchAll(userId),
+      subjectService.fetchAll(userId),
       interestService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_media_logs')) : mediaService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_countdowns')) : countdownService.fetchAll(userId),
+      mediaService.fetchAll(userId),
+      countdownService.fetchAll(userId),
       snippetService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_budget_categories')) : budgetCategoryService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_budget_transactions')) : budgetTransactionService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_todo_projects')) : todoProjectService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_todo_tasks')) : todoTaskService.fetchAll(userId),
+      budgetCategoryService.fetchAll(userId),
+      budgetTransactionService.fetchAll(userId),
+      todoProjectService.fetchAll(userId),
+      todoTaskService.fetchAll(userId),
       journalService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_mindmaps')) : mindmapService.fetchAll(userId),
+      mindmapService.fetchAll(userId),
       standardCalcService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_habits')) : habitService.fetchAll(userId),
+      habitService.fetchAll(userId),
       settingsService.fetch(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_sprints')) : sprintService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_dsa_problems')) : dsaProblemService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_til_logs')) : tilLogService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_roadmaps')) : roadmapService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_resources')) : resourceService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_dev_goals')) : devGoalService.fetchAll(userId),
+      sprintService.fetchAll(userId),
+      dsaProblemService.fetchAll(userId),
+      tilLogService.fetchAll(userId),
+      roadmapService.fetchAll(userId),
+      resourceService.fetchAll(userId),
+      devGoalService.fetchAll(userId),
       journalStickyNoteService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_saved_links')) : linkSaverService.fetchAll(userId),
-      isIsolated ? Promise.resolve(getLocalArray('phq_app_tags')) : tagService.fetchAll(userId),
+      linkSaverService.fetchAll(userId),
+      tagService.fetchAll(userId),
       get().loadBooks(),
     ]);
 

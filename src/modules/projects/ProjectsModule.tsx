@@ -554,10 +554,7 @@ function SprintBoardView({
   const progressPct = totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0;
 
   // Earliest sprint date for Gantt scaling
-  const earliestDate = useMemo(() => {
-    if (sprints.length === 0) return Date.now();
-    return Math.min(...sprints.map(s => new Date(s.startDate).getTime()));
-  }, [sprints]);
+  const earliestDate = sprints.length > 0 ? Math.min(...sprints.map(s => new Date(s.startDate).getTime())) : Date.now();
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">

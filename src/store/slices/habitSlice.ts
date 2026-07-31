@@ -30,20 +30,22 @@ export const createHabitSlice: StateCreator<
 
   addHabit: async (habit) => {
     if (shouldThrottle('addHabit')) return;
-    const uid = useAuthStore.getState().user?.id;
-    if (!uid) return;
     const previous = get().habits;
     const updated = [habit, ...previous];
     set({ habits: updated });
     localStorage.setItem('phq_habits', JSON.stringify(updated));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) {
+      useToastStore.getState().addToast('Success', 'Habit saved locally', 'success');
+      return;
+    }
+
     try {
       await habitService.create(uid, habit);
       useToastStore.getState().addToast('Success', 'Habit created', 'success');
     } catch (error) {
-      set({ habits: previous });
-      localStorage.setItem('phq_habits', JSON.stringify(previous));
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save habit'), 'error');
-      throw error;
+      useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
     }
   },
   updateHabit: async (id, data) => {

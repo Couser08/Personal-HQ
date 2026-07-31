@@ -6,9 +6,10 @@ import { useToastStore } from '../../store/useToastStore';
 import {
   IconPalette, IconBell, IconHourglass,
   IconCheck, IconX, IconCompass, IconSparkles,
-  IconChevronRight, IconClock
+  IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { testGeminiApiKey } from '../../lib/gemini';
 
 const COUNTDOWN_TEMPLATES = [
   { value: 'default',  label: 'Default Cards' },
@@ -64,6 +65,35 @@ export default function SettingsModule() {
   
   const addToast = useToastStore(s => s.addToast);
   const [toastPos, setToastPos] = useState<string>(useToastStore.getState().position || 'top-right');
+
+  const [apiKeyInput, setApiKeyInput] = useState<string>(settings.geminiApiKey || '');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [testStatus, setTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  const handleSaveApiKey = (val: string) => {
+    setApiKeyInput(val);
+    updateSettings({ geminiApiKey: val.trim() });
+    setTestStatus(null);
+  };
+
+  const handleTestConnection = async () => {
+    const keyToTest = apiKeyInput || settings.geminiApiKey;
+    if (!keyToTest) {
+      setTestStatus({ success: false, message: 'Please enter a Gemini API Key first.' });
+      return;
+    }
+    setIsTestingKey(true);
+    setTestStatus(null);
+    const res = await testGeminiApiKey(keyToTest, settings.geminiModel || 'gemini-2.5-flash');
+    setIsTestingKey(false);
+    setTestStatus(res);
+    if (res.success) {
+      addToast('Connection Success', 'Gemini API is ready to use!', 'success');
+    } else {
+      addToast('Connection Failed', res.message, 'error');
+    }
+  };
 
   const handleToastPos = (val: string) => {
     setToastPos(val);
@@ -392,6 +422,119 @@ export default function SettingsModule() {
                   {settings.accentColor === c.name && <IconCheck className="w-4 h-4 text-white font-bold" stroke={3} />}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI Assistant & Gemini API Section ── */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2 flex items-center justify-between">
+          <span>AI & Gemini Settings</span>
+          <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <IconSparkles size={12} /> Powered by Gemini
+          </span>
+        </h2>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-purple-500/20 dark:border-purple-500/30 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-6 flex flex-col gap-5">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-100 dark:border-zinc-800/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <IconSparkles className="w-5 h-5" stroke={2} />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                  Gemini API Key
+                  {settings.geminiApiKey ? (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Configured</span>
+                  ) : (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Key Required</span>
+                  )}
+                </p>
+                <p className="text-[13px] text-zinc-500">Provide your Google AI Studio API key to enable AI task breakdown, live markdown generation & smart actions.</p>
+              </div>
+            </div>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 shrink-0"
+            >
+              Get Free Key <IconExternalLink size={13} />
+            </a>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+                  <IconKey size={16} />
+                </div>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKeyInput}
+                  onChange={(e) => handleSaveApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full pl-10 pr-10 py-2.5 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                >
+                  {showApiKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                disabled={isTestingKey || !apiKeyInput.trim()}
+                onClick={handleTestConnection}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+              >
+                {isTestingKey ? (
+                  <>
+                    <IconLoader2 size={15} className="animate-spin" /> Testing...
+                  </>
+                ) : (
+                  <>
+                    <IconCheck size={15} /> Test Connection
+                  </>
+                )}
+              </button>
+            </div>
+
+            {testStatus && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-3 rounded-xl text-xs font-medium border flex items-center gap-2 ${
+                  testStatus.success
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                    : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                }`}
+              >
+                {testStatus.success ? <IconCheck size={16} /> : <IconX size={16} />}
+                <span>{testStatus.message}</span>
+              </motion.div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/40">
+              <div>
+                <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Gemini Model</p>
+                <p className="text-[12px] text-zinc-500">Select model generation engine</p>
+              </div>
+              <div className="w-full sm:w-64">
+                <CustomSelect
+                  value={settings.geminiModel || 'gemini-2.5-flash'}
+                  onChange={(val) => updateSettings({ geminiModel: val })}
+                  options={[
+                    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fastest & Recommended)' },
+                    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Lightweight)' },
+                    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Deep Reasoning)' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
         </div>

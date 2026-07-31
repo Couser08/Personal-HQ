@@ -411,6 +411,70 @@ export interface AppSettings {
   wavyEffectEnabled?: boolean;
   wavyEffectMode?: 'premium' | 'minimal';
   todoCompletionAnimation?: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+  options?: { label: string; value: string }[];
+  questionId?: string;
+  resultCard?: any;
+}
+
+export interface AiHistoryItem {
+  id: string;
+  title: string;
+  actionType: 'breakdown' | 'goal' | 'add_task' | 'markdown' | 'journal' | 'habit' | 'multistep' | 'general';
+  summary: string;
+  createdAt: string;
+  isStarred?: boolean;
+  messages: AiChatMessage[];
+  actionTaken?: {
+    label: string;
+    module: string;
+    count?: number;
+  };
+  helpfulRating?: 'up' | 'down' | null;
+}
+
+export interface AiSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  contextTag: 'Current Tasks' | 'Goal Progress' | 'Upcoming Event' | 'Your Pattern' | 'Brain Dump';
+  reason: string;
+  actionLabel: string;
+  actionType: 'prioritize' | 'adjust_plan' | 'create_plan' | 'schedule' | 'organize';
+  targetData?: any;
+  dismissed?: boolean;
+}
+
+export interface AiStepItem {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  type: 'task' | 'subtasks' | 'markdown' | 'habit' | 'journal';
+  output?: any;
+}
+
+export interface AiMultiStepState {
+  id: string;
+  userRequest: string;
+  currentStepIndex: number;
+  clarificationQuestions?: {
+    id: string;
+    question: string;
+    options: string[];
+    selectedAnswer?: string;
+  }[];
+  steps: AiStepItem[];
+  isExecuting: boolean;
+  progressPct: number;
 }
 
 export interface PomodoroStats {

@@ -42,20 +42,22 @@ export const createJournalSlice: StateCreator<
   })(),
 
   addJournalEntry: async (entry) => {
-    const uid = useAuthStore.getState().user?.id;
-    if (!uid) return;
     const previous = get().journals;
     const next = [entry, ...previous];
     localStorage.setItem('phq_journals', JSON.stringify(next));
     set({ journals: next });
+
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) {
+      useToastStore.getState().addToast('Success', 'Journal entry saved locally', 'success');
+      return;
+    }
+
     try {
       await journalService.create(uid, entry);
       useToastStore.getState().addToast('Success', 'Journal entry saved', 'success');
     } catch (error) {
-      localStorage.setItem('phq_journals', JSON.stringify(previous));
-      set({ journals: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save journal entry'), 'error');
-      throw error;
+      useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
     }
   },
   updateJournalEntry: async (id, data) => {
