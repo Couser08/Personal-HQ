@@ -30,11 +30,11 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 450, damping: 28 }}
-            className="flex flex-col gap-2 p-2 rounded-2xl bg-zinc-900/95 text-white border border-zinc-700/80 shadow-2xl backdrop-blur-xl w-56"
+            className="flex flex-col gap-2 p-2 rounded-2xl bg-surface/95 text-text-primary border border-border shadow-2xl backdrop-blur-xl w-56"
           >
-            <div className="px-3 py-1.5 border-b border-zinc-800 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">Quick AI Actions</span>
-              <span className="text-[10px] font-mono text-zinc-500">⌘AI</span>
+            <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary">Quick AI Actions</span>
+              <span className="text-[10px] font-mono text-text-muted">⌘AI</span>
             </div>
 
             {quickActions.map((act) => {
@@ -47,7 +47,7 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
                     setIsExpanded(false);
                     onClick(act.id);
                   }}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-left text-xs font-semibold text-zinc-100 transition-all cursor-pointer group"
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-alt hover:bg-surface-hover text-left text-xs font-semibold text-text-primary transition-all cursor-pointer group border border-border/50"
                 >
                   <div className={`w-7 h-7 rounded-lg bg-gradient-to-tr ${act.color} flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform`}>
                     <Icon size={14} stroke={2} />
@@ -75,7 +75,7 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
           <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 opacity-60 blur-md group-hover:opacity-100 transition duration-500 animate-pulse" />
 
           {/* Robot Avatar Icon / Close */}
-          <div className="relative flex items-center justify-center w-full h-full rounded-full bg-zinc-950/20 backdrop-blur-xs">
+          <div className="relative flex items-center justify-center w-full h-full rounded-full bg-black/20 backdrop-blur-xs">
             {isExpanded ? (
               <IconX className="w-6 h-6 text-white" stroke={2.5} />
             ) : (
@@ -84,7 +84,7 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
 
             {/* Connection Status Dot */}
             <span
-              className={`absolute top-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-zinc-900 ${
+              className={`absolute top-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-surface ${
                 hasApiKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
               }`}
               title={hasApiKey ? 'Gemini AI Ready' : 'Gemini Key Missing'}
@@ -99,10 +99,10 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
             onClick={() => onClick()}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-white border border-zinc-700/80 shadow-xl backdrop-blur-md transition-all cursor-pointer text-xs font-bold"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface hover:bg-surface-alt text-text-primary border border-border shadow-xl backdrop-blur-md transition-all cursor-pointer text-xs font-bold"
           >
             <span>Ask AI</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-alt text-text-muted border border-border">
               ⌘AI
             </kbd>
           </motion.button>

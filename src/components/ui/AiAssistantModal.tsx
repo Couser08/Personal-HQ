@@ -11,19 +11,17 @@ import {
 } from '../../store/types';
 import {
   IconSparkles, IconX, IconCheck, IconLoader2, IconPlus,
-  IconListCheck, IconMessageDots, IconKey,
-  IconArrowRight, IconHistory, IconSearch, IconFilter, IconStar,
-  IconTarget, IconBulb,
-  IconPlayerPlay, IconChevronRight, IconChecklist, IconThumbUp, IconThumbDown
+  IconListCheck, IconKey,
+  IconArrowRight, IconHistory, IconSearch, IconStar,
+  IconTarget, IconPlayerPlay, IconChevronRight
 } from '@tabler/icons-react';
 import { createPortal } from 'react-dom';
 import {
   generateAiTaskWithSubtasks,
   generateAiMarkdownDoc,
   generateAiGeneralResponse,
-  generateAiClarificationQuestions,
   generateAiMultiStepPlan,
-  type AiClarificationQuestion,
+  isMultiStepIntent,
   type AiMultiStepPlanOutput
 } from '../../lib/gemini';
 
@@ -32,8 +30,6 @@ interface AiAssistantModalProps {
   onClose: () => void;
   initialAction?: string;
 }
-
-type AiTab = 'chats' | 'multistep' | 'suggestions' | 'history' | 'settings';
 
 export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistantModalProps) => {
   const { settings, addTodoTask, addNote, addHabit, setActiveModule, todoTasks } = useAppStore(
@@ -51,12 +47,15 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
   const apiKey = settings.geminiApiKey || '';
   const model = settings.geminiModel || 'gemini-2.5-flash';
 
-  const [activeTab, setActiveTab] = useState<AiTab>('chats');
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // Chat State
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
+  const [showHistoryOverlay, setShowHistoryOverlay] = useState(false);
+  const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
+
+  // Active In-Chat Multi-Step State
+  const [multiStepPlan, setMultiStepPlan] = useState<AiMultiStepPlanOutput | null>(null);
+  const [executionProgress, setExecutionProgress] = useState(0);
 
   // History State
   const [historyItems, setHistoryItems] = useState<AiHistoryItem[]>(() => {
@@ -67,38 +66,20 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
       return [];
     }
   });
-
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<AiHistoryItem | null>(null);
   const [historySearch, setHistorySearch] = useState('');
   const [historyFilterStarred, setHistoryFilterStarred] = useState(false);
 
-  // Multi-Step Pipeline State
-  const [pipelineStep, setPipelineStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [pipelinePrompt, setPipelinePrompt] = useState('');
-  const [clarificationQuestions, setClarificationQuestions] = useState<AiClarificationQuestion[]>([]);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
-  const [generatedPlan, setGeneratedPlan] = useState<AiMultiStepPlanOutput | null>(null);
-  const [executionProgress, setExecutionProgress] = useState(0);
-  const [executionSteps, setExecutionSteps] = useState<{ id: string; title: string; status: 'pending' | 'in_progress' | 'completed' }[]>([
-    { id: '1', title: 'Create Main Task', status: 'pending' },
-    { id: '2', title: 'Create Subtasks Breakdown', status: 'pending' },
-    { id: '3', title: 'Create .md Document Plan', status: 'pending' },
-    { id: '4', title: 'Create Daily Study Habit', status: 'pending' },
-  ]);
-
   // Handle Initial Quick Action from FAB
   useEffect(() => {
     if (initialAction === 'add_task') {
-      setActiveTab('chats');
       setPrompt('Add a task: ');
     } else if (initialAction === 'breakdown') {
-      setActiveTab('chats');
-      setPrompt('Break down my task into smaller actionable subtasks');
+      setPrompt('Break down my task into smaller subtasks');
     } else if (initialAction === 'goal') {
-      setActiveTab('chats');
       setPrompt('Help me create a realistic 6-month goal plan');
     } else if (initialAction === 'suggest') {
-      setActiveTab('suggestions');
+      setPrompt('Suggest tasks based on my current workload');
     }
   }, [initialAction, isOpen]);
 
@@ -115,7 +96,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     localStorage.setItem('phq_ai_history', JSON.stringify(next));
   };
 
-  // Time-aware Personalized Greeting Header
+  // Time-aware Greeting Header
   const timeGreeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
@@ -155,7 +136,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     },
   ], [todoTasks]);
 
-  // Handle Conversational Submit in Chat
+  // Main Unified Conversational Submit
   const handleChatSubmit = async (customPrompt?: string) => {
     const textToSubmit = customPrompt || prompt;
     if (!textToSubmit.trim()) return;
@@ -177,7 +158,32 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     setIsGenerating(true);
 
     try {
-      if (textToSubmit.toLowerCase().includes('break down') || textToSubmit.toLowerCase().includes('subtask')) {
+      // Check if prompt is Multi-Step Intent
+      if (isMultiStepIntent(textToSubmit)) {
+        // Generate Multi-Step Plan Card directly in Chat
+        const plan = await generateAiMultiStepPlan(apiKey, textToSubmit, 'Standard preference', model);
+        setMultiStepPlan(plan);
+
+        const planMsgId = `msg_${Date.now()}_a`;
+
+        const aiMsg: AiChatMessage = {
+          id: planMsgId,
+          sender: 'ai',
+          text: `I've created a complete multi-step workflow for "${plan.taskTitle}" 🎯`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          resultCard: { type: 'multistep_plan', data: plan },
+        };
+
+        setMessages(prev => [...prev, aiMsg]);
+        saveHistoryItem({
+          id: `hist_${Date.now()}`,
+          title: `Multi-Step: ${plan.taskTitle}`,
+          actionType: 'multistep',
+          summary: `Task breakdown, .md file & habit plan created`,
+          createdAt: new Date().toISOString(),
+          messages: [userMsg, aiMsg],
+        });
+      } else if (textToSubmit.toLowerCase().includes('break down') || textToSubmit.toLowerCase().includes('subtask')) {
         const res = await generateAiTaskWithSubtasks(apiKey, textToSubmit, model);
         const aiMsg: AiChatMessage = {
           id: `msg_${Date.now()}_a`,
@@ -187,15 +193,6 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
           resultCard: { type: 'todo', data: res },
         };
         setMessages(prev => [...prev, aiMsg]);
-        saveHistoryItem({
-          id: `hist_${Date.now()}`,
-          title: `Break down: ${res.title}`,
-          actionType: 'breakdown',
-          summary: `${res.subtasks.length} subtasks created`,
-          createdAt: new Date().toISOString(),
-          messages: [userMsg, aiMsg],
-          actionTaken: { label: `${res.subtasks.length} subtasks ready`, module: 'todo', count: res.subtasks.length },
-        });
       } else if (textToSubmit.toLowerCase().includes('markdown') || textToSubmit.toLowerCase().includes('.md')) {
         const res = await generateAiMarkdownDoc(apiKey, textToSubmit, model);
         const aiMsg: AiChatMessage = {
@@ -223,104 +220,55 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     }
   };
 
-  // Multi-Step Pipeline Handlers
-  const handleStartPipeline = async () => {
-    if (!pipelinePrompt.trim()) return;
-    if (!apiKey) {
-      addToast('Key Required', 'Please set your Gemini API key in Settings.', 'warning');
-      return;
-    }
-
+  // In-Chat Execution of Multi-Step Plan
+  const handleExecuteInChatPlan = async (msgId: string) => {
+    if (!multiStepPlan) return;
     setIsGenerating(true);
-    setPipelineStep(1);
-
-    try {
-      // Step 1: Understand -> Step 2: Ask & Clarify
-      const questions = await generateAiClarificationQuestions(apiKey, pipelinePrompt, model);
-      setClarificationQuestions(questions);
-      setPipelineStep(2);
-    } catch (err: any) {
-      addToast('Pipeline Error', err.message || 'Failed to initialize workflow', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleConfirmAnswersAndPlan = async () => {
-    if (!apiKey) return;
-    setIsGenerating(true);
-    const summary = Object.entries(selectedAnswers).map(([k, v]) => `${k}: ${v}`).join(', ');
-
-    try {
-      // Step 3: Plan
-      const plan = await generateAiMultiStepPlan(apiKey, pipelinePrompt, summary, model);
-      setGeneratedPlan(plan);
-      setPipelineStep(3);
-    } catch (err: any) {
-      addToast('Plan Error', err.message || 'Failed to build plan', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleExecuteAllSteps = async () => {
-    if (!generatedPlan) return;
-    setPipelineStep(4);
     setExecutionProgress(10);
 
-    // Step 1: Create Main Task & Subtasks
-    setExecutionSteps(prev => prev.map(s => s.id === '1' || s.id === '2' ? { ...s, status: 'in_progress' } : s));
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 400));
 
     const newTask = {
       id: `task_${Date.now()}`,
       projectId: null,
-      title: generatedPlan.taskTitle,
+      title: multiStepPlan.taskTitle,
       completed: false,
-      priority: generatedPlan.priority,
-      tags: generatedPlan.tags,
+      priority: multiStepPlan.priority,
+      tags: multiStepPlan.tags,
       dueDate: null,
       createdAt: new Date().toISOString(),
-      subtasks: generatedPlan.subtasks.map((s, idx) => ({
+      subtasks: multiStepPlan.subtasks.map((s: { title: string }, idx: number) => ({
         id: `sub_${Date.now()}_${idx}`,
         title: s.title,
         completed: false,
       })),
     };
     await addTodoTask(newTask);
-
-    setExecutionSteps(prev => prev.map(s => s.id === '1' || s.id === '2' ? { ...s, status: 'completed' } : s));
     setExecutionProgress(50);
 
-    // Step 2: Create .md File
-    setExecutionSteps(prev => prev.map(s => s.id === '3' ? { ...s, status: 'in_progress' } : s));
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 400));
 
     const newNote = {
       id: `note_${Date.now()}`,
-      title: generatedPlan.markdownTitle,
-      content: generatedPlan.markdownContent,
+      title: multiStepPlan.markdownTitle,
+      content: multiStepPlan.markdownContent,
       tags: ['markdown', 'ai-plan'],
       pinned: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     await addNote(newNote);
+    setExecutionProgress(85);
 
-    setExecutionSteps(prev => prev.map(s => s.id === '3' ? { ...s, status: 'completed' } : s));
-    setExecutionProgress(80);
-
-    // Step 3: Create Habit
-    setExecutionSteps(prev => prev.map(s => s.id === '4' ? { ...s, status: 'in_progress' } : s));
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 400));
 
     const newHabit: Habit = {
       id: `habit_${Date.now()}`,
-      name: generatedPlan.habitName,
-      description: `AI routine targeting ${generatedPlan.targetDaysPerWeek} days/week`,
+      name: multiStepPlan.habitName,
+      description: `AI routine targeting ${multiStepPlan.targetDaysPerWeek} days/week`,
       frequencyType: 'daily',
       frequencyDays: [0, 1, 2, 3, 4, 5, 6],
-      frequencyCount: generatedPlan.targetDaysPerWeek,
+      frequencyCount: multiStepPlan.targetDaysPerWeek,
       completedDates: [],
       streak: 0,
       bestStreak: 0,
@@ -328,19 +276,22 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     };
     await addHabit(newHabit);
 
-    setExecutionSteps(prev => prev.map(s => s.id === '4' ? { ...s, status: 'completed' } : s));
     setExecutionProgress(100);
-    setPipelineStep(5);
+    setIsGenerating(false);
 
-    saveHistoryItem({
-      id: `hist_${Date.now()}`,
-      title: `Multi-Step: ${generatedPlan.taskTitle}`,
-      actionType: 'multistep',
-      summary: `Created Task, ${generatedPlan.subtasks.length} Subtasks, Markdown File & Habit`,
-      createdAt: new Date().toISOString(),
-      messages: [],
-      actionTaken: { label: '4/4 Multi-Step Actions Executed', module: 'dashboard', count: 4 },
-    });
+    // Update Message to Completed State
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId && m.resultCard) {
+        return {
+          ...m,
+          text: `All done! 🎉 Created Main Task, ${multiStepPlan.subtasks.length} Subtasks, Markdown File & Habit Routine.`,
+          resultCard: { type: 'multistep_completed', data: multiStepPlan },
+        };
+      }
+      return m;
+    }));
+
+    addToast('Success', 'Multi-step workflow executed cleanly!', 'success');
   };
 
   // Filter History Items
@@ -364,567 +315,452 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-zinc-950/80 z-50 cursor-pointer backdrop-blur-xs"
+          className="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 cursor-pointer backdrop-blur-xs"
         />
 
-        {/* Main Assistant Card Container */}
+        {/* Theme-Adaptive Main Assistant Surface */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-          className="relative z-[60] w-full max-w-4xl bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] min-h-[620px]"
+          className="relative z-[60] w-full max-w-4xl bg-surface text-text-primary border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] min-h-[620px]"
         >
-          {/* Top Header & Navigation Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/80 gap-3">
+          {/* Top Theme-Adaptive Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-alt/80">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-lg">
-                <IconSparkles size={20} stroke={2} />
+              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-md">
+                <IconSparkles size={22} stroke={2} />
               </div>
               <div>
-                <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                  AI Assistant
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                    Productivity Companion
+                <h2 className="text-base font-bold tracking-tight text-text-primary flex items-center gap-2">
+                  AI Productivity Companion
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
+                    {model}
                   </span>
                 </h2>
+                <p className="text-xs text-text-muted">Smart personalized chat, multi-step actions & workspace sync</p>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-zinc-900 border border-zinc-800 self-stretch sm:self-auto overflow-x-auto custom-scrollbar">
-              {([
-                { id: 'chats', label: 'Assistant', icon: IconMessageDots },
-                { id: 'multistep', label: 'Multi-Step', icon: IconChecklist },
-                { id: 'suggestions', label: 'Suggestions', icon: IconBulb },
-                { id: 'history', label: 'History', icon: IconHistory },
-                { id: 'settings', label: 'Key', icon: IconKey },
-              ] as const).map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedHistoryItem(null);
-                    setActiveTab(id);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === id
-                      ? 'bg-purple-600 text-white shadow-md'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-                  }`}
-                >
-                  <Icon size={14} />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
+            {/* Header Controls: History, Settings & Close */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsOverlay(false);
+                  setShowHistoryOverlay(!showHistoryOverlay);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  showHistoryOverlay ? 'bg-primary text-white border-primary shadow-sm' : 'bg-surface-alt hover:bg-surface-hover text-text-secondary border-border'
+                }`}
+                title="AI History"
+              >
+                <IconHistory size={15} />
+                <span className="hidden sm:inline">History</span>
+              </button>
 
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 sm:static flex items-center justify-center w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer border border-zinc-700/50"
-            >
-              <IconX size={16} />
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowHistoryOverlay(false);
+                  setShowSettingsOverlay(!showSettingsOverlay);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  showSettingsOverlay ? 'bg-primary text-white border-primary shadow-sm' : 'bg-surface-alt hover:bg-surface-hover text-text-secondary border-border'
+                }`}
+                title="API Settings"
+              >
+                <IconKey size={15} />
+                <span className="hidden sm:inline">Key</span>
+              </button>
+
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-8 h-8 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer border border-border"
+              >
+                <IconX size={16} />
+              </button>
+            </div>
           </div>
 
-          {/* Modal Content Surface */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-6">
-            
-            {/* ── TAB 1: ASSISTANT CHAT & GREETING ── */}
-            {activeTab === 'chats' && (
-              <div className="flex flex-col gap-6 h-full">
-                {/* Robot Greeting Hero Banner */}
-                {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-purple-950/30 via-zinc-900 to-zinc-950 border border-purple-500/20 rounded-3xl gap-4">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-2xl">
-                        <IconSparkles size={40} stroke={1.5} />
-                      </div>
-                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-3 border-zinc-900 animate-pulse" />
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
-                        Hi Rahul! {timeGreeting.emoji}
-                      </h3>
-                      <p className="text-xs text-zinc-400 mt-1 max-w-md">
-                        {timeGreeting.text}, let's build your best day! What are you working on right now? What's your next plan?
-                      </p>
-                    </div>
-
-                    {/* Integrated 2-3 Personalized Suggestion Cards in Greeting */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl mt-2 text-left">
-                      {suggestionsList.map((sug) => (
-                        <button
-                          key={sug.id}
-                          type="button"
-                          onClick={() => handleChatSubmit(sug.title)}
-                          className="p-3.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-purple-500/40 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 group"
-                        >
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">{sug.contextTag}</span>
-                          <p className="text-xs font-semibold text-zinc-200 group-hover:text-white line-clamp-2">{sug.title}</p>
-                          <span className="text-[10px] font-bold text-purple-300 flex items-center gap-1">
-                            {sug.actionLabel} <IconChevronRight size={12} />
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Messages Chat Transcript */}
-                <div className="flex-1 flex flex-col gap-4">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col gap-1 max-w-xl ${
-                        msg.sender === 'user' ? 'self-end items-end' : 'self-start items-start'
-                      }`}
-                    >
-                      <div
-                        className={`p-4 rounded-2xl text-xs font-medium leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'bg-purple-600 text-white rounded-br-none shadow-md'
-                            : 'bg-zinc-950 text-zinc-200 border border-zinc-800 rounded-bl-none'
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                      <span className="text-[10px] text-zinc-500 px-1">{msg.timestamp}</span>
-
-                      {/* Interactive Task Result Card */}
-                      {msg.resultCard?.type === 'todo' && (
-                        <div className="p-4 rounded-2xl bg-zinc-950 border border-purple-500/30 text-left w-full mt-2 flex flex-col gap-3">
-                          <h4 className="text-xs font-bold text-white">{msg.resultCard.data.title}</h4>
-                          <div className="flex flex-col gap-1.5">
-                            {msg.resultCard.data.subtasks.map((st: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs text-zinc-300">
-                                <IconCheck size={14} className="text-purple-400" />
-                                <span>{st.title}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            onClick={async () => {
-                              const newTask = {
-                                id: `task_${Date.now()}`,
-                                projectId: null,
-                                title: msg.resultCard.data.title,
-                                completed: false,
-                                priority: msg.resultCard.data.priority,
-                                tags: msg.resultCard.data.tags,
-                                dueDate: null,
-                                createdAt: new Date().toISOString(),
-                                subtasks: msg.resultCard.data.subtasks.map((s: any, i: number) => ({
-                                  id: `sub_${Date.now()}_${i}`,
-                                  title: s.title,
-                                  completed: false,
-                                })),
-                              };
-                              await addTodoTask(newTask);
-                              setActiveModule('todo');
-                              onClose();
-                            }}
-                            className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer mt-1"
-                          >
-                            <IconPlus size={14} /> Add 5 Tasks to To-Do Module
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {isGenerating && (
-                    <div className="flex items-center gap-2 p-3 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs text-purple-400 self-start animate-pulse">
-                      <IconLoader2 size={16} className="animate-spin" />
-                      <span>AI is thinking & analyzing...</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Prompt Bar with Quick Action Pills */}
-                <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-zinc-800">
-                  <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar">
-                    <button
-                      onClick={() => handleChatSubmit('Add a new task:')}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <IconPlus size={13} className="text-purple-400" /> Add Task
-                    </button>
-                    <button
-                      onClick={() => handleChatSubmit('Break down my study task into smaller actionable subtasks')}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <IconListCheck size={13} className="text-indigo-400" /> Break Task
-                    </button>
-                    <button
-                      onClick={() => handleChatSubmit('Help me build a realistic 6-month goal plan')}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <IconTarget size={13} className="text-emerald-400" /> Realistic Goal
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleChatSubmit()}
-                      placeholder="Ask AI anything..."
-                      className="flex-1 px-4 py-3 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-purple-500/50"
-                    />
-                    <button
-                      onClick={() => handleChatSubmit()}
-                      disabled={isGenerating || !prompt.trim()}
-                      className="px-5 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center cursor-pointer shadow-md"
-                    >
-                      <IconSparkles size={16} />
-                    </button>
-                  </div>
-                </div>
+          {/* Settings Overlay Drawer */}
+          {showSettingsOverlay && (
+            <div className="p-5 border-b border-border bg-surface-alt/90 text-left flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                  <IconKey size={16} className="text-primary" /> Gemini API Settings
+                </h3>
+                <button onClick={() => setShowSettingsOverlay(false)} className="text-xs text-text-muted hover:underline cursor-pointer">Close</button>
               </div>
-            )}
+              <p className="text-xs text-text-secondary">Enter your Google AI Studio API key to enable AI task breakdown, live markdown generation & multi-step execution.</p>
+              <input
+                type="password"
+                value={settings.geminiApiKey || ''}
+                onChange={(e) => useAppStore.getState().updateSettings({ geminiApiKey: e.target.value.trim() })}
+                placeholder="AIzaSy..."
+                className="w-full p-2.5 rounded-xl bg-surface border border-border text-xs font-mono text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          )}
 
-            {/* ── TAB 2: MULTI-STEP PIPELINE ── */}
-            {activeTab === 'multistep' && (
-              <div className="flex flex-col gap-6">
-                {/* 5-Step Process Pipeline Indicator */}
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs font-bold overflow-x-auto custom-scrollbar gap-2">
-                  {[
-                    { num: 1, label: 'Understand' },
-                    { num: 2, label: 'Ask & Clarify' },
-                    { num: 3, label: 'Plan' },
-                    { num: 4, label: 'Execute' },
-                    { num: 5, label: 'Complete' },
-                  ].map((s) => (
-                    <div
-                      key={s.num}
-                      className={`flex items-center gap-2 shrink-0 ${
-                        pipelineStep === s.num ? 'text-purple-400 font-extrabold' : pipelineStep > s.num ? 'text-emerald-400' : 'text-zinc-600'
-                      }`}
-                    >
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${
-                        pipelineStep === s.num ? 'bg-purple-600 text-white' : pipelineStep > s.num ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-zinc-800 text-zinc-500'
-                      }`}>
-                        {pipelineStep > s.num ? '✓' : s.num}
-                      </span>
-                      <span>{s.label}</span>
-                      {s.num < 5 && <IconChevronRight size={14} className="text-zinc-700" />}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Step 1: Input Request */}
-                {pipelineStep === 1 && (
-                  <div className="flex flex-col gap-4 p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-left">
-                    <h3 className="text-sm font-bold text-white">Create Multi-Step Goal or Project Workflow</h3>
-                    <p className="text-xs text-zinc-400">Describe what you want to accomplish (e.g. *"Create a study task for OS exam, break into subtasks, write a .md study plan, and create a daily habit"*).</p>
-                    <textarea
-                      value={pipelinePrompt}
-                      onChange={(e) => setPipelinePrompt(e.target.value)}
-                      rows={3}
-                      placeholder="e.g. Study for OS Exam: create main task, subtasks breakdown, markdown note, and habit target..."
-                      className="w-full p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-purple-500/50 resize-none"
-                    />
-                    <button
-                      onClick={handleStartPipeline}
-                      disabled={isGenerating || !pipelinePrompt.trim()}
-                      className="py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {isGenerating ? <IconLoader2 size={16} className="animate-spin" /> : <IconSparkles size={16} />}
-                      Start Multi-Step Workflow
-                    </button>
-                  </div>
-                )}
-
-                {/* Step 2: Ask & Clarify Interactive Questions */}
-                {pipelineStep === 2 && (
-                  <div className="flex flex-col gap-5 p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-left">
-                    <div className="flex items-center gap-2">
-                      <IconSparkles size={18} className="text-purple-400" />
-                      <h3 className="text-sm font-bold text-white">AI is asking a few clarification questions...</h3>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      {clarificationQuestions.map((q) => (
-                        <div key={q.id} className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col gap-3">
-                          <label className="text-xs font-semibold text-zinc-200">{q.question}</label>
-                          <div className="flex flex-wrap gap-2">
-                            {q.options.map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                  selectedAnswers[q.id] === opt
-                                    ? 'bg-purple-600 text-white border border-purple-400'
-                                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={handleConfirmAnswersAndPlan}
-                      disabled={isGenerating}
-                      className="py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {isGenerating ? <IconLoader2 size={16} className="animate-spin" /> : <IconArrowRight size={16} />}
-                      Generate Custom Plan
-                    </button>
-                  </div>
-                )}
-
-                {/* Step 3: Plan Review & Confirm */}
-                {pipelineStep === 3 && generatedPlan && (
-                  <div className="flex flex-col gap-5 p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-left">
-                    <h3 className="text-sm font-bold text-white">Here is the plan AI will execute for you:</h3>
-                    
-                    <div className="flex flex-col gap-3">
-                      <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">1. Create Main Task</span>
-                        <span className="text-zinc-400 font-medium">{generatedPlan.taskTitle}</span>
-                      </div>
-                      <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">2. Create Subtasks ({generatedPlan.subtasks.length})</span>
-                        <span className="text-purple-400 font-medium">Breakdown ready</span>
-                      </div>
-                      <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">3. Create .md File</span>
-                        <span className="text-indigo-400 font-medium">{generatedPlan.markdownTitle}</span>
-                      </div>
-                      <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">4. Create Habit</span>
-                        <span className="text-emerald-400 font-medium">{generatedPlan.habitName}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleExecuteAllSteps}
-                      className="py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                    >
-                      <IconPlayerPlay size={16} /> Confirm & Execute All Steps
-                    </button>
-                  </div>
-                )}
-
-                {/* Step 4 & 5: Live Execution & Final Output */}
-                {(pipelineStep === 4 || pipelineStep === 5) && (
-                  <div className="flex flex-col gap-6 p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-left">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-white">
-                        {pipelineStep === 4 ? 'Executing the plan...' : 'All done! 🎉 Everything created successfully.'}
-                      </h3>
-                      <span className="text-xs font-mono font-bold text-purple-400">{executionProgress}%</span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
-                      <div className="h-full bg-purple-600 transition-all duration-300" style={{ width: `${executionProgress}%` }} />
-                    </div>
-
-                    {/* Live Execution Steps List */}
-                    <div className="flex flex-col gap-2.5">
-                      {executionSteps.map((step) => (
-                        <div key={step.id} className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-xs">
-                          <span className="font-semibold text-zinc-200">{step.title}</span>
-                          {step.status === 'completed' && <span className="text-emerald-400 font-bold flex items-center gap-1"><IconCheck size={14} /> Done</span>}
-                          {step.status === 'in_progress' && <span className="text-purple-400 font-bold flex items-center gap-1"><IconLoader2 size={14} className="animate-spin" /> In Progress</span>}
-                          {step.status === 'pending' && <span className="text-zinc-600 font-bold">Pending</span>}
-                        </div>
-                      ))}
-                    </div>
-
-                    {pipelineStep === 5 && (
-                      <button
-                        onClick={() => {
-                          onClose();
-                          setActiveModule('dashboard');
-                        }}
-                        className="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                      >
-                        <IconArrowRight size={16} /> Go to Dashboard & View Results
-                      </button>
-                    )}
-                  </div>
-                )}
+          {/* History Overlay Drawer */}
+          {showHistoryOverlay && (
+            <div className="p-5 border-b border-border bg-surface-alt/95 text-left flex flex-col gap-4 max-h-96 overflow-y-auto custom-scrollbar">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                  <IconHistory size={16} className="text-primary" /> AI Conversation History
+                </h3>
+                <button onClick={() => setShowHistoryOverlay(false)} className="text-xs text-text-muted hover:underline cursor-pointer">Close</button>
               </div>
-            )}
 
-            {/* ── TAB 3: PERSONALIZED SUGGESTIONS ── */}
-            {activeTab === 'suggestions' && (
-              <div className="flex flex-col gap-6 text-left">
-                {/* Personalized Insight Strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase text-zinc-500">Streak</span>
-                    <span className="text-sm font-black text-amber-400">🔥 7 Days</span>
+              {selectedHistoryItem ? (
+                /* History Details View */
+                <div className="flex flex-col gap-4 p-4 rounded-2xl bg-surface border border-border">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <button onClick={() => setSelectedHistoryItem(null)} className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                      ← Back to History List
+                    </button>
+                    <button
+                      onClick={() => toggleStarHistory(selectedHistoryItem.id)}
+                      className={`p-1.5 rounded-lg border ${selectedHistoryItem.isStarred ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-surface-alt text-text-muted border-border'}`}
+                    >
+                      <IconStar size={15} fill={selectedHistoryItem.isStarred ? 'currentColor' : 'none'} />
+                    </button>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase text-zinc-500">Completed</span>
-                    <span className="text-sm font-black text-purple-400">💬 9 Tasks</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-text-primary">{selectedHistoryItem.title}</h4>
+                    <p className="text-[11px] text-text-muted mt-0.5">{selectedHistoryItem.summary}</p>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase text-zinc-500">Best Time</span>
-                    <span className="text-sm font-black text-indigo-400">🕒 8:00 PM</span>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase text-zinc-500">Productivity</span>
-                    <span className="text-sm font-black text-emerald-400">📈 +18% Up</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Suggested For You</h3>
-                  <div className="flex flex-col gap-3">
-                    {suggestionsList.map((sug) => (
-                      <div key={sug.id} className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-purple-500/15 text-purple-400">{sug.contextTag}</span>
-                            <span className="text-[11px] text-zinc-500">{sug.reason}</span>
-                          </div>
-                          <h4 className="text-xs font-bold text-white">{sug.title}</h4>
-                          <p className="text-[11.5px] text-zinc-400 mt-0.5">{sug.description}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setActiveTab('chats');
-                            handleChatSubmit(sug.title);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shrink-0 cursor-pointer"
-                        >
-                          {sug.actionLabel}
-                        </button>
+                  <div className="flex flex-col gap-2">
+                    {selectedHistoryItem.messages.map((m) => (
+                      <div key={m.id} className={`p-3 rounded-xl text-xs ${m.sender === 'user' ? 'bg-primary text-white self-end' : 'bg-surface-alt text-text-primary border border-border self-start'}`}>
+                        {m.text}
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* ── TAB 4: HISTORY & DETAILS VIEW ── */}
-            {activeTab === 'history' && (
-              <div className="flex flex-col gap-5 text-left">
-                {selectedHistoryItem ? (
-                  /* History Details View */
-                  <div className="flex flex-col gap-5 p-5 rounded-3xl bg-zinc-950 border border-zinc-800">
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                      <button
-                        onClick={() => setSelectedHistoryItem(null)}
-                        className="text-xs font-bold text-purple-400 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        ← Back to History List
-                      </button>
-                      <button
-                        onClick={() => toggleStarHistory(selectedHistoryItem.id)}
-                        className={`p-1.5 rounded-lg border ${
-                          selectedHistoryItem.isStarred ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                        }`}
-                      >
-                        <IconStar size={16} fill={selectedHistoryItem.isStarred ? 'currentColor' : 'none'} />
-                      </button>
+              ) : (
+                /* History Timeline List */
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <IconSearch size={15} className="absolute left-3 top-2.5 text-text-muted" />
+                      <input
+                        type="text"
+                        value={historySearch}
+                        onChange={(e) => setHistorySearch(e.target.value)}
+                        placeholder="Search history..."
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface border border-border text-xs text-text-primary focus:outline-none"
+                      />
                     </div>
-
-                    <div>
-                      <h3 className="text-base font-bold text-white">{selectedHistoryItem.title}</h3>
-                      <p className="text-xs text-zinc-400 mt-1">{selectedHistoryItem.summary}</p>
-                    </div>
-
-                    {/* Chat Messages Replay */}
-                    <div className="flex flex-col gap-3">
-                      {selectedHistoryItem.messages.map((m) => (
-                        <div key={m.id} className={`p-3.5 rounded-2xl text-xs ${m.sender === 'user' ? 'bg-purple-600 text-white self-end' : 'bg-zinc-900 text-zinc-200 border border-zinc-800 self-start'}`}>
-                          {m.text}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Feedback Ratings */}
-                    <div className="flex items-center justify-between pt-3 border-t border-zinc-800 text-xs text-zinc-400">
-                      <span>Was this helpful?</span>
-                      <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 cursor-pointer"><IconThumbUp size={14} /></button>
-                        <button className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 cursor-pointer"><IconThumbDown size={14} /></button>
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => setHistoryFilterStarred(!historyFilterStarred)}
+                      className={`p-2 rounded-xl border cursor-pointer ${historyFilterStarred ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-surface text-text-muted border-border'}`}
+                    >
+                      <IconStar size={15} />
+                    </button>
                   </div>
-                ) : (
-                  /* History List View */
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <IconSearch size={16} className="absolute left-3 top-2.5 text-zinc-500" />
-                        <input
-                          type="text"
-                          value={historySearch}
-                          onChange={(e) => setHistorySearch(e.target.value)}
-                          placeholder="Search history..."
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 focus:outline-none"
-                        />
-                      </div>
-                      <button
-                        onClick={() => setHistoryFilterStarred(!historyFilterStarred)}
-                        className={`p-2 rounded-xl border cursor-pointer ${
-                          historyFilterStarred ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-zinc-950 text-zinc-400 border-zinc-800'
-                        }`}
-                      >
-                        <IconFilter size={16} />
-                      </button>
-                    </div>
 
-                    <div className="flex flex-col gap-2">
-                      {filteredHistory.length === 0 ? (
-                        <p className="text-xs text-zinc-500 text-center py-8">No past AI conversations found.</p>
-                      ) : (
-                        filteredHistory.map((item) => (
-                          <div
-                            key={item.id}
-                            onClick={() => setSelectedHistoryItem(item)}
-                            className="p-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800/80 border border-zinc-800 flex items-center justify-between gap-3 cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center">
-                                <IconSparkles size={16} />
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-bold text-white group-hover:text-purple-300">{item.title}</h4>
-                                <p className="text-[11px] text-zinc-400">{item.summary}</p>
-                              </div>
+                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                    {filteredHistory.length === 0 ? (
+                      <p className="text-xs text-text-muted text-center py-6">No past AI history entries found.</p>
+                    ) : (
+                      filteredHistory.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedHistoryItem(item)}
+                          className="p-3 rounded-xl bg-surface hover:bg-surface-hover border border-border flex items-center justify-between gap-3 cursor-pointer group transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                              <IconSparkles size={14} />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-zinc-500">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              <IconChevronRight size={14} className="text-zinc-600 group-hover:text-white" />
+                            <div>
+                              <h4 className="text-xs font-bold text-text-primary group-hover:text-primary transition-colors">{item.title}</h4>
+                              <p className="text-[10.5px] text-text-muted">{item.summary}</p>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
+                          <IconChevronRight size={14} className="text-text-muted group-hover:text-text-primary" />
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MAIN UNIFIED CONVERSATIONAL CHAT FEED */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-6 text-left">
+            {/* Greeting & Personalization Hero Banner (Shown at top when starting conversation) */}
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center text-center p-6 bg-surface-alt/70 border border-border rounded-3xl gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl">
+                    <IconSparkles size={32} stroke={1.75} />
+                  </div>
+                  <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-surface animate-pulse" />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-text-primary flex items-center justify-center gap-2">
+                    Hi Rahul! {timeGreeting.emoji}
+                  </h3>
+                  <p className="text-xs text-text-secondary mt-1 max-w-md">
+                    {timeGreeting.text}, let's build your best day! What are you working on right now? What's your next plan?
+                  </p>
+                </div>
+
+                {/* Integrated 2-3 Personalized Suggestion Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl mt-1 text-left">
+                  {suggestionsList.map((sug) => (
+                    <button
+                      key={sug.id}
+                      type="button"
+                      onClick={() => handleChatSubmit(sug.title)}
+                      className="p-3.5 rounded-2xl bg-surface hover:bg-surface-hover border border-border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 shadow-xs group"
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{sug.contextTag}</span>
+                      <p className="text-xs font-semibold text-text-primary group-hover:text-primary line-clamp-2">{sug.title}</p>
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                        {sug.actionLabel} <IconChevronRight size={12} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* ── TAB 5: AI SETTINGS ── */}
-            {activeTab === 'settings' && (
-              <div className="flex flex-col gap-4 text-left p-4 rounded-3xl bg-zinc-950 border border-zinc-800">
-                <h3 className="text-sm font-bold text-white">Gemini API Key Configuration</h3>
-                <p className="text-xs text-zinc-400">Configure your Google AI Studio API key to enable instant task breakdown, markdown generation & multi-step execution.</p>
-                <input
-                  type="password"
-                  value={settings.geminiApiKey || ''}
-                  onChange={(e) => useAppStore.getState().updateSettings({ geminiApiKey: e.target.value.trim() })}
-                  placeholder="AIzaSy..."
-                  className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-100 focus:outline-none"
-                />
+            {/* Chat Transcript Messages */}
+            <div className="flex-1 flex flex-col gap-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col gap-1 max-w-2xl ${
+                    msg.sender === 'user' ? 'self-end items-end' : 'self-start items-start'
+                  }`}
+                >
+                  <div
+                    className={`p-4 rounded-2xl text-xs font-medium leading-relaxed ${
+                      msg.sender === 'user'
+                        ? 'bg-primary text-white rounded-br-none shadow-sm'
+                        : 'bg-surface-alt text-text-primary border border-border rounded-bl-none'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                  <span className="text-[10px] text-text-muted px-1">{msg.timestamp}</span>
+
+                  {/* IN-CHAT MULTI-STEP PLAN PREVIEW CARD */}
+                  {msg.resultCard?.type === 'multistep_plan' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-5 rounded-2xl bg-surface border border-primary/30 shadow-md text-left w-full mt-2 flex flex-col gap-4"
+                    >
+                      <div className="flex items-center justify-between border-b border-border pb-3">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Multi-Step Execution Plan</span>
+                          <h4 className="text-sm font-bold text-text-primary">{msg.resultCard.data.taskTitle}</h4>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                          4 Actions Included
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="p-3 rounded-xl bg-surface-alt border border-border flex items-center justify-between">
+                          <span className="font-semibold text-text-primary">1. Main Task</span>
+                          <span className="text-text-muted text-[11px] truncate max-w-[120px]">{msg.resultCard.data.taskTitle}</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-surface-alt border border-border flex items-center justify-between">
+                          <span className="font-semibold text-text-primary">2. Subtasks ({msg.resultCard.data.subtasks.length})</span>
+                          <span className="text-primary font-bold text-[11px]">Breakdown ready</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-surface-alt border border-border flex items-center justify-between">
+                          <span className="font-semibold text-text-primary">3. .md Document</span>
+                          <span className="text-primary font-bold text-[11px]">{msg.resultCard.data.markdownTitle}</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-surface-alt border border-border flex items-center justify-between">
+                          <span className="font-semibold text-text-primary">4. Habit Routine</span>
+                          <span className="text-emerald-500 font-bold text-[11px]">{msg.resultCard.data.habitName}</span>
+                        </div>
+                      </div>
+
+                      {/* 1-Click In-Chat Confirm & Execute All Button */}
+                      <button
+                        onClick={() => handleExecuteInChatPlan(msg.id)}
+                        disabled={isGenerating}
+                        className="w-full py-3 rounded-xl bg-primary hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all mt-1"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <IconLoader2 size={16} className="animate-spin" /> Executing Steps Live ({executionProgress}%)...
+                          </>
+                        ) : (
+                          <>
+                            <IconPlayerPlay size={16} /> Confirm & Execute All Steps
+                          </>
+                        )}
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* IN-CHAT MULTI-STEP COMPLETED OUTPUT CARD */}
+                  {msg.resultCard?.type === 'multistep_completed' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-5 rounded-2xl bg-surface border border-emerald-500/30 shadow-md text-left w-full mt-2 flex flex-col gap-3"
+                    >
+                      <div className="flex items-center justify-between border-b border-border pb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
+                          <IconCheck size={14} /> Multi-Step Actions Completed
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <button onClick={() => { onClose(); setActiveModule('todo'); }} className="p-2.5 rounded-xl bg-surface-alt border border-border text-left hover:border-primary transition-colors cursor-pointer">
+                          <span className="text-[10px] text-text-muted block">Task Created</span>
+                          <span className="font-bold text-primary flex items-center gap-1">View Tasks <IconChevronRight size={12} /></span>
+                        </button>
+                        <button onClick={() => { onClose(); setActiveModule('markdown'); }} className="p-2.5 rounded-xl bg-surface-alt border border-border text-left hover:border-primary transition-colors cursor-pointer">
+                          <span className="text-[10px] text-text-muted block">.MD File</span>
+                          <span className="font-bold text-primary flex items-center gap-1">Open File <IconChevronRight size={12} /></span>
+                        </button>
+                        <button onClick={() => { onClose(); setActiveModule('habits'); }} className="p-2.5 rounded-xl bg-surface-alt border border-border text-left hover:border-primary transition-colors cursor-pointer">
+                          <span className="text-[10px] text-text-muted block">Habit Setup</span>
+                          <span className="font-bold text-emerald-500 flex items-center gap-1">View Habit <IconChevronRight size={12} /></span>
+                        </button>
+                        <button onClick={() => { onClose(); setActiveModule('dashboard'); }} className="p-2.5 rounded-xl bg-surface-alt border border-border text-left hover:border-primary transition-colors cursor-pointer">
+                          <span className="text-[10px] text-text-muted block">Dashboard</span>
+                          <span className="font-bold text-text-primary flex items-center gap-1">Overview <IconChevronRight size={12} /></span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* To-Do Task Result Card */}
+                  {msg.resultCard?.type === 'todo' && (
+                    <div className="p-4 rounded-2xl bg-surface border border-primary/30 text-left w-full mt-2 flex flex-col gap-3 shadow-xs">
+                      <h4 className="text-xs font-bold text-text-primary">{msg.resultCard.data.title}</h4>
+                      <div className="flex flex-col gap-1.5">
+                        {msg.resultCard.data.subtasks.map((st: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2 text-xs text-text-secondary">
+                            <IconCheck size={14} className="text-primary" />
+                            <span>{st.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newTask = {
+                            id: `task_${Date.now()}`,
+                            projectId: null,
+                            title: msg.resultCard.data.title,
+                            completed: false,
+                            priority: msg.resultCard.data.priority,
+                            tags: msg.resultCard.data.tags,
+                            dueDate: null,
+                            createdAt: new Date().toISOString(),
+                            subtasks: msg.resultCard.data.subtasks.map((s: any, i: number) => ({
+                              id: `sub_${Date.now()}_${i}`,
+                              title: s.title,
+                              completed: false,
+                            })),
+                          };
+                          await addTodoTask(newTask);
+                          setActiveModule('todo');
+                          onClose();
+                        }}
+                        className="w-full py-2 rounded-xl bg-primary text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs mt-1"
+                      >
+                        <IconPlus size={14} /> Add Tasks & Open To-Do Module
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Markdown Result Card */}
+                  {msg.resultCard?.type === 'markdown' && (
+                    <div className="p-4 rounded-2xl bg-surface border border-primary/30 text-left w-full mt-2 flex flex-col gap-3 shadow-xs">
+                      <h4 className="text-xs font-bold text-text-primary">{msg.resultCard.data.title}</h4>
+                      <div className="p-3 rounded-lg bg-surface-alt text-text-secondary font-mono text-[11px] max-h-48 overflow-y-auto whitespace-pre-wrap border border-border custom-scrollbar">
+                        {msg.resultCard.data.content}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newNote = {
+                            id: `note_${Date.now()}`,
+                            title: msg.resultCard.data.title,
+                            content: msg.resultCard.data.content,
+                            tags: ['markdown', 'ai-generated'],
+                            pinned: false,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                          };
+                          await addNote(newNote);
+                          setActiveModule('markdown');
+                          onClose();
+                        }}
+                        className="w-full py-2 rounded-xl bg-primary text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs mt-1"
+                      >
+                        <IconArrowRight size={14} /> Open & Write Live in Markdown Workspace
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isGenerating && (
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-surface-alt border border-border text-xs text-primary self-start animate-pulse">
+                  <IconLoader2 size={16} className="animate-spin" />
+                  <span>AI is thinking & processing multi-step intent...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Conversational Prompt Bar */}
+            <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border">
+              <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                <button
+                  onClick={() => handleChatSubmit('Add a new task:')}
+                  className="px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover border border-border text-[11px] font-bold text-text-secondary flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <IconPlus size={13} className="text-primary" /> Add Task
+                </button>
+                <button
+                  onClick={() => handleChatSubmit('Break down my study task into smaller subtasks')}
+                  className="px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover border border-border text-[11px] font-bold text-text-secondary flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <IconListCheck size={13} className="text-primary" /> Break Task
+                </button>
+                <button
+                  onClick={() => handleChatSubmit('Help me build a realistic 6-month goal plan')}
+                  className="px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover border border-border text-[11px] font-bold text-text-secondary flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <IconTarget size={13} className="text-emerald-500" /> Realistic Goal
+                </button>
               </div>
-            )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleChatSubmit()}
+                  placeholder="Ask AI anything or describe a multi-step request..."
+                  className="flex-1 px-4 py-3 rounded-2xl bg-surface-alt border border-border text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <button
+                  onClick={() => handleChatSubmit()}
+                  disabled={isGenerating || !prompt.trim()}
+                  className="px-5 py-3 rounded-2xl bg-primary hover:opacity-95 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center cursor-pointer shadow-md"
+                >
+                  <IconSparkles size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>

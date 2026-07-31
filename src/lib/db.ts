@@ -502,7 +502,7 @@ export const snippetService = {
   async fetchAll(userId: string): Promise<CodeSnippet[]> {
     const { data, error } = await supabase
       .from('snippets')
-      .select('id, title, description, language, code, tags, is_favorite, created_at, updated_at')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -785,7 +785,7 @@ export const todoTaskService = {
   async fetchAll(userId: string): Promise<TodoTask[]> {
     const { data, error } = await supabase
       .from('todo_tasks')
-      .select('id, project_id, title, completed, priority, tags, due_date, start_time, end_time, pomodoro_count, deleted, created_at, subtasks')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -876,7 +876,7 @@ export const journalService = {
   async fetchAll(userId: string): Promise<JournalEntry[]> {
     const { data, error } = await supabase
       .from('journals')
-      .select('id, title, content, date, mood, tags, pinned, focus_list, page_style, images, reflection, attachments, location, reminder, style_preset')
+      .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) {
@@ -1073,13 +1073,23 @@ export const standardCalcService = {
   }
 };
 
-// ─── User Settings ────────────────────────────────────────────────────────────
+const SETTINGS_OPTIONAL_COLUMNS = ['media_quote', 'reduce_blur', 'reduce_animations', 'active_focus_item'];
+
+const isMissingSettingsColumnError = (error: unknown) => {
+  const text = [
+    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message ?? '') : '',
+    typeof error === 'object' && error !== null && 'details' in error ? String((error as { details?: unknown }).details ?? '') : '',
+    typeof error === 'object' && error !== null && 'hint' in error ? String((error as { hint?: unknown }).hint ?? '') : '',
+  ].join(' ').toLowerCase();
+
+  return SETTINGS_OPTIONAL_COLUMNS.some((column) => text.includes(column));
+};
 
 export const settingsService = {
   async fetch(userId: string): Promise<any> {
     const { data, error } = await supabase
       .from('user_settings')
-      .select('theme, countdown_template, accent_color, animation_speed, compact_mode, sound_enabled, initial_bank_balance, initial_cash_balance, currency_symbol, media_quote, reduce_blur, reduce_animations, active_focus_item')
+      .select('*')
       .eq('user_id', userId)
       .maybeSingle();
     if (error) throw error;
@@ -1087,13 +1097,25 @@ export const settingsService = {
   },
 
   async upsert(userId: string, settings: any) {
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({
+    const payload = {
+      user_id: userId,
+      ...settings,
+      updated_at: new Date().toISOString(),
+    };
+    let { error } = await supabase.from('user_settings').upsert(payload);
+
+    if (error && isMissingSettingsColumnError(error)) {
+      const baseSettings = { ...settings };
+      for (const col of SETTINGS_OPTIONAL_COLUMNS) {
+        delete baseSettings[col];
+      }
+      ({ error } = await supabase.from('user_settings').upsert({
         user_id: userId,
-        ...settings,
+        ...baseSettings,
         updated_at: new Date().toISOString(),
-      });
+      }));
+    }
+
     if (error) throw error;
   }
 };

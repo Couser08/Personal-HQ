@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconArrowRight } from '@tabler/icons-react';
 
-// ── Version ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '3.2.0';
-const APP_CODENAME = 'Resilient';
+// ── Version ────────────────────────────────────────────────────────────────────
+const APP_VERSION = '3.3.0';
+const APP_CODENAME = 'Intelligent';
 const STORAGE_KEY = 'phq_last_seen_version';
 
-// ── Changelog ─────────────────────────────────────────────────────────────────
+// ── Changelog ──────────────────────────────────────────────────────────────────
 type TabId = 'whats-new' | 'improvements' | 'fixes';
 
 const TABS: { id: TabId; label: string }[] = [
@@ -25,106 +25,108 @@ interface ChangeItem {
 
 const CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   'whats-new': {
-    headline: 'Local-first data loading, image optimisation, and a smarter sync layer.',
+    headline: 'AI Assistant fully rebuilt — smarter, faster, and context-aware.',
     items: [
       {
-        icon: '🔌',
+        icon: '🤖',
         color: '#f43f5e',
-        title: 'Offline / Isolation Mode',
-        desc: 'All modules now load from localStorage first. Supabase is only queried when you\'re fully online, eliminating blank screens on slow connections.',
+        title: 'AI Assistant Modal — Full Rebuild',
+        desc: 'Completely rewritten AiAssistantModal with a polished chat UI, streaming responses, code block rendering, and multi-turn memory within a session.',
       },
       {
-        icon: '🖼',
+        icon: '🧠',
         color: '#8B5CF6',
-        title: 'Client-Side Image Optimiser',
-        desc: 'New imageOptimizer.ts compresses uploads and converts them to WebP before sending — faster uploads, smaller storage footprint, no server-side config needed.',
+        title: 'Multi-Step Intent Detection',
+        desc: 'New isMultiStepIntent() in gemini.ts detects complex requests like "create a study plan and add subtasks" — the AI automatically breaks them into structured steps.',
       },
       {
-        icon: '🔄',
+        icon: '🎯',
         color: '#3B82F6',
-        title: 'Force Sync Action',
-        desc: 'New forceSync() in the store lets any module trigger a fresh pull from Supabase on demand — useful after coming back online or resolving a conflict.',
+        title: 'Context-Aware Floating Button',
+        desc: 'AiFloatingButton now adapts its label and icon based on the active module — opens the AI pre-seeded with a relevant prompt for the current screen.',
       },
       {
-        icon: '⌘',
+        icon: '💬',
         color: '#059669',
-        title: 'Quick-Add in Command Palette',
-        desc: 'Press ⌘K and type "new" to instantly create a Journal entry, Todo task, Notebook, Habit log, or save a Link — without leaving your current view.',
+        title: 'Demo Auto-Play Chat',
+        desc: 'A scripted 8-message conversation auto-plays on first visit, showcasing ⌘K quick-add, offline mode, and the categorised sidebar — bottom-left corner.',
       },
     ],
   },
   improvements: {
-    headline: 'Supabase layer hardened, stores faster, UI palette wider.',
+    headline: 'Gemini layer hardened, DB service updated, floating button smarter.',
     items: [
       {
         icon: '⚡',
         color: '#F59E0B',
-        title: 'Supabase REST Cache Cleared on Sync',
-        desc: 'clearRestCache() is called before force-sync so stale reads never pollute fresh data. Real-time subscriptions are now opt-in per module.',
+        title: 'Gemini Streaming + Error Recovery',
+        desc: 'API calls now stream tokens as they arrive. On rate-limit or network error the modal shows a graceful retry prompt rather than a blank screen.',
       },
       {
         icon: '📦',
         color: '#10B981',
-        title: 'coreSlice — Parallel Data Loading',
-        desc: 'All 18 data sources now load with Promise.allSettled in parallel. One slow table can no longer block the entire app from showing data.',
+        title: 'db.ts Service Layer Refactored',
+        desc: 'All Supabase CRUD helpers reorganised — consistent error shapes, automatic retry on 503, and column-scoped selects on every list endpoint.',
       },
       {
-        icon: '🗂',
-        color: '#6366F1',
-        title: 'Categorised Sidebar (v3.1)',
-        desc: '18 modules in 4 groups: Create & Write, Organise, Track, Tools. Click a group → landing page with module cards. Collapse → 4 smart category icons.',
-      },
-      {
-        icon: '👤',
+        icon: '🎨',
         color: '#EC4899',
-        title: 'Profile & Admin Modules Updated',
-        desc: 'Profile module shows live account stats. Admin panel updated to surface sync diagnostics and isolation-mode status for debugging.',
+        title: 'AI Modal Code Block Rendering',
+        desc: 'Markdown code blocks in AI responses are now syntax-highlighted with a copy button. Long responses are scrollable inside the bubble without clipping.',
+      },
+      {
+        icon: '🔌',
+        color: '#6366F1',
+        title: 'Offline → AI Graceful Degradation',
+        desc: 'When offline, the AI floating button is dimmed and shows a tooltip — the modal won\'t open if no API key is configured, preventing confusing blank states.',
       },
     ],
   },
   fixes: {
-    headline: 'Build stability, type safety, and command palette accuracy.',
+    headline: 'Modal layout, button placement, and build correctness fixes.',
     items: [
       {
         icon: '🛠',
         color: '#f43f5e',
-        title: 'Build Errors Cleared',
-        desc: 'Removed all TS6133 unused-variable errors across Sidebar, CommandPalette, and UpdatePopup. npm run build exits clean.',
+        title: 'AI Modal Width on Mobile',
+        desc: 'Modal was overflowing on screens <375 px. Now uses max-w-[calc(100vw-2rem)] with safe-area padding so it never clips on small phones.',
       },
       {
         icon: '🎨',
         color: '#8B5CF6',
-        title: 'CommandPalette Width & z-index',
-        desc: 'Palette now max-w-2xl (was max-w-xl) and fixed z-index to z-50 — no longer overlaps by sidebar or modals incorrectly.',
+        title: 'Floating Button z-index Conflict',
+        desc: 'AiFloatingButton was appearing below the mobile bottom nav on iOS. Fixed by raising z-index to z-[9996] and adding bottom padding for safe-area-inset.',
       },
       {
-        icon: '📚',
+        icon: '⌨️',
         color: '#3B82F6',
-        title: 'CreateNotebookModal & NotebookEditor',
-        desc: 'Cover image picker now uses the new imageOptimizer — covers are compressed to WebP automatically. Editor toolbar state hoisted.',
+        title: 'AI Modal Keyboard Accessibility',
+        desc: 'Submit on Cmd+Enter (or Ctrl+Enter), dismiss on Escape. Tab order is correct: input → send → close. Focus restored to the floating button on close.',
       },
       {
         icon: '💾',
         color: '#059669',
-        title: 'Budget & Study Slices',
-        desc: 'Both slices now persist to localStorage as write-through on every mutation so data survives a page refresh before Supabase confirms the write.',
+        title: 'Demo Chat Session Guard',
+        desc: 'DemoChatPopup now uses sessionStorage so it shows once per browser session — not on every hot-reload during development.',
       },
     ],
   },
 };
 
-// ── Stat pills ─────────────────────────────────────────────────────────────────
+// ── Stats ──────────────────────────────────────────────────────────────────────
 const STATS = [
-  { value: '🔌', label: 'Offline'  },
-  { value: '⚡',  label: 'Parallel' },
-  { value: 'WebP', label: 'Images'  },
+  { value: '🤖', label: 'AI Chat'   },
+  { value: '🧠', label: 'Intent AI' },
+  { value: '💬', label: 'Demo'      },
 ];
 
-// ── Accent gradient ────────────────────────────────────────────────────────────
-const GRAD = 'linear-gradient(135deg, #f43f5e 0%, #8B5CF6 55%, #3B82F6 100%)';
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const GRAD        = 'linear-gradient(135deg, #f43f5e 0%, #8B5CF6 55%, #3B82F6 100%)';
 const GRAD_SHADOW = '0 4px 16px rgba(244,63,94,0.28)';
+const SURFACE     = 'bg-white dark:bg-[#111113]';
+const BORDER      = 'border border-zinc-200/80 dark:border-white/[0.07]';
 
-// ── Mini card ─────────────────────────────────────────────────────────────────
+// ── Mini card ──────────────────────────────────────────────────────────────────
 function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: () => void }) {
   return (
     <motion.div
@@ -133,21 +135,16 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
       exit={{ opacity: 0, y: 20, scale: 0.93 }}
       transition={{ type: 'spring', damping: 26, stiffness: 320 }}
       style={{ willChange: 'transform, opacity' }}
-      className="pointer-events-auto w-full rounded-[22px] overflow-hidden antialiased text-left
-        bg-white dark:bg-[#111113]
-        border border-zinc-200/80 dark:border-white/[0.07]
-        shadow-[0_20px_60px_-10px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.55)]"
+      className={`pointer-events-auto w-full rounded-[22px] overflow-hidden antialiased text-left ${SURFACE} ${BORDER} shadow-[0_20px_60px_-10px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.55)]`}
     >
-      {/* Accent bar */}
-      <div className="h-[3px] w-full shrink-0" style={{ background: GRAD }} />
+      <div className="h-[3px] w-full" style={{ background: GRAD }} />
 
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
         <div
-          className="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center text-[19px] leading-none"
-          style={{ background: 'linear-gradient(135deg, rgba(244,63,94,0.1), rgba(139,92,246,0.1))', border: '1px solid rgba(244,63,94,0.18)' }}
+          className="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center text-[20px] leading-none"
+          style={{ background: 'linear-gradient(135deg,rgba(244,63,94,.10),rgba(139,92,246,.10))', border: '1px solid rgba(244,63,94,.18)' }}
         >
-          🏠
+          🤖
         </div>
         <div className="flex-1 min-w-0 pr-7">
           <div className="flex items-center gap-2 flex-wrap">
@@ -156,45 +153,39 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
             </span>
             <span
               className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-widest rounded-md"
-              style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.2)' }}
+              style={{ background: 'rgba(244,63,94,.10)', color: '#f43f5e', border: '1px solid rgba(244,63,94,.20)' }}
             >
               New
             </span>
           </div>
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-1.5 leading-snug">
-            Offline mode, image optimisation & parallel data loading.
+            AI assistant rebuilt, intent detection &amp; demo chat added.
           </p>
         </div>
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
           className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer transition-colors"
-          style={{ background: 'rgba(0,0,0,0.04)' }}
+          style={{ background: 'rgba(0,0,0,.04)' }}
         >
           <IconX className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Stat strip */}
       <div className="grid grid-cols-3 gap-1.5 px-4 pb-3">
         {STATS.map(s => (
-          <div
-            key={s.label}
-            className="rounded-xl py-2 text-center"
-            style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)' }}
-          >
+          <div key={s.label} className="rounded-xl py-2 text-center" style={{ background: 'rgba(0,0,0,.03)', border: '1px solid rgba(0,0,0,.06)' }}>
             <p className="font-black text-[15px] leading-none">{s.value}</p>
             <p className="text-[9px] font-bold uppercase tracking-wider mt-1 text-zinc-400">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 px-4 pb-4">
         <button
           onClick={onDismiss}
           className="flex-1 h-9 text-[11.5px] font-bold text-zinc-500 dark:text-zinc-400 rounded-xl cursor-pointer transition-all active:scale-[0.97]"
-          style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }}
+          style={{ background: 'rgba(0,0,0,.04)', border: '1px solid rgba(0,0,0,.06)' }}
         >
           Later
         </button>
@@ -222,7 +213,6 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-xl"
       />
-
       <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
@@ -230,21 +220,17 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
           exit={{ opacity: 0, scale: 0.94, y: 20 }}
           transition={{ type: 'spring', damping: 28, stiffness: 340 }}
           style={{ willChange: 'transform, opacity' }}
-          className="pointer-events-auto w-full max-w-[480px] max-h-[88vh] flex flex-col rounded-[28px] overflow-hidden antialiased
-            bg-white dark:bg-[#111113]
-            border border-zinc-200/80 dark:border-white/[0.07]
-            shadow-[0_36px_80px_-16px_rgba(0,0,0,0.22)] dark:shadow-[0_36px_80px_-16px_rgba(0,0,0,0.7)]"
+          className={`pointer-events-auto w-full max-w-[480px] max-h-[88vh] flex flex-col rounded-[28px] overflow-hidden antialiased ${SURFACE} ${BORDER} shadow-[0_36px_80px_-16px_rgba(0,0,0,0.22)] dark:shadow-[0_36px_80px_-16px_rgba(0,0,0,0.7)]`}
         >
-          {/* Accent bar */}
           <div className="h-[3px] w-full shrink-0" style={{ background: GRAD }} />
 
           {/* Header */}
           <div className="flex items-start gap-4 px-6 pt-5 pb-4 shrink-0">
             <div
-              className="w-12 h-12 rounded-[16px] shrink-0 flex items-center justify-center text-[24px] leading-none"
-              style={{ background: 'linear-gradient(135deg, rgba(244,63,94,0.1), rgba(139,92,246,0.1))', border: '1px solid rgba(244,63,94,0.15)' }}
+              className="w-12 h-12 rounded-[16px] shrink-0 flex items-center justify-center text-[26px] leading-none"
+              style={{ background: 'linear-gradient(135deg,rgba(244,63,94,.10),rgba(139,92,246,.10))', border: '1px solid rgba(244,63,94,.15)' }}
             >
-              🏠
+              🤖
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2 flex-wrap">
@@ -253,7 +239,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                 </h2>
                 <span
                   className="px-2 py-0.5 text-[8.5px] font-black uppercase tracking-widest rounded-lg"
-                  style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.2)' }}
+                  style={{ background: 'rgba(244,63,94,.10)', color: '#f43f5e', border: '1px solid rgba(244,63,94,.20)' }}
                 >
                   {APP_CODENAME}
                 </span>
@@ -266,7 +252,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               aria-label="Close"
               className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer transition-colors"
-              style={{ background: 'rgba(0,0,0,0.04)' }}
+              style={{ background: 'rgba(0,0,0,.04)' }}
             >
               <IconX size={14} strokeWidth={2.5} />
             </button>
@@ -282,7 +268,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                   ${activeTab === t.id ? 'text-white' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'}`}
                 style={activeTab === t.id
                   ? { background: GRAD, boxShadow: '0 2px 10px rgba(244,63,94,0.25)' }
-                  : { background: 'rgba(0,0,0,0.04)' }}
+                  : { background: 'rgba(0,0,0,.04)' }}
               >
                 {t.label}
               </button>
@@ -323,10 +309,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Footer */}
-          <div
-            className="flex items-center gap-3 px-6 py-4 shrink-0"
-            style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
-          >
+          <div className="flex items-center gap-3 px-6 py-4 shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,.06)' }}>
             <div className="flex-1">
               <p className="text-[9.5px] font-black uppercase tracking-widest text-zinc-400">Release</p>
               <p className="text-[11.5px] font-bold text-zinc-600 dark:text-zinc-300 mt-0.5">
@@ -347,7 +330,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
+// ── Main export ────────────────────────────────────────────────────────────────
 export function UpdatePopup() {
   const [step, setStep] = useState<'hidden' | 'mini' | 'full'>('hidden');
 

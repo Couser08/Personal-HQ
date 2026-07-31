@@ -33,6 +33,19 @@ export interface GeminiHabitResult {
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /**
+ * Helper to detect if user prompt implies a multi-step workflow
+ */
+export function isMultiStepIntent(userPrompt: string): boolean {
+  const p = userPrompt.toLowerCase();
+  const keywords = ['and', 'also', 'subtask', 'subtasks', 'plan', '.md', 'file', 'habit', 'routine', 'checklist', 'breakdown', 'workflow', 'study for', 'roadmap', 'schedule'];
+  let matchCount = 0;
+  keywords.forEach(kw => {
+    if (p.includes(kw)) matchCount++;
+  });
+  return matchCount >= 2 || p.includes('and create') || p.includes('and make') || p.includes('and write') || p.includes('break into') || p.includes('subtasks');
+}
+
+/**
  * Validates Gemini API Key with a lightweight ping request.
  */
 export async function testGeminiApiKey(apiKey: string, model: string = DEFAULT_MODEL): Promise<{ success: boolean; message: string }> {
