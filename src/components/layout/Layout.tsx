@@ -4,6 +4,7 @@ import { Sidebar, MobileBottomNav } from './Sidebar';
 import { ToastContainer } from '../ui/Toast';
 import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
+import { DemoChatPopup } from '../ui/DemoChatPopup';
 import { BugFixBanner } from '../ui/BugFixBanner';
 import { MediaEntryModal } from '../ui/MediaEntryModal';
 import { TodoProjectModal } from '../ui/TodoProjectModal';
@@ -91,6 +92,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <ToastContainer />
       <AppTour />
       <UpdatePopup />
+      <DemoChatPopup />
       <BugFixBanner />
       <MediaEntryModal />
       <TodoProjectModal />
