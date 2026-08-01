@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconArrowRight, IconCalendarEvent, IconSparkles, IconRocket } from '@tabler/icons-react';
+import { IconX, IconArrowRight, IconCalendarEvent } from '@tabler/icons-react';
 
 // ── Version ────────────────────────────────────────────────────────────────────
 const APP_VERSION = '3.5.0';
