@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   todoCompletionAnimation: 'circle-fill-confetti',
   geminiApiKey: '',
   geminiModel: 'gemini-2.5-flash',
+  aiPersona: 'Professional',
 };
 
 export const sanitizeActiveModule = (module: string) => {

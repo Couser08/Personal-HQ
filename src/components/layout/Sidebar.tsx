@@ -3,16 +3,16 @@ import {
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
   IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight, IconLayoutGrid, IconFolder, IconPencil,
+  IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconFolder, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
-  IconArrowRight, IconTag, IconChartBar, IconBrush, IconX, IconPlus,
-  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh
+  IconTag, IconChartBar, IconBrush, IconPlus, IconX,
+  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { exportData, importData } from '../../utils/exportImport';
 import { useToastStore } from '../../store/useToastStore';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AppLogo } from '../ui/AppLogo';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -58,6 +58,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'pomodoro',  label: 'Pomodoro',         icon: IconClockPlay, desc: 'Focus timer & goals' },
       { id: 'study',     label: 'Study Tracker',    icon: IconBook,      desc: 'Session logs & streaks' },
+      { id: 'exam',      label: 'AI Exam Prep',     icon: IconBrain,     desc: 'Generate & take AI exams' },
       { id: 'budget',    label: 'Expense & Income', icon: IconWallet,    desc: 'Budget & spending' },
     ],
   },
@@ -100,71 +101,6 @@ const navItemStyle = (active: boolean): React.CSSProperties => ({
   willChange: 'transform',
 });
 
-// ── Category landing page ──────────────────────────────────────────────────────
-function CategoryPage({
-  group,
-  activeModule,
-  onNavigate,
-  onClose,
-}: {
-  group: typeof NAV_GROUPS[0];
-  activeModule: string;
-  onNavigate: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px', borderBottom: '1px solid var(--border-border)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 24, lineHeight: 1 }}>{group.emoji}</span>
-          <div>
-            <p style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>{group.label}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{group.desc}</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="Back to navigation"
-          style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'var(--bg-surface-hover, rgba(255,255,255,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}
-        >
-          <IconX size={14} />
-        </button>
-      </div>
-
-      {/* Module cards */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {group.items.map(item => {
-          const Icon = item.icon;
-          const active = activeModule === item.id;
-          return (
-            <motion.button
-              key={item.id}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => { onNavigate(item.id); onClose(); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-                borderRadius: 14, border: `1px solid ${active ? group.color + '40' : 'var(--border-border)'}`,
-                background: active ? group.color + '12' : 'var(--bg-surface-alt, rgba(255,255,255,0.03))',
-                textAlign: 'left', width: '100%', cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
-              <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: group.color + '18', border: `1px solid ${group.color}28`, flexShrink: 0 }}>
-                <Icon size={17} style={{ color: group.color }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: 700, fontSize: 13, color: active ? group.color : 'var(--text-primary)', lineHeight: 1.2 }}>{item.label}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.desc}</p>
-              </div>
-              <IconArrowRight size={13} style={{ color: active ? group.color : 'var(--text-muted)', flexShrink: 0 }} />
-            </motion.button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ── Desktop Sidebar ────────────────────────────────────────────────────────────
 export const Sidebar = () => {
   const { activeModule, setActiveModule, theme, setTheme, showConfirm, isSyncing, forceSync } = useAppStore(useShallow(state => ({
@@ -183,13 +119,35 @@ export const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(() =>
     localStorage.getItem('sidebar_collapsed') === 'true'
   );
-  const [activeCategoryPage, setActiveCategoryPage] = useState<string | null>(null);
+
+  // Track expanded categories (default all expanded for quick access)
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    NAV_GROUPS.forEach(g => {
+      initial[g.id] = true;
+    });
+    return initial;
+  });
+
+  // Ensure category containing active module is expanded
+  useEffect(() => {
+    const activeGroup = NAV_GROUPS.find(g => g.items.some(i => i.id === activeModule));
+    if (activeGroup) {
+      setExpandedCategories(prev => ({ ...prev, [activeGroup.id]: true }));
+    }
+  }, [activeModule]);
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
+    }));
+  };
 
   const toggleCollapse = () => {
     const next = !isCollapsed;
     setIsCollapsed(next);
     localStorage.setItem('sidebar_collapsed', String(next));
-    if (next) setActiveCategoryPage(null);
   };
 
   const handleLogout = () => {
@@ -224,8 +182,7 @@ export const Sidebar = () => {
   const userName = user?.user_metadata?.full_name
     || (userEmail !== 'User' ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1) : 'User');
 
-  const openGroup = NAV_GROUPS.find(g => g.id === activeCategoryPage);
-  const sidebarWidth = isCollapsed ? 72 : activeCategoryPage ? 300 : 250;
+  const sidebarWidth = isCollapsed ? 72 : 250;
 
   return (
     <aside
@@ -275,30 +232,6 @@ export const Sidebar = () => {
         )}
       </div>
 
-      {/* ── Category landing page overlay ── */}
-      <AnimatePresence>
-        {openGroup && !isCollapsed && (
-          <motion.div
-            key={openGroup.id}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -12 }}
-            transition={{ duration: 0.16 }}
-            style={{
-              position: 'absolute', top: 64, left: 0, right: 0, bottom: 0,
-              background: 'var(--bg-surface)', zIndex: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            }}
-          >
-            <CategoryPage
-              group={openGroup}
-              activeModule={activeModule}
-              onNavigate={setActiveModule}
-              onClose={() => setActiveCategoryPage(null)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* ── Nav ── */}
       <nav
         style={{ flex: 1, padding: isCollapsed ? '10px 10px' : '10px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}
@@ -307,11 +240,11 @@ export const Sidebar = () => {
         <motion.button
           id="tour-dashboard"
           whileTap={{ scale: 0.97 }}
-          onClick={() => { setActiveModule('dashboard'); setActiveCategoryPage(null); }}
+          onClick={() => setActiveModule('dashboard')}
           title={isCollapsed ? 'Home' : undefined}
-          style={{ ...navItemStyle(activeModule === 'dashboard' && !activeCategoryPage), justifyContent: isCollapsed ? 'center' : 'flex-start' }}
+          style={{ ...navItemStyle(activeModule === 'dashboard'), justifyContent: isCollapsed ? 'center' : 'flex-start' }}
         >
-          {activeModule === 'dashboard' && !activeCategoryPage && (
+          {activeModule === 'dashboard' && (
             <motion.div
               layoutId="sidebar-active-indicator"
               style={{ position: 'absolute', inset: 0, background: 'var(--bg-surface-hover, rgba(255,255,255,0.06))', borderRadius: 10, zIndex: 0, pointerEvents: 'none' }}
@@ -330,15 +263,14 @@ export const Sidebar = () => {
         )}
         {isCollapsed && <div style={{ height: 8 }} />}
 
-        {/* Category group rows */}
+        {/* Category group rows with expandable down arrows */}
         {NAV_GROUPS.map(group => {
           const groupActive = group.items.some(i => i.id === activeModule);
-          const isOpen = activeCategoryPage === group.id;
+          const isExpanded = !!expandedCategories[group.id];
 
           if (isCollapsed) {
-            // Collapsed: show one category icon per group, clicking expands + opens category
+            // Collapsed: show one category icon per group, clicking expands sidebar + opens group
             const CatIcon = group.icon;
-            const groupActive = group.items.some(i => i.id === activeModule);
             return (
               <motion.button
                 key={group.id}
@@ -347,7 +279,7 @@ export const Sidebar = () => {
                 onClick={() => {
                   setIsCollapsed(false);
                   localStorage.setItem('sidebar_collapsed', 'false');
-                  setActiveCategoryPage(group.id);
+                  setExpandedCategories(prev => ({ ...prev, [group.id]: true }));
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -366,26 +298,105 @@ export const Sidebar = () => {
           }
 
           return (
-            <button
-              key={group.id}
-              onClick={() => setActiveCategoryPage(isOpen ? null : group.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: isOpen ? 'var(--bg-surface-hover, rgba(255,255,255,0.06))' : 'transparent',
-                color: isOpen ? 'var(--text-primary)' : groupActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: isOpen || groupActive ? 600 : 500, fontSize: 13,
-                textAlign: 'left', width: '100%', transition: 'all 0.15s',
-              }}
-            >
-              <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{group.emoji}</span>
-              <span style={{ flex: 1, whiteSpace: 'nowrap' }}>{group.label}</span>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>{group.items.length}</span>
-              <IconChevronRight
-                size={12}
-                style={{ color: 'var(--text-muted)', flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}
-              />
-            </button>
+            <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Category header with down arrow toggle */}
+              <button
+                onClick={() => toggleCategory(group.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: groupActive ? 'var(--bg-surface-hover, rgba(255,255,255,0.05))' : 'transparent',
+                  color: groupActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: 600, fontSize: 13,
+                  textAlign: 'left', width: '100%', transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{group.emoji}</span>
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{group.label}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, padding: '1px 6px', borderRadius: 10, background: 'var(--bg-surface-alt, rgba(255,255,255,0.04))' }}>
+                  {group.items.length}
+                </span>
+                <IconChevronDown
+                  size={14}
+                  style={{
+                    color: 'var(--text-muted)',
+                    flexShrink: 0,
+                    transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                />
+              </button>
+
+              {/* Inline expandable sub-list of pages */}
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        paddingLeft: 14,
+                        margin: '2px 0 6px 14px',
+                        borderLeft: '1.5px solid var(--border-border)',
+                      }}
+                    >
+                      {group.items.map(item => {
+                        const active = activeModule === item.id;
+                        const ItemIcon = item.icon;
+                        return (
+                          <motion.button
+                            key={item.id}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setActiveModule(item.id)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '7px 10px',
+                              borderRadius: 8,
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: active ? 'var(--bg-surface-hover, rgba(255,255,255,0.08))' : 'transparent',
+                              color: active ? 'var(--color-primary)' : 'var(--text-secondary)',
+                              fontWeight: active ? 600 : 400,
+                              fontSize: 12.5,
+                              textAlign: 'left',
+                              width: '100%',
+                              transition: 'all 0.15s',
+                              position: 'relative',
+                            }}
+                          >
+                            {active && (
+                              <motion.div
+                                layoutId="sidebar-subitem-active"
+                                style={{
+                                  position: 'absolute',
+                                  left: -15.5,
+                                  width: 3,
+                                  height: 16,
+                                  borderRadius: 2,
+                                  background: 'var(--color-primary)',
+                                }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                              />
+                            )}
+                            <ItemIcon size={16} style={{ flexShrink: 0, color: active ? 'var(--color-primary)' : 'var(--text-muted)' }} />
+                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           );
         })}
 
@@ -398,13 +409,13 @@ export const Sidebar = () => {
           { id: 'profile',  label: 'Profile',  icon: IconUser },
           ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: IconShieldLock }] : []),
         ].map(({ id, label, icon: Icon }) => {
-          const active = activeModule === id && !activeCategoryPage;
+          const active = activeModule === id;
           return (
             <motion.button
               key={id}
               id={`tour-${id}`}
               whileTap={{ scale: 0.97 }}
-              onClick={() => { setActiveModule(id); setActiveCategoryPage(null); }}
+              onClick={() => setActiveModule(id)}
               title={isCollapsed ? label : undefined}
               style={{ ...navItemStyle(active), justifyContent: isCollapsed ? 'center' : 'flex-start' }}
             >
@@ -420,8 +431,6 @@ export const Sidebar = () => {
             </motion.button>
           );
         })}
-
-        {/* Collapsed: NO individual item list — categories above are enough */}
       </nav>
 
       {/* ── Footer ── */}

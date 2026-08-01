@@ -4,7 +4,6 @@ import { Sidebar, MobileBottomNav } from './Sidebar';
 import { ToastContainer } from '../ui/Toast';
 import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
-import { DemoChatPopup } from '../ui/DemoChatPopup';
 import { BugFixBanner } from '../ui/BugFixBanner';
 import { MediaEntryModal } from '../ui/MediaEntryModal';
 import { TodoProjectModal } from '../ui/TodoProjectModal';
@@ -15,7 +14,7 @@ import { CommandPalette } from '../ui/CommandPalette';
 import { TaskFocusIsland } from '../ui/TaskFocusIsland';
 import { WavyEffectOverlay } from '../ui/WavyEffectOverlay';
 import { AiFloatingButton } from '../ui/AiFloatingButton';
-import { AiAssistantModal } from '../ui/AiAssistantModal';
+import { AiAssistantModal } from '../ui/ai-assistant/AiAssistantModal';
 import { useAppStore } from '../../store/useAppStore';
 
 interface LayoutProps {
@@ -92,7 +91,6 @@ export const Layout = ({ children }: LayoutProps) => {
       <ToastContainer />
       <AppTour />
       <UpdatePopup />
-      <DemoChatPopup />
       <BugFixBanner />
       <MediaEntryModal />
       <TodoProjectModal />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type AccentColor } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -70,6 +70,10 @@ export default function SettingsModule() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testStatus, setTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  useEffect(() => {
+    setApiKeyInput(settings.geminiApiKey || '');
+  }, [settings.geminiApiKey]);
 
   const handleSaveApiKey = (val: string) => {
     setApiKeyInput(val);
@@ -519,7 +523,7 @@ export default function SettingsModule() {
               </motion.div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/40">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/40">
               <div>
                 <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Gemini Model</p>
                 <p className="text-[12px] text-zinc-500">Select model generation engine</p>
@@ -532,6 +536,24 @@ export default function SettingsModule() {
                     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fastest & Recommended)' },
                     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Lightweight)' },
                     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Deep Reasoning)' },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/40">
+              <div>
+                <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">AI Persona & Tone</p>
+                <p className="text-[12px] text-zinc-500">Configure how the AI responds</p>
+              </div>
+              <div className="w-full sm:w-64">
+                <CustomSelect
+                  value={settings.aiPersona || 'Professional'}
+                  onChange={(val) => updateSettings({ aiPersona: val as any })}
+                  options={[
+                    { value: 'Professional', label: 'Professional (Default)' },
+                    { value: 'Friendly/Coaching', label: 'Friendly & Coaching' },
+                    { value: 'Strict', label: 'Strict & Direct' },
                   ]}
                 />
               </div>

@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconX, IconArrowRight } from '@tabler/icons-react';
+import { IconX, IconArrowRight, IconCalendarEvent, IconSparkles, IconRocket } from '@tabler/icons-react';
 
 // ── Version ────────────────────────────────────────────────────────────────────
-const APP_VERSION = '3.3.0';
-const APP_CODENAME = 'Intelligent';
+const APP_VERSION = '3.5.0';
+const APP_CODENAME = 'Ultimate Edition';
 const STORAGE_KEY = 'phq_last_seen_version';
 
 // ── Changelog ──────────────────────────────────────────────────────────────────
-type TabId = 'whats-new' | 'improvements' | 'fixes';
+type TabId = 'whats-new' | 'coming-soon' | 'improvements' | 'fixes';
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'whats-new',    label: "What's New"   },
+const TABS: { id: TabId; label: string; badge?: string }[] = [
+  { id: 'whats-new',    label: "What's New" },
+  { id: 'coming-soon',   label: "🚀 Coming Soon", badge: 'NEW' },
   { id: 'improvements', label: 'Improvements' },
-  { id: 'fixes',        label: 'Fixes'        },
+  { id: 'fixes',        label: 'Fixes' },
 ];
 
 interface ChangeItem {
@@ -21,93 +22,110 @@ interface ChangeItem {
   color: string;
   title: string;
   desc: string;
+  tag?: string;
 }
 
 const CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
   'whats-new': {
-    headline: 'AI Assistant fully rebuilt — smarter, faster, and context-aware.',
+    headline: 'The biggest monthly update yet — full offline resilience, hybrid storage & AI studio!',
     items: [
       {
-        icon: '🤖',
+        icon: '🚀',
         color: '#f43f5e',
-        title: 'AI Assistant Modal — Full Rebuild',
-        desc: 'Completely rewritten AiAssistantModal with a polished chat UI, streaming responses, code block rendering, and multi-turn memory within a session.',
+        title: 'Global AI Studio & Autonomous Assistant',
+        desc: 'Rebuilt AI assistant with streaming token responses, code block syntax highlighting, multi-turn memory, and context-aware action triggers across all modules.',
+        tag: 'Major',
       },
       {
-        icon: '🧠',
+        icon: '🔌',
         color: '#8B5CF6',
-        title: 'Multi-Step Intent Detection',
-        desc: 'New isMultiStepIntent() in gemini.ts detects complex requests like "create a study plan and add subtasks" — the AI automatically breaks them into structured steps.',
+        title: 'Offline-First Hybrid Storage Engine',
+        desc: 'Instant local data loading across all 18 modules with background Supabase sync. No more blank screens on slow network connections.',
+        tag: 'Core',
       },
       {
-        icon: '🎯',
+        icon: '🗂️',
         color: '#3B82F6',
-        title: 'Context-Aware Floating Button',
-        desc: 'AiFloatingButton now adapts its label and icon based on the active module — opens the AI pre-seeded with a relevant prompt for the current screen.',
+        title: 'Categorised Sidebar & Quick Navigation',
+        desc: '18 modules grouped into 4 clear sections (Create & Write, Organise, Track, Tools) with interactive section landing cards & smart collapsed mode.',
       },
       {
-        icon: '💬',
+        icon: '🖼️',
         color: '#059669',
-        title: 'Demo Auto-Play Chat',
-        desc: 'A scripted 8-message conversation auto-plays on first visit, showcasing ⌘K quick-add, offline mode, and the categorised sidebar — bottom-left corner.',
+        title: 'Client-Side Image Optimiser',
+        desc: 'Automatic WebP image compression before upload for notebooks, cover photos & media attachments — faster load times and minimal storage usage.',
+      },
+    ],
+  },
+  'coming-soon': {
+    headline: 'Arriving End of August 2026: Interactive Calendar & Dynamic Vision Board 2.0!',
+    items: [
+      {
+        icon: '🗓️',
+        color: '#EC4899',
+        title: 'Phase 1: Unified Master Calendar (Aug 15 - Aug 20)',
+        desc: 'Consolidate Task deadlines, Habit streaks, Pomodoro focus blocks & Study sessions into one master interactive calendar timeline with day/week/month views.',
+        tag: 'Aug 15',
+      },
+      {
+        icon: '🎨',
+        color: '#8B5CF6',
+        title: 'Phase 2: Vision Board & Mood Canvas (Aug 21 - Aug 26)',
+        desc: 'Drag-and-drop visual vision canvas with goal cards, inspiration boards, media pins, aesthetic stickers & daily mood tracker widgets.',
+        tag: 'Aug 22',
+      },
+      {
+        icon: '🤖',
+        color: '#F59E0B',
+        title: 'Phase 3: AI Auto-Scheduler & Heatmaps (Aug 27 - Aug 31)',
+        desc: 'AI automatically schedules your optimal deep-work sessions around your habits + yearly productivity consistency heatmaps & habit streaks!',
+        tag: 'Aug 31',
       },
     ],
   },
   improvements: {
-    headline: 'Gemini layer hardened, DB service updated, floating button smarter.',
+    headline: 'Supabase REST cache cleared on sync, db.ts refactored & zero-lag UI.',
     items: [
       {
         icon: '⚡',
         color: '#F59E0B',
-        title: 'Gemini Streaming + Error Recovery',
-        desc: 'API calls now stream tokens as they arrive. On rate-limit or network error the modal shows a graceful retry prompt rather than a blank screen.',
+        title: 'Parallel Data Hydration',
+        desc: 'Load all 18 modules in parallel using Promise.allSettled — one slow network query will never block the rest of the application.',
       },
       {
         icon: '📦',
         color: '#10B981',
-        title: 'db.ts Service Layer Refactored',
-        desc: 'All Supabase CRUD helpers reorganised — consistent error shapes, automatic retry on 503, and column-scoped selects on every list endpoint.',
+        title: 'db.ts Service Layer Refactor',
+        desc: 'Uniform error handling, automatic 503 retry & column-scoped queries across all database services.',
       },
       {
-        icon: '🎨',
-        color: '#EC4899',
-        title: 'AI Modal Code Block Rendering',
-        desc: 'Markdown code blocks in AI responses are now syntax-highlighted with a copy button. Long responses are scrollable inside the bubble without clipping.',
-      },
-      {
-        icon: '🔌',
+        icon: '👤',
         color: '#6366F1',
-        title: 'Offline → AI Graceful Degradation',
-        desc: 'When offline, the AI floating button is dimmed and shows a tooltip — the modal won\'t open if no API key is configured, preventing confusing blank states.',
+        title: 'Live Account & Sync Diagnostics',
+        desc: 'Expanded Profile & Admin dashboards featuring live sync health indicators and offline isolation debugging status.',
       },
     ],
   },
   fixes: {
-    headline: 'Modal layout, button placement, and build correctness fixes.',
+    headline: 'Zero build warnings, mobile safe-area fixes, and keyboard accessibility.',
     items: [
       {
-        icon: '🛠',
+        icon: '🛠️',
         color: '#f43f5e',
-        title: 'AI Modal Width on Mobile',
-        desc: 'Modal was overflowing on screens <375 px. Now uses max-w-[calc(100vw-2rem)] with safe-area padding so it never clips on small phones.',
+        title: 'Clean Build Verification',
+        desc: 'Removed all unused TS6133 declarations across Sidebar, CommandPalette & Modals for a 100% clean production build.',
       },
       {
-        icon: '🎨',
-        color: '#8B5CF6',
-        title: 'Floating Button z-index Conflict',
-        desc: 'AiFloatingButton was appearing below the mobile bottom nav on iOS. Fixed by raising z-index to z-[9996] and adding bottom padding for safe-area-inset.',
+        icon: '📱',
+        color: '#3B82F6',
+        title: 'Mobile Safe-Area Padding',
+        desc: 'Resolved floating button z-index and modal overflow issues on iOS and smaller screens (<375px).',
       },
       {
         icon: '⌨️',
-        color: '#3B82F6',
-        title: 'AI Modal Keyboard Accessibility',
-        desc: 'Submit on Cmd+Enter (or Ctrl+Enter), dismiss on Escape. Tab order is correct: input → send → close. Focus restored to the floating button on close.',
-      },
-      {
-        icon: '💾',
         color: '#059669',
-        title: 'Demo Chat Session Guard',
-        desc: 'DemoChatPopup now uses sessionStorage so it shows once per browser session — not on every hot-reload during development.',
+        title: 'Keyboard Accessibility & Focus Trap',
+        desc: 'Cmd+Enter submit, Escape dismiss, and proper tab order across all modal dialogs.',
       },
     ],
   },
@@ -115,9 +133,9 @@ const CONTENT: Record<TabId, { headline: string; items: ChangeItem[] }> = {
 
 // ── Stats ──────────────────────────────────────────────────────────────────────
 const STATS = [
-  { value: '🤖', label: 'AI Chat'   },
-  { value: '🧠', label: 'Intent AI' },
-  { value: '💬', label: 'Demo'      },
+  { value: 'v3.5', label: 'Big Update' },
+  { value: '🔌',   label: 'Offline-1st' },
+  { value: '📅',   label: 'Aug Roadmap' },
 ];
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -144,7 +162,7 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
           className="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center text-[20px] leading-none"
           style={{ background: 'linear-gradient(135deg,rgba(244,63,94,.10),rgba(139,92,246,.10))', border: '1px solid rgba(244,63,94,.18)' }}
         >
-          🤖
+          🚀
         </div>
         <div className="flex-1 min-w-0 pr-7">
           <div className="flex items-center gap-2 flex-wrap">
@@ -155,11 +173,11 @@ function MiniCard({ onExpand, onDismiss }: { onExpand: () => void; onDismiss: ()
               className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-widest rounded-md"
               style={{ background: 'rgba(244,63,94,.10)', color: '#f43f5e', border: '1px solid rgba(244,63,94,.20)' }}
             >
-              New
+              BIGGEST UPDATE
             </span>
           </div>
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-1.5 leading-snug">
-            AI assistant rebuilt, intent detection &amp; demo chat added.
+            Offline engine, AI studio &amp; Calendar/Vision Board teaser!
           </p>
         </div>
         <button
@@ -220,17 +238,17 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
           exit={{ opacity: 0, scale: 0.94, y: 20 }}
           transition={{ type: 'spring', damping: 28, stiffness: 340 }}
           style={{ willChange: 'transform, opacity' }}
-          className={`pointer-events-auto w-full max-w-[480px] max-h-[88vh] flex flex-col rounded-[28px] overflow-hidden antialiased ${SURFACE} ${BORDER} shadow-[0_36px_80px_-16px_rgba(0,0,0,0.22)] dark:shadow-[0_36px_80px_-16px_rgba(0,0,0,0.7)]`}
+          className={`pointer-events-auto w-full max-w-[500px] max-h-[90vh] flex flex-col rounded-[28px] overflow-hidden antialiased ${SURFACE} ${BORDER} shadow-[0_36px_80px_-16px_rgba(0,0,0,0.22)] dark:shadow-[0_36px_80px_-16px_rgba(0,0,0,0.7)]`}
         >
-          <div className="h-[3px] w-full shrink-0" style={{ background: GRAD }} />
+          <div className="h-[3.5px] w-full shrink-0" style={{ background: GRAD }} />
 
           {/* Header */}
           <div className="flex items-start gap-4 px-6 pt-5 pb-4 shrink-0">
             <div
               className="w-12 h-12 rounded-[16px] shrink-0 flex items-center justify-center text-[26px] leading-none"
-              style={{ background: 'linear-gradient(135deg,rgba(244,63,94,.10),rgba(139,92,246,.10))', border: '1px solid rgba(244,63,94,.15)' }}
+              style={{ background: 'linear-gradient(135deg,rgba(244,63,94,.12),rgba(139,92,246,.12))', border: '1px solid rgba(244,63,94,.20)' }}
             >
-              🤖
+              {activeTab === 'coming-soon' ? '📅' : '🚀'}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2 flex-wrap">
@@ -259,18 +277,23 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Tabs */}
-          <div className="flex px-6 gap-1 shrink-0">
+          <div className="flex px-6 gap-1.5 shrink-0 overflow-x-auto custom-scrollbar pb-1">
             {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className={`flex-1 py-2 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer
+                className={`px-3 py-2 text-[11px] font-extrabold rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5
                   ${activeTab === t.id ? 'text-white' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'}`}
                 style={activeTab === t.id
                   ? { background: GRAD, boxShadow: '0 2px 10px rgba(244,63,94,0.25)' }
                   : { background: 'rgba(0,0,0,.04)' }}
               >
-                {t.label}
+                <span>{t.label}</span>
+                {t.badge && activeTab !== t.id && (
+                  <span className="text-[8px] px-1.5 py-0.2 rounded-full font-black bg-rose-500/20 text-rose-500 border border-rose-500/30">
+                    {t.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -286,10 +309,24 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                 transition={{ duration: 0.15 }}
                 className="flex flex-col gap-3"
               >
+                {/* Special Banner for Coming Soon Tab */}
+                {activeTab === 'coming-soon' && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/10 via-purple-500/10 to-blue-500/10 border border-rose-500/20 mb-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <IconCalendarEvent className="w-5 h-5 text-rose-500" />
+                      <span className="text-[12px] font-black uppercase tracking-wider text-rose-500">Coming End of August 2026</span>
+                    </div>
+                    <h3 className="text-[14px] font-bold text-zinc-900 dark:text-zinc-100">Calendar &amp; Vision Board 2.0 Roadmap</h3>
+                    <p className="text-[11.5px] text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                      We're bringing a unified master calendar, mood canvas, and drag-and-drop vision board directly into Personal HQ! Check out our release timeline below.
+                    </p>
+                  </div>
+                )}
+
                 {tab.items.map(item => (
                   <div
                     key={item.title}
-                    className="flex gap-3.5 p-4 rounded-2xl"
+                    className="flex gap-3.5 p-4 rounded-2xl relative overflow-hidden"
                     style={{ background: `${item.color}08`, border: `1px solid ${item.color}1a` }}
                   >
                     <div
@@ -299,7 +336,17 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[13px] text-zinc-900 dark:text-zinc-50 leading-tight">{item.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-[13px] text-zinc-900 dark:text-zinc-50 leading-tight">{item.title}</p>
+                        {item.tag && (
+                          <span
+                            className="px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider rounded-md ml-auto shrink-0"
+                            style={{ background: `${item.color}20`, color: item.color, border: `1px solid ${item.color}35` }}
+                          >
+                            {item.tag}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400 font-medium mt-1.5 leading-relaxed">{item.desc}</p>
                     </div>
                   </div>
@@ -313,7 +360,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
             <div className="flex-1">
               <p className="text-[9.5px] font-black uppercase tracking-widest text-zinc-400">Release</p>
               <p className="text-[11.5px] font-bold text-zinc-600 dark:text-zinc-300 mt-0.5">
-                v{APP_VERSION} · {APP_CODENAME} · July 2026
+                v{APP_VERSION} · {APP_CODENAME} · August 2026
               </p>
             </div>
             <button
@@ -321,7 +368,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
               className="flex items-center gap-2 px-5 py-2.5 text-[12px] font-bold text-white rounded-2xl cursor-pointer transition-all active:scale-[0.97]"
               style={{ background: GRAD, boxShadow: GRAD_SHADOW }}
             >
-              Let's go <IconArrowRight size={13} />
+              Explore Now <IconArrowRight size={13} />
             </button>
           </div>
         </motion.div>

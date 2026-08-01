@@ -12,6 +12,7 @@ const ProjectsModule = lazy(() => import('./modules/projects/ProjectsModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
 const BudgetModule = lazy(() => import('./modules/budget/BudgetModule'));
 const StudyModule = lazy(() => import('./modules/study/StudyModule'));
+const StudyExamModule = lazy(() => import('./modules/exam/StudyExamModule'));
 const MediaModule = lazy(() => import('./modules/media/MediaModule'));
 const CodeSnippetModule = lazy(() => import('./modules/snippets/CodeSnippetModule'));
 const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
@@ -211,6 +212,7 @@ function AppContent() {
       case 'utilities': return <UtilitiesModule />;
       case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
+      case 'exam': return <StudyExamModule />;
       case 'media': return <MediaModule />;
       case 'snippets': return <CodeSnippetModule />;
       case 'til': return <TilModule />;

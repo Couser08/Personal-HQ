@@ -84,11 +84,16 @@ export const createTodoSlice: StateCreator<
   addTodoTask: async (task) => {
     if (shouldThrottle('addTodoTask')) return;
     const uid = useAuthStore.getState().user?.id;
-    if (!uid) return;
     const previous = get().todoTasks;
     const next = [task, ...previous];
     localStorage.setItem('phq_todo_tasks', JSON.stringify(next));
     set({ todoTasks: next });
+
+    if (!uid) {
+      useToastStore.getState().addToast('Success', 'Task saved locally', 'success');
+      return;
+    }
+
     try {
       const savedInDb = await todoTaskService.create(uid, task);
       const location = savedInDb ? 'Database' : 'Local Storage';

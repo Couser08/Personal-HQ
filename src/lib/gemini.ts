@@ -1,3 +1,5 @@
+import type { AiSuggestion } from '../store/types';
+
 export interface GeminiSubTask {
   title: string;
 }
@@ -25,8 +27,13 @@ export interface GeminiJournalResult {
 }
 
 export interface GeminiHabitResult {
+  _thinking?: string;
   name: string;
+  description?: string;
   category: 'health' | 'learning' | 'productivity' | 'mindfulness';
+  frequencyType?: 'daily' | 'weekly_days' | 'weekly_count';
+  frequencyDays?: number[];
+  frequencyCount?: number;
   targetDaysPerWeek: number;
 }
 
@@ -543,5 +550,156 @@ Respond ONLY with valid JSON in this exact structure:
     habitName: parsed.habitName || 'Daily Focus Habit',
     habitCategory: ['health', 'learning', 'productivity', 'mindfulness'].includes(parsed.habitCategory) ? parsed.habitCategory : 'learning',
     targetDaysPerWeek: parsed.targetDaysPerWeek || 5
+  };
+}
+
+/**
+ * Generates intelligent suggestions based on current app state (tasks, habits, journals)
+ */
+export function generateRealAppContextSuggestions(
+  todoTasks: any[] = [],
+  habits: any[] = [],
+  _journals: any[] = []
+): AiSuggestion[] {
+  const suggestions: AiSuggestion[] = [];
+  const pendingTasks = todoTasks.filter(t => !t.completed && !t.deleted);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dueHabits = habits.filter(h => !h.completedDates?.includes(todayStr));
+
+  if (pendingTasks.length > 0) {
+    const topTask = pendingTasks[0];
+    suggestions.push({
+      id: 'sug_task_breakdown',
+      title: `Break down "${topTask.title}"`,
+      description: `Split into actionable sub-steps`,
+      contextTag: 'Current Tasks',
+      reason: `You have ${pendingTasks.length} pending task(s)`,
+      actionLabel: 'Break into subtasks',
+      actionType: 'prioritize',
+      targetData: topTask
+    });
+  }
+
+  if (dueHabits.length > 0) {
+    suggestions.push({
+      id: 'sug_habit_check',
+      title: `Track ${dueHabits.length} pending habits`,
+      description: 'Keep your streak alive today',
+      contextTag: 'Goal Progress',
+      reason: `${dueHabits.length} habit(s) awaiting completion today`,
+      actionLabel: 'Focus on habits',
+      actionType: 'schedule'
+    });
+  }
+
+  suggestions.push({
+    id: 'sug_daily_plan',
+    title: 'Create a Structured Daily Plan',
+    description: 'Organize tasks, study goals & habits into a workflow',
+    contextTag: 'Brain Dump',
+    reason: 'Start your session with full clarity',
+    actionLabel: 'Plan my day',
+    actionType: 'create_plan'
+  });
+
+  return suggestions;
+}
+
+/**
+ * Analyzes and classifies user prompt intent using Gemini API or smart heuristic classification
+ */
+export async function analyzeAndClassifyUserPrompt(
+  apiKey: string,
+  userPrompt: string,
+  model: string = DEFAULT_MODEL,
+  _persona: string = 'Professional'
+): Promise<{
+  intent: 'ASK_CLARIFICATION' | 'CREATE_TODO_TASK' | 'BREAKDOWN_TASK' | 'CREATE_MARKDOWN_DOC' | 'CREATE_HABIT_ROUTINE' | 'MULTI_STEP_GOAL' | 'GENERAL_CHAT';
+  replyText?: string;
+  clarificationFields?: any[];
+  taskData?: GeminiTaskResult;
+  targetTaskTitle?: string;
+  markdownData?: GeminiMarkdownResult;
+  habitData?: GeminiHabitResult;
+  multiStepPlan?: any;
+}> {
+  const p = userPrompt.toLowerCase().trim();
+
+  // Multi-step workflows
+  if (isMultiStepIntent(userPrompt)) {
+    try {
+      const plan = await generateAiMultiStepPlan(apiKey, userPrompt, '', model);
+      return {
+        intent: 'MULTI_STEP_GOAL',
+        replyText: `Multi-step plan for **"${plan.taskTitle}"** created!`,
+        multiStepPlan: plan
+      };
+    } catch (e) {
+      console.warn('Multi-step generation failed, falling back to general classifier:', e);
+    }
+  }
+
+  // Breakdown task
+  if (p.includes('break down') || p.includes('break task') || p.includes('subtasks')) {
+    try {
+      const taskRes = await generateAiTaskWithSubtasks(apiKey, userPrompt, model);
+      return {
+        intent: 'BREAKDOWN_TASK',
+        targetTaskTitle: taskRes.title,
+        taskData: taskRes,
+        replyText: `Here is the breakdown for **"${taskRes.title}"**`
+      };
+    } catch (e) {
+      return { intent: 'BREAKDOWN_TASK' };
+    }
+  }
+
+  // Task creation
+  if (p.startsWith('add task') || p.startsWith('create task') || p.includes('todo') || p.includes('remind me to') || p.includes('buy') || p.includes('finish')) {
+    try {
+      const taskRes = await generateAiTaskWithSubtasks(apiKey, userPrompt, model);
+      return {
+        intent: 'CREATE_TODO_TASK',
+        taskData: taskRes,
+        replyText: `Task **"${taskRes.title}"** has been added to your To-Do list.`
+      };
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  // Habit creation
+  if (p.includes('habit') || p.includes('routine') || p.includes('every day') || p.includes('daily')) {
+    try {
+      const habitRes = await generateAiHabit(apiKey, userPrompt, model);
+      return {
+        intent: 'CREATE_HABIT_ROUTINE',
+        habitData: habitRes,
+        replyText: `Habit **"${habitRes.name}"** created successfully.`
+      };
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  // Markdown document creation
+  if (p.includes('markdown') || p.includes('notes') || p.includes('document') || p.includes('summary') || p.includes('write')) {
+    try {
+      const mdRes = await generateAiMarkdownDoc(apiKey, userPrompt, model);
+      return {
+        intent: 'CREATE_MARKDOWN_DOC',
+        markdownData: mdRes,
+        replyText: `Markdown doc **"${mdRes.title}"** is ready.`
+      };
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  // General response
+  const generalReply = await generateAiGeneralResponse(apiKey, userPrompt, model);
+  return {
+    intent: 'GENERAL_CHAT',
+    replyText: generalReply
   };
 }

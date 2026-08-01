@@ -413,6 +413,7 @@ export interface AppSettings {
   todoCompletionAnimation?: string;
   geminiApiKey?: string;
   geminiModel?: string;
+  aiPersona?: 'Professional' | 'Friendly/Coaching' | 'Strict';
 }
 
 export interface AiChatMessage {
@@ -531,8 +532,75 @@ export interface Book {
   createdAt: string;
 }
 
+// ─── Study Content & Exam Generator ──────────────────────────────────────────
+
+export interface StudyUnit {
+  id: string;
+  title: string;
+  topics: {
+    id: string;
+    title: string;
+    keyPoints: string[];
+  }[];
+}
+
+export interface StudyMaterial {
+  id: string;
+  title: string;
+  rawContent: string;
+  structuredData: StudyUnit[];
+  createdAt: string;
+}
+
+export interface ExamQuestion {
+  id: string;
+  type: 'mcq' | 'subjective';
+  unitId: string;
+  marks: number;
+  questionText: string;
+  options?: string[]; // Only for mcq
+  correctAnswer: string; // The correct option for MCQ, or key concepts for subjective
+}
+
+export interface Exam {
+  id: string;
+  materialId: string;
+  title: string;
+  totalMarks: number;
+  specPrompt: string;
+  questions: ExamQuestion[];
+  createdAt: string;
+}
+
+export interface ExamGradingFeedback {
+  questionId: string;
+  marksGiven: number;
+  isCorrect: boolean;
+  missingPoints: string[];
+  wrongPoints: string[];
+  explanation: string;
+}
+
+export interface ExamAttempt {
+  id: string;
+  examId: string;
+  answers: Record<string, string>;
+  totalScore: number;
+  feedback: ExamGradingFeedback[];
+  weaknessSummary: string;
+  createdAt: string;
+}
+
+export interface ExamGradingReport {
+  totalScore: number;
+  feedback: ExamGradingFeedback[];
+  weaknessSummary: string;
+}
+
+
 export interface AppStore {
   activeModule: string;
+
   setActiveModule: (module: string) => void;
 
   theme: Theme;
@@ -733,6 +801,17 @@ export interface AppStore {
   addBook: (book: Book) => Promise<void>;
   updateBook: (id: string, data: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
+
+  // Study & Exam Module
+  studyMaterials: StudyMaterial[];
+  exams: Exam[];
+  examAttempts: ExamAttempt[];
+  addStudyMaterial: (mat: StudyMaterial) => void;
+  deleteStudyMaterial: (id: string) => void;
+  addExam: (exam: Exam) => void;
+  deleteExam: (id: string) => void;
+  addExamAttempt: (attempt: ExamAttempt) => void;
+  deleteExamAttempt: (id: string) => void;
 
   importData: (data: Partial<AppStore>) => void;
 }

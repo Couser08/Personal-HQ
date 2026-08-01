@@ -26,14 +26,14 @@ import {
   devGoalService,
   journalStickyNoteService,
   linkSaverService,
-  tagService
+  tagService,
+  studyMaterialService,
+  examService,
+  examAttemptService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
-import { useToastStore } from '../useToastStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
 import { clearRestCache } from '../../lib/supabase';
-
-
 
 export interface CoreSlice {
   activeModule: string;
@@ -116,6 +116,9 @@ export const createCoreSlice: StateCreator<
           media_quote: settings.mediaQuote || '',
           reduce_blur: settings.reduceBlur,
           reduce_animations: settings.reduceAnimations,
+          gemini_api_key: settings.geminiApiKey || '',
+          gemini_model: settings.geminiModel || 'gemini-2.5-flash',
+          ai_persona: settings.aiPersona || 'Professional',
         }).catch((e) => console.error('Failed to sync settings:', e));
       }
       return { settings };
@@ -145,248 +148,159 @@ export const createCoreSlice: StateCreator<
   isSyncing: false,
 
   loadAllData: async (userId: string) => {
+    if (get().isSyncing) return;
     set({ isSyncing: true });
-    const results = await Promise.allSettled([
-      noteService.fetchAll(userId),
-      linkService.fetchAll(userId),
-      stockService.fetchAll(userId),
-      subjectService.fetchAll(userId),
-      interestService.fetchAll(userId),
-      mediaService.fetchAll(userId),
-      countdownService.fetchAll(userId),
-      snippetService.fetchAll(userId),
-      budgetCategoryService.fetchAll(userId),
-      budgetTransactionService.fetchAll(userId),
-      todoProjectService.fetchAll(userId),
-      todoTaskService.fetchAll(userId),
-      journalService.fetchAll(userId),
-      mindmapService.fetchAll(userId),
-      standardCalcService.fetchAll(userId),
-      habitService.fetchAll(userId),
-      settingsService.fetch(userId),
-      sprintService.fetchAll(userId),
-      dsaProblemService.fetchAll(userId),
-      tilLogService.fetchAll(userId),
-      roadmapService.fetchAll(userId),
-      resourceService.fetchAll(userId),
-      devGoalService.fetchAll(userId),
-      journalStickyNoteService.fetchAll(userId),
-      linkSaverService.fetchAll(userId),
-      tagService.fetchAll(userId),
-      get().loadBooks(),
-    ]);
 
-    const serviceNames = [
-      'notes',
-      'links',
-      'stocks',
-      'study tracker',
-      'calculator history',
-      'media logs',
-      'countdowns',
-      'code snippets',
-      'budget categories',
-      'budget transactions',
-      'todo projects',
-      'todo tasks',
-      'journals',
-      'mindmaps',
-      'standard calculations history',
-      'habits',
-      'user settings',
-      'sprints',
-      'dsa problems',
-      'til logs',
-      'roadmaps',
-      'resources',
-      'dev goals',
-      'journal sticky notes',
-      'link saver links',
-      'tags',
-      'books',
-    ];
+    try {
+      const results = await Promise.allSettled([
+        noteService.fetchAll(userId),
+        linkService.fetchAll(userId),
+        stockService.fetchAll(userId),
+        subjectService.fetchAll(userId),
+        interestService.fetchAll(userId),
+        mediaService.fetchAll(userId),
+        countdownService.fetchAll(userId),
+        snippetService.fetchAll(userId),
+        budgetCategoryService.fetchAll(userId),
+        budgetTransactionService.fetchAll(userId),
+        todoProjectService.fetchAll(userId),
+        todoTaskService.fetchAll(userId),
+        journalService.fetchAll(userId),
+        mindmapService.fetchAll(userId),
+        standardCalcService.fetchAll(userId),
+        habitService.fetchAll(userId),
+        settingsService.fetch(userId),
+        sprintService.fetchAll(userId),
+        dsaProblemService.fetchAll(userId),
+        tilLogService.fetchAll(userId),
+        roadmapService.fetchAll(userId),
+        resourceService.fetchAll(userId),
+        devGoalService.fetchAll(userId),
+        journalStickyNoteService.fetchAll(userId),
+        linkSaverService.fetchAll(userId),
+        tagService.fetchAll(userId),
+        studyMaterialService.fetchAll(userId),
+        examService.fetchAll(userId),
+        examAttemptService.fetchAll(userId)
+      ]);
 
-    const failedServices = results
-      .map((result, index) => (result.status === 'rejected' ? serviceNames[index] : null))
-      .filter((name): name is string => Boolean(name));
+      const serviceNames = [
+        'notes', 'links', 'stocks', 'study tracker', 'calculator history', 'media logs',
+        'countdowns', 'code snippets', 'budget categories', 'budget transactions',
+        'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
+        'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
+        'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
+        'study materials', 'exams', 'exam attempts'
+      ];
 
-    const notes = results[0].status === 'fulfilled' ? results[0].value : [];
-    const links = results[1].status === 'fulfilled' ? results[1].value : [];
-    const stocks = results[2].status === 'fulfilled' ? results[2].value : [];
-    const subjects = results[3].status === 'fulfilled' ? results[3].value : [];
-    const interestHistory = results[4].status === 'fulfilled' ? results[4].value : [];
-    const mediaLogs = results[5].status === 'fulfilled' ? results[5].value : [];
-    const countdowns = results[6].status === 'fulfilled' ? results[6].value : [];
-    const snippets = results[7].status === 'fulfilled' ? results[7].value : [];
-    const budgetCategories = results[8].status === 'fulfilled' ? results[8].value : [];
-    const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
-    const todoProjects = results[10].status === 'fulfilled' ? results[10].value : [];
-    const todoTasks = results[11].status === 'fulfilled' ? results[11].value : [];
-    const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
-    const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
-    const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
-    const habits = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
-    const settingsResult = results[16].status === 'fulfilled' ? results[16].value : null;
-    const sprints = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
-    const dsaProblems = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
-    const tilLogs = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
-    const roadmaps = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
-    const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
-    const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
-    const journalStickyNotes = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
-    const savedLinks = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
-    const appTags = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
+      const failedServices = results
+        .map((result, index) => (result.status === 'rejected' ? serviceNames[index] : null))
+        .filter((name): name is string => Boolean(name));
 
-    if (failedServices.length > 0) {
-      console.warn('Supabase sync skipped some modules:', failedServices);
-      useToastStore.getState().addToast(
-        'Partial Sync',
-        `Some modules could not refresh: ${failedServices.join(', ')}`,
-        'warning'
-      );
-    }
+      const notes = results[0].status === 'fulfilled' ? results[0].value : [];
+      const links = results[1].status === 'fulfilled' ? results[1].value : [];
+      const stocks = results[2].status === 'fulfilled' ? results[2].value : [];
+      const subjects = results[3].status === 'fulfilled' ? results[3].value : [];
+      const interestHistory = results[4].status === 'fulfilled' ? results[4].value : [];
+      const mediaLogs = results[5].status === 'fulfilled' ? results[5].value : [];
+      const countdowns = results[6].status === 'fulfilled' ? results[6].value : [];
+      const snippets = results[7].status === 'fulfilled' ? results[7].value : [];
+      const budgetCategories = results[8].status === 'fulfilled' ? results[8].value : [];
+      const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
+      const todoProjects = results[10].status === 'fulfilled' ? results[10].value : [];
+      const todoTasks = results[11].status === 'fulfilled' ? results[11].value : [];
+      const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
+      const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
+      const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
+      const habits = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
+      const settingsResult = results[16].status === 'fulfilled' ? results[16].value : null;
+      const sprints = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
+      const dsaProblems = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
+      const tilLogs = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
+      const roadmaps = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
+      const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
+      const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
+      const journalStickyNotes = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
+      const savedLinks = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
+      const appTags = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
+      const studyMaterials = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
+      const exams = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
+      const examAttempts = results[28].status === 'fulfilled' ? results[28].value as any[] : [];
 
-    let dbSettings = get().settings;
-    let dbTheme = get().theme;
-    let dbActiveFocusItem = get().activeFocusItem;
-
-    if (settingsResult) {
-      dbTheme = (settingsResult.theme as Theme) || dbTheme;
-      dbSettings = {
-        countdownTemplate: settingsResult.countdown_template || dbSettings.countdownTemplate,
-        accentColor: settingsResult.accent_color || dbSettings.accentColor,
-        animationSpeed: settingsResult.animation_speed || dbSettings.animationSpeed,
-        compactMode: settingsResult.compact_mode !== undefined ? settingsResult.compact_mode : dbSettings.compactMode,
-        soundEnabled: settingsResult.sound_enabled !== undefined ? settingsResult.sound_enabled : dbSettings.soundEnabled,
-        initialBankBalance: settingsResult.initial_bank_balance !== undefined ? Number(settingsResult.initial_bank_balance) : dbSettings.initialBankBalance,
-        initialCashBalance: settingsResult.initial_cash_balance !== undefined ? Number(settingsResult.initial_cash_balance) : dbSettings.initialCashBalance,
-        currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
-        mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
-        reduceBlur: settingsResult.reduce_blur !== undefined ? settingsResult.reduce_blur : dbSettings.reduceBlur,
-        reduceAnimations: settingsResult.reduce_animations !== undefined ? settingsResult.reduce_animations : dbSettings.reduceAnimations,
-      };
-      
-      if (settingsResult.active_focus_item !== undefined) {
-        dbActiveFocusItem = settingsResult.active_focus_item;
-        if (dbActiveFocusItem) {
-          localStorage.setItem('phq_active_focus_item', JSON.stringify(dbActiveFocusItem));
-        } else {
-          localStorage.removeItem('phq_active_focus_item');
-        }
+      if (failedServices.length > 0) {
+        console.warn('Supabase sync skipped some modules:', failedServices);
       }
-      
-      localStorage.setItem('theme', dbTheme);
-      localStorage.setItem('settings', JSON.stringify(dbSettings));
-    } else {
-      settingsService.upsert(userId, {
+
+      let dbSettings = get().settings;
+      let dbTheme = get().theme;
+      let dbActiveFocusItem = (get() as any).activeFocusItem;
+
+      if (settingsResult) {
+        dbTheme = (settingsResult.theme as Theme) || dbTheme;
+        dbSettings = {
+          countdownTemplate: settingsResult.countdown_template || dbSettings.countdownTemplate,
+          accentColor: settingsResult.accent_color || dbSettings.accentColor,
+          animationSpeed: settingsResult.animation_speed || dbSettings.animationSpeed,
+          compactMode: settingsResult.compact_mode !== undefined ? settingsResult.compact_mode : dbSettings.compactMode,
+          soundEnabled: settingsResult.sound_enabled !== undefined ? settingsResult.sound_enabled : dbSettings.soundEnabled,
+          initialBankBalance: settingsResult.initial_bank_balance !== undefined ? Number(settingsResult.initial_bank_balance) : dbSettings.initialBankBalance,
+          initialCashBalance: settingsResult.initial_cash_balance !== undefined ? Number(settingsResult.initial_cash_balance) : dbSettings.initialCashBalance,
+          currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
+          mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
+          reduceBlur: settingsResult.reduce_blur !== undefined ? settingsResult.reduce_blur : dbSettings.reduceBlur,
+          reduceAnimations: settingsResult.reduce_animations !== undefined ? settingsResult.reduce_animations : dbSettings.reduceAnimations,
+          geminiApiKey: settingsResult.gemini_api_key || dbSettings.geminiApiKey || '',
+          geminiModel: settingsResult.gemini_model || dbSettings.geminiModel || 'gemini-2.5-flash',
+          aiPersona: settingsResult.ai_persona || dbSettings.aiPersona || 'Professional',
+        };
+
+        if (settingsResult.active_focus_item !== undefined) {
+          dbActiveFocusItem = settingsResult.active_focus_item;
+          if (dbActiveFocusItem) {
+            localStorage.setItem('phq_active_focus_item', JSON.stringify(dbActiveFocusItem));
+          } else {
+            localStorage.removeItem('phq_active_focus_item');
+          }
+        }
+
+        localStorage.setItem('theme', dbTheme);
+        localStorage.setItem('settings', JSON.stringify(dbSettings));
+      } else {
+        settingsService.upsert(userId, {
+          theme: dbTheme,
+          countdown_template: dbSettings.countdownTemplate,
+          accent_color: dbSettings.accentColor,
+          animation_speed: dbSettings.animationSpeed,
+          compact_mode: dbSettings.compactMode,
+          sound_enabled: dbSettings.soundEnabled,
+          initial_bank_balance: dbSettings.initialBankBalance,
+          initial_cash_balance: dbSettings.initialCashBalance,
+          currency_symbol: dbSettings.currencySymbol || '$',
+          media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
+          reduce_blur: dbSettings.reduceBlur,
+          reduce_animations: dbSettings.reduceAnimations,
+          gemini_api_key: dbSettings.geminiApiKey || '',
+          gemini_model: dbSettings.geminiModel || 'gemini-2.5-flash',
+          ai_persona: dbSettings.aiPersona || 'Professional',
+          active_focus_item: dbActiveFocusItem,
+        }).catch((e) => console.error('Failed to initialize settings:', e));
+      }
+
+      set({
+        notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
+        budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
+        sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
+        savedLinks, appTags, studyMaterials, exams, examAttempts,
         theme: dbTheme,
-        countdown_template: dbSettings.countdownTemplate,
-        accent_color: dbSettings.accentColor,
-        animation_speed: dbSettings.animationSpeed,
-        compact_mode: dbSettings.compactMode,
-        sound_enabled: dbSettings.soundEnabled,
-        initial_bank_balance: dbSettings.initialBankBalance,
-        initial_cash_balance: dbSettings.initialCashBalance,
-        currency_symbol: dbSettings.currencySymbol || '$',
-        media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
-        reduce_blur: dbSettings.reduceBlur,
-        reduce_animations: dbSettings.reduceAnimations,
-        active_focus_item: dbActiveFocusItem,
-      }).catch((e) => console.error('Failed to initialize settings:', e));
+        settings: dbSettings,
+        activeFocusItem: dbActiveFocusItem,
+        dataLoaded: true,
+        isSyncing: false
+      } as any);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      set({ isSyncing: false });
     }
-
-    if (results[1].status === 'fulfilled') {
-      localStorage.setItem('phq_links', JSON.stringify(links));
-    }
-    if (results[3].status === 'fulfilled') {
-      localStorage.setItem('phq_subjects', JSON.stringify(subjects));
-    }
-    if (results[5].status === 'fulfilled') {
-      localStorage.setItem('phq_media_logs', JSON.stringify(mediaLogs));
-    }
-    if (results[6].status === 'fulfilled') {
-      localStorage.setItem('phq_countdowns', JSON.stringify(countdowns));
-    }
-    if (results[8].status === 'fulfilled') {
-      localStorage.setItem('phq_budget_categories', JSON.stringify(budgetCategories));
-    }
-    if (results[9].status === 'fulfilled') {
-      localStorage.setItem('phq_budget_transactions', JSON.stringify(budgetTransactions));
-    }
-    if (results[10].status === 'fulfilled') {
-      localStorage.setItem('phq_todo_projects', JSON.stringify(todoProjects));
-    }
-    if (results[11].status === 'fulfilled') {
-      localStorage.setItem('phq_todo_tasks', JSON.stringify(todoTasks));
-    }
-    if (results[12].status === 'fulfilled') {
-      localStorage.setItem('phq_journals', JSON.stringify(journals));
-    }
-    if (results[13].status === 'fulfilled') {
-      localStorage.setItem('phq_mindmaps', JSON.stringify(mindmaps));
-    }
-    if (results[15].status === 'fulfilled') {
-      localStorage.setItem('phq_habits', JSON.stringify(habits));
-    }
-    if (results[17].status === 'fulfilled') {
-      localStorage.setItem('phq_sprints', JSON.stringify(sprints));
-    }
-    if (results[18].status === 'fulfilled') {
-      localStorage.setItem('phq_dsa_problems', JSON.stringify(dsaProblems));
-    }
-    if (results[19].status === 'fulfilled') {
-      localStorage.setItem('phq_til_logs', JSON.stringify(tilLogs));
-    }
-    if (results[20].status === 'fulfilled') {
-      localStorage.setItem('phq_roadmaps', JSON.stringify(roadmaps));
-    }
-    if (results[21].status === 'fulfilled') {
-      localStorage.setItem('phq_resources', JSON.stringify(resources));
-    }
-    if (results[22].status === 'fulfilled') {
-      localStorage.setItem('phq_dev_goals', JSON.stringify(devGoals));
-    }
-    if (results[23].status === 'fulfilled') {
-      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(journalStickyNotes));
-    }
-    if (results[24].status === 'fulfilled') {
-      localStorage.setItem('phq_saved_links', JSON.stringify(savedLinks));
-    }
-    if (results[25].status === 'fulfilled') {
-      localStorage.setItem('phq_app_tags', JSON.stringify(appTags));
-    }
-
-    // Validate active focus item
-    if (dbActiveFocusItem) {
-      const activeItem = dbActiveFocusItem;
-      if (activeItem.type === 'todo') {
-        const matched = todoTasks.find(t => t.id === activeItem.id);
-        if (!matched || matched.completed || matched.deleted) {
-          dbActiveFocusItem = null;
-          localStorage.removeItem('phq_active_focus_item');
-          settingsService.upsert(userId, { active_focus_item: null }).catch((e) => console.error('Failed to clear invalid focus item:', e));
-        }
-      } else if (activeItem.type === 'habit') {
-        const matched = habits.find(h => h.id === activeItem.id);
-        if (!matched) {
-          dbActiveFocusItem = null;
-          localStorage.removeItem('phq_active_focus_item');
-          settingsService.upsert(userId, { active_focus_item: null }).catch((e) => console.error('Failed to clear invalid focus item:', e));
-        }
-      }
-    }
-
-    set({
-      notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
-      budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
-      sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-      savedLinks, appTags,
-      theme: dbTheme,
-      settings: dbSettings,
-      activeFocusItem: dbActiveFocusItem,
-      dataLoaded: true,
-      isSyncing: false
-    } as any);
   },
 
   forceSync: async (userId: string) => {
@@ -399,13 +313,13 @@ export const createCoreSlice: StateCreator<
     clearRestCache().catch((e) => console.error('[Cache] Failed to clear rest cache:', e));
     set({
       notes: [], links: [], stocks: [], subjects: [],
-      interestHistory: [], mediaLogs: [], countdowns: [],
-      snippets: [], budgetCategories: [], budgetTransactions: [],
-      todoProjects: [], todoTasks: [], journals: [], mindmaps: [], standardHistory: [], habits: [],
-      sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [],
-      journalStickyNotes: [], savedLinks: [], appTags: [], activeFocusItem: null,
-      books: [],
+      interestHistory: [], mediaLogs: [], countdowns: [], snippets: [],
+      budgetCategories: [], budgetTransactions: [], todoProjects: [], todoTasks: [],
+      journals: [], mindmaps: [], standardHistory: [], habits: [],
+      sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [], journalStickyNotes: [],
+      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [],
       dataLoaded: false,
+      isSyncing: false
     } as any);
   },
 
@@ -413,21 +327,14 @@ export const createCoreSlice: StateCreator<
   drawingAppState: {},
   setDrawingData: (elements, appState) => set({ drawingElements: elements, drawingAppState: appState }),
 
-  importData: (data) =>
-    set((state) => {
-      const nextState = { ...state, ...data };
-      if (data.settings) {
-        localStorage.setItem('settings', JSON.stringify(nextState.settings));
-      }
-      if (data.journals) {
-        localStorage.setItem('phq_journals', JSON.stringify(nextState.journals));
-      }
-      if (data.savedLinks) {
-        localStorage.setItem('phq_saved_links', JSON.stringify(nextState.savedLinks));
-      }
-      if (data.appTags) {
-        localStorage.setItem('phq_app_tags', JSON.stringify(nextState.appTags));
-      }
-      return nextState;
-    }),
+  importData: (data) => {
+    if (data.notes) {
+      set({ notes: data.notes });
+      localStorage.setItem('phq_notes', JSON.stringify(data.notes));
+    }
+    if (data.todoTasks) {
+      set({ todoTasks: data.todoTasks });
+      localStorage.setItem('phq_todo_tasks', JSON.stringify(data.todoTasks));
+    }
+  }
 });
