@@ -15,7 +15,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   setIsEditorOpen,
 }) => {
   return (
-    <section className="flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 min-w-0 flex-1 h-full">
+    <section className="flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-sm transition-all duration-300 min-w-0 flex-1 h-full">
       <div className="flex items-center justify-between border-b border-border/40 pb-3 select-none">
         <h3 className="text-sm font-bold text-text-primary pl-1 font-sans">Live Preview</h3>
         <button

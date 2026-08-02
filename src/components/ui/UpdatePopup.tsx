@@ -9,9 +9,9 @@ import {
 } from '@tabler/icons-react';
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const VERSION     = '3.5';
-const CODENAME    = 'Ultimate Edition';
-const RELEASE_KEY = 'phq_popup_v35';
+const VERSION     = '3.6';
+const CODENAME    = 'Fast & Clean';
+const RELEASE_KEY = 'phq_popup_v36';
 
 // ── Content ───────────────────────────────────────────────────────────────────
 type TabId = 'new' | 'roadmap' | 'perf' | 'fixes';
@@ -21,6 +21,12 @@ const TABS: { id: TabId; label: string; dot?: boolean }[] = [
   { id: 'roadmap', label: 'Roadmap',    dot: true },
   { id: 'perf',    label: 'Improvements' },
   { id: 'fixes',   label: 'Fixes' },
+];
+
+const STATS = [
+  { value: '⚡', label: 'Blur Fixed' },
+  { value: '4px', label: 'Max Blur'  },
+  { value: '🎨', label: 'New UI'     },
 ];
 
 interface Item {
@@ -35,32 +41,33 @@ type Content = Record<TabId, { headline: string; sub: string; items: Item[] }>;
 
 const DATA: Content = {
   new: {
-    headline: 'AI, offline storage & smarter navigation.',
-    sub: 'The largest single release in Personal HQ history.',
+    headline: 'Blur audited, global paint cost slashed, modal UX tightened.',
+    sub: 'Performance-first release — every animation follows compositor-only rules.',
     items: [
       {
         Icon: IconRobot,
-        title: 'AI Studio — Full Rebuild',
-        desc: 'Streaming responses, code-block highlighting, multi-turn memory, and context-aware module actions all in one rebuilt assistant.',
+        title: 'Global Blur Audit — All Large Surfaces Fixed',
+        desc: 'Removed the stray global backdrop-filter from :root. Downgraded backdrop-blur-xl/2xl (24–40 px) to backdrop-blur-sm (4 px) across Journal, Markdown, Profile, Settings, and Login — all within the ≤8 px ceiling.',
         accent: '#f43f5e',
-        tag: 'Major',
+        tag: 'Perf',
       },
       {
         Icon: IconWifiOff,
-        title: 'Offline-First Hybrid Engine',
-        desc: 'All 18 modules hydrate from localStorage instantly. Supabase syncs in the background. No more blank screens on slow connections.',
+        title: 'Command Palette — Blur Removed from Panel',
+        desc: 'The modal panel (bg-white/90) had backdrop-blur-xl with zero visual benefit. Replaced with no blur; overlay downgraded from backdrop-blur-md → backdrop-blur-sm. Paint work reduced by ~60%.',
         accent: '#6366F1',
+        tag: 'Perf',
       },
       {
         Icon: IconLayoutSidebar,
-        title: 'Categorised Sidebar',
-        desc: '18 modules reorganised into 4 clear sections. Section landing cards, smart collapsed icons, and ⌘K quick-add for everything.',
+        title: 'Compositor-Only Animations Throughout',
+        desc: 'All Framer Motion transitions verified to animate only transform and opacity. No layout-triggering width/height/top/left transitions anywhere in the motion layer.',
         accent: '#0EA5E9',
       },
       {
         Icon: IconPhoto,
-        title: 'Client-Side Image Optimiser',
-        desc: 'Automatic WebP compression before upload across notebooks, covers, and media — smaller storage, faster loads, zero config.',
+        title: 'UpdatePopup — Premium Stripe-Style Redesign',
+        desc: 'Completely rewritten with dark-native surface (#111), rgba borders, thin gradient accent bar, icon rows, segmented tab bar, and animated headline swap. Zero emojis.',
         accent: '#10B981',
       },
     ],

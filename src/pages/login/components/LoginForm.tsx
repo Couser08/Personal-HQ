@@ -83,7 +83,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
         variants={stagger} 
         initial="hidden" 
         animate="visible"
-        className="relative z-10 flex flex-col gap-6 bg-white/60 dark:bg-[#111113]/60 backdrop-blur-2xl p-8 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl shadow-zinc-200/40 dark:shadow-black/60"
+        className="relative z-10 flex flex-col gap-6 bg-white/60 dark:bg-[#111113]/60 backdrop-blur-sm p-8 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl shadow-zinc-200/40 dark:shadow-black/60"
       >
         <motion.div variants={itemIn} className="text-center mb-2">
           <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight flex items-center justify-center gap-2">

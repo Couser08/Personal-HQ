@@ -49,7 +49,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   handleSelectSlashCommand,
 }) => {
   return (
-    <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-300 min-w-0 flex-1 h-full`}>
+    <section className={`flex flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4.5 shadow-[0_16px_50px_-25px_rgba(0,0,0,0.2)] backdrop-blur-sm transition-all duration-300 min-w-0 flex-1 h-full`}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3 select-none">
         <div className="flex items-center gap-3">
           <button

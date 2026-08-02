@@ -370,7 +370,7 @@ export default function SettingsModule() {
       {/* ── Appearance Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Appearance</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
           
           <div className="p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-4">
@@ -439,7 +439,7 @@ export default function SettingsModule() {
             <IconSparkles size={12} /> Powered by Gemini
           </span>
         </h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-purple-500/20 dark:border-purple-500/30 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-6 flex flex-col gap-5">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-purple-500/20 dark:border-purple-500/30 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-6 flex flex-col gap-5">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-100 dark:border-zinc-800/60 pb-4">
             <div className="flex items-center gap-3">
@@ -565,7 +565,7 @@ export default function SettingsModule() {
       {/* ── Notifications & Behavior Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Notifications & Behavior</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4">
             <div className="flex items-center gap-3">
@@ -653,7 +653,7 @@ export default function SettingsModule() {
       {/* ── Dashboard Cards Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Dashboard</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
                <div className="flex items-center gap-3 mb-3">
@@ -679,7 +679,7 @@ export default function SettingsModule() {
       {/* ── Pomodoro Clock Style Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Pomodoro</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
                <div className="flex items-center gap-3 mb-3">
@@ -711,7 +711,7 @@ export default function SettingsModule() {
       {/* ── System & Performance Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">System & Performance</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
           
           <div className="flex items-center justify-between p-4 sm:p-5">
              <div>

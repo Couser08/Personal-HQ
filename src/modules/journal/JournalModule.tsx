@@ -727,7 +727,7 @@ export default function JournalModule() {
     >
       <div className={gridColsClass}>
         {/* Center column (Workspace Editor) */}
-        <section className="relative group/workspace flex min-h-0 flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-300">
+        <section className="relative group/workspace flex min-h-0 flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-sm transition-all duration-300">
           {/* Hover Expand Right Slider Handle */}
           {!isSettingsOpen && activeEntry && (
             <div className="absolute top-1/2 right-0 -translate-y-1/2 z-20 opacity-0 group-hover/workspace:opacity-100 transition-opacity duration-200">

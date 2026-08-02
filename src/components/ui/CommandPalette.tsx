@@ -147,7 +147,7 @@ export function CommandPalette() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute inset-0 bg-zinc-950/20 dark:bg-black/50 backdrop-blur-md"
+            className="absolute inset-0 bg-zinc-950/20 dark:bg-black/50 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
 
@@ -158,7 +158,7 @@ export function CommandPalette() {
             // Fixed exit params: Removed structural layout collapse vulnerabilities
             exit={{ scale: 0.97, opacity: 0, y: -8 }}
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-            className="relative bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/60 dark:border-zinc-800/60 w-full max-w-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden z-10 backdrop-blur-xl flex flex-col"
+            className="relative bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/60 dark:border-zinc-800/60 w-full max-w-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden z-10 flex flex-col"
           >
             {/* Header Search Matrix */}
             <div className="flex items-center px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/60 gap-3">

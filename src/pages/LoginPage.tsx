@@ -50,7 +50,7 @@ export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess:
       {/* ── Outer card wrapper ── */}
       <motion.div 
         variants={cardIn}
-        className="w-full max-w-[980px] min-h-[600px] flex flex-col md:flex-row bg-white/70 backdrop-blur-2xl rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden"
+        className="w-full max-w-[980px] min-h-[600px] flex flex-col md:flex-row bg-white/70 backdrop-blur-sm rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden"
       >
         {/* ── LEFT COLUMN: Branding + Illustration ── */}
         <div className="hidden md:flex flex-col justify-between w-[38%] shrink-0 p-8 relative overflow-hidden bg-gradient-to-br from-slate-50/50 to-slate-100/50 border-r border-slate-200/50">

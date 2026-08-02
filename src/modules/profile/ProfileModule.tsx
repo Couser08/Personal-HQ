@@ -177,7 +177,7 @@ export default function ProfileModule() {
       </div>
 
       {/* ── User ID Card ── */}
-      <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
         <div className="relative group shrink-0">
           <div 
             className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold shadow-md bg-zinc-100 dark:bg-zinc-800 border-2 border-white dark:border-zinc-700 overflow-hidden"
@@ -217,21 +217,21 @@ export default function ProfileModule() {
 
       {/* ── Stats Overview ── */}
       <div className="grid grid-cols-3 gap-3 px-4 sm:px-0">
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
            <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mb-2">
             <IconNotes size={20} />
           </div>
           <span className="text-2xl font-bold text-zinc-900 dark:text-white leading-none">{totalNotes}</span>
           <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wider">Notes</span>
         </div>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
            <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-2">
             <IconLink size={20} />
           </div>
           <span className="text-2xl font-bold text-zinc-900 dark:text-white leading-none">{totalLinks}</span>
           <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wider">Links</span>
         </div>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
            <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mb-2">
             <IconBook size={20} />
           </div>
@@ -243,7 +243,7 @@ export default function ProfileModule() {
       {/* ── About Section ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">About Me</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-5">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-5">
           <p className="text-[15px] text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
             {userAbout}
           </p>
@@ -253,7 +253,7 @@ export default function ProfileModule() {
       {/* ── Account & Security ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Account & Security</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
           
           <div className="flex items-center justify-between p-4 sm:p-5">
             <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ export default function ProfileModule() {
       {/* ── Preferences ── */}
       <section className="flex flex-col gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Preferences</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4">
             <div className="flex items-center gap-3">
