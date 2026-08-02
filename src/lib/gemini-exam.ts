@@ -19,6 +19,7 @@ export async function parseStudyMaterial(
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
 
   const systemInstruction = `You are a study material parser. Extract the content into structured units and topics.
+Crucially, look for questions and answers within the text. The user's text often contains questions grouped by probability (e.g. "high probability", "medium probability"). Extract these into the "qna" array for each unit, setting the correct probability ("high", "medium", or "low").
 Respond ONLY with valid JSON in this structure:
 [
   {
@@ -26,6 +27,9 @@ Respond ONLY with valid JSON in this structure:
     "title": "Unit Name",
     "topics": [
       { "id": "topic_1_1", "title": "Topic Name", "keyPoints": ["Key point 1", "Key point 2"] }
+    ],
+    "qna": [
+      { "id": "qna_1", "question": "What is X?", "answer": "X is Y", "probability": "high" }
     ]
   }
 ]`;
@@ -162,5 +166,43 @@ export async function gradeExamAttempt(
     return JSON.parse(cleanJsonResponse(rawText)) as ExamGradingReport;
   } catch {
     throw new Error('AI returned invalid JSON for grading.');
+  }
+}
+
+export async function generateFlashcardsFromUnit(
+  apiKey: string,
+  unitData: StudyUnit,
+  model: string = DEFAULT_MODEL
+): Promise<{ front: string; back: string }[]> {
+  if (!apiKey?.trim()) throw new Error('Gemini API key is required.');
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+
+  const systemInstruction = `You are a strict Flashcard Generator.
+Create flashcards based ONLY on the provided UNIT MATERIAL. Do not hallucinate.
+Extract key terms, definitions, and important QnAs into concise flashcards.
+Respond ONLY with a valid JSON array of objects, each containing "front" and "back" strings:
+[
+  { "front": "Term or Question", "back": "Definition or Answer" }
+]`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents: [{ role: 'user', parts: [{ text: JSON.stringify(unitData) }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+    }),
+  });
+
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  const data = await response.json();
+  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+
+  try {
+    return JSON.parse(cleanJsonResponse(rawText));
+  } catch {
+    throw new Error('AI returned invalid JSON for flashcards.');
   }
 }

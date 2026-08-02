@@ -268,9 +268,19 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end justify-center p-0 select-none sm:items-center sm:p-6">
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 select-none sm:items-center sm:p-6">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -491,7 +501,8 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
             />
           </div>
         </motion.div>
-      </div>
+        </div>
+      )}
     </AnimatePresence>,
     document.body
   );

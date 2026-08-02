@@ -542,6 +542,19 @@ export interface StudyUnit {
     title: string;
     keyPoints: string[];
   }[];
+  qna?: {
+    id: string;
+    question: string;
+    answer: string;
+    probability: 'high' | 'medium' | 'low';
+  }[];
+}
+
+export interface ExamFlashcard {
+  id: string;
+  unitId: string;
+  front: string;
+  back: string;
 }
 
 export interface StudyMaterial {
@@ -549,6 +562,7 @@ export interface StudyMaterial {
   title: string;
   rawContent: string;
   structuredData: StudyUnit[];
+  flashcards?: ExamFlashcard[];
   createdAt: string;
 }
 
@@ -807,6 +821,7 @@ export interface AppStore {
   exams: Exam[];
   examAttempts: ExamAttempt[];
   addStudyMaterial: (mat: StudyMaterial) => void;
+  updateStudyMaterial: (id: string, updates: Partial<StudyMaterial>) => void;
   deleteStudyMaterial: (id: string) => void;
   addExam: (exam: Exam) => void;
   deleteExam: (id: string) => void;

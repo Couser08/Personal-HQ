@@ -9,6 +9,7 @@ export interface StudyExamSlice {
   exams: Exam[];
   examAttempts: ExamAttempt[];
   addStudyMaterial: (mat: StudyMaterial) => Promise<void>;
+  updateStudyMaterial: (id: string, updates: Partial<StudyMaterial>) => Promise<void>;
   deleteStudyMaterial: (id: string) => Promise<void>;
   addExam: (exam: Exam) => Promise<void>;
   deleteExam: (id: string) => Promise<void>;
@@ -36,14 +37,30 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     }
   },
 
+  updateStudyMaterial: async (id, updates) => {
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) return;
+    const previous = get().studyMaterials;
+    const next = previous.map((m) => (m.id === id ? { ...m, ...updates } : m));
+    set({ studyMaterials: next });
+    try {
+      await studyMaterialService.update(uid, id, updates);
+    } catch (e: any) {
+      set({ studyMaterials: previous });
+      useToastStore.getState().addToast('Error', e.message || 'Failed to update material', 'error');
+      throw e;
+    }
+  },
+
   deleteStudyMaterial: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const prevMaterials = get().studyMaterials;
     const prevExams = get().exams;
     const nextMaterials = prevMaterials.filter((m) => m.id !== id);
     const nextExams = prevExams.filter((e) => e.materialId !== id);
     set({ studyMaterials: nextMaterials, exams: nextExams });
     try {
-      await studyMaterialService.delete(id);
+      if (uid) await studyMaterialService.delete(uid, id);
     } catch (e: any) {
       set({ studyMaterials: prevMaterials, exams: prevExams });
       useToastStore.getState().addToast('Error', e.message || 'Failed to delete material', 'error');

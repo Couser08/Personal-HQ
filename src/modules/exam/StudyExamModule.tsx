@@ -5,13 +5,16 @@ import { useToastStore } from '../../store/useToastStore';
 import { type StudyMaterial, type Exam, type ExamAttempt, type ExamQuestion } from '../../store/types';
 import { parseStudyMaterial, generateExamPaper, gradeExamAttempt } from '../../lib/gemini-exam';
 import {
-  IconBrain, IconPlus, IconFileText, IconChevronRight, IconCheck,
+  IconBrain, IconPlus, IconFileText, IconCheck,
   IconX, IconArrowLeft, IconTarget, IconStar, IconBook, IconLoader2,
   IconTrophy, IconPlayerPlay, IconInfoCircle
 } from '@tabler/icons-react';
 
+import { ReadMaterial } from './components/ReadMaterial';
+import { StudyMaterialFlashcards } from './components/StudyMaterialFlashcards';
+
 export default function StudyExamModule() {
-  const [view, setView] = useState<'library' | 'ingest' | 'generate' | 'active' | 'report'>('library');
+  const [view, setView] = useState<'library' | 'ingest' | 'generate' | 'active' | 'report' | 'read' | 'flashcards'>('library');
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeAttempt, setActiveAttempt] = useState<ExamAttempt | null>(null);
@@ -21,7 +24,7 @@ export default function StudyExamModule() {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
-      <div className="p-6 md:p-8 flex-1 overflow-y-auto">
+      <div className="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
         <div className="max-w-5xl mx-auto space-y-8">
           
           <AnimatePresence mode="wait">
@@ -32,11 +35,36 @@ export default function StudyExamModule() {
                 exams={exams}
                 attempts={examAttempts}
                 onAdd={() => setView('ingest')}
+                onRead={(mat: StudyMaterial) => {
+                  setSelectedMaterial(mat);
+                  setView('read');
+                }}
+                onFlashcards={(mat: StudyMaterial) => {
+                  setSelectedMaterial(mat);
+                  setView('flashcards');
+                }}
                 onSelect={(mat: StudyMaterial) => {
                   setSelectedMaterial(mat);
                   setView('generate');
                 }}
                 onDelete={deleteStudyMaterial}
+              />
+            )}
+            
+            {view === 'read' && selectedMaterial && (
+              <ReadMaterial 
+                key="read" 
+                material={selectedMaterial} 
+                onStudyFlashcards={() => setView('flashcards')}
+                onBack={() => setView('library')} 
+              />
+            )}
+
+            {view === 'flashcards' && selectedMaterial && (
+              <StudyMaterialFlashcards 
+                key="flashcards" 
+                material={selectedMaterial} 
+                onBack={() => setView('read')} 
               />
             )}
             
@@ -97,7 +125,7 @@ export default function StudyExamModule() {
   );
 }
 
-function MaterialLibrary({ materials, exams, onAdd, onSelect, onDelete }: any) {
+function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSelect, onDelete }: any) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
       <div className="flex items-center justify-between mb-8">
@@ -133,9 +161,10 @@ function MaterialLibrary({ materials, exams, onAdd, onSelect, onDelete }: any) {
         ) : (
           materials.map((m: StudyMaterial) => {
             const materialExams = exams.filter((e: Exam) => e.materialId === m.id);
+            const hasFlashcards = m.flashcards && m.flashcards.length > 0;
             return (
-              <div key={m.id} className="bg-surface rounded-2xl border border-border p-5 hover:border-primary/50 transition-colors shadow-sm flex flex-col cursor-pointer" onClick={() => onSelect(m)}>
-                <div className="flex items-start justify-between mb-3">
+              <div key={m.id} className="bg-surface rounded-2xl border border-border p-5 hover:border-primary/50 transition-colors shadow-sm flex flex-col">
+                <div className="flex items-start justify-between mb-3 cursor-pointer" onClick={() => onRead(m)}>
                   <div className="p-2.5 bg-primary/10 rounded-xl">
                     <IconFileText size={22} className="text-primary" />
                   </div>
@@ -143,13 +172,20 @@ function MaterialLibrary({ materials, exams, onAdd, onSelect, onDelete }: any) {
                     <IconX size={16} />
                   </button>
                 </div>
-                <h3 className="font-bold text-text-primary text-lg mb-1 line-clamp-1">{m.title}</h3>
-                <p className="text-xs text-text-secondary mb-4 line-clamp-2">
+                <h3 className="font-bold text-text-primary text-lg mb-1 line-clamp-1 cursor-pointer" onClick={() => onRead(m)}>{m.title}</h3>
+                <p className="text-xs text-text-secondary mb-4 line-clamp-2 cursor-pointer" onClick={() => onRead(m)}>
                   {m.structuredData.length} Units • {m.structuredData.reduce((acc, u) => acc + u.topics.length, 0)} Topics
                 </p>
-                <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                  <span className="text-xs font-semibold text-primary">{materialExams.length} Exams Gen.</span>
-                  <IconChevronRight size={16} className="text-text-tertiary" />
+                <div className="mt-auto pt-4 border-t border-border flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-text-secondary">
+                    <span>{materialExams.length} Exams Gen.</span>
+                    {hasFlashcards && <span className="text-primary">{m.flashcards?.length} Flashcards</span>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => onRead(m)} className="flex-1 bg-surface-alt hover:bg-surface border border-border rounded-xl py-2 text-xs font-bold transition-colors">Read</button>
+                    <button onClick={() => onFlashcards(m)} className="flex-1 bg-surface-alt hover:bg-surface border border-border rounded-xl py-2 text-xs font-bold transition-colors">Cards</button>
+                    <button onClick={() => onSelect(m)} className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2 text-xs font-bold transition-colors">Exam</button>
+                  </div>
                 </div>
               </div>
             );

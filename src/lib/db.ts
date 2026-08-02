@@ -1643,6 +1643,7 @@ export const studyMaterialService = {
       title: r.title,
       rawContent: r.raw_content,
       structuredData: r.structured_data,
+      flashcards: r.flashcards || [],
       createdAt: r.created_at,
     }));
   },
@@ -1653,6 +1654,7 @@ export const studyMaterialService = {
       title: material.title,
       raw_content: material.rawContent,
       structured_data: material.structuredData,
+      flashcards: material.flashcards || [],
       created_at: material.createdAt,
     });
     if (error) {
@@ -1660,8 +1662,24 @@ export const studyMaterialService = {
       throw error;
     }
   },
-  async delete(id: string) {
-    const { error } = await supabase.from('study_materials').delete().eq('id', id);
+  async update(userId: string, id: string, updates: Partial<StudyMaterial>) {
+    const payload: any = {};
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.structuredData !== undefined) payload.structured_data = updates.structuredData;
+    if (updates.flashcards !== undefined) payload.flashcards = updates.flashcards;
+
+    const { error } = await supabase
+      .from('study_materials')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId);
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return;
+      throw error;
+    }
+  },
+  async delete(userId: string, id: string) {
+    const { error } = await supabase.from('study_materials').delete().eq('id', id).eq('user_id', userId);
     if (error) {
       if (error.code === '42P01' || error.message?.includes('relation')) return;
       throw error;
