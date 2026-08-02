@@ -23,11 +23,7 @@ const TABS: { id: TabId; label: string; dot?: boolean }[] = [
   { id: 'fixes',   label: 'Fixes' },
 ];
 
-const STATS = [
-  { value: '⚡', label: 'Blur Fixed' },
-  { value: '4px', label: 'Max Blur'  },
-  { value: '🎨', label: 'New UI'     },
-];
+
 
 interface Item {
   Icon: React.ElementType;

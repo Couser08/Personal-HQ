@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { IconArrowLeft, IconMenu2, IconGridDots } from '@tabler/icons-react';
+import { IconArrowLeft, IconStar, IconFlame, IconMenu2, IconGridDots } from '@tabler/icons-react';
 import { type StudyMaterial } from '../../../store/types';
 import { StudyQuestionCard } from './StudyQuestionCard';
 
