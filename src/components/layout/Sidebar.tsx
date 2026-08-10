@@ -2,8 +2,8 @@ import {
   IconBook2, IconLayout, IconNotebook,
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconWallet, IconChecklist, IconSitemap, IconDots,
-  IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconFolder, IconPencil,
+  IconChecklist, IconSitemap, IconDots,
+  IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
   IconTag, IconChartBar, IconBrush, IconPlus, IconX,
   IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain
@@ -40,10 +40,8 @@ const NAV_GROUPS = [
     emoji: '📋',
     icon: IconListCheck,
     color: '#059669',
-    desc: 'Tasks, projects, habits and tags.',
+    desc: 'Projects, habits and tags.',
     items: [
-      { id: 'todo',      label: 'To-Do List',    icon: IconChecklist, desc: 'Tasks with subtasks & sync' },
-      { id: 'projects',  label: 'Projects',      icon: IconFolder,    desc: 'Project boards & milestones' },
       { id: 'habits',    label: 'Habits',        icon: IconFlame,     desc: 'Daily habit streaks' },
       { id: 'tags',      label: 'Tag Manager',   icon: IconTag,       desc: 'Cross-module tag system' },
     ],
@@ -59,7 +57,6 @@ const NAV_GROUPS = [
       { id: 'pomodoro',  label: 'Pomodoro',         icon: IconClockPlay, desc: 'Focus timer & goals' },
       { id: 'study',     label: 'Study Tracker',    icon: IconBook,      desc: 'Session logs & streaks' },
       { id: 'exam',      label: 'AI Exam Prep',     icon: IconBrain,     desc: 'Generate & take AI exams' },
-      { id: 'budget',    label: 'Expense & Income', icon: IconWallet,    desc: 'Budget & spending' },
     ],
   },
   {
@@ -258,7 +255,7 @@ export const Sidebar = () => {
         {/* Section label */}
         {!isCollapsed && (
           <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--text-muted)', padding: '10px 4px 4px', marginTop: 2 }}>
-            Sections
+            Content
           </p>
         )}
         {isCollapsed && <div style={{ height: 8 }} />}
@@ -400,8 +397,42 @@ export const Sidebar = () => {
           );
         })}
 
+        {/* Planning Section */}
+        {!isCollapsed && (
+          <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--text-muted)', padding: '10px 4px 4px', marginTop: 2 }}>
+            Planning
+          </p>
+        )}
+        {isCollapsed && <div style={{ height: 8 }} />}
+
+        <motion.button
+          id="tour-todo"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setActiveModule('todo')}
+          title={isCollapsed ? 'Daily Planner' : undefined}
+          style={{ ...navItemStyle(activeModule === 'todo'), justifyContent: isCollapsed ? 'center' : 'flex-start' }}
+        >
+          {activeModule === 'todo' && (
+            <motion.div
+              layoutId="sidebar-active-indicator"
+              style={{ position: 'absolute', inset: 0, background: 'var(--bg-surface-hover, rgba(255,255,255,0.06))', borderRadius: 10, zIndex: 0, pointerEvents: 'none' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          )}
+          <IconChecklist size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
+          {!isCollapsed && <span style={{ position: 'relative', zIndex: 1, whiteSpace: 'nowrap' }}>Daily Planner</span>}
+        </motion.button>
+
         {/* Divider */}
         <div style={{ height: 1, background: 'var(--border-border)', margin: isCollapsed ? '8px auto' : '8px 4px', width: isCollapsed ? 36 : 'auto' }} />
+
+        {/* Account Section */}
+        {!isCollapsed && (
+          <p style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--text-muted)', padding: '10px 4px 4px', marginTop: 2 }}>
+            Account
+          </p>
+        )}
+        {isCollapsed && <div style={{ height: 8 }} />}
 
         {/* Settings / Profile / Admin */}
         {[
@@ -538,7 +569,7 @@ export const MobileBottomNav = () => {
   const PINNED = [
     { id: 'dashboard', label: 'Home',    icon: IconLayout },
     { id: 'journal',   label: 'Journal', icon: IconBook2 },
-    { id: 'todo',      label: 'To-Do',   icon: IconChecklist },
+    { id: 'todo',      label: 'Planner', icon: IconChecklist },
     { id: 'habits',    label: 'Habits',  icon: IconFlame },
   ];
 

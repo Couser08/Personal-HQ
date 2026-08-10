@@ -17,6 +17,9 @@ import {
 import { useAppStore } from '../../../store/useAppStore';
 import { BookCover } from '../utils/presetCovers';
 import { CreateNotebookModal } from './CreateNotebookModal';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { EmptyState } from '../../../components/ui/EmptyState';
 
 interface LibraryDashboardProps {
   onSelectBook: (id: string) => void;
@@ -187,21 +190,22 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
         <div className="flex items-center gap-3 w-full">
           <div className="relative flex-1">
             <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notebook name, author, categories..."
-              className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-2.5 text-xs text-text-primary focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20"
+              className="w-full pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-rose-500/20"
             />
           </div>
-          <button
+          <Button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-subtle cursor-pointer transition-colors active:scale-[0.97] transition-transform duration-100 shrink-0"
+            variant="primary"
+            className="px-4 py-2.5 shrink-0"
           >
             <IconPlus size={16} />
             Add Book
-          </button>
+          </Button>
         </div>
 
 
@@ -275,21 +279,16 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
 
           {/* Cards Container */}
           {filteredBooks.length === 0 ? (
-            <div className="bg-surface border border-border rounded-[24px] p-12 text-center flex flex-col items-center gap-3">
-              <span className="p-4 bg-rose-500/5 text-rose-500 rounded-full">
-                <IconBooks size={32} />
-              </span>
-              <h4 className="font-bold text-text-primary text-sm">No books found</h4>
-              <p className="text-xs text-text-secondary max-w-sm leading-relaxed">
-                We couldn't find any notebooks matching your filters. Create a new notebook or clear search parameters.
-              </p>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="mt-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-subtle cursor-pointer transition-colors active:scale-[0.97] transition-transform duration-100"
-              >
-                <IconPlus size={14} /> Add First Book
-              </button>
-            </div>
+            <EmptyState
+              icon={<IconBooks className="w-10 h-10 text-text-muted" />}
+              title="No books found"
+              description="We couldn't find any notebooks matching your filters. Create a new notebook or clear search parameters."
+              action={
+                <Button onClick={() => setIsCreateModalOpen(true)} variant="primary">
+                  <IconPlus size={16} /> Add First Book
+                </Button>
+              }
+            />
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {filteredBooks.map((book) => (

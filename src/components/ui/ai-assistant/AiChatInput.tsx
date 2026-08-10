@@ -58,7 +58,7 @@ export const AiChatInput = ({
           <IconSend size={16} />
         </motion.button>
       </div>
-      <p className="text-[10px] text-text-muted mt-2 px-0.5">💡 Tip: Be specific for better results</p>
+      <p className="text-[10px] text-text-muted mt-2 px-0.5">Tip: Vague requests get a short form first — answer it for better results</p>
     </div>
   );
 };

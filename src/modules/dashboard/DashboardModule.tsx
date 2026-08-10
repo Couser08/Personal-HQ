@@ -6,7 +6,8 @@ import {
   IconChecklist, IconClockPlay, IconSitemap,
   IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh,
   IconCheck, IconArrowRight, IconFlame, IconCalendar,
-  IconChevronDown, IconRocket, IconLayoutList, IconTarget
+  IconChevronDown, IconRocket, IconLayoutList, IconTarget,
+  IconFileText, IconNotes, IconCode, IconStar
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,6 +32,10 @@ export default function DashboardModule() {
     toggleHabitCompletion,
     activeFocusItem,
     setActiveFocusItem,
+    journals,
+    notes,
+    snippets,
+    tilLogs,
   } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     mindmaps: state.mindmaps,
@@ -51,6 +56,10 @@ export default function DashboardModule() {
     toggleHabitCompletion: state.toggleHabitCompletion,
     activeFocusItem: state.activeFocusItem,
     setActiveFocusItem: state.setActiveFocusItem,
+    journals: state.journals,
+    notes: state.notes,
+    snippets: state.snippets,
+    tilLogs: state.tilLogs,
   })));
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -136,7 +145,31 @@ export default function DashboardModule() {
   const focusMins = pomodoroStats.totalMinutes % 60;
   const focusTimeLabel = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
+  const recentActivity = useMemo(() => {
+    const activities: { id: string; title: string; type: string; date: string; icon: any; module: string; color: string }[] = [];
+    
+    todoTasks.filter(t => t.completed).forEach(t => {
+      activities.push({ id: t.id, title: t.title, type: 'Completed Task', date: t.createdAt || new Date().toISOString(), icon: IconChecklist, module: 'todo', color: 'text-rose-500' });
+    });
+    
+    journals.forEach(j => {
+      activities.push({ id: j.id, title: j.title || 'Journal Entry', type: 'Journal', date: j.date, icon: IconFileText, module: 'journal', color: 'text-blue-500' });
+    });
+    
+    notes.forEach(n => {
+      activities.push({ id: n.id, title: n.title || 'Note', type: 'Note', date: n.updatedAt || n.createdAt, icon: IconNotes, module: 'markdown', color: 'text-purple-500' });
+    });
 
+    snippets.forEach(s => {
+      activities.push({ id: s.id, title: s.title || 'Snippet', type: 'Snippet', date: s.updatedAt || s.createdAt || new Date().toISOString(), icon: IconCode, module: 'snippets', color: 'text-amber-500' });
+    });
+
+    tilLogs.forEach(t => {
+      activities.push({ id: t.id, title: t.title || 'TIL', type: 'TIL', date: t.createdAt, icon: IconStar, module: 'til', color: 'text-emerald-500' });
+    });
+
+    return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  }, [todoTasks, journals, notes, snippets, tilLogs]);
 
   const timerRadius = 52;
   const timerCircumference = 2 * Math.PI * timerRadius;
@@ -664,6 +697,44 @@ export default function DashboardModule() {
 
         </div>
 
+      </motion.div>
+
+      {/* Recent Activity Feed */}
+      <motion.div variants={itemVariants} className="w-full">
+        <div className="bg-surface border border-border/50 rounded-3xl p-6 flex flex-col gap-4 shadow-sm w-full">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center border rounded-lg w-7 h-7 bg-blue-500/10 text-blue-500 border-blue-500/10">
+                <IconStar className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-black tracking-wider uppercase text-text-primary">Recent Activity</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            {recentActivity.length === 0 ? (
+              <p className="text-[11px] text-text-muted italic py-1">No recent activity.</p>
+            ) : (
+              recentActivity.map((activity, i) => (
+                <button key={`${activity.id}-${i}`} onClick={() => setActiveModule(activity.module)}
+                  className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center bg-surface border border-border shrink-0 ${activity.color}`}>
+                      <activity.icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-text-primary truncate">{activity.title}</span>
+                      <span className="text-[10px] text-text-muted font-semibold">{activity.type}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-text-muted font-bold whitespace-nowrap">
+                    {new Date(activity.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
       </motion.div>
 
     </motion.div>

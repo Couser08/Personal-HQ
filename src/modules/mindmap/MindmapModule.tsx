@@ -13,6 +13,7 @@ import {
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Button } from '../../components/ui/Button';
 import { MindmapSidebar } from './components/MindmapSidebar';
 import { MindmapCanvas } from './components/MindmapCanvas';
 import { sanitizeMindmapNodes } from './utils/mindmapUtils';
@@ -592,9 +593,9 @@ export default function MindmapModule() {
             title="Create a Mindmap"
             description="Replicate the mockup layouts by creating a default productivity mindmap."
             action={
-              <button onClick={() => handleCreateMindmap()} className="btn btn-primary btn-md rounded-full px-5">
+              <Button onClick={() => handleCreateMindmap()} variant="primary" className="rounded-full px-5">
                 <IconPlus className="w-4 h-4" /> Load Productivity Mindmap
-              </button>
+              </Button>
             }
           />
         )}

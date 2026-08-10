@@ -10,10 +10,11 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useToastStore } from '../../../store/useToastStore';
 import { type Habit, type AiHistoryItem, type AiChatMessage } from '../../../store/types';
 import { 
-  generateAiGeneralResponse, 
   generateRealAppContextSuggestions, 
   analyzeAndClassifyUserPrompt, 
-  type AiMultiStepPlanOutput 
+  type AiMultiStepPlanOutput,
+  type AiIntent,
+  buildTaskFromClarificationAnswers,
 } from '../../../lib/gemini';
 
 // Subcomponents
@@ -54,6 +55,8 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [multiStepPlan, setMultiStepPlan] = useState<AiMultiStepPlanOutput | null>(null);
   const [executionProgress, setExecutionProgress] = useState(0);
+  const [pendingIntent, setPendingIntent] = useState<AiIntent | null>(null);
+  const [originalPrompt, setOriginalPrompt] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [historyItems, setHistoryItems] = useState<AiHistoryItem[]>(() => {
@@ -113,133 +116,328 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
     [historyItems, historySearch]
   );
 
+  const stamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const applyClassifyResult = async (
+    result: Awaited<ReturnType<typeof analyzeAndClassifyUserPrompt>>,
+    userMsg: AiChatMessage,
+    sourcePrompt: string
+  ) => {
+    if (result.intent === 'ASK_CLARIFICATION' && result.clarificationFields?.length) {
+      const nextPending = (result.pendingIntent as AiIntent) || pendingIntent || 'MULTI_STEP_GOAL';
+      setPendingIntent(nextPending);
+      setOriginalPrompt(originalPrompt || sourcePrompt);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg_${Date.now()}_a`,
+          sender: 'ai',
+          text: result.replyText || 'I need a few details before I continue.',
+          timestamp: stamp(),
+          pendingIntent: nextPending,
+          originalPrompt: originalPrompt || sourcePrompt,
+          resultCard: { type: 'clarification', data: result.clarificationFields, submitted: false },
+        },
+      ]);
+      return;
+    }
+
+    // Successful action clears clarification context
+    setPendingIntent(null);
+    setOriginalPrompt(null);
+
+    if (result.intent === 'CREATE_TODO_TASK' && result.taskData) {
+      const td = result.taskData;
+      const newTask = {
+        id: `task_${Date.now()}`,
+        projectId: null,
+        title: td.title,
+        completed: false,
+        priority: td.priority || 'medium',
+        tags: td.tags || [],
+        dueDate: td.dueDate ?? null,
+        startTime: td.startTime ?? null,
+        endTime: td.endTime ?? null,
+        createdAt: new Date().toISOString(),
+        // Subtasks only when the model returned any (breakdown flow)
+        subtasks: (td.subtasks || []).map((s: any, i: number) => ({
+          id: `sub_${Date.now()}_${i}`,
+          title: typeof s === 'string' ? s : s.title,
+          completed: false,
+        })),
+      };
+      await addTodoTask(newTask);
+      const aiMsg: AiChatMessage = {
+        id: `msg_${Date.now()}_a`,
+        sender: 'ai',
+        text: result.replyText || `Added “${td.title}” to your to-do list.`,
+        timestamp: stamp(),
+        resultCard: { type: 'todo', data: td },
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+      saveHistoryItem({
+        id: `hist_${Date.now()}`,
+        title: `Task: ${td.title}`,
+        actionType: 'add_task',
+        summary: [
+          td.priority,
+          td.startTime && td.endTime ? `${td.startTime}–${td.endTime}` : null,
+          td.tags?.length ? `tags: ${td.tags.join(', ')}` : null,
+        ].filter(Boolean).join(' · ') || 'Task created',
+        createdAt: new Date().toISOString(),
+        messages: [userMsg, aiMsg],
+      });
+      return;
+    }
+
+    if (result.intent === 'BREAKDOWN_TASK') {
+      const pending = todoTasks.filter((t) => !t.completed && !t.deleted);
+      if (!result.taskData && pending.length > 0) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg_${Date.now()}_a`,
+            sender: 'ai',
+            text: 'Select the task to break down:',
+            timestamp: stamp(),
+            resultCard: { type: 'task_select', tasks: pending },
+          },
+        ]);
+        return;
+      }
+      if (result.taskData) {
+        const bdTask = result.taskData;
+        const subtasks = (bdTask.subtasks || []).map((s: any, i: number) => ({
+          id: `sub_${Date.now()}_${i}`,
+          title: typeof s === 'string' ? s : s.title,
+          completed: false,
+        }));
+        const existing = todoTasks.find(
+          (t) =>
+            t.title.toLowerCase() ===
+            (result.targetTaskTitle?.toLowerCase() || bdTask.title?.toLowerCase())
+        );
+        if (existing) await updateTodoTask(existing.id, { subtasks });
+        else
+          await addTodoTask({
+            id: `task_${Date.now()}`,
+            projectId: null,
+            title: bdTask.title,
+            completed: false,
+            priority: bdTask.priority || 'medium',
+            tags: bdTask.tags || [],
+            dueDate: null,
+            createdAt: new Date().toISOString(),
+            subtasks,
+          });
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg_${Date.now()}_a`,
+            sender: 'ai',
+            text: result.replyText || `Here’s a breakdown for “${bdTask.title}”.`,
+            timestamp: stamp(),
+            resultCard: { type: 'todo', data: bdTask },
+          },
+        ]);
+      }
+      return;
+    }
+
+    if (result.intent === 'CREATE_MARKDOWN_DOC' && result.markdownData) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg_${Date.now()}_a`,
+          sender: 'ai',
+          text: result.replyText || `Draft ready: “${result.markdownData!.title}”.`,
+          timestamp: stamp(),
+          resultCard: { type: 'markdown', data: result.markdownData },
+        },
+      ]);
+      return;
+    }
+
+    if (result.intent === 'CREATE_HABIT_ROUTINE' && result.habitData) {
+      const hData = result.habitData;
+      await addHabit({
+        id: `habit_${Date.now()}`,
+        name: hData.name,
+        description: hData.description || '',
+        frequencyType: hData.frequencyType || 'daily',
+        frequencyDays: hData.frequencyDays || [1, 2, 3, 4, 5],
+        frequencyCount: hData.frequencyCount || 3,
+        completedDates: [],
+        streak: 0,
+        bestStreak: 0,
+        createdAt: new Date().toISOString(),
+      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg_${Date.now()}_a`,
+          sender: 'ai',
+          text: result.replyText || `Habit “${hData.name}” is set up.`,
+          timestamp: stamp(),
+          resultCard: { type: 'habit', data: hData },
+        },
+      ]);
+      return;
+    }
+
+    if (result.intent === 'MULTI_STEP_GOAL' && result.multiStepPlan) {
+      setMultiStepPlan(result.multiStepPlan);
+      const aiMsg: AiChatMessage = {
+        id: `msg_${Date.now()}_a`,
+        sender: 'ai',
+        text: result.replyText || `Plan ready for “${result.multiStepPlan.taskTitle}”.`,
+        timestamp: stamp(),
+        resultCard: { type: 'multistep_plan', data: result.multiStepPlan },
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+      saveHistoryItem({
+        id: `hist_${Date.now()}`,
+        title: `Multi-Step: ${result.multiStepPlan.taskTitle}`,
+        actionType: 'multistep',
+        summary: 'Ready to execute task + notes + habit',
+        createdAt: new Date().toISOString(),
+        messages: [userMsg, aiMsg],
+      });
+      return;
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg_${Date.now()}_a`,
+        sender: 'ai',
+        text: result.replyText || 'Here’s what I can help with.',
+        blocks: result.blocks,
+        timestamp: stamp(),
+      },
+    ]);
+  };
+
   const handleChatSubmit = async (customPrompt?: string) => {
     const textToSubmit = (customPrompt ?? prompt).trim();
     if (!textToSubmit) return;
-    if (!apiKey) { addToast('Key Required', 'Set your Gemini API Key in Settings.', 'warning'); return; }
+    if (!apiKey) {
+      addToast('Key Required', 'Set your Gemini API Key in Settings.', 'warning');
+      return;
+    }
 
     const userMsg: AiChatMessage = {
       id: `msg_${Date.now()}_u`,
       sender: 'user',
       text: textToSubmit,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: stamp(),
     };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     if (!customPrompt) setPrompt('');
     setIsGenerating(true);
 
     try {
-      if (['break down a task', 'break task', 'break it down'].includes(textToSubmit.toLowerCase())) {
-        const pending = todoTasks.filter(t => !t.completed && !t.deleted);
+      if (['break down a task', 'breakdown task', 'break it down'].includes(textToSubmit.toLowerCase())) {
+        const pending = todoTasks.filter((t) => !t.completed && !t.deleted);
         if (pending.length > 0) {
-          setMessages(prev => [...prev, {
-            id: `msg_${Date.now()}_a`, sender: 'ai',
-            text: 'Which task should I break into subtasks?',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            resultCard: { type: 'task_select', tasks: pending },
-          }]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `msg_${Date.now()}_a`,
+              sender: 'ai',
+              text: 'Which task should I break into subtasks?',
+              timestamp: stamp(),
+              resultCard: { type: 'task_select', tasks: pending },
+            },
+          ]);
           setIsGenerating(false);
           return;
         }
       }
 
-      const result = await analyzeAndClassifyUserPrompt(apiKey, textToSubmit, model, settings.aiPersona);
+      if (!originalPrompt) setOriginalPrompt(textToSubmit);
 
-      if (result.intent === 'ASK_CLARIFICATION' && result.clarificationFields) {
-        setMessages(prev => [...prev, {
-          id: `msg_${Date.now()}_a`, sender: 'ai',
-          text: result.replyText || 'I need a few details to help you better.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          resultCard: { type: 'clarification', data: result.clarificationFields },
-        }]);
-      } else if (result.intent === 'CREATE_TODO_TASK' && result.taskData) {
-        const newTask = {
-          id: `task_${Date.now()}`, projectId: null, title: result.taskData.title,
-          completed: false, priority: result.taskData.priority || 'medium',
-          tags: result.taskData.tags || ['ai-created'], dueDate: null,
-          createdAt: new Date().toISOString(),
-          subtasks: (result.taskData.subtasks || []).map((s: any, i: number) => ({ id: `sub_${Date.now()}_${i}`, title: typeof s === 'string' ? s : s.title, completed: false })),
-        };
-        await addTodoTask(newTask);
-        const aiMsg: AiChatMessage = {
-          id: `msg_${Date.now()}_a`, sender: 'ai',
-          text: result.replyText || `Task **"${result.taskData.title}"** has been added to your To-Do list ✅`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          resultCard: { type: 'todo', data: result.taskData },
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        saveHistoryItem({ id: `hist_${Date.now()}`, title: `Task: ${result.taskData.title}`, actionType: 'add_task', summary: `Created with ${result.taskData.subtasks?.length || 0} subtasks`, createdAt: new Date().toISOString(), messages: [userMsg, aiMsg] });
-      } else if (result.intent === 'BREAKDOWN_TASK') {
-        const pending = todoTasks.filter(t => !t.completed && !t.deleted);
-        if (!result.targetTaskTitle && pending.length > 0) {
-          setMessages(prev => [...prev, {
-            id: `msg_${Date.now()}_a`, sender: 'ai',
-            text: 'Select the task to break down:',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            resultCard: { type: 'task_select', tasks: pending },
-          }]);
-        } else if (result.taskData) {
-          const bdTask = result.taskData;
-          const subtasks = (bdTask.subtasks || []).map((s: any, i: number) => ({ id: `sub_${Date.now()}_${i}`, title: typeof s === 'string' ? s : s.title, completed: false }));
-          const existing = todoTasks.find(t => t.title.toLowerCase() === (result.targetTaskTitle?.toLowerCase() || bdTask.title?.toLowerCase()));
-          if (existing) await updateTodoTask(existing.id, { subtasks });
-          else await addTodoTask({ id: `task_${Date.now()}`, projectId: null, title: bdTask.title, completed: false, priority: bdTask.priority || 'medium', tags: bdTask.tags || [], dueDate: null, createdAt: new Date().toISOString(), subtasks });
-          setMessages(prev => [...prev, {
-            id: `msg_${Date.now()}_a`, sender: 'ai',
-            text: result.replyText || `Here's the breakdown for **"${bdTask.title}"** — saved to your tasks ⚡`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            resultCard: { type: 'todo', data: bdTask },
-          }]);
+      const result = await analyzeAndClassifyUserPrompt(
+        apiKey,
+        textToSubmit,
+        model,
+        settings.aiPersona,
+        {
+          originalPrompt: originalPrompt || textToSubmit,
+          pendingIntent,
         }
-      } else if (result.intent === 'CREATE_MARKDOWN_DOC' && result.markdownData) {
-        const mdData = result.markdownData;
-        setMessages(prev => [...prev, {
-          id: `msg_${Date.now()}_a`, sender: 'ai',
-          text: result.replyText || `Markdown doc **"${mdData.title}"** is ready 📝`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          resultCard: { type: 'markdown', data: mdData },
-        }]);
-      } else if (result.intent === 'CREATE_HABIT_ROUTINE' && result.habitData) {
-        const hData = result.habitData;
-        const newHabit = {
-          id: `habit_${Date.now()}`,
-          name: hData.name,
-          description: hData.description || '',
-          frequencyType: hData.frequencyType || 'daily',
-          frequencyDays: hData.frequencyDays || [1, 2, 3, 4, 5],
-          frequencyCount: hData.frequencyCount || 3,
-          completedDates: [],
-          streak: 0,
-          bestStreak: 0,
-          createdAt: new Date().toISOString()
-        };
-        await addHabit(newHabit);
-        setMessages(prev => [...prev, {
-          id: `msg_${Date.now()}_a`, sender: 'ai',
-          text: result.replyText || `Habit **"${hData.name}"** created successfully 📅`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          resultCard: { type: 'habit', data: hData },
-        }]);
-      } else if (result.intent === 'MULTI_STEP_GOAL' && result.multiStepPlan) {
-        setMultiStepPlan(result.multiStepPlan);
-        const planMsgId = `msg_${Date.now()}_a`;
-        const aiMsg: AiChatMessage = {
-          id: planMsgId, sender: 'ai',
-          text: result.replyText || `Multi-step plan for **"${result.multiStepPlan.taskTitle}"** is ready 🎯`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          resultCard: { type: 'multistep_plan', data: result.multiStepPlan },
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        saveHistoryItem({ id: `hist_${Date.now()}`, title: `Multi-Step: ${result.multiStepPlan.taskTitle}`, actionType: 'multistep', summary: 'Task + MD + Habit created', createdAt: new Date().toISOString(), messages: [userMsg, aiMsg] });
-      } else {
-        const resText = result.replyText || await generateAiGeneralResponse(apiKey, textToSubmit, model);
-        setMessages(prev => [...prev, {
-          id: `msg_${Date.now()}_a`, sender: 'ai', text: resText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }]);
-      }
+      );
+
+      await applyClassifyResult(result, userMsg, textToSubmit);
     } catch (err: any) {
       addToast('AI Error', err.message || 'Failed to generate response', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleClarificationSubmit = async (
+    msg: AiChatMessage,
+    answers: Record<string, string | string[]>,
+    summary: string
+  ) => {
+    if (!apiKey) {
+      addToast('Key Required', 'Set your Gemini API Key in Settings.', 'warning');
+      return;
+    }
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msg.id
+          ? { ...m, resultCard: { ...m.resultCard, submitted: true } }
+          : m
+      )
+    );
+
+    const userMsg: AiChatMessage = {
+      id: `msg_${Date.now()}_u`,
+      sender: 'user',
+      text: summary,
+      timestamp: stamp(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsGenerating(true);
+
+    const intent = (msg.pendingIntent as AiIntent) || pendingIntent;
+    const source = msg.originalPrompt || originalPrompt || summary;
+
+    try {
+      // Fast path: build task directly from form — no subtasks, no AI inventing fields
+      if (intent === 'CREATE_TODO_TASK') {
+        const taskData = buildTaskFromClarificationAnswers(answers, source);
+        // If title still empty-ish from "Add a task", keep what user typed in form
+        await applyClassifyResult(
+          {
+            intent: 'CREATE_TODO_TASK',
+            taskData,
+            replyText: `Added “${taskData.title}” to your to-do list.`,
+          },
+          userMsg,
+          source
+        );
+        return;
+      }
+
+      const result = await analyzeAndClassifyUserPrompt(
+        apiKey,
+        summary,
+        model,
+        settings.aiPersona,
+        {
+          originalPrompt: source,
+          pendingIntent: intent,
+          clarificationAnswers: summary,
+          clarificationAnswerMap: answers,
+        }
+      );
+      await applyClassifyResult(result, userMsg, source);
+    } catch (err: any) {
+      addToast('AI Error', err.message || 'Failed to continue after answers', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -259,7 +457,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
       const newHabit: Habit = { id: `habit_${Date.now()}`, name: multiStepPlan.habitName, description: `AI routine: ${multiStepPlan.targetDaysPerWeek} days/week`, frequencyType: 'daily', frequencyDays: [0,1,2,3,4,5,6], frequencyCount: multiStepPlan.targetDaysPerWeek, completedDates: [], streak: 0, bestStreak: 0, createdAt: new Date().toISOString() };
       await addHabit(newHabit);
       setExecutionProgress(100);
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, text: `All done! Task, ${multiStepPlan.subtasks.length} subtasks, .md file & habit created 🎉`, resultCard: { type: 'multistep_completed', data: multiStepPlan } } : m));
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, text: `Done — task, ${multiStepPlan.subtasks.length} subtasks, notes, and habit are in your workspace.`, resultCard: { type: 'multistep_completed', data: multiStepPlan } } : m));
       addToast('Success', 'Multi-step plan executed!', 'success');
     } catch (err: any) {
       addToast('Execution Failed', err.message || 'Could not complete plan', 'error');
@@ -328,7 +526,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
               </button>
 
               <button
-                onClick={() => { setMessages([]); setMultiStepPlan(null); }}
+                onClick={() => { setMessages([]); setMultiStepPlan(null); setPendingIntent(null); setOriginalPrompt(null); }}
                 className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold border border-primary cursor-pointer hover:opacity-90 transition-opacity hidden sm:flex items-center gap-1"
               >
                 <IconPlus size={14} /> New Chat
@@ -458,6 +656,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
                     isGenerating={isGenerating}
                     executionProgress={executionProgress}
                     handleChatSubmit={handleChatSubmit}
+                    handleClarificationSubmit={handleClarificationSubmit}
                     handleExecuteInChatPlan={handleExecuteInChatPlan}
                     setActiveModule={setActiveModule}
                     onClose={onClose}

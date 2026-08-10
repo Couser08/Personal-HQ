@@ -93,6 +93,13 @@ export interface TodoTask {
   deleted?: boolean;
   createdAt: string;
   subtasks?: SubTask[];
+  
+  // Daily Planner fields
+  category?: string;
+  description?: string;
+  location?: string;
+  reminder?: string;
+  repeat?: string;
 }
 
 export interface TopicNote {
@@ -416,14 +423,36 @@ export interface AppSettings {
   aiPersona?: 'Professional' | 'Friendly/Coaching' | 'Strict';
 }
 
+export type AiReplyBlock =
+  | { type: 'heading'; text: string }
+  | { type: 'paragraph'; text: string }
+  | { type: 'bullets'; items: string[] }
+  | { type: 'steps'; items: string[] }
+  | { type: 'callout'; variant: 'tip' | 'note' | 'warning'; text: string };
+
+export interface AiClarificationField {
+  id: string;
+  label: string;
+  type: 'input' | 'textarea' | 'radio' | 'checkbox' | 'time';
+  placeholder?: string;
+  options?: string[];
+  required?: boolean;
+  defaultValue?: string | string[];
+}
+
 export interface AiChatMessage {
   id: string;
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
+  /** Structured reply sections — preferred over dumping markdown into chat */
+  blocks?: AiReplyBlock[];
   options?: { label: string; value: string }[];
   questionId?: string;
   resultCard?: any;
+  /** When AI asked clarification, remember what to do after answers */
+  pendingIntent?: string;
+  originalPrompt?: string;
 }
 
 export interface AiHistoryItem {

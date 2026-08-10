@@ -2,28 +2,26 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   IconX, IconArrowRight, IconChevronRight,
-  IconRobot, IconWifiOff, IconLayoutSidebar, IconPhoto,
-  IconCalendarMonth, IconLayoutKanban, IconBrain,
-  IconBolt, IconDatabase, IconUserCircle,
-  IconChecks, IconDeviceMobile, IconKeyboard,
+  IconPackage, IconTrash, IconSparkles, IconBrain,
+  IconCalendarMonth, IconLayoutKanban,
+  IconDatabase, IconTag, IconCheckbox,
+  IconBolt, IconDeviceMobile, IconPuzzle,
 } from '@tabler/icons-react';
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const VERSION     = '3.6';
-const CODENAME    = 'Fast & Clean';
-const RELEASE_KEY = 'phq_popup_v36';
+const VERSION     = '4.0';
+const CODENAME    = 'Refined';
+const RELEASE_KEY = 'phq_popup_v40';
 
 // ── Content ───────────────────────────────────────────────────────────────────
 type TabId = 'new' | 'roadmap' | 'perf' | 'fixes';
 
 const TABS: { id: TabId; label: string; dot?: boolean }[] = [
-  { id: 'new',     label: "What's New", dot: true },
-  { id: 'roadmap', label: 'Roadmap',    dot: true },
+  { id: 'new',     label: "What's New",   dot: true },
+  { id: 'roadmap', label: 'Roadmap',      dot: true },
   { id: 'perf',    label: 'Improvements' },
-  { id: 'fixes',   label: 'Fixes' },
+  { id: 'fixes',   label: 'Fixes'        },
 ];
-
-
 
 interface Item {
   Icon: React.ElementType;
@@ -37,45 +35,45 @@ type Content = Record<TabId, { headline: string; sub: string; items: Item[] }>;
 
 const DATA: Content = {
   new: {
-    headline: 'Blur audited, global paint cost slashed, modal UX tightened.',
-    sub: 'Performance-first release — every animation follows compositor-only rules.',
+    headline: 'Todo rebuilt from scratch. Budget & Projects removed. Design system unified.',
+    sub: 'The biggest structural refactor in Personal HQ history — leaner, faster, cleaner.',
     items: [
       {
-        Icon: IconRobot,
-        title: 'Global Blur Audit — All Large Surfaces Fixed',
-        desc: 'Removed the stray global backdrop-filter from :root. Downgraded backdrop-blur-xl/2xl (24–40 px) to backdrop-blur-sm (4 px) across Journal, Markdown, Profile, Settings, and Login — all within the ≤8 px ceiling.',
+        Icon: IconCheckbox,
+        title: 'Todo Module — Ground-Up Rebuild',
+        desc: 'TaskList and TodoSidebar replaced by a new modular components architecture under todo/components/. Planner sub-module added. Leaner state, faster renders, fully keyboard-accessible.',
         accent: '#f43f5e',
-        tag: 'Perf',
+        tag: 'Major',
       },
       {
-        Icon: IconWifiOff,
-        title: 'Command Palette — Blur Removed from Panel',
-        desc: 'The modal panel (bg-white/90) had backdrop-blur-xl with zero visual benefit. Replaced with no blur; overlay downgraded from backdrop-blur-md → backdrop-blur-sm. Paint work reduced by ~60%.',
-        accent: '#6366F1',
-        tag: 'Perf',
+        Icon: IconTrash,
+        title: 'Budget & Projects Removed',
+        desc: 'BudgetModule (6 files, 1400+ lines) and ProjectsModule (1900+ lines) removed to reduce bundle size and maintenance overhead. Features will return in a dedicated Finance module in a future release.',
+        accent: '#8B5CF6',
+        tag: 'Breaking',
       },
       {
-        Icon: IconLayoutSidebar,
-        title: 'Compositor-Only Animations Throughout',
-        desc: 'All Framer Motion transitions verified to animate only transform and opacity. No layout-triggering width/height/top/left transitions anywhere in the motion layer.',
+        Icon: IconPackage,
+        title: 'Unified Design System Components',
+        desc: 'New shared primitives: Button, Card, IconButton, Input, TextArea. All modules now consume these instead of ad-hoc Tailwind. Consistent padding, focus rings, and dark-mode behaviour everywhere.',
         accent: '#0EA5E9',
       },
       {
-        Icon: IconPhoto,
-        title: 'UpdatePopup — Premium Stripe-Style Redesign',
-        desc: 'Completely rewritten with dark-native surface (#111), rgba borders, thin gradient accent bar, icon rows, segmented tab bar, and animated headline swap. Zero emojis.',
+        Icon: IconTag,
+        title: 'Cross-Module Tagging System',
+        desc: 'New TagInput component + taggables Supabase migration. Tag any item across Journal, Todo, Books, and Study — filter by tag from a single command palette search.',
         accent: '#10B981',
       },
     ],
   },
   roadmap: {
-    headline: 'Calendar & Vision Board — arriving end of August.',
-    sub: 'A 3-phase rollout across the last two weeks of the month.',
+    headline: 'Calendar & Vision Board arriving this month — here\'s the exact schedule.',
+    sub: '3-phase rollout across the last two weeks of August 2026.',
     items: [
       {
         Icon: IconCalendarMonth,
         title: 'Phase 1 · Unified Master Calendar',
-        desc: 'Task deadlines, habit streaks, Pomodoro focus blocks, and study sessions in one interactive day/week/month calendar.',
+        desc: 'Task deadlines, habit streaks, Pomodoro blocks, and study sessions in one interactive day/week/month view. Drag to reschedule.',
         accent: '#EC4899',
         tag: 'Aug 15',
       },
@@ -89,66 +87,73 @@ const DATA: Content = {
       {
         Icon: IconBrain,
         title: 'Phase 3 · AI Auto-Scheduler & Heatmaps',
-        desc: 'The AI schedules your optimal deep-work sessions around existing habits. Yearly productivity heatmaps and streak analytics.',
+        desc: 'AI schedules optimal deep-work sessions around your existing habits. Yearly consistency heatmaps and streak analytics.',
         accent: '#F59E0B',
         tag: 'Aug 31',
       },
     ],
   },
   perf: {
-    headline: 'Faster sync, leaner queries, smarter diagnostics.',
-    sub: 'Under-the-hood work that pays off every session.',
+    headline: 'Smaller bundle, smarter Gemini layer, tighter UI primitives.',
+    sub: 'Everything that makes the app feel fast and intentional.',
     items: [
       {
         Icon: IconBolt,
-        title: 'Parallel Data Hydration',
-        desc: 'All 18 data sources load concurrently via Promise.allSettled — a slow table can no longer stall the rest of the app.',
+        title: 'Bundle Shrunk by ~3800 Lines',
+        desc: 'Removing Budget (1400 lines), Projects (1900 lines), and legacy TaskList/TodoSidebar (1766 lines) makes the production bundle significantly leaner.',
         accent: '#F59E0B',
       },
       {
-        Icon: IconDatabase,
-        title: 'db.ts Service Layer Refactored',
-        desc: 'Uniform error shapes, column-scoped selects on every list endpoint, and automatic retry on 503 across all services.',
+        Icon: IconSparkles,
+        title: 'Gemini Layer Major Refactor',
+        desc: 'gemini.ts rewritten with 1292 lines of structured function calls, context injection, and multi-module awareness. AI responses are richer and more accurate.',
         accent: '#0EA5E9',
       },
       {
-        Icon: IconUserCircle,
-        title: 'Live Sync Diagnostics',
-        desc: 'Profile and Admin panels now surface real-time sync health, offline isolation status, and forced-sync controls.',
+        Icon: IconDatabase,
+        title: 'Supabase Schema: Taggables Migration',
+        desc: 'New taggables join table supports polymorphic cross-module tags. Optimised with composite indexes and RLS policies. Todo tasks table recreated with updated schema.',
         accent: '#6366F1',
+      },
+      {
+        Icon: IconPuzzle,
+        title: 'AI Structured Reply Component',
+        desc: 'New AiStructuredReply.tsx renders AI responses as typed cards (task list, flashcards, summaries) rather than plain markdown — better for actionable AI output.',
+        accent: '#10B981',
       },
     ],
   },
   fixes: {
-    headline: 'Zero build warnings, safe-area support, full keyboard access.',
-    sub: 'Everything that should have always worked.',
+    headline: 'Sidebar polish, command palette search, and AI chat UX fixes.',
+    sub: 'Consistency and correctness throughout.',
     items: [
       {
-        Icon: IconChecks,
-        title: 'Clean Production Build',
-        desc: 'All TS6133 unused-variable warnings removed. npm run build exits cleanly with zero errors or warnings.',
-        accent: '#10B981',
+        Icon: IconCheckbox,
+        title: 'Todo Planner Sub-Module Added',
+        desc: 'New todo/components/planner/ folder introduces a visual daily planner view. Accessible from the Todo module header tabs.',
+        accent: '#f43f5e',
       },
       {
         Icon: IconDeviceMobile,
-        title: 'Mobile Safe-Area & z-index',
-        desc: 'Floating button z-index corrected on iOS. Modal capped at calc(100vw - 2rem) so it never clips on screens below 375 px.',
+        title: 'Sidebar Collapse & Mobile Nav Fixed',
+        desc: 'Sidebar.tsx refactored for cleaner collapse state, icon-only mode, and correct mobile bottom nav stacking with safe-area padding.',
         accent: '#0EA5E9',
       },
       {
-        Icon: IconKeyboard,
-        title: 'Modal Keyboard Accessibility',
-        desc: 'Cmd+Enter submits, Escape closes. Tab cycle order is correct, and focus returns to the trigger element on dismiss.',
+        Icon: IconSparkles,
+        title: 'AI Chat — Message Bubble & Input Polish',
+        desc: 'AiMessageBubble and AiChatInput rebuilt with tighter spacing, better code block contrast, and correct focus management on message send.',
         accent: '#8B5CF6',
       },
     ],
   },
 };
 
-// ── Shared tokens ─────────────────────────────────────────────────────────────
-const PRIMARY = '#f43f5e';
-const BG_CARD = '#111111';
-const BORDER  = '1px solid rgba(255,255,255,0.06)';
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const PRIMARY   = '#f43f5e';
+const BG_CARD   = '#111111';
+const BORDER    = '1px solid rgba(255,255,255,0.06)';
+const GRAD_LINE = `linear-gradient(90deg, ${PRIMARY} 0%, #8B5CF6 50%, #0EA5E9 100%)`;
 
 // ── Mini notification strip ───────────────────────────────────────────────────
 function MiniStrip({ onExpand, onDismiss }: { onExpand(): void; onDismiss(): void }) {
@@ -166,19 +171,16 @@ function MiniStrip({ onExpand, onDismiss }: { onExpand(): void; onDismiss(): voi
         willChange: 'transform, opacity',
       }}
     >
-      {/* Top accent line */}
-      <div style={{ height: 2, background: `linear-gradient(90deg, ${PRIMARY} 0%, #8B5CF6 50%, #0EA5E9 100%)` }} />
+      <div style={{ height: 2, background: GRAD_LINE }} />
 
       <div className="flex items-center gap-3 px-4 py-3.5">
-        {/* Icon badge */}
         <div
           className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
           style={{ background: `${PRIMARY}15`, border: `1px solid ${PRIMARY}25` }}
         >
-          <IconRobot size={16} style={{ color: PRIMARY }} />
+          <IconPackage size={16} style={{ color: PRIMARY }} />
         </div>
 
-        {/* Text */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-bold text-white leading-none">
@@ -188,15 +190,14 @@ function MiniStrip({ onExpand, onDismiss }: { onExpand(): void; onDismiss(): voi
               className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
               style={{ background: `${PRIMARY}15`, color: PRIMARY, border: `1px solid ${PRIMARY}25` }}
             >
-              New
+              Major
             </span>
           </div>
           <p className="text-[10.5px] mt-0.5 leading-snug" style={{ color: 'rgba(255,255,255,0.38)' }}>
-            AI studio, offline engine &amp; Aug roadmap inside
+            Todo rebuilt · Budget &amp; Projects removed · Tagging system
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={onExpand}
@@ -230,15 +231,12 @@ function ChangeRow({ item, index }: { item: Item; index: number }) {
       className="flex gap-3 py-3.5"
       style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
     >
-      {/* Icon */}
       <div
         className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
         style={{ background: `${accent}12`, border: `1px solid ${accent}20` }}
       >
         <Icon size={15} style={{ color: accent }} />
       </div>
-
-      {/* Text */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-[12.5px] font-semibold leading-tight" style={{ color: 'rgba(255,255,255,0.9)' }}>
@@ -268,12 +266,11 @@ function FullModal({ onClose }: { onClose(): void }) {
 
   return (
     <>
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
         className="fixed inset-0 z-[10000]"
-        style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)' }}
       />
 
       <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 pointer-events-none">
@@ -290,8 +287,7 @@ function FullModal({ onClose }: { onClose(): void }) {
             willChange: 'transform, opacity',
           }}
         >
-          {/* Accent line */}
-          <div style={{ height: 2, background: `linear-gradient(90deg, ${PRIMARY} 0%, #8B5CF6 50%, #0EA5E9 100%)`, flexShrink: 0 }} />
+          <div style={{ height: 2, background: GRAD_LINE, flexShrink: 0 }} />
 
           {/* Header */}
           <div className="flex items-start gap-3.5 px-5 pt-5 pb-4 shrink-0">
@@ -299,12 +295,9 @@ function FullModal({ onClose }: { onClose(): void }) {
               className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
               style={{ background: `${PRIMARY}12`, border: `1px solid ${PRIMARY}22` }}
             >
-              {tab === 'roadmap'
-                ? <IconCalendarMonth size={17} style={{ color: PRIMARY }} />
-                : <IconRobot size={17} style={{ color: PRIMARY }} />
-              }
+              <IconPackage size={17} style={{ color: PRIMARY }} />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[15px] font-bold leading-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>
                   Personal HQ v{VERSION}
@@ -318,7 +311,7 @@ function FullModal({ onClose }: { onClose(): void }) {
               </div>
               <AnimatePresence mode="wait">
                 <motion.p
-                  key={tab + '-h'}
+                  key={tab}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
@@ -376,7 +369,7 @@ function FullModal({ onClose }: { onClose(): void }) {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.12 }}
               >
-                {/* Roadmap special banner */}
+                {/* Roadmap banner */}
                 {tab === 'roadmap' && (
                   <div
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl mb-1 mt-1"
@@ -435,7 +428,6 @@ export function UpdatePopup() {
 
   return (
     <>
-      {/* Mini strip — bottom right */}
       <div className="fixed bottom-5 right-5 z-[9999] pointer-events-none w-full max-w-[380px]">
         <AnimatePresence>
           {step === 'strip' && (
@@ -446,7 +438,6 @@ export function UpdatePopup() {
         </AnimatePresence>
       </div>
 
-      {/* Full modal */}
       <AnimatePresence>
         {step === 'full' && <FullModal onClose={dismiss} />}
       </AnimatePresence>

@@ -19,8 +19,10 @@ import {
   IconArrowsShuffle,
   IconChevronRight,
   IconEdit,
+  IconBrain,
 } from '@tabler/icons-react';
 import { useToastStore } from '../../../store/useToastStore';
+import { useAppStore } from '../../../store/useAppStore';
 import { CustomSelect } from '../../../components/ui/CustomSelect';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { ShikiHighlighter } from '../../../components/ui/ShikiHighlighter';
@@ -257,12 +259,29 @@ export function TopicWorkspace({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-base">Saved Notes</h3>
-              <button
-                onClick={() => setNoteModal({ open: true, noteId: null, title: '', content: '', isReadOnly: false })}
-                className="btn btn-primary btn-sm"
-              >
-                <IconPlus className="w-4 h-4" /> Add Note
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const fullContent = activeTopic.notes?.map((n: any) => `# ${n.title}\n\n${n.content}`).join('\n\n') || '';
+                    if (!fullContent) {
+                      addToast('No Content', 'Please add some notes first to test your knowledge.', 'warning');
+                      return;
+                    }
+                    localStorage.setItem('pendingExamTitle', activeTopic.name);
+                    localStorage.setItem('pendingExamContent', fullContent);
+                    useAppStore.getState().setActiveModule('exam');
+                  }}
+                  className="btn btn-secondary btn-sm text-primary border-primary/20 hover:bg-primary/10"
+                >
+                  <IconBrain className="w-4 h-4" /> Test Knowledge
+                </button>
+                <button
+                  onClick={() => setNoteModal({ open: true, noteId: null, title: '', content: '', isReadOnly: false })}
+                  className="btn btn-primary btn-sm"
+                >
+                  <IconPlus className="w-4 h-4" /> Add Note
+                </button>
+              </div>
             </div>
 
             {!activeTopic.notes?.length ? (

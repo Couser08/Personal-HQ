@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { 
-  IconSearch, IconLayout, IconChecklist, IconBook, IconWallet, 
+  IconSearch, IconLayout, IconChecklist, IconBook,
   IconCode, IconClockPlay, IconSitemap, IconSettings, IconSun, 
-  IconMoon, IconEye, IconTerminal, IconCornerDownLeft,
+  IconMoon, IconEye, IconCornerDownLeft,
   IconPencil, IconLink, IconFlame, IconNotebook, IconBook2
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from './DynamicIsland';
+import { Input } from './Input';
 
 export function CommandPalette() {
   const { setActiveModule, theme, setTheme } = useAppStore(useShallow(state => ({
@@ -45,7 +46,14 @@ export function CommandPalette() {
     }
   }, [isOpen]);
 
-  const items = [
+  const { journals, snippets, tilLogs, books } = useAppStore(useShallow(state => ({
+    journals: state.journals,
+    snippets: state.snippets,
+    tilLogs: state.tilLogs,
+    books: state.books,
+  })));
+
+  const staticItems = [
     // ── Quick-Add ─────────────────────────────────────────────────────────
     { id: 'new-journal', label: 'New Journal Entry', category: 'Quick-Add', icon: IconBook2, action: () => {
         setActiveModule('journal');
@@ -82,10 +90,8 @@ export function CommandPalette() {
     },
     // ── Navigation ────────────────────────────────────────────────────────
     { id: 'dashboard', label: 'Go to Home', category: 'Navigation', icon: IconLayout, action: () => setActiveModule('dashboard') },
-    { id: 'projects', label: 'Go to Projects', category: 'Navigation', icon: IconTerminal, action: () => setActiveModule('projects') },
     { id: 'todo', label: 'Go to To-Do List', category: 'Navigation', icon: IconChecklist, action: () => setActiveModule('todo') },
     { id: 'study', label: 'Go to Study Tracker', category: 'Navigation', icon: IconBook, action: () => setActiveModule('study') },
-    { id: 'budget', label: 'Go to Expense & Income', category: 'Navigation', icon: IconWallet, action: () => setActiveModule('budget') },
     { id: 'snippets', label: 'Go to Snippets Vault', category: 'Navigation', icon: IconCode, action: () => setActiveModule('snippets') },
     { id: 'pomodoro', label: 'Go to Pomodoro', category: 'Navigation', icon: IconClockPlay, action: () => setActiveModule('pomodoro') },
     { id: 'mindmap', label: 'Go to Mindmap Canvas', category: 'Navigation', icon: IconSitemap, action: () => setActiveModule('mindmap') },
@@ -103,6 +109,39 @@ export function CommandPalette() {
       }
     },
   ];
+
+  const dynamicItems = [
+    ...(journals || []).map(j => ({
+      id: `journal-${j.id}`,
+      label: j.title || 'Untitled Journal',
+      category: 'Journal',
+      icon: IconBook2,
+      action: () => setActiveModule('journal')
+    })),
+    ...(snippets || []).map(s => ({
+      id: `snippet-${s.id}`,
+      label: s.title || 'Untitled Snippet',
+      category: 'Snippet',
+      icon: IconCode,
+      action: () => setActiveModule('snippets')
+    })),
+    ...(tilLogs || []).map(t => ({
+      id: `til-${t.id}`,
+      label: t.title || 'Untitled TIL',
+      category: 'TIL',
+      icon: IconNotebook,
+      action: () => setActiveModule('til')
+    })),
+    ...(books || []).map(b => ({
+      id: `book-${b.id}`,
+      label: b.title || 'Untitled Book',
+      category: 'Library',
+      icon: IconBook,
+      action: () => setActiveModule('books')
+    }))
+  ];
+
+  const items = [...staticItems, ...dynamicItems];
 
   const filteredItems = items.filter(item => 
     item.label.toLowerCase().includes(search.toLowerCase()) ||
@@ -163,13 +202,13 @@ export function CommandPalette() {
             {/* Header Search Matrix */}
             <div className="flex items-center px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/60 gap-3">
               <IconSearch className="w-[18px] h-[18px] text-zinc-400 dark:text-zinc-500 shrink-0" style={{ strokeWidth: 2.3 }} />
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 placeholder="Search features, navigation links, or preferences..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-transparent border-none text-[13.5px] font-medium focus:outline-none focus:ring-0 text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 p-0"
+                className="w-full bg-transparent border-none text-[13.5px] font-medium focus:outline-none focus:ring-0 focus:shadow-none shadow-none text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 p-0"
               />
               <div className="flex items-center gap-1 shrink-0">
                 <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500 rounded-md border border-zinc-200/40 dark:border-zinc-700/40">ESC</kbd>

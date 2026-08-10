@@ -223,7 +223,7 @@ export default function MarkdownModule() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       void updateNote(activeDocId, { title: newVal }, true);
-    }, 1500);
+    }, 800);
   };
 
   // Debounced content save
@@ -235,7 +235,7 @@ export default function MarkdownModule() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       void updateNote(activeDocId, { content: newVal }, true);
-    }, 1500);
+    }, 800);
   };
 
   const [copied, setCopied] = useState(false);

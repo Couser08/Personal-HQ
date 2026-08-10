@@ -11,6 +11,7 @@ interface TagInputProps {
 export const TagInput = ({ tags, onChange, placeholder = "Type and press enter..." }: TagInputProps) => {
   const [input, setInput] = useState('');
   const appTags = useAppStore((state) => state.appTags);
+  const addAppTag = useAppStore((state) => state.addAppTag);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -18,6 +19,19 @@ export const TagInput = ({ tags, onChange, placeholder = "Type and press enter..
       const newTag = input.trim();
       if (newTag && !tags.includes(newTag)) {
         onChange([...tags, newTag]);
+        
+        // Auto-add to global tags if it doesn't exist
+        const existsGlobally = appTags.some(t => t.name.toLowerCase() === newTag.toLowerCase());
+        if (!existsGlobally) {
+          const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+          const randomColor = colors[Math.floor(Math.random() * colors.length)];
+          addAppTag({
+            id: crypto.randomUUID(),
+            name: newTag,
+            color: randomColor,
+            createdAt: new Date().toISOString()
+          });
+        }
       }
       setInput('');
     } else if (e.key === 'Backspace' && !input && tags.length > 0) {

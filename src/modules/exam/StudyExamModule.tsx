@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -14,7 +14,9 @@ import { ReadMaterial } from './components/ReadMaterial';
 import { StudyMaterialFlashcards } from './components/StudyMaterialFlashcards';
 
 export default function StudyExamModule() {
-  const [view, setView] = useState<'library' | 'ingest' | 'generate' | 'active' | 'report' | 'read' | 'flashcards'>('library');
+  const [view, setView] = useState<'library' | 'ingest' | 'generate' | 'active' | 'report' | 'read' | 'flashcards'>(() => {
+    return localStorage.getItem('pendingExamTitle') ? 'ingest' : 'library';
+  });
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeAttempt, setActiveAttempt] = useState<ExamAttempt | null>(null);
@@ -198,9 +200,16 @@ function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSele
 
 function IngestMaterial({ apiKey, onBack, onSuccess }: any) {
   const addToast = useToastStore((s) => s.addToast);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState(() => localStorage.getItem('pendingExamTitle') || '');
+  const [content, setContent] = useState(() => localStorage.getItem('pendingExamContent') || '');
   const [isParsing, setIsParsing] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem('pendingExamTitle');
+      localStorage.removeItem('pendingExamContent');
+    };
+  }, []);
 
   const handleIngest = async () => {
     if (!title.trim() || !content.trim()) return addToast('Error', 'Title and content required', 'error');

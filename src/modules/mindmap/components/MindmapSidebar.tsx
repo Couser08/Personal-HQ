@@ -1,5 +1,7 @@
 import { IconSearch, IconPlus, IconFolder, IconEdit, IconTrash, IconChevronDown, IconChevronLeft } from '@tabler/icons-react';
 import { type Mindmap } from '../../../store/types';
+import { Input } from '../../../components/ui/Input';
+import { IconButton } from '../../../components/ui/IconButton';
 
 export function MindmapSidebar({
   filteredMindmaps,
@@ -77,12 +79,12 @@ export function MindmapSidebar({
       <div className="p-3">
         <div className="relative">
           <IconSearch className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
+          <Input
             type="text"
             placeholder="Search maps..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface border border-border/50 pl-9 pr-8 py-2 rounded-xl text-xs font-semibold focus:outline-none focus:border-primary text-text-primary"
+            className="w-full pl-9 pr-8 py-2 rounded-xl text-xs font-semibold"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-text-muted bg-surface-alt px-1.5 py-0.5 rounded border border-border/60">
             ⌘K
@@ -93,13 +95,15 @@ export function MindmapSidebar({
       {/* Directory header */}
       <div className="px-4 py-2 flex items-center justify-between text-text-secondary font-black text-[10px] tracking-wider uppercase">
         <span>MAPS</span>
-        <button
+        <IconButton
           onClick={() => handleCreateMindmap('Untitled Mindmap')}
-          className="w-5 h-5 rounded hover:bg-surface-alt flex items-center justify-center text-text-secondary border-none bg-transparent cursor-pointer"
+          variant="ghost"
+          size="sm"
+          className="w-6 h-6 p-0"
           title="Create New Mindmap"
         >
           <IconPlus className="w-3.5 h-3.5" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Maps directory scrolling list */}

@@ -8,9 +8,7 @@ import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
-const ProjectsModule = lazy(() => import('./modules/projects/ProjectsModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
-const BudgetModule = lazy(() => import('./modules/budget/BudgetModule'));
 const StudyModule = lazy(() => import('./modules/study/StudyModule'));
 const StudyExamModule = lazy(() => import('./modules/exam/StudyExamModule'));
 const MediaModule = lazy(() => import('./modules/media/MediaModule'));
@@ -208,9 +206,7 @@ function AppContent() {
       case 'dashboard': return <DashboardModule />;
       case 'books': return <BooksModule />;
       case 'journal': return <JournalModule />;
-      case 'projects': return <ProjectsModule />;
       case 'utilities': return <UtilitiesModule />;
-      case 'budget': return <BudgetModule />;
       case 'study': return <StudyModule />;
       case 'exam': return <StudyExamModule />;
       case 'media': return <MediaModule />;

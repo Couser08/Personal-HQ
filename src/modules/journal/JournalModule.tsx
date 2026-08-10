@@ -20,6 +20,10 @@ import { useAppStore, type JournalEntry } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { JournalEditor } from './components/JournalEditor';
 import { JournalSettingsSidebar } from './components/JournalSettingsSidebar';
+import { Button } from '../../components/ui/Button';
+import { IconButton } from '../../components/ui/IconButton';
+import { Input } from '../../components/ui/Input';
+
 import {
   STYLE_PRESETS,
   buildBlankEntry,
@@ -284,7 +288,7 @@ export default function JournalModule() {
           window.setTimeout(() => setSaveStatus('idle'), 2400);
         })
         .catch(() => setSaveStatus('error'));
-    }, 2000);
+    }, 800);
 
     return () => {
       if (autoSaveTimer.current) {
@@ -492,12 +496,12 @@ export default function JournalModule() {
             {/* Search Input (Header center/right alignment) */}
             <div className="relative w-full md:w-64">
               <IconSearch className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search thoughts..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-surface border border-border rounded-full pl-9 pr-3.5 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-all shadow-subtle"
+                className="w-full rounded-full pl-9 pr-3.5 py-1.5 text-xs shadow-subtle"
               />
             </div>
             
@@ -762,23 +766,24 @@ export default function JournalModule() {
                 {saveStatus === 'saved' ? <IconCheck size={12} className="text-emerald-500" /> : <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                 <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Auto-save ready'}</span>
               </div>
-              <button
+              <Button
                 onClick={() => {
                   setPreviewMode((value) => !value);
                   void forceSave();
                 }}
-                className={`btn btn-secondary btn-md ${previewMode ? 'border-primary text-primary' : ''}`}
+                variant="secondary"
+                className={previewMode ? 'border-primary text-primary' : ''}
                 disabled={!activeEntry}
               >
                 <IconEye size={16} />
                 {previewMode ? 'Edit' : 'Preview'}
-              </button>
-              <button onClick={togglePinned} className="btn btn-ghost btn-md btn-square border-none" title="Pin entry" disabled={!activeEntry}>
+              </Button>
+              <IconButton onClick={togglePinned} variant="ghost" title="Pin entry" disabled={!activeEntry}>
                 {activeEntry?.pinned ? <IconHeartFilled size={18} className="text-red-500" /> : <IconHeart size={18} />}
-              </button>
-              <button onClick={deleteCurrentEntry} className="btn btn-ghost btn-md btn-square text-red-500 border-none" title="Delete entry" disabled={!activeEntry}>
+              </IconButton>
+              <IconButton onClick={deleteCurrentEntry} variant="ghost" className="text-red-500" title="Delete entry" disabled={!activeEntry}>
                 <IconTrash size={18} />
-              </button>
+              </IconButton>
 
               {/* Right Settings Toggle button */}
               <button
