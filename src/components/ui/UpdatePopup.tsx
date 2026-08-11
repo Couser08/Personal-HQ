@@ -140,7 +140,7 @@ const RELEASES: Release[] = [
         Icon: IconSparkles,
         color: '#8B5CF6',
         title: 'UpdatePopup — Stripe-Style Redesign',
-        desc: 'What's New replaced the old popup card with a dark-native strip (this page!) — icon rows, segmented tabs, gradient accent bar.',
+        desc: "What\u2019s New replaced the old popup card with a dark-native strip \u2014 icon rows, segmented tabs, gradient accent bar.",
       },
     ],
   },
