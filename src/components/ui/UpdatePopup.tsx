@@ -322,7 +322,6 @@ export function WhatsNewPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.97 }}
               transition={{ type: 'spring', damping: 32, stiffness: 300, mass: 0.9 }}
-              style={{ willChange: 'transform, opacity' }}
               className={`
                 relative w-full sm:max-w-[540px] flex flex-col overflow-hidden
                 rounded-t-[28px] sm:rounded-[28px]
@@ -330,7 +329,7 @@ export function WhatsNewPage() {
                 shadow-[0_28px_80px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.06)]
                 dark:shadow-[0_28px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06)]
               `}
-              style={{ maxHeight: '90vh' }}
+              style={{ willChange: 'transform, opacity', maxHeight: '90vh' }}
             >
 
               {/* ── Sticky header ── */}
