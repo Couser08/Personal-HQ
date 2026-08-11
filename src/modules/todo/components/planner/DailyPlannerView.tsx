@@ -8,14 +8,16 @@ import { PlannerSidebar } from './PlannerSidebar';
 import { type TodoTask } from '../../../../store/types';
 
 export function DailyPlannerView() {
-  const { todoTasks, addTodoTask, updateTodoTask } = useAppStore(useShallow(state => ({
+  const { todoTasks, addTodoTask, updateTodoTask, deleteTodoTask } = useAppStore(useShallow(state => ({
     todoTasks: state.todoTasks,
     addTodoTask: state.addTodoTask,
     updateTodoTask: state.updateTodoTask,
+    deleteTodoTask: state.deleteTodoTask,
   })));
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
   
   // Tasks for the selected date
   const filteredTasks = useMemo(() => {
@@ -44,6 +46,14 @@ export function DailyPlannerView() {
     });
   };
 
+  const handleUpdatePlan = (id: string, updates: Partial<TodoTask>) => {
+    updateTodoTask(id, updates);
+  };
+
+  const handleDeletePlan = (id: string) => {
+    deleteTodoTask(id);
+  };
+
   const handleToggleComplete = (id: string) => {
     const task = todoTasks.find(t => t.id === id);
     if (task) {
@@ -52,9 +62,8 @@ export function DailyPlannerView() {
   };
 
   const handleEditTask = (task: TodoTask) => {
-    // For now, could open a modal or populate the sidebar to edit
-    // Skipping full edit implementation to keep it under 500 lines per component
-    console.log('Edit task', task);
+    setEditingTask(task);
+    setIsAddModalOpen(true);
   };
 
   return (
@@ -65,7 +74,10 @@ export function DailyPlannerView() {
           <PlannerHeader 
             selectedDate={selectedDate} 
             setSelectedDate={setSelectedDate} 
-            onOpenAddPlan={() => setIsAddModalOpen(true)}
+            onOpenAddPlan={() => {
+              setEditingTask(null);
+              setIsAddModalOpen(true);
+            }}
           />
           <PlannerStats tasks={filteredTasks} />
           
@@ -79,12 +91,18 @@ export function DailyPlannerView() {
         </div>
       </div>
 
-      {/* Add Plan Modal */}
+      {/* Add/Edit Plan Modal */}
       <PlannerSidebar 
         selectedDate={selectedDate} 
+        taskToEdit={editingTask}
         onAddPlan={handleAddPlan}
+        onUpdatePlan={handleUpdatePlan}
+        onDeletePlan={handleDeletePlan}
         isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingTask(null);
+        }}
       />
     </div>
   );

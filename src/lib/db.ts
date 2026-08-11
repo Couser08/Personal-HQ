@@ -4,7 +4,7 @@ import type {
   MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal,
-  StudyMaterial, Exam, ExamAttempt
+  StudyMaterial, Exam, ExamAttempt, DailyReflection
 } from '../store/useAppStore';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -65,15 +65,37 @@ export const linkService = {
   async fetchAll(userId: string): Promise<Link[]> {
     const { data, error } = await supabase
       .from('links')
-      .select('id, url, title, tags, saved_at')
+      .select('id, url, title, tags, type, term_type, saved_at')
       .eq('user_id', userId)
       .order('saved_at', { ascending: false });
-    if (error) throw error;
+
+    if (error) {
+      if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('links')
+          .select('id, url, title, tags, saved_at')
+          .eq('user_id', userId)
+          .order('saved_at', { ascending: false });
+        if (fallbackError) throw fallbackError;
+        return (fallbackData ?? []).map((r) => ({
+          id: r.id,
+          url: r.url,
+          title: r.title,
+          tags: r.tags ?? [],
+          type: 'other',
+          termType: 'short',
+          savedAt: r.saved_at,
+        }));
+      }
+      throw error;
+    }
     return (data ?? []).map((r) => ({
       id: r.id,
       url: r.url,
       title: r.title,
       tags: r.tags ?? [],
+      type: r.type as any,
+      termType: r.term_type as any,
       savedAt: r.saved_at,
     }));
   },
@@ -85,9 +107,49 @@ export const linkService = {
       url: link.url,
       title: link.title,
       tags: link.tags,
+      type: link.type || 'other',
+      term_type: link.termType || 'short',
       saved_at: link.savedAt,
     });
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        const { error: fallbackError } = await supabase.from('links').insert({
+          id: link.id,
+          user_id: userId,
+          url: link.url,
+          title: link.title,
+          tags: link.tags,
+          saved_at: link.savedAt,
+        });
+        if (fallbackError) throw fallbackError;
+      } else {
+        throw error;
+      }
+    }
+  },
+
+  async update(id: string, data: Partial<Link>) {
+    const payload: any = {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.url !== undefined && { url: data.url }),
+      ...(data.tags !== undefined && { tags: data.tags }),
+      ...(data.type !== undefined && { type: data.type }),
+      ...(data.termType !== undefined && { term_type: data.termType }),
+    };
+    const { error } = await supabase.from('links').update(payload).eq('id', id);
+    if (error) {
+      if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        const fallbackPayload = {
+          ...(data.title !== undefined && { title: data.title }),
+          ...(data.url !== undefined && { url: data.url }),
+          ...(data.tags !== undefined && { tags: data.tags }),
+        };
+        const { error: fallbackError } = await supabase.from('links').update(fallbackPayload).eq('id', id);
+        if (fallbackError) throw fallbackError;
+      } else {
+        throw error;
+      }
+    }
   },
 
   async delete(id: string) {
@@ -1127,7 +1189,7 @@ export const habitService = {
   async fetchAll(userId: string): Promise<Habit[]> {
     const { data, error } = await supabase
       .from('habits')
-      .select('id, name, description, frequency_type, frequency_days, frequency_count, completed_dates, streak, best_streak, created_at')
+      .select('id, name, description, frequency_type, frequency_days, frequency_count, completed_dates, streak, best_streak, created_at, why_text, habit_type, completion_details, target_time, relationships')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -1145,6 +1207,11 @@ export const habitService = {
       streak: r.streak ?? 0,
       bestStreak: r.best_streak ?? 0,
       createdAt: r.created_at,
+      whyText: r.why_text ?? '',
+      habitType: (r.habit_type as any) ?? 'generic',
+      completionDetails: r.completion_details ?? {},
+      targetTime: r.target_time ?? '',
+      relationships: r.relationships ?? [],
     }));
   },
 
@@ -1162,6 +1229,11 @@ export const habitService = {
       best_streak: habit.bestStreak,
       created_at: habit.createdAt,
       updated_at: new Date().toISOString(),
+      why_text: habit.whyText ?? '',
+      habit_type: habit.habitType ?? 'generic',
+      completion_details: habit.completionDetails ?? {},
+      target_time: habit.targetTime ?? '',
+      relationships: habit.relationships ?? [],
     });
     if (error) throw error;
   },
@@ -1176,6 +1248,11 @@ export const habitService = {
       ...(data.completedDates !== undefined && { completed_dates: data.completedDates }),
       ...(data.streak !== undefined && { streak: data.streak }),
       ...(data.bestStreak !== undefined && { best_streak: data.bestStreak }),
+      ...(data.whyText !== undefined && { why_text: data.whyText }),
+      ...(data.habitType !== undefined && { habit_type: data.habitType }),
+      ...(data.completionDetails !== undefined && { completion_details: data.completionDetails }),
+      ...(data.targetTime !== undefined && { target_time: data.targetTime }),
+      ...(data.relationships !== undefined && { relationships: data.relationships }),
       updated_at: new Date().toISOString(),
     }).eq('id', id);
     if (error) throw error;
@@ -1777,4 +1854,54 @@ export const examAttemptService = {
       throw error;
     }
   }
+};
+
+export const reflectionService = {
+  async fetchAll(userId: string): Promise<DailyReflection[]> {
+    const { data, error } = await supabase
+      .from('daily_reflections')
+      .select('id, date, score, what_went_well, blockers, tomorrow_plan')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      date: r.date,
+      score: r.score,
+      whatWentWell: r.what_went_well ?? '',
+      blockers: r.blockers ?? '',
+      tomorrowPlan: r.tomorrow_plan ?? '',
+    }));
+  },
+
+  async create(userId: string, ref: DailyReflection) {
+    const { error } = await supabase.from('daily_reflections').insert({
+      id: ref.id,
+      user_id: userId,
+      date: ref.date,
+      score: ref.score,
+      what_went_well: ref.whatWentWell,
+      blockers: ref.blockers,
+      tomorrow_plan: ref.tomorrowPlan,
+    });
+    if (error) throw error;
+  },
+
+  async update(id: string, data: Partial<DailyReflection>) {
+    const { error } = await supabase.from('daily_reflections').update({
+      ...(data.score !== undefined && { score: data.score }),
+      ...(data.whatWentWell !== undefined && { what_went_well: data.whatWentWell }),
+      ...(data.blockers !== undefined && { blockers: data.blockers }),
+      ...(data.tomorrowPlan !== undefined && { tomorrow_plan: data.tomorrowPlan }),
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('daily_reflections').delete().eq('id', id);
+    if (error) throw error;
+  },
 };

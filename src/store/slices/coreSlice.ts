@@ -29,7 +29,8 @@ import {
   tagService,
   studyMaterialService,
   examService,
-  examAttemptService
+  examAttemptService,
+  reflectionService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
@@ -50,7 +51,7 @@ export interface CoreSlice {
   closeConfirm: () => void;
 
   mediaEntryModal: any; // MediaEntryModalState
-  openMediaEntryModal: (tab: 'ANIME' | 'GAME', log?: any) => void;
+  openMediaEntryModal: (tab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE', log?: any) => void;
   closeMediaEntryModal: () => void;
 
   todoProjectModal: { isOpen: boolean };
@@ -181,7 +182,8 @@ export const createCoreSlice: StateCreator<
         tagService.fetchAll(userId),
         studyMaterialService.fetchAll(userId),
         examService.fetchAll(userId),
-        examAttemptService.fetchAll(userId)
+        examAttemptService.fetchAll(userId),
+        reflectionService.fetchAll(userId)
       ]);
 
       const serviceNames = [
@@ -190,7 +192,7 @@ export const createCoreSlice: StateCreator<
         'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
         'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
         'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
-        'study materials', 'exams', 'exam attempts'
+        'study materials', 'exams', 'exam attempts', 'daily reflections'
       ];
 
       const failedServices = results
@@ -226,6 +228,7 @@ export const createCoreSlice: StateCreator<
       const studyMaterials = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
       const exams = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
       const examAttempts = results[28].status === 'fulfilled' ? results[28].value as any[] : [];
+      const dailyReflections = results[29].status === 'fulfilled' ? results[29].value as any[] : [];
 
       if (failedServices.length > 0) {
         console.warn('Supabase sync skipped some modules:', failedServices);
@@ -290,7 +293,7 @@ export const createCoreSlice: StateCreator<
         notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
         budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
         sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-        savedLinks, appTags, studyMaterials, exams, examAttempts,
+        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections,
         theme: dbTheme,
         settings: dbSettings,
         activeFocusItem: dbActiveFocusItem,

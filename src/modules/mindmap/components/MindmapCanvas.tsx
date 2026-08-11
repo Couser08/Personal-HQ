@@ -18,7 +18,7 @@ import {
   IconDownload,
   IconPhoto,
   IconMaximize,
-  IconMinimize,
+  IconMinimize, IconDots,
 } from '@tabler/icons-react';
 import { useAppStore, type Mindmap, type MindmapNode, type MindmapLink } from '../../../store/useAppStore';
 import { useToastStore } from '../../../store/useToastStore';
@@ -220,6 +220,38 @@ export function MindmapCanvas({
       } else if (e.key === 'Enter') {
         e.preventDefault();
         handleAddSiblingNode();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        handleDeleteSelectedNode();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const selectedNode = mindmap.nodes.find((n) => n.id === selectedNodeId);
+        if (selectedNode) {
+          let candidates = mindmap.nodes.filter((n) => n.id !== selectedNodeId);
+          if (e.key === 'ArrowUp') {
+            candidates = candidates.filter((n) => n.y < selectedNode.y - 10);
+          } else if (e.key === 'ArrowDown') {
+            candidates = candidates.filter((n) => n.y > selectedNode.y + 10);
+          } else if (e.key === 'ArrowLeft') {
+            candidates = candidates.filter((n) => n.x < selectedNode.x - 10);
+          } else if (e.key === 'ArrowRight') {
+            candidates = candidates.filter((n) => n.x > selectedNode.x + 10);
+          }
+
+          if (candidates.length > 0) {
+            // Find closest candidate by Euclidean distance
+            let bestCandidate = candidates[0];
+            let minDistance = Infinity;
+            candidates.forEach((n) => {
+              const dist = Math.pow(n.x - selectedNode.x, 2) + Math.pow(n.y - selectedNode.y, 2);
+              if (dist < minDistance) {
+                minDistance = dist;
+                bestCandidate = n;
+              }
+            });
+            setSelectedNodeId(bestCandidate.id);
+          }
+        }
       }
     };
 
@@ -227,7 +259,7 @@ export function MindmapCanvas({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedNodeId, mindmap.nodes]);
+  }, [selectedNodeId, mindmap.nodes, mindmap.links]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -410,6 +442,8 @@ export function MindmapCanvas({
       links: [...mindmap.links, childLink],
     });
     setSelectedNodeId(childId);
+    setEditingNodeId(childId);
+    setEditingText(childNode.text);
   };
 
   const handleAddSiblingNode = () => {
@@ -454,6 +488,8 @@ export function MindmapCanvas({
       links: [...mindmap.links, siblingLink],
     });
     setSelectedNodeId(siblingId);
+    setEditingNodeId(siblingId);
+    setEditingText(siblingNode.text);
   };
 
   const handleOpenAll = () => {
@@ -1211,32 +1247,6 @@ export function MindmapCanvas({
           {/* Expanded Zoom Popover Items */}
           {isZoomMenuOpen && (
             <div className="flex flex-col gap-2 animate-fade-in-up">
-              {/* Auto-Arrange Layout */}
-              <button
-                type="button"
-                onClick={() => {
-                  handleTidyLayout();
-                  setIsZoomMenuOpen(false);
-                }}
-                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
-                title="Auto-Arrange Layout"
-              >
-                <IconLayout className="w-5 h-5" />
-              </button>
-
-              {/* Center Camera */}
-              <button
-                type="button"
-                onClick={() => {
-                  handleCenterCamera();
-                  setIsZoomMenuOpen(false);
-                }}
-                className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
-                title="Center Camera"
-              >
-                <IconFocusCentered className="w-5 h-5" />
-              </button>
-
               {/* Expand All Branches */}
               <button
                 type="button"
@@ -1294,6 +1304,26 @@ export function MindmapCanvas({
             </div>
           )}
 
+          {/* Auto-Arrange Layout (Permanent) */}
+          <button
+            type="button"
+            onClick={handleTidyLayout}
+            className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+            title="Auto-Arrange Layout"
+          >
+            <IconLayout className="w-5 h-5" />
+          </button>
+
+          {/* Center Camera (Permanent) */}
+          <button
+            type="button"
+            onClick={handleCenterCamera}
+            className="w-10 h-10 rounded-2xl bg-surface hover:bg-surface-hover border border-border/80 text-text-secondary hover:text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+            title="Center Camera"
+          >
+            <IconFocusCentered className="w-5 h-5" />
+          </button>
+
           {/* Trigger Button */}
           <button
             type="button"
@@ -1301,9 +1331,9 @@ export function MindmapCanvas({
             className={`w-10 h-10 rounded-2xl border border-border/80 text-text-primary flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer ${
               isZoomMenuOpen ? 'bg-primary text-white border-primary' : 'bg-surface hover:bg-surface-hover'
             }`}
-            title="Zoom controls"
+            title="More Canvas Controls"
           >
-            <IconChevronUp size={18} className={`transition-transform duration-200 ${isZoomMenuOpen ? 'rotate-180' : ''}`} />
+            <IconDots className="w-5 h-5" />
           </button>
         </div>
 

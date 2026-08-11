@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import LinksModule from '../links/LinksModule';
-import LinkSaverModule from '../linksaver/LinkSaverModule';
 import TagsModule from '../tags/TagsModule';
 import CalculatorModule from '../calculator/CalculatorModule';
 import CountdownModule from '../countdowns/CountdownModule';
-import { IconLink, IconCalculator, IconHourglassEmpty, IconClipboardText, IconTag } from '@tabler/icons-react';
+import { IconLink, IconCalculator, IconHourglassEmpty, IconTag } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UtilitiesModule() {
-  const [currentTab, setCurrentTab] = useState<'links' | 'linksaver' | 'tags' | 'calculator' | 'countdown'>('links');
+  const [currentTab, setCurrentTab] = useState<'links' | 'tags' | 'calculator' | 'countdown'>('links');
 
   const tabs = [
     { id: 'links', label: 'Link Vault', icon: IconLink, component: <LinksModule /> },
-    { id: 'linksaver', label: 'Link Saver', icon: IconClipboardText, component: <LinkSaverModule /> },
     { id: 'tags', label: 'Tags Manager', icon: IconTag, component: <TagsModule /> },
     { id: 'calculator', label: 'Interest Calc', icon: IconCalculator, component: <CalculatorModule /> },
     { id: 'countdown', label: 'Countdown', icon: IconHourglassEmpty, component: <CountdownModule /> },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IconClock, IconMapPin, IconBell, IconRepeat } from '@tabler/icons-react';
 import { type TodoTask } from '../../../../store/types';
 import { Modal } from '../../../../components/ui/Modal';
@@ -6,9 +6,12 @@ import { Input } from '../../../../components/ui/Input';
 import { Button } from '../../../../components/ui/Button';
 import { CustomSelect } from '../../../../components/ui/CustomSelect';
 
-interface PlannerAddModalProps {
+interface PlannerSidebarProps {
   selectedDate: Date | null;
+  taskToEdit?: TodoTask | null;
   onAddPlan: (task: Partial<TodoTask>) => void;
+  onUpdatePlan?: (id: string, updates: Partial<TodoTask>) => void;
+  onDeletePlan?: (id: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -45,7 +48,15 @@ const PRIORITY_OPTIONS = [
   { value: 'high', label: 'High' }
 ];
 
-export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: PlannerAddModalProps) {
+export function PlannerSidebar({
+  selectedDate,
+  taskToEdit,
+  onAddPlan,
+  onUpdatePlan,
+  onDeletePlan,
+  isOpen,
+  onClose
+}: PlannerSidebarProps) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -68,10 +79,28 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
     setPriority('medium');
   };
 
-  const handleAddPlan = () => {
+  useEffect(() => {
+    if (isOpen) {
+      if (taskToEdit) {
+        setTitle(taskToEdit.title);
+        setCategory(taskToEdit.category || '');
+        setStartTime(taskToEdit.startTime || '');
+        setEndTime(taskToEdit.endTime || '');
+        setDescription(taskToEdit.description || '');
+        setLocation(taskToEdit.location || '');
+        setReminder(taskToEdit.reminder || 'No reminder');
+        setRepeat(taskToEdit.repeat || 'Does not repeat');
+        setPriority(taskToEdit.priority || 'medium');
+      } else {
+        resetForm();
+      }
+    }
+  }, [taskToEdit, isOpen]);
+
+  const handleSave = () => {
     if (!title.trim()) return;
-    onAddPlan({
-      title,
+    const planData = {
+      title: title.trim(),
       category: category || undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
@@ -80,8 +109,12 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
       reminder: reminder !== 'No reminder' ? reminder : undefined,
       repeat: repeat !== 'Does not repeat' ? repeat : undefined,
       priority: priority as any,
-      completed: false,
-    });
+    };
+    if (taskToEdit) {
+      onUpdatePlan?.(taskToEdit.id, planData);
+    } else {
+      onAddPlan(planData);
+    }
     onClose();
     resetForm();
   };
@@ -90,13 +123,13 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`Add Plan for ${selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Today'}`}
+      title={taskToEdit ? 'Edit Plan' : `Add Plan for ${selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Today'}`}
       maxWidthClassName="max-w-2xl"
     >
-      <div className="flex flex-col gap-5 pt-2">
+      <div className="flex flex-col gap-5 pt-2 select-none">
         
         {/* Required Details */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 text-left">
           <Input 
             autoFocus
             placeholder="Plan Title (e.g., Deep Work Session)" 
@@ -144,7 +177,7 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
         <div className="h-px bg-border/50 w-full" />
 
         {/* Optional Details */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 text-left">
           <div className="relative">
             <textarea 
               placeholder="Description (optional)" 
@@ -154,7 +187,7 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
             />
           </div>
 
-          <div className="relative">
+          <div className="relative text-left">
             <IconMapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             <Input 
               placeholder="Location (e.g. Home Office)" 
@@ -187,9 +220,26 @@ export function PlannerSidebar({ selectedDate, onAddPlan, isOpen, onClose }: Pla
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2 mt-4">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleAddPlan} disabled={!title.trim()}>Add Plan</Button>
+        <div className="flex items-center justify-between mt-4">
+          {taskToEdit ? (
+            <Button 
+              variant="danger" 
+              onClick={() => {
+                if (onDeletePlan) onDeletePlan(taskToEdit.id);
+                onClose();
+              }}
+            >
+              Delete Plan
+            </Button>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={handleSave} disabled={!title.trim()}>
+              {taskToEdit ? 'Save Changes' : 'Add Plan'}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

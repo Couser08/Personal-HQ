@@ -39,6 +39,8 @@ export interface Link {
   url: string;
   title: string;
   tags: string[];
+  type?: 'youtube' | 'instagram' | 'pinterest' | 'other';
+  termType?: 'short' | 'long';
   savedAt: string;
 }
 
@@ -47,6 +49,8 @@ export interface SavedLink {
   url: string;
   title: string;
   type: 'youtube' | 'instagram' | 'pinterest' | 'other';
+  termType?: 'short' | 'long';
+  tags?: string[];
   savedAt: string;
 }
 
@@ -276,7 +280,7 @@ export interface InterestRecord {
 
 export interface MediaLog {
   id: string;
-  type: 'ANIME' | 'GAME';
+  type: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE';
   title: string;
   status: 'WATCHING' | 'COMPLETED' | 'DROPPED' | 'PLANNING' | 'PLAYING' | 'FINISHED' | 'WISHLIST';
   rating: number | null;
@@ -335,7 +339,7 @@ export interface ConfirmDialogState {
 export interface MediaEntryModalState {
   isOpen: boolean;
   editingLog: MediaLog | null;
-  activeTab: 'ANIME' | 'GAME';
+  activeTab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE';
 }
 
 export interface TodoTaskModalState {
@@ -395,6 +399,23 @@ export interface Habit {
   streak: number;
   bestStreak: number;
   createdAt: string;
+  whyText?: string;
+  habitType?: 'coding' | 'reading' | 'workout' | 'meditation' | 'generic';
+  completionDetails?: Record<string, { time: string; value?: number; unit?: string }>;
+  targetTime?: string; // e.g. '08:00', '17:00'
+  relationships?: string[]; // IDs of habits in sequence
+  timerActive?: boolean;
+  timerStart?: string;
+  timerSeconds?: number;
+}
+
+export interface DailyReflection {
+  id: string;
+  date: string; // YYYY-MM-DD
+  score: number; // 1-10
+  whatWentWell: string;
+  blockers: string;
+  tomorrowPlan: string;
 }
 
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
@@ -657,7 +678,7 @@ export interface AppStore {
   closeConfirm: () => void;
 
   mediaEntryModal: MediaEntryModalState;
-  openMediaEntryModal: (tab: 'ANIME' | 'GAME', log?: MediaLog) => void;
+  openMediaEntryModal: (tab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE', log?: MediaLog) => void;
   closeMediaEntryModal: () => void;
 
   todoProjectModal: { isOpen: boolean };
@@ -684,6 +705,7 @@ export interface AppStore {
   links: Link[];
   addLink: (link: Link, userId?: string) => Promise<void>;
   deleteLink: (id: string) => Promise<void>;
+  updateLink: (id: string, data: Partial<Link>) => Promise<void>;
 
   savedLinks: SavedLink[];
   addSavedLink: (link: SavedLink) => Promise<void>;
@@ -804,6 +826,12 @@ export interface AppStore {
   updateHabit: (id: string, data: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   toggleHabitCompletion: (id: string, dateStr: string) => Promise<void>;
+
+  // Reflections state and actions
+  dailyReflections: DailyReflection[];
+  addDailyReflection: (ref: DailyReflection) => Promise<void>;
+  updateDailyReflection: (id: string, data: Partial<DailyReflection>) => Promise<void>;
+  deleteDailyReflection: (id: string) => Promise<void>;
 
   // Coder Hub / Projects State
   sprints: Sprint[];

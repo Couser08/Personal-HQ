@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  IconPlus, IconMovie, IconDeviceGamepad2 
+  IconPlus, IconMovie, IconDeviceGamepad2, IconDeviceTv, IconTicket 
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -23,11 +23,11 @@ export default function MediaModule() {
     updateSettings: state.updateSettings,
   })));
   
-  const [activeTab, setActiveTab] = useState<'ANIME' | 'GAME'>('ANIME');
+  const [activeTab, setActiveTab] = useState<'ANIME' | 'GAME' | 'SERIES' | 'MOVIE'>('ANIME');
   const [viewMode, setViewMode] = useState<'dashboard' | 'grid' | 'rankings'>('dashboard');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   
-  // Dedicated anime detailed page tracking
+  // Detailed page tracking for Anime, Series, Movies
   const [selectedAnimeId, setSelectedAnimeId] = useState<string | null>(null);
   const [chibiMascotUrl, setChibiMascotUrl] = useState('');
 
@@ -47,12 +47,12 @@ export default function MediaModule() {
     };
   }, []);
 
-  const handleTabChange = (tab: 'ANIME' | 'GAME') => {
+  const handleTabChange = (tab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE') => {
     if (tab !== activeTab) {
       setActiveTab(tab);
       setFilterStatus(null);
       setSelectedAnimeId(null);
-      // Default Anime to dashboard, Game to grid
+      // Default Anime to dashboard, others to library list
       setViewMode(tab === 'ANIME' ? 'dashboard' : 'grid');
     }
   };
@@ -68,6 +68,8 @@ export default function MediaModule() {
   const stats = useMemo(() => {
     const anime = mediaLogs.filter(m => m.type === 'ANIME');
     const games = mediaLogs.filter(m => m.type === 'GAME');
+    const series = mediaLogs.filter(m => m.type === 'SERIES');
+    const movies = mediaLogs.filter(m => m.type === 'MOVIE');
     return {
       anime: {
         total:     anime.length,
@@ -80,17 +82,31 @@ export default function MediaModule() {
         finished: games.filter(g => g.status === 'FINISHED').length,
         playing:  games.filter(g => g.status === 'PLAYING').length,
         wishlist: games.filter(g => g.status === 'WISHLIST').length,
+      },
+      series: {
+        total:     series.length,
+        completed: series.filter(s => s.status === 'COMPLETED').length,
+        watching:  series.filter(s => s.status === 'WATCHING').length,
+        dropped:   series.filter(s => s.status === 'DROPPED').length,
+      },
+      movies: {
+        total:     movies.length,
+        completed: movies.filter(m => m.status === 'COMPLETED').length,
+        planning:  movies.filter(m => m.status === 'PLANNING').length,
+        dropped:   movies.filter(m => m.status === 'DROPPED').length,
       }
     };
   }, [mediaLogs]);
 
   // Brand accent per tab
-  const accent = activeTab === 'ANIME' ? '#e11d48' : '#a855f7'; // Rose accent for Anime center matching design
+  const accent = activeTab === 'ANIME' ? '#e11d48' : 
+                 activeTab === 'SERIES' ? '#3b82f6' : 
+                 activeTab === 'MOVIE' ? '#10b981' : '#a855f7';
 
-  // Find selected anime
+  // Find selected log for detail view
   const selectedAnime = useMemo(() => {
     if (!selectedAnimeId) return null;
-    return mediaLogs.find(m => m.id === selectedAnimeId && m.type === 'ANIME') || null;
+    return mediaLogs.find(m => m.id === selectedAnimeId && (m.type === 'ANIME' || m.type === 'SERIES' || m.type === 'MOVIE')) || null;
   }, [mediaLogs, selectedAnimeId]);
 
   if (selectedAnime) {
@@ -115,14 +131,14 @@ export default function MediaModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="flex flex-col w-full max-w-6xl pb-16 mx-auto select-none"
+      className="flex flex-col w-full max-w-6xl pb-16 mx-auto select-none animate-fade-in"
     >
       {/* ── Header ── */}
       <div className="flex flex-col justify-between gap-4 pt-4 mb-8 md:flex-row md:items-end text-left">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1">Personal HQ</p>
           <h2 className="text-4xl font-black leading-none tracking-tight text-text-primary">Media Log</h2>
-          <p className="text-[15px] text-text-secondary font-medium mt-2">Your personal catalogue for anime & games.</p>
+          <p className="text-[15px] text-text-secondary font-medium mt-2">Your personal catalogue for anime, tv series, movies & games.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mt-2 sm:mt-0">
@@ -166,7 +182,7 @@ export default function MediaModule() {
           <button
             onClick={() => openMediaEntryModal(activeTab)}
             style={{ background: accent, boxShadow: `0 4px 16px ${accent}44` }}
-            className="flex gap-2 items-center px-6 py-3 text-white rounded-full font-bold text-[14px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90 cursor-pointer"
+            className="flex gap-2 items-center px-6 py-3 text-white rounded-full font-bold text-[14px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90 cursor-pointer border-none"
           >
             <IconPlus className="w-5 h-5" /> New Entry
           </button>
@@ -175,17 +191,20 @@ export default function MediaModule() {
 
       {/* ── iOS Segmented Control ── */}
       <div className="flex justify-center mb-10">
-        <div className="bg-surface-alt/80 p-1.5 rounded-[20px] shadow-sm flex relative w-full max-w-[300px] border border-border">
-          {(['ANIME', 'GAME'] as const).map(tab => (
+        <div className="bg-surface-alt/80 p-1.5 rounded-[20px] shadow-sm flex relative w-full max-w-[540px] border border-border">
+          {(['ANIME', 'SERIES', 'MOVIE', 'GAME'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`flex-1 py-2.5 font-bold text-[13px] flex items-center justify-center gap-2 rounded-[14px] transition-all cursor-pointer ${
+              className={`flex-1 py-2.5 font-bold text-[12px] flex items-center justify-center gap-2 rounded-[14px] transition-all cursor-pointer border-none bg-transparent ${
                 activeTab === tab ? 'bg-surface shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'
               }`}
             >
-              {tab === 'ANIME' ? <IconMovie className="w-4 h-4" /> : <IconDeviceGamepad2 className="w-4 h-4" />}
-              <span>{tab === 'ANIME' ? 'Anime' : 'Games'}</span>
+              {tab === 'ANIME' && <IconMovie className="w-4 h-4 text-[#e11d48]" />}
+              {tab === 'SERIES' && <IconDeviceTv className="w-4 h-4 text-[#3b82f6]" />}
+              {tab === 'MOVIE' && <IconTicket className="w-4 h-4 text-[#10b981]" />}
+              {tab === 'GAME' && <IconDeviceGamepad2 className="w-4 h-4 text-[#a855f7]" />}
+              <span>{tab === 'ANIME' ? 'Anime' : tab === 'SERIES' ? 'Series' : tab === 'MOVIE' ? 'Movies' : 'Games'}</span>
             </button>
           ))}
         </div>

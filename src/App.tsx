@@ -17,6 +17,7 @@ const SettingsModule = lazy(() => import('./modules/settings/SettingsModule'));
 const ProfileModule = lazy(() => import('./modules/profile/ProfileModule'));
 const PomodoroModule = lazy(() => import('./modules/pomodoro/PomodoroModule'));
 const TodoModule = lazy(() => import('./modules/todo/TodoModule'));
+const CalendarModule = lazy(() => import('./modules/calendar/CalendarModule'));
 const HabitTrackerModule = lazy(() => import('./modules/habits/HabitTrackerModule'));
 const MindmapModule = lazy(() => import('./modules/mindmap/MindmapModule'));
 const JournalModule = lazy(() => import('./modules/journal/JournalModule'));
@@ -206,7 +207,8 @@ function AppContent() {
       case 'dashboard': return <DashboardModule />;
       case 'books': return <BooksModule />;
       case 'journal': return <JournalModule />;
-      case 'utilities': return <UtilitiesModule />;
+      case 'utilities':
+      case 'linksaver': return <UtilitiesModule />;
       case 'study': return <StudyModule />;
       case 'exam': return <StudyExamModule />;
       case 'media': return <MediaModule />;
@@ -214,6 +216,7 @@ function AppContent() {
       case 'til': return <TilModule />;
       case 'pomodoro': return <PomodoroModule />;
       case 'todo': return <TodoModule />;
+      case 'calendar': return <CalendarModule />;
       case 'habits': return <HabitTrackerModule />;
       case 'settings': return <SettingsModule />;
       case 'profile': return <ProfileModule />;

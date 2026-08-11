@@ -1,4 +1,3 @@
-
 import { DailyPlannerView } from './components/planner/DailyPlannerView';
 
 export default function TodoModule() {

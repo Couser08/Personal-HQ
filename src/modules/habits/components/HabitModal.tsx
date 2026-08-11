@@ -16,6 +16,12 @@ export function HabitModal({
   handleToggleDay,
   frequencyCount,
   setFrequencyCount,
+  habitType,
+  setHabitType,
+  whyText,
+  setWhyText,
+  targetTime,
+  setTargetTime,
   handleSaveHabit,
   deleteHabit,
   showConfirm,
@@ -33,6 +39,12 @@ export function HabitModal({
   handleToggleDay: (day: number) => void;
   frequencyCount: number;
   setFrequencyCount: (val: number) => void;
+  habitType: 'generic' | 'reading' | 'coding' | 'meditation' | 'workout';
+  setHabitType: (val: 'generic' | 'reading' | 'coding' | 'meditation' | 'workout') => void;
+  whyText: string;
+  setWhyText: (val: string) => void;
+  targetTime: string;
+  setTargetTime: (val: string) => void;
   handleSaveHabit: () => void;
   deleteHabit: (id: string) => Promise<void>;
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
@@ -43,7 +55,9 @@ export function HabitModal({
       onClose={onClose}
       title={selectedHabitToEdit ? 'Edit Habit' : 'Create Habit'}
     >
-      <div className="flex flex-col gap-4 text-left font-sans">
+      <div className="flex flex-col gap-4 text-left font-sans select-none">
+        
+        {/* Habit Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Habit Name</label>
           <input
@@ -56,6 +70,7 @@ export function HabitModal({
           />
         </div>
 
+        {/* Description */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Description (Optional)</label>
           <input
@@ -67,6 +82,46 @@ export function HabitModal({
           />
         </div>
 
+        {/* Dynamic Habit Type Selector */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Category / Goal Type</label>
+          <select
+            value={habitType}
+            onChange={(e) => setHabitType(e.target.value as any)}
+            className="input-field text-sm cursor-pointer"
+          >
+            <option value="generic">Generic Check-off</option>
+            <option value="coding">💻 Coding Focus</option>
+            <option value="reading">📖 Reading Focus</option>
+            <option value="meditation">🧘 Meditation Focus</option>
+            <option value="workout">🏋️ Workout Focus</option>
+          </select>
+        </div>
+
+        {/* Why statement */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Why Statement (Internal Purpose)</label>
+          <input
+            type="text"
+            placeholder="e.g. To build focus and clear my mind"
+            value={whyText}
+            onChange={e => setWhyText(e.target.value)}
+            className="input-field text-sm"
+          />
+        </div>
+
+        {/* Target Time */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Reminder / Target Time</label>
+          <input
+            type="time"
+            value={targetTime}
+            onChange={e => setTargetTime(e.target.value)}
+            className="input-field text-sm"
+          />
+        </div>
+
+        {/* Frequency */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Frequency</label>
           <div className="flex bg-surface-alt p-1 rounded-xl border border-border">
@@ -137,7 +192,7 @@ export function HabitModal({
               max="7"
               value={frequencyCount}
               onChange={e => setFrequencyCount(parseInt(e.target.value))}
-              className="w-full accent-primary mt-2"
+              className="w-full accent-primary mt-2 cursor-pointer"
             />
           </div>
         )}
@@ -160,10 +215,10 @@ export function HabitModal({
             <div />
           )}
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">
+            <button type="button" onClick={onClose} className="btn btn-secondary btn-sm rounded-xl cursor-pointer">
               Cancel
             </button>
-            <button type="button" onClick={handleSaveHabit} className="btn btn-primary btn-sm">
+            <button type="button" onClick={handleSaveHabit} className="btn btn-primary btn-sm rounded-xl cursor-pointer">
               Save Habit
             </button>
           </div>

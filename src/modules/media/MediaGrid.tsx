@@ -1,23 +1,25 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  IconMovie, IconDeviceGamepad2, IconStarFilled, IconEdit, IconTrash 
+  IconMovie, IconDeviceGamepad2, IconStarFilled, IconEdit, IconTrash, IconDeviceTv, IconTicket 
 } from '@tabler/icons-react';
 
 import { type MediaLog } from '../../store/useAppStore';
 
 interface MediaGridProps {
-  activeTab: 'ANIME' | 'GAME';
+  activeTab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE';
   filteredLogs: MediaLog[];
   stats: {
     anime: { total: number; completed: number; watching: number; dropped: number };
     games: { total: number; finished: number; playing: number; wishlist: number };
+    series: { total: number; completed: number; watching: number; dropped: number };
+    movies: { total: number; completed: number; planning: number; dropped: number };
   };
   accent: string;
   filterStatus: string | null;
   setFilterStatus: (status: string | null) => void;
   setSelectedAnimeId: (id: string | null) => void;
-  openMediaEntryModal: (type: 'ANIME' | 'GAME', log?: any) => void;
+  openMediaEntryModal: (type: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE', log?: any) => void;
   deleteMediaLog: (id: string) => void;
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
@@ -25,6 +27,8 @@ interface MediaGridProps {
 const STATUS_OPTIONS = {
   ANIME: ['WATCHING', 'COMPLETED', 'DROPPED', 'PLANNING'],
   GAME:  ['PLAYING', 'FINISHED', 'DROPPED', 'WISHLIST'],
+  SERIES: ['WATCHING', 'COMPLETED', 'DROPPED', 'PLANNING'],
+  MOVIE: ['PLANNING', 'COMPLETED', 'DROPPED'],
 };
 
 function getStatusStyle(status: string): { bg: string; color: string } {
@@ -66,17 +70,31 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {activeTab === 'ANIME' ? (
           <>
-            <StatCard label="Total" value={stats.anime.total}     accent={accent} />
-            <StatCard label="Watching"  value={stats.anime.watching}  accent="#3b82f6" />
-            <StatCard label="Completed" value={stats.anime.completed} accent="#22c55e" />
-            <StatCard label="Dropped"   value={stats.anime.dropped}   accent="#ef4444" />
+            <StatCard label="Total Anime" value={stats.anime.total}     accent={accent} />
+            <StatCard label="Watching"    value={stats.anime.watching}  accent="#3b82f6" />
+            <StatCard label="Completed"   value={stats.anime.completed} accent="#22c55e" />
+            <StatCard label="Dropped"     value={stats.anime.dropped}   accent="#ef4444" />
+          </>
+        ) : activeTab === 'SERIES' ? (
+          <>
+            <StatCard label="Total Series" value={stats.series.total}     accent={accent} />
+            <StatCard label="Watching"     value={stats.series.watching}  accent="#3b82f6" />
+            <StatCard label="Completed"    value={stats.series.completed} accent="#22c55e" />
+            <StatCard label="Dropped"      value={stats.series.dropped}   accent="#ef4444" />
+          </>
+        ) : activeTab === 'MOVIE' ? (
+          <>
+            <StatCard label="Total Movies" value={stats.movies.total}     accent={accent} />
+            <StatCard label="Plan to Watch" value={stats.movies.planning}  accent="#f59e0b" />
+            <StatCard label="Completed"    value={stats.movies.completed} accent="#22c55e" />
+            <StatCard label="Dropped"      value={stats.movies.dropped}   accent="#ef4444" />
           </>
         ) : (
           <>
-            <StatCard label="Total"    value={stats.games.total}    accent={accent} />
-            <StatCard label="Playing"  value={stats.games.playing}  accent="#3b82f6" />
-            <StatCard label="Finished" value={stats.games.finished} accent="#22c55e" />
-            <StatCard label="Wishlist" value={stats.games.wishlist} accent="#f59e0b" />
+            <StatCard label="Total Games"  value={stats.games.total}    accent={accent} />
+            <StatCard label="Playing"      value={stats.games.playing}  accent="#3b82f6" />
+            <StatCard label="Finished"     value={stats.games.finished} accent="#22c55e" />
+            <StatCard label="Wishlist"     value={stats.games.wishlist} accent="#f59e0b" />
           </>
         )}
       </div>
@@ -98,18 +116,21 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
       {filteredLogs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-4 bg-surface rounded-[32px] border border-border animate-fade-in text-center">
           <div className="w-20 h-20 rounded-[24px] flex items-center justify-center text-text-muted mb-6 border border-border bg-surface-alt/60">
-            {activeTab === 'ANIME' ? <IconMovie className="w-9 h-9" /> : <IconDeviceGamepad2 className="w-9 h-9" />}
+            {activeTab === 'ANIME' && <IconMovie className="w-9 h-9 text-[#e11d48]" />}
+            {activeTab === 'SERIES' && <IconDeviceTv className="w-9 h-9 text-[#3b82f6]" />}
+            {activeTab === 'MOVIE' && <IconTicket className="w-9 h-9 text-[#10b981]" />}
+            {activeTab === 'GAME' && <IconDeviceGamepad2 className="w-9 h-9 text-[#a855f7]" />}
           </div>
           <h3 className="mb-2 text-xl font-bold text-text-primary">No entries yet</h3>
           <p className="text-[15px] text-text-muted mb-8 max-w-xs leading-normal">
-            Start tracking your {activeTab === 'ANIME' ? 'anime' : 'games'}, add ratings and reviews.
+            Start tracking your {activeTab === 'ANIME' ? 'anime' : activeTab === 'SERIES' ? 'TV series' : activeTab === 'MOVIE' ? 'movies' : 'games'}, add ratings and reviews.
           </p>
           <button
             onClick={() => openMediaEntryModal(activeTab)}
             style={{ background: `${accent}18`, color: accent }}
-            className="px-6 py-3 rounded-full font-bold text-[14px] transition-colors hover:opacity-80 cursor-pointer"
+            className="px-6 py-3 rounded-full font-bold text-[14px] transition-colors hover:opacity-80 cursor-pointer border-none"
           >
-            Add your first {activeTab === 'ANIME' ? 'anime' : 'game'}
+            Add your first {activeTab === 'ANIME' ? 'anime' : activeTab === 'SERIES' ? 'series' : activeTab === 'MOVIE' ? 'movie' : 'game'}
           </button>
         </div>
       ) : (
@@ -124,7 +145,9 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
               let lastWatchedTimestamp = '';
               let parsedSeason = (log as any).season || 0;
 
-              if (log.type === 'ANIME' && log.notes && log.notes.trim().startsWith('{')) {
+              const isAnimeOrSeries = log.type === 'ANIME' || log.type === 'SERIES';
+
+              if (isAnimeOrSeries && log.notes && log.notes.trim().startsWith('{')) {
                 try {
                   const meta = JSON.parse(log.notes);
                   if (meta && typeof meta === 'object') {
@@ -132,6 +155,13 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     if (meta.season) parsedSeason = meta.season;
                     lastWatchedEp = meta.lastWatchedEp ?? 0;
                     lastWatchedTimestamp = meta.lastWatchedTimestamp ?? '';
+                  }
+                } catch (e) {}
+              } else if (log.type === 'MOVIE' && log.notes && log.notes.trim().startsWith('{')) {
+                try {
+                  const meta = JSON.parse(log.notes);
+                  if (meta && typeof meta === 'object') {
+                    displayNotes = meta.notesText ?? '';
                   }
                 } catch (e) {}
               }
@@ -144,7 +174,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                   exit={{ opacity: 0, scale: 0.95 }}
                   key={log.id}
                   onClick={() => {
-                    if (log.type === 'ANIME') {
+                    if (log.type === 'ANIME' || log.type === 'SERIES' || log.type === 'MOVIE') {
                       setSelectedAnimeId(log.id);
                     } else {
                       openMediaEntryModal('GAME', log);
@@ -163,7 +193,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                           e.stopPropagation();
                           openMediaEntryModal(activeTab, log);
                         }}
-                        className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover"
+                        className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-text-primary bg-surface-alt hover:bg-surface-hover border-none"
                       >
                         <IconEdit className="w-3.5 h-3.5" />
                       </button>
@@ -172,7 +202,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                           e.stopPropagation();
                           showConfirm('Delete Entry', 'Delete this media log?', () => deleteMediaLog(log.id));
                         }}
-                        className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10"
+                        className="flex items-center justify-center transition-colors rounded-full cursor-pointer w-7 h-7 text-text-muted hover:text-rose-500 bg-surface-alt hover:bg-rose-500/10 border-none"
                       >
                         <IconTrash className="w-3.5 h-3.5" />
                       </button>
@@ -187,12 +217,12 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     >
                       {log.status}
                     </span>
-                    {log.type === 'ANIME' && parsedSeason > 0 && (
+                    {isAnimeOrSeries && parsedSeason > 0 && (
                       <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-surface-alt text-text-muted tracking-wider">
                         S{parsedSeason}
                       </span>
                     )}
-                    {log.type === 'ANIME' && log.episodes && log.episodes > 0 && (
+                    {isAnimeOrSeries && log.episodes && log.episodes > 0 && (
                       <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-surface-alt text-text-muted tracking-wider">
                         {log.episodes} eps
                       </span>
@@ -218,7 +248,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                   )}
 
                   {/* Resume Watch tracker on Card */}
-                  {log.type === 'ANIME' && lastWatchedEp > 0 && (
+                  {isAnimeOrSeries && lastWatchedEp > 0 && (
                     <div className="mt-1 p-2.5 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 flex items-center justify-between gap-3 text-left">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-[8.5px] font-extrabold text-blue-500 dark:text-blue-400 uppercase tracking-widest leading-none">Last Watched</span>
@@ -259,8 +289,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
     <div
-      className="rounded-[20px] p-5 border border-border flex flex-col justify-between h-[110px] shadow-sm text-left"
-      style={{ background: 'var(--bg-surface)' }}
+      className="rounded-[20px] p-5 border border-border flex flex-col justify-between h-[110px] shadow-sm text-left bg-surface"
     >
       <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{label}</span>
       <span className="text-3xl font-black" style={{ color: accent }}>{value}</span>
@@ -274,7 +303,7 @@ function FilterPill({ label, active, onClick, accent }: { label: string; active:
       onClick={onClick}
       style={active ? { background: `${accent}18`, color: accent, borderColor: `${accent}40` } : {}}
       className={`px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border cursor-pointer ${
-        active ? 'shadow-sm' : 'border-border bg-surface text-text-secondary hover:bg-surface-alt'
+        active ? 'shadow-sm font-black text-white' : 'border-border bg-surface text-text-secondary hover:bg-surface-alt'
       }`}
     >
       {label}

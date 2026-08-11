@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
-import { type AppStore, type Habit } from '../types';
-import { habitService } from '../../lib/db';
+import { type AppStore, type Habit, type DailyReflection } from '../types';
+import { habitService, reflectionService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { shouldThrottle, getStoreErrorMessage } from '../helpers';
@@ -11,6 +11,11 @@ export interface HabitSlice {
   updateHabit: (id: string, data: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   toggleHabitCompletion: (id: string, dateStr: string) => Promise<void>;
+
+  dailyReflections: DailyReflection[];
+  addDailyReflection: (ref: DailyReflection) => Promise<void>;
+  updateDailyReflection: (id: string, data: Partial<DailyReflection>) => Promise<void>;
+  deleteDailyReflection: (id: string) => Promise<void>;
 }
 
 export const createHabitSlice: StateCreator<
@@ -22,6 +27,15 @@ export const createHabitSlice: StateCreator<
   habits: (() => {
     try {
       const raw = localStorage.getItem('phq_habits');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+
+  dailyReflections: (() => {
+    try {
+      const raw = localStorage.getItem('phq_daily_reflections');
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -87,9 +101,41 @@ export const createHabitSlice: StateCreator<
     const previous = get().habits;
     const updated = previous.map((h) => {
       if (h.id !== id) return h;
-      const completedDates = h.completedDates.includes(dateStr)
+      
+      const isRemoving = h.completedDates.includes(dateStr);
+      const completedDates = isRemoving
         ? h.completedDates.filter((d) => d !== dateStr)
         : [...h.completedDates, dateStr];
+
+      // Update completionDetails with timestamps and defaults based on habitType
+      const completionDetails = h.completionDetails ? { ...h.completionDetails } : {};
+      if (isRemoving) {
+        delete completionDetails[dateStr];
+      } else {
+        const timeNow = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+        let value: number | undefined;
+        let unit: string | undefined;
+
+        if (h.habitType === 'reading') {
+          value = 10;
+          unit = 'pages';
+        } else if (h.habitType === 'coding') {
+          value = 45;
+          unit = 'min';
+        } else if (h.habitType === 'meditation') {
+          value = 15;
+          unit = 'min';
+        } else if (h.habitType === 'workout') {
+          value = 30;
+          unit = 'min';
+        }
+
+        completionDetails[dateStr] = {
+          time: timeNow,
+          value,
+          unit
+        };
+      }
         
       // Helper function to calculate streaks locally
       const getStreakStats = (datesArr: string[]) => {
@@ -139,7 +185,7 @@ export const createHabitSlice: StateCreator<
       };
       
       const { streak, bestStreak } = getStreakStats(completedDates);
-      return { ...h, completedDates, streak, bestStreak };
+      return { ...h, completedDates, streak, bestStreak, completionDetails };
     });
     
     set({ habits: updated });
@@ -151,12 +197,61 @@ export const createHabitSlice: StateCreator<
           completedDates: target.completedDates,
           streak: target.streak,
           bestStreak: target.bestStreak,
+          completionDetails: target.completionDetails,
         });
       }
     } catch (error) {
       set({ habits: previous });
       localStorage.setItem('phq_habits', JSON.stringify(previous));
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not toggle habit completion'), 'error');
+      throw error;
+    }
+  },
+
+  addDailyReflection: async (ref) => {
+    const previous = get().dailyReflections;
+    const updated = [ref, ...previous];
+    set({ dailyReflections: updated });
+    localStorage.setItem('phq_daily_reflections', JSON.stringify(updated));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (!uid) {
+      useToastStore.getState().addToast('Success', 'Reflection saved locally', 'success');
+      return;
+    }
+    try {
+      await reflectionService.create(uid, ref);
+      useToastStore.getState().addToast('Success', 'Reflection saved', 'success');
+    } catch (error) {
+      useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
+    }
+  },
+  updateDailyReflection: async (id, data) => {
+    const previous = get().dailyReflections;
+    const updated = previous.map((r) => (r.id === id ? { ...r, ...data } : r));
+    set({ dailyReflections: updated });
+    localStorage.setItem('phq_daily_reflections', JSON.stringify(updated));
+    try {
+      await reflectionService.update(id, data);
+    } catch (error) {
+      set({ dailyReflections: previous });
+      localStorage.setItem('phq_daily_reflections', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update reflection'), 'error');
+      throw error;
+    }
+  },
+  deleteDailyReflection: async (id) => {
+    const previous = get().dailyReflections;
+    const updated = previous.filter((r) => r.id !== id);
+    set({ dailyReflections: updated });
+    localStorage.setItem('phq_daily_reflections', JSON.stringify(updated));
+    try {
+      await reflectionService.delete(id);
+      useToastStore.getState().addToast('Success', 'Reflection deleted', 'success');
+    } catch (error) {
+      set({ dailyReflections: previous });
+      localStorage.setItem('phq_daily_reflections', JSON.stringify(previous));
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete reflection'), 'error');
       throw error;
     }
   },

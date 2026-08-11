@@ -18,6 +18,17 @@ const STATUS_OPTIONS = {
     { value: 'DROPPED',   label: 'Dropped'   },
     { value: 'WISHLIST',  label: 'Wishlist'  },
   ],
+  SERIES: [
+    { value: 'WATCHING',  label: 'Watching'  },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'DROPPED',   label: 'Dropped'   },
+    { value: 'PLANNING',  label: 'Planning'  },
+  ],
+  MOVIE: [
+    { value: 'PLANNING',  label: 'Plan to Watch' },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'DROPPED',   label: 'Dropped' },
+  ],
 };
 
 function getRatingBg(val: number, active: boolean) {
@@ -47,8 +58,6 @@ export function MediaEntryModal() {
   const [season,   setSeason]   = useState('');
   const [notes,    setNotes]    = useState('');
 
-
-
   useEffect(() => {
     if (isOpen) {
       if (editingLog) {
@@ -75,7 +84,13 @@ export function MediaEntryModal() {
         setSeason(parsedSeason);
       } else {
         setTitle('');
-        setStatus(activeTab === 'ANIME' ? 'WATCHING' : 'PLAYING');
+        setStatus(
+          activeTab === 'ANIME' || activeTab === 'SERIES' 
+            ? 'WATCHING' 
+            : activeTab === 'MOVIE' 
+              ? 'PLANNING' 
+              : 'PLAYING'
+        );
         setRating(0);
         setEpisodes('');
         setSeason('');
@@ -87,10 +102,10 @@ export function MediaEntryModal() {
   const handleSave = () => {
     if (!title.trim()) return;
 
-    const isAnime = activeTab === 'ANIME';
+    const isAnimeOrSeries = activeTab === 'ANIME' || activeTab === 'SERIES';
     let finalNotes = notes;
 
-    if (isAnime) {
+    if (isAnimeOrSeries || activeTab === 'MOVIE') {
       // Preserve existing checklist/resume data when editing via modal
       let existingWatched: number[] = [];
       let existingTimestamps: Record<number, string> = {};
@@ -115,13 +130,13 @@ export function MediaEntryModal() {
 
       const meta = {
         notesText: notes,
-        season: parseInt(season) || 1,
-        watchedEpisodes: existingWatched,
-        timestamps: existingTimestamps,
-        lastWatchedEp: existingLastEp,
-        lastWatchedTimestamp: existingLastTime,
+        season: isAnimeOrSeries ? (parseInt(season) || 1) : undefined,
+        watchedEpisodes: isAnimeOrSeries ? existingWatched : undefined,
+        timestamps: isAnimeOrSeries ? existingTimestamps : undefined,
+        lastWatchedEp: isAnimeOrSeries ? existingLastEp : undefined,
+        lastWatchedTimestamp: isAnimeOrSeries ? existingLastTime : undefined,
         bannerImage: existingBanner,
-        episodeThumb: existingThumb,
+        episodeThumb: isAnimeOrSeries ? existingThumb : undefined,
       };
       finalNotes = JSON.stringify(meta);
     }
@@ -130,8 +145,8 @@ export function MediaEntryModal() {
       title,
       status: status as any,
       rating: rating > 0 ? rating : null,
-      episodes: isAnime ? (parseInt(episodes) || undefined) : undefined,
-      season:   isAnime ? (parseInt(season)   || undefined) : undefined,
+      episodes: isAnimeOrSeries ? (parseInt(episodes) || undefined) : undefined,
+      season:   isAnimeOrSeries ? (parseInt(season)   || undefined) : undefined,
       notes: finalNotes,
     };
 
@@ -149,54 +164,44 @@ export function MediaEntryModal() {
     closeMediaEntryModal();
   };
 
-  const isAnime = activeTab === 'ANIME';
-  const themeColor = isAnime ? '#007AFF' : '#A855F7';
-  const accentTextClass = isAnime ? 'text-blue-500 dark:text-blue-400' : 'text-purple-500 dark:text-purple-400';
-  const accentFocusClass = isAnime ? 'focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10' : 'focus:border-purple-500/60 focus:ring-4 focus:ring-purple-500/10';
+  const isAnimeOrSeries = activeTab === 'ANIME' || activeTab === 'SERIES';
+  const themeColor = activeTab === 'ANIME' ? '#e11d48' : activeTab === 'SERIES' ? '#3b82f6' : activeTab === 'MOVIE' ? '#10b981' : '#a855f7';
+  const labelClassName = 'text-[11px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5 block';
+  const inputClassName = 'w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-xs font-bold text-text-primary focus:outline-none focus:border-rose-500/50 transition-colors focus:ring-1 focus:ring-rose-500/20';
 
-  const labelClassName = "block text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2";
-  const inputClassName = `w-full bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-4 py-3 text-[14px] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all duration-200 ${accentFocusClass}`;
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm select-none">
         <motion.div
-          key="media-modal-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={closeMediaEntryModal}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 dark:bg-black/70 backdrop-blur-md"
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          style={{ willChange: 'transform, opacity' }}
+          className="w-full max-w-[420px] bg-surface rounded-[32px] border border-border shadow-2xl overflow-hidden"
         >
-          <motion.div
-            key="media-modal-card"
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 360 }}
-            onClick={e => e.stopPropagation()}
-            className="w-full max-w-[480px] max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-900 rounded-3xl p-6 sm:p-8 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] dark:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.6)] flex flex-col gap-6 custom-scrollbar"
-          >
-            {/* Header section */}
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-900">
-              <div>
-                <p className={`text-[10px] font-extrabold uppercase tracking-widest ${accentTextClass} m-0`}>
-                  {isAnime ? 'Anime' : 'Game'} Tracker Workspace
-                </p>
-                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight m-0 mt-0.5">
-                  {editingLog ? 'Edit Entry' : 'Add New'}
-                </h3>
-              </div>
-              <button
-                onClick={closeMediaEntryModal}
-                aria-label="Close modal"
-                className="w-8 h-8 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-primary/45"
-              >
-                <IconX size={14} style={{ strokeWidth: 2.5 }} />
-              </button>
+          {/* Header */}
+          <div className="flex justify-between items-center px-6 py-5 border-b border-border/40 bg-zinc-50/50 dark:bg-zinc-900/10">
+            <div>
+              <h3 className="text-sm font-black text-text-primary uppercase tracking-wider">
+                {editingLog ? 'Edit Log Entry' : 'Log New Item'}
+              </h3>
+              <p className="text-[10px] text-text-secondary font-medium mt-0.5">
+                Category: <span className="font-bold text-primary">{activeTab === 'ANIME' ? 'Anime' : activeTab === 'GAME' ? 'Game' : activeTab === 'SERIES' ? 'TV Series' : 'Movie'}</span>
+              </p>
             </div>
+            <button
+              onClick={closeMediaEntryModal}
+              className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-alt transition-colors border-none bg-transparent cursor-pointer"
+            >
+              <IconX className="w-4 h-4" />
+            </button>
+          </div>
 
+          {/* Form */}
+          <div className="p-6 max-h-[480px] overflow-y-auto custom-scrollbar flex flex-col gap-4 text-left">
             {/* Title Block */}
             <div>
               <label htmlFor="media-title" className={labelClassName}>Title</label>
@@ -204,7 +209,15 @@ export function MediaEntryModal() {
                 id="media-title"
                 type="text"
                 autoFocus
-                placeholder={isAnime ? 'e.g. Attack on Titan' : 'e.g. Elden Ring'}
+                placeholder={
+                  activeTab === 'ANIME' 
+                    ? 'e.g. Attack on Titan' 
+                    : activeTab === 'SERIES' 
+                      ? 'e.g. Breaking Bad' 
+                      : activeTab === 'MOVIE' 
+                        ? 'e.g. Inception' 
+                        : 'e.g. Elden Ring'
+                }
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 className={inputClassName}
@@ -220,8 +233,8 @@ export function MediaEntryModal() {
               className="w-full text-[14px]"
             />
 
-            {/* Meta Attributes Layer (Anime only) */}
-            {isAnime && (
+            {/* Meta Attributes Layer (Anime & Series) */}
+            {isAnimeOrSeries && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="media-season" className={labelClassName}>Season</label>
@@ -298,35 +311,35 @@ export function MediaEntryModal() {
                 className={`${inputClassName} resize-none`}
               />
             </div>
+          </div>
 
-            {/* Bottom Panel Actions */}
-            <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-100 dark:border-zinc-900">
-              <button
-                onClick={closeMediaEntryModal}
-                className="px-5 py-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-bold text-[13.5px] cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors duration-150"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!title.trim()}
-                style={{
-                  boxShadow: title.trim() ? `0 10px 25px -5px ${themeColor}40` : 'none',
-                  backgroundColor: title.trim() ? themeColor : ''
-                }}
-                className={`px-5 py-2.5 rounded-xl border-none font-bold text-[13.5px] flex items-center gap-1.5 transition-all duration-200 ${
-                  title.trim()
-                    ? 'text-white cursor-pointer hover:brightness-110 active:scale-98'
-                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
-                }`}
-              >
-                <IconCheck size={15} style={{ strokeWidth: 2.5 }} />
-                {editingLog ? 'Update Entry' : 'Save Entry'}
-              </button>
-            </div>
-          </motion.div>
+          {/* Bottom Panel Actions */}
+          <div className="flex justify-end gap-2.5 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/10 border-t border-border/40">
+            <button
+              onClick={closeMediaEntryModal}
+              className="px-5 py-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-bold text-[13.5px] cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors duration-150"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!title.trim()}
+              style={{
+                boxShadow: title.trim() ? `0 10px 25px -5px ${themeColor}40` : 'none',
+                backgroundColor: title.trim() ? themeColor : ''
+              }}
+              className={`px-5 py-2.5 rounded-xl border-none font-bold text-[13.5px] flex items-center gap-1.5 transition-all duration-200 ${
+                title.trim()
+                  ? 'text-white cursor-pointer hover:brightness-110 active:scale-98'
+                  : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
+              }`}
+            >
+              <IconCheck size={15} style={{ strokeWidth: 2.5 }} />
+              {editingLog ? 'Update Entry' : 'Save Entry'}
+            </button>
+          </div>
         </motion.div>
-      )}
+      </div>
     </AnimatePresence>
   );
 }

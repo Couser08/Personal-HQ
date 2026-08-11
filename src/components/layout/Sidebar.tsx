@@ -5,7 +5,7 @@ import {
   IconChecklist, IconSitemap, IconDots,
   IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
-  IconTag, IconChartBar, IconBrush, IconPlus, IconX,
+  IconTag, IconChartBar, IconLink, IconPlus, IconX, IconCalendar,
   IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
@@ -72,7 +72,7 @@ const NAV_GROUPS = [
       { id: 'media',     label: 'Media Log',             icon: IconDeviceGamepad2, desc: 'Movies, games, shows' },
       { id: 'condition', label: 'Condition Workstation', icon: IconChartBar,       desc: 'Decision diagrams' },
       { id: 'utilities', label: 'Utilities',             icon: IconLayoutGrid,     desc: 'Calculators & tools' },
-      { id: 'linksaver', label: 'Link Saver',            icon: IconBrush,          desc: 'Save links & clips' },
+      { id: 'linksaver', label: 'Link Vault',            icon: IconLink,           desc: 'Save & organize links' },
     ],
   },
 ];
@@ -421,6 +421,24 @@ export const Sidebar = () => {
           )}
           <IconChecklist size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
           {!isCollapsed && <span style={{ position: 'relative', zIndex: 1, whiteSpace: 'nowrap' }}>Daily Planner</span>}
+        </motion.button>
+
+        <motion.button
+          id="tour-calendar"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setActiveModule('calendar')}
+          title={isCollapsed ? 'Monthly Calendar' : undefined}
+          style={{ ...navItemStyle(activeModule === 'calendar'), justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: 4 }}
+        >
+          {activeModule === 'calendar' && (
+            <motion.div
+              layoutId="sidebar-active-indicator"
+              style={{ position: 'absolute', inset: 0, background: 'var(--bg-surface-hover, rgba(255,255,255,0.06))', borderRadius: 10, zIndex: 0, pointerEvents: 'none' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          )}
+          <IconCalendar size={18} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
+          {!isCollapsed && <span style={{ position: 'relative', zIndex: 1, whiteSpace: 'nowrap' }}>Monthly Calendar</span>}
         </motion.button>
 
         {/* Divider */}

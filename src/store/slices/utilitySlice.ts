@@ -16,7 +16,6 @@ import {
 import {
   noteService,
   linkService,
-  linkSaverService,
   tagService,
   stockService,
   interestService,
@@ -45,6 +44,7 @@ export interface UtilitySlice {
   links: Link[];
   addLink: (link: Link, userId?: string) => Promise<void>;
   deleteLink: (id: string) => Promise<void>;
+  updateLink: (id: string, data: Partial<Link>) => Promise<void>;
 
   savedLinks: SavedLink[];
   addSavedLink: (link: SavedLink) => Promise<void>;
@@ -439,63 +439,57 @@ export const createUtilitySlice: StateCreator<
     const uid = useAuthStore.getState().user?.id;
     if (!uid) return;
     const previous = get().links;
-    set((state) => ({ links: [link, ...state.links] }));
+    const updated = [link, ...previous];
+    set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
     try {
       await linkService.create(uid, link);
       useToastStore.getState().addToast('Success', 'Link saved', 'success');
     } catch (error) {
-      set({ links: previous });
+      set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save link'), 'error');
       throw error;
     }
   },
   deleteLink: async (id) => {
     const previous = get().links;
-    set((state) => ({ links: state.links.filter((l) => l.id !== id) }));
+    const updated = previous.filter((l) => l.id !== id);
+    set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
     try {
       await linkService.delete(id);
       useToastStore.getState().addToast('Success', 'Link deleted', 'success');
     } catch (error) {
-      set({ links: previous });
+      set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete link'), 'error');
+      throw error;
+    }
+  },
+  updateLink: async (id: string, data: Partial<Link>) => {
+    const previous = get().links;
+    const updated = previous.map((l) => (l.id === id ? { ...l, ...data } : l));
+    set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
+    try {
+      await linkService.update(id, data);
+      useToastStore.getState().addToast('Success', 'Link updated', 'success');
+    } catch (error) {
+      set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
+      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update link'), 'error');
       throw error;
     }
   },
 
   savedLinks: (() => {
     try {
-      const stored = localStorage.getItem('phq_saved_links');
-      return stored ? JSON.parse(stored) : [];
+      const stored = localStorage.getItem('phq_links');
+      return stored ? (JSON.parse(stored) as any[] as SavedLink[]) : [];
     } catch {
       return [];
     }
   })(),
   addSavedLink: async (link: SavedLink) => {
-    if (shouldThrottle('addSavedLink')) return;
-    const uid = useAuthStore.getState().user?.id;
-    if (!uid) return;
-    const previous = get().savedLinks;
-    set((state) => ({ savedLinks: [link, ...state.savedLinks] }));
-    try {
-      await linkSaverService.create(uid, link);
-      useToastStore.getState().addToast('Success', 'Link saved to database', 'success');
-    } catch (error) {
-      set({ savedLinks: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save link'), 'error');
-      throw error;
-    }
+    await get().addLink(link as any as Link);
   },
   deleteSavedLink: async (id: string) => {
-    const previous = get().savedLinks;
-    set((state) => ({ savedLinks: state.savedLinks.filter((l) => l.id !== id) }));
-    try {
-      await linkSaverService.delete(id);
-      useToastStore.getState().addToast('Success', 'Link deleted from database', 'success');
-    } catch (error) {
-      set({ savedLinks: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete link'), 'error');
-      throw error;
-    }
+    await get().deleteLink(id);
   },
 
   appTags: (() => {
