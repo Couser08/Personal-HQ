@@ -74,20 +74,32 @@ export function PlannerTimeline({ tasks, onEditTask, onToggleComplete }: Planner
                 </div>
 
                 {/* Task Card */}
-                <div className="ml-8 w-full bg-surface border border-border/40 hover:border-border/80 transition-colors rounded-2xl p-3 flex items-center justify-between shadow-subtle cursor-pointer" onClick={() => onToggleComplete(task.id)}>
+                <div 
+                  className={`ml-8 w-full transition-colors rounded-2xl p-3 flex items-center justify-between shadow-subtle cursor-pointer border border-solid ${
+                    task.featured 
+                      ? 'border-amber-400 dark:border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20 hover:bg-amber-500/10' 
+                      : 'bg-surface border-border/40 hover:border-border/80'
+                  }`} 
+                  onClick={() => onToggleComplete(task.id)}
+                >
                   
                   <div className="flex items-center gap-4 flex-1">
                     {/* Icon */}
-                    <div className={`w-10 h-10 rounded-xl ${style.bg} ${style.text} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}>
+                    <div className={`w-10 h-10 rounded-xl ${task.featured ? 'bg-amber-500/10 text-amber-550' : `${style.bg} ${style.text}`} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}>
                       <Icon size={20} stroke={1.5} />
                     </div>
 
                     {/* Content */}
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`text-[14px] font-bold truncate ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+                        <h3 className={`text-[14px] font-extrabold truncate ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}>
                           {task.title}
                         </h3>
+                        {task.featured && (
+                          <span className="px-1.5 py-0.5 rounded-lg bg-amber-550 text-white text-[8px] font-black tracking-wider uppercase flex items-center shrink-0 shadow-sm">
+                            👑 Focus
+                          </span>
+                        )}
                       </div>
                       <p className="text-[12.5px] text-text-muted truncate mt-0.5">
                         {task.description || 'No description provided'}

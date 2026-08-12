@@ -41,6 +41,7 @@ export function DailyPlannerView() {
       location: planData.location,
       reminder: planData.reminder,
       repeat: planData.repeat,
+      featured: planData.featured,
       createdAt: new Date().toISOString(),
       projectId: null,
     });

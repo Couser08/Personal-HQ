@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
 import { clearRestCache } from '../../lib/supabase';
+import { safeSetItem } from '../../utils/storage';
 
 export interface CoreSlice {
   activeModule: string;
@@ -333,11 +334,11 @@ export const createCoreSlice: StateCreator<
   importData: (data) => {
     if (data.notes) {
       set({ notes: data.notes });
-      localStorage.setItem('phq_notes', JSON.stringify(data.notes));
+      safeSetItem('phq_notes', JSON.stringify(data.notes));
     }
     if (data.todoTasks) {
       set({ todoTasks: data.todoTasks });
-      localStorage.setItem('phq_todo_tasks', JSON.stringify(data.todoTasks));
+      safeSetItem('phq_todo_tasks', JSON.stringify(data.todoTasks));
     }
   }
 });

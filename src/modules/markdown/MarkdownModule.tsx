@@ -152,11 +152,26 @@ export default function MarkdownModule() {
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Custom document creation modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('blank');
+
+  const getTemplateBadge = (docContent: string) => {
+    if (docContent.includes('Objectives') && docContent.includes('Activity Log')) {
+      return { label: 'Daily Log', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25 shadow-sm' };
+    }
+    if (docContent.includes('Phases & Milestones')) {
+      return { label: 'Roadmap', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/25 shadow-sm' };
+    }
+    if (docContent.includes('RFC:') || docContent.includes('Introduction')) {
+      return { label: 'Spec Doc', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-550/25 shadow-sm' };
+    }
+    return { label: 'Document', color: 'bg-slate-550/10 text-slate-600 dark:text-slate-400 border border-slate-500/25 shadow-sm' };
+  };
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedDocIdRef = useRef<string | null>(null);
@@ -218,11 +233,14 @@ export default function MarkdownModule() {
   const handleTitleChange = (newVal: string) => {
     if (!activeDocId) return;
     setTitle(newVal);
+    setIsSaving(true);
     updateNoteLocally(activeDocId, { title: newVal });
     
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      void updateNote(activeDocId, { title: newVal }, true);
+      void updateNote(activeDocId, { title: newVal }, true).then(() => {
+        setIsSaving(false);
+      });
     }, 800);
   };
 
@@ -230,11 +248,14 @@ export default function MarkdownModule() {
   const handleContentChange = (newVal: string) => {
     if (!activeDocId) return;
     setContent(newVal);
+    setIsSaving(true);
     updateNoteLocally(activeDocId, { content: newVal });
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      void updateNote(activeDocId, { content: newVal }, true);
+      void updateNote(activeDocId, { content: newVal }, true).then(() => {
+        setIsSaving(false);
+      });
     }, 800);
   };
 
@@ -657,35 +678,46 @@ export default function MarkdownModule() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-left select-none">
               {markdownDocs.map(doc => {
                 const wc = doc.content.split(/\s+/).filter(Boolean).length;
+                const readTime = Math.max(1, Math.ceil(wc / 225));
                 const preview = doc.content.replace(/[#*`>_\-=\[\]]/g, '').trim().slice(0, 90);
+                const badge = getTemplateBadge(doc.content);
+
                 return (
                   <div
                     key={doc.id}
                     onClick={() => setActiveDocId(doc.id)}
-                    className="p-5 bg-surface border border-border rounded-3xl hover:border-primary/30 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between min-h-[165px] relative group"
+                    className="p-5.5 bg-surface/50 dark:bg-zinc-900/30 backdrop-blur-sm border border-border/40 hover:border-primary/20 rounded-[28px] hover:shadow-lg cursor-pointer transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between min-h-[175px] relative group"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-start gap-3 mt-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
                           <IconFileText size={17} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <span className="text-sm font-bold text-text-primary truncate block">{doc.title}</span>
-                          <p className="text-[11px] text-text-secondary font-medium mt-1 line-clamp-2 leading-relaxed">
+                          <span className="text-[14px] font-black text-text-primary group-hover:text-primary transition-colors truncate block">{doc.title}</span>
+                          <p className="text-[11px] text-text-secondary font-medium mt-1.5 line-clamp-2 leading-relaxed">
                             {preview || 'No content yet...'}
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-semibold text-text-muted">
+                    
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/60">
+                      <div className="flex items-center gap-3 text-[10px] text-text-muted font-bold">
+                        <span>
                           {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
-                        <span className="text-[10px] font-semibold text-text-muted">{wc.toLocaleString()} words</span>
+                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span>{readTime} min read</span>
                       </div>
                       <button
                         onClick={(e) => {
@@ -694,7 +726,7 @@ export default function MarkdownModule() {
                             handleDeleteDoc(doc.id, e);
                           });
                         }}
-                        className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-550/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent active:scale-90"
                         title="Delete document"
                       >
                         <IconTrash size={13} />
@@ -728,10 +760,13 @@ export default function MarkdownModule() {
               filteredCommands={filteredCommands}
               activeCommandIndex={activeCommandIndex}
               handleSelectSlashCommand={handleSelectSlashCommand}
+              isSaving={isSaving}
+              isFocusMode={isFocusMode}
+              setIsFocusMode={setIsFocusMode}
             />
           )}
 
-          {isWorkspaceOpen && (
+          {isWorkspaceOpen && !isFocusMode && (
             <MarkdownPreview
               parsedHtml={parsedHtml}
               isEditorOpen={isEditorOpen}

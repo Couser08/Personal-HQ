@@ -18,6 +18,8 @@ import {
   syncPomodoroFromStorage
 } from './slices/utilitySlice';
 
+import { safeSetItem } from '../utils/storage';
+
 export * from './types';
 
 export const useAppStore = create<AppStore>()((...a) => ({
@@ -87,29 +89,25 @@ if (typeof window !== 'undefined') {
 
   // Automatically persist state changes to localStorage
   useAppStore.subscribe((state) => {
-    try {
-      localStorage.setItem('phq_todo_projects', JSON.stringify(state.todoProjects));
-      localStorage.setItem('phq_todo_tasks', JSON.stringify(state.todoTasks));
-      localStorage.setItem('phq_journals', JSON.stringify(state.journals));
-      localStorage.setItem('phq_mindmaps', JSON.stringify(state.mindmaps));
-      localStorage.setItem('phq_habits', JSON.stringify(state.habits));
-      localStorage.setItem('phq_sprints', JSON.stringify(state.sprints));
-      localStorage.setItem('phq_dsa_problems', JSON.stringify(state.dsaProblems));
-      localStorage.setItem('phq_til_logs', JSON.stringify(state.tilLogs));
-      localStorage.setItem('phq_roadmaps', JSON.stringify(state.roadmaps));
-      localStorage.setItem('phq_resources', JSON.stringify(state.resources));
-      localStorage.setItem('phq_dev_goals', JSON.stringify(state.devGoals));
-      localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(state.journalStickyNotes));
-      localStorage.setItem('phq_saved_links', JSON.stringify(state.savedLinks));
-      localStorage.setItem('phq_app_tags', JSON.stringify(state.appTags));
-      localStorage.setItem('phq_links', JSON.stringify(state.links));
-      localStorage.setItem('phq_subjects', JSON.stringify(state.subjects));
-      localStorage.setItem('phq_media_logs', JSON.stringify(state.mediaLogs));
-      localStorage.setItem('phq_countdowns', JSON.stringify(state.countdowns));
-      localStorage.setItem('phq_budget_categories', JSON.stringify(state.budgetCategories));
-      localStorage.setItem('phq_budget_transactions', JSON.stringify(state.budgetTransactions));
-    } catch (e) {
-      console.warn('[Storage Persist] Error persisting to localStorage:', e);
-    }
+    safeSetItem('phq_todo_projects', JSON.stringify(state.todoProjects));
+    safeSetItem('phq_todo_tasks', JSON.stringify(state.todoTasks));
+    safeSetItem('phq_journals', JSON.stringify(state.journals));
+    safeSetItem('phq_mindmaps', JSON.stringify(state.mindmaps));
+    safeSetItem('phq_habits', JSON.stringify(state.habits));
+    safeSetItem('phq_sprints', JSON.stringify(state.sprints));
+    safeSetItem('phq_dsa_problems', JSON.stringify(state.dsaProblems));
+    safeSetItem('phq_til_logs', JSON.stringify(state.tilLogs));
+    safeSetItem('phq_roadmaps', JSON.stringify(state.roadmaps));
+    safeSetItem('phq_resources', JSON.stringify(state.resources));
+    safeSetItem('phq_dev_goals', JSON.stringify(state.devGoals));
+    safeSetItem('phq_journal_sticky_notes', JSON.stringify(state.journalStickyNotes));
+    safeSetItem('phq_saved_links', JSON.stringify(state.savedLinks));
+    safeSetItem('phq_app_tags', JSON.stringify(state.appTags));
+    safeSetItem('phq_links', JSON.stringify(state.links));
+    safeSetItem('phq_subjects', JSON.stringify(state.subjects));
+    safeSetItem('phq_media_logs', JSON.stringify(state.mediaLogs));
+    safeSetItem('phq_countdowns', JSON.stringify(state.countdowns));
+    safeSetItem('phq_budget_categories', JSON.stringify(state.budgetCategories));
+    safeSetItem('phq_budget_transactions', JSON.stringify(state.budgetTransactions));
   });
 }

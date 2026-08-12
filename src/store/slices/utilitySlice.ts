@@ -33,6 +33,7 @@ import {
   showPomodoroDesktopNotification,
   type PomodoroCompletionNotification
 } from '../../utils/pomodoroNotifications';
+import { safeSetItem } from '../../utils/storage';
 
 export interface UtilitySlice {
   notes: Note[];
@@ -374,7 +375,7 @@ export const createUtilitySlice: StateCreator<
     if (shouldThrottle('addNote')) return;
     const previous = get().notes;
     const next = [note, ...previous];
-    localStorage.setItem('phq_notes', JSON.stringify(next));
+    safeSetItem('phq_notes', JSON.stringify(next));
     set({ notes: next });
 
     const uid = useAuthStore.getState().user?.id;

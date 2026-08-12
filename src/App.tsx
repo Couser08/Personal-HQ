@@ -27,6 +27,7 @@ const ConditionModule = lazy(() => import('./modules/condition/ConditionModule')
 const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
 const TilModule = lazy(() => import('./modules/til/TilModule'));
 const BooksModule = lazy(() => import('./modules/books/BooksModule'));
+const ChangelogModule = lazy(() => import('./modules/changelog/ChangelogModule'));
 const DesignLabPage = lazy(() => import('./pages/design-lab/DesignLabPage'));
 
 function LoadingSplash() {
@@ -225,6 +226,7 @@ function AppContent() {
       case 'markdown': return <MarkdownModule />;
       case 'condition': return <ConditionModule />;
       case 'admin': return isAdmin ? <AdminModule /> : <DashboardModule />;
+      case 'changelog': return <ChangelogModule />;
       default: return <DashboardModule />;
     }
   };

@@ -104,6 +104,7 @@ export interface TodoTask {
   location?: string;
   reminder?: string;
   repeat?: string;
+  featured?: boolean;
 }
 
 export interface TopicNote {

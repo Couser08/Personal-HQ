@@ -6,7 +6,7 @@ import {
   IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
   IconTag, IconChartBar, IconLink, IconPlus, IconX, IconCalendar,
-  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain
+  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -454,8 +454,9 @@ export const Sidebar = () => {
 
         {/* Settings / Profile / Admin */}
         {[
-          { id: 'settings', label: 'Settings', icon: IconSettings },
-          { id: 'profile',  label: 'Profile',  icon: IconUser },
+          { id: 'settings',  label: 'Settings',  icon: IconSettings },
+          { id: 'profile',   label: 'Profile',   icon: IconUser },
+          { id: 'changelog', label: "What's New", icon: IconRocket },
           ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: IconShieldLock }] : []),
         ].map(({ id, label, icon: Icon }) => {
           const active = activeModule === id;
