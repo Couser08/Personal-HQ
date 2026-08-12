@@ -31,6 +31,8 @@ import {
   IconChevronUp,
   IconRocket,
   IconStar,
+  IconFileText,
+  IconSitemap,
 } from '@tabler/icons-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
