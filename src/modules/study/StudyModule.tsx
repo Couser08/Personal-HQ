@@ -29,6 +29,7 @@ export default function StudyModule() {
     updateTopic,
     showConfirm,
     theme,
+    pomodoroStats,
   } = useAppStore(
     useShallow((state) => ({
       subjects: state.subjects,
@@ -39,6 +40,7 @@ export default function StudyModule() {
       updateTopic: state.updateTopic,
       showConfirm: state.showConfirm,
       theme: state.theme,
+      pomodoroStats: state.pomodoroStats,
     })),
   );
 
@@ -262,9 +264,9 @@ export default function StudyModule() {
       totalResources,
       totalFlashcards,
       totalQuestions,
-      totalStudyTime,
+      totalStudyTime: Math.max(totalStudyTime, pomodoroStats.totalMinutes || 0),
     };
-  }, [subjects]);
+  }, [subjects, pomodoroStats]);
 
   const handleSaveSubject = () => {
     if (!subjectName.trim()) return;
@@ -612,8 +614,8 @@ export default function StudyModule() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 text-left">
           <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              Study Tracker <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+            <h2 className="text-2xl font-bold text-text-primary">
+              Study Tracker
             </h2>
             <p className="text-text-secondary text-sm">
               Organize subjects, topics, flashcards, and timers into unified study workspaces.

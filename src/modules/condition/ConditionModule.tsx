@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconArrowRight, IconRefresh, IconX, IconDownload } from '@tabler/icons-react';
+import { IconArrowRight, IconRefresh, IconX, IconDownload, IconCircleCheck } from '@tabler/icons-react';
 import { VariablesPanel } from './components/VariablesPanel';
 import { RulesPanel } from './components/RulesPanel';
 import { DecisionDiagram } from './components/DecisionDiagram';
@@ -22,6 +22,17 @@ export default function ConditionModule() {
     { name: 'member', type: 'boolean', testValue: 'true' }
   ]);
 
+  // Outcomes Registry
+  const [outcomes, setOutcomes] = useState<string[]>([
+    'Reject (Underage)',
+    'Allow Member Registration',
+    'Apply 15% Member Discount',
+    'Default (Standard Guest)'
+  ]);
+
+  // Execution Mode State
+  const [stopsOnMatch, setStopsOnMatch] = useState<boolean>(true);
+
   // Rules State
   const [rules, setRules] = useState<Rule[]>([
     { id: '1', variableName: 'age', operator: 'less_than', value: '18', outcome: 'Reject (Underage)' },
@@ -33,6 +44,7 @@ export default function ConditionModule() {
   const [evalResult, setEvalResult] = useState<EvaluationResult>({
     outcome: '',
     matchedRuleId: null,
+    matchedRuleIds: [],
     trace: []
   });
 
@@ -63,30 +75,55 @@ export default function ConditionModule() {
     setVariables(updated);
   };
 
+  // Outcome Helpers
+  const addOutcome = (label: string) => {
+    if (!outcomes.includes(label)) {
+      setOutcomes([...outcomes, label]);
+    }
+  };
+
   // Rule Helpers
   const addRule = () => {
     const newId = crypto.randomUUID();
-    setRules([...rules, { id: newId, variableName: variables[0]?.name || 'age', operator: 'equals', value: '', outcome: 'Outcome Value' }]);
+    const fallbackOutcome = outcomes[0] || 'Default (Standard Guest)';
+    setRules([
+      ...rules,
+      {
+        id: newId,
+        variableName: variables[0]?.name || 'age',
+        operator: 'equals',
+        value: '',
+        outcome: fallbackOutcome
+      }
+    ]);
   };
 
   const deleteRule = (id: string) => {
-    setRules(rules.filter(r => r.id !== id));
+    setRules(rules.filter((r) => r.id !== id));
   };
 
   const updateRule = (id: string, key: keyof Rule, val: string) => {
-    setRules(rules.map(r => r.id === id ? { ...r, [key]: val } : r));
+    setRules(rules.map((r) => (r.id === id ? { ...r, [key]: val } : r)));
+  };
+
+  const reorderRules = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= rules.length) return;
+    const next = [...rules];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    setRules(next);
   };
 
   // Evaluate logic
   const handleEvaluate = () => {
-    const res = evaluateConditions(variables, rules, defaultOutcome);
+    const res = evaluateConditions(variables, rules, defaultOutcome, stopsOnMatch);
     setEvalResult(res);
   };
 
-  // Auto evaluate when variables/rules change
+  // Auto evaluate when variables/rules/mode change
   useEffect(() => {
     handleEvaluate();
-  }, [variables, rules, defaultOutcome]);
+  }, [variables, rules, defaultOutcome, stopsOnMatch]);
 
   // Sync preview canvas when preview is open
   useEffect(() => {
@@ -94,19 +131,18 @@ export default function ConditionModule() {
     const canvas = previewCanvasRef.current;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
-    
-    // Trigger redraw
+
     const mainCanvas = canvasRef.current;
     if (mainCanvas) {
       ctx.drawImage(mainCanvas, 0, 0);
     }
-  }, [isPreviewOpen, rules, variables, evalResult, defaultOutcome]);
+  }, [isPreviewOpen, rules, variables, evalResult, defaultOutcome, stopsOnMatch]);
 
   // Export Canvas
   const exportImage = (format: 'png' | 'jpeg') => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
@@ -130,70 +166,99 @@ export default function ConditionModule() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
-      className="flex flex-col gap-6 max-w-7xl w-full mx-auto"
+      className="flex flex-col gap-6 max-w-7xl w-full mx-auto pb-12"
     >
       {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            Condition Workstation <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          <h1 className="text-2xl font-bold flex items-center gap-2.5">
+            Condition Workstation
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-semibold">
+              <IconCircleCheck size={13} />
+              Saved
+            </span>
           </h1>
-          <p className="text-sm text-text-secondary">Build rules, run variables through conditional evaluations, and export custom flowcharts</p>
+          <p className="text-xs text-text-secondary mt-1">
+            Build rules, test variable chains, review trace execution logs, and export live flowcharts
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left Column - Variables & Rule Settings (7 cols) */}
-        <div className="xl:col-span-7 flex flex-col gap-6">
+      {/* Main Grid Layout: Pinned Variables Rail (left) + Rules Table & Trace (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Rail: Variables Panel (4 cols) */}
+        <div className="lg:col-span-4">
           <VariablesPanel
             variables={variables}
             addVariable={addVariable}
             updateVariable={updateVariable}
             deleteVariable={deleteVariable}
           />
+        </div>
 
+        {/* Right Area: Rules & Trace Execution (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
           <RulesPanel
             rules={rules}
             variables={variables}
+            outcomes={outcomes}
+            stopsOnMatch={stopsOnMatch}
+            setStopsOnMatch={setStopsOnMatch}
             addRule={addRule}
             updateRule={updateRule}
             deleteRule={deleteRule}
+            reorderRules={reorderRules}
+            addOutcome={addOutcome}
             defaultOutcome={defaultOutcome}
             setDefaultOutcome={setDefaultOutcome}
             setIsRegexTipsOpen={setIsRegexTipsOpen}
           />
-        </div>
 
-        {/* Right Column - Flow Diagrams & Workbench Execution (5 cols) */}
-        <div className="xl:col-span-5 flex flex-col gap-6">
           {/* Section 3: Workbench Trace Execution */}
-          <div className="bg-surface border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
+          <div className="bg-surface border border-border rounded-3xl p-5 flex flex-col gap-4 shadow-sm text-left">
+            <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
               <div>
                 <h3 className="text-sm font-bold text-text-primary">3. Workbench Trace Execution</h3>
-                <p className="text-xs text-text-muted mt-0.5">Real-time compilation results of your workbench</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Live execution trace results (Auto-updated on edit)
+                </p>
               </div>
               <button
                 onClick={handleEvaluate}
-                className="btn btn-secondary btn-sm flex items-center gap-1 cursor-pointer"
+                className="btn btn-secondary btn-sm flex items-center gap-1 cursor-pointer text-xs"
               >
-                <IconRefresh size={14} /> Run
+                <IconRefresh size={14} /> Re-Run
               </button>
             </div>
 
-            <div className="bg-surface-alt/45 rounded-2xl border border-border/45 p-4 flex flex-col gap-3 text-left">
+            <div className="bg-surface-alt/45 rounded-2xl border border-border/45 p-4 flex flex-col gap-3">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Evaluated Outcome</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">
+                  Winning Outcome
+                </span>
                 <p className="text-lg font-black text-primary mt-0.5">{evalResult.outcome}</p>
               </div>
 
-              <div className="border-t border-border/40 pt-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">Trace execution logs</span>
-                <div className="mt-2 flex flex-col gap-1.5 max-h-36 overflow-y-auto pr-1 font-mono text-[10px] text-text-secondary custom-scrollbar">
-                  {evalResult.trace.map((t, idx) => (
-                    <div key={idx} className="flex gap-2 items-start py-0.5">
-                      <IconArrowRight size={10} className="text-primary mt-0.5 shrink-0" />
-                      <span className="leading-relaxed">{t}</span>
+              <div className="border-t border-border/40 pt-2.5">
+                <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">
+                  Execution Log Steps
+                </span>
+                <div className="mt-2 flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 font-mono text-[11px] custom-scrollbar">
+                  {evalResult.trace.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-2 items-start p-2 rounded-xl border text-xs ${
+                        item.type === 'match'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold'
+                          : item.type === 'halt'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300 font-bold'
+                          : item.type === 'final'
+                          ? 'bg-primary/10 border-primary/30 text-primary font-black'
+                          : 'bg-surface/50 border-border/30 text-text-muted'
+                      }`}
+                    >
+                      <IconArrowRight size={12} className="mt-0.5 shrink-0" />
+                      <span className="leading-relaxed">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -204,17 +269,19 @@ export default function ConditionModule() {
       </div>
 
       {/* Section 4: Decision Flow Diagram */}
-      <DecisionDiagram
-        canvasRef={canvasRef}
-        logicalWidth={logicalWidth}
-        logicalHeight={logicalHeight}
-        scaleFactor={scaleFactor}
-        rules={rules}
-        evalResult={evalResult}
-        defaultOutcome={defaultOutcome}
-        setIsPreviewOpen={setIsPreviewOpen}
-        exportImage={exportImage}
-      />
+      <div className="mt-2">
+        <DecisionDiagram
+          canvasRef={canvasRef}
+          logicalWidth={logicalWidth}
+          logicalHeight={logicalHeight}
+          scaleFactor={scaleFactor}
+          rules={rules}
+          evalResult={evalResult}
+          defaultOutcome={defaultOutcome}
+          setIsPreviewOpen={setIsPreviewOpen}
+          exportImage={exportImage}
+        />
+      </div>
 
       {/* Diagram Preview Modal */}
       <AnimatePresence>
@@ -238,12 +305,14 @@ export default function ConditionModule() {
               <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/40">
                 <div>
                   <h2 className="text-base font-bold text-text-primary">Decision Flow Diagram</h2>
-                  <p className="text-xs text-text-muted mt-0.5">{rules.length} rule{rules.length !== 1 ? 's' : ''} · auto-traced</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    {rules.length} rule{rules.length !== 1 ? 's' : ''} · auto-traced
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => exportImage('png')}
-                    className="btn btn-secondary btn-sm flex items-center gap-1.5 cursor-pointer"
+                    className="btn btn-secondary btn-sm flex items-center gap-1.5 cursor-pointer text-xs"
                   >
                     <IconDownload size={13} /> Export PNG
                   </button>

@@ -31,6 +31,9 @@ import { supabase } from '../../../lib/supabase';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { compressAndConvertToWebP } from '../../../utils/imageOptimizer';
 
+import { SelectionToolbar } from './SelectionToolbar';
+import { MarginNote } from './MarginNote';
+
 const highlightMatches = (html: string, query: string) => {
   if (!query || !query.trim()) return html;
   const escaped = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -47,7 +50,7 @@ interface NotebookEditorProps {
 }
 
 export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }) => {
-  const { books, updateBook, deleteBook } = useAppStore();
+  const { books, updateBook, deleteBook, showConfirm } = useAppStore();
   const book = books.find((b) => b.id === bookId);
 
   // Local editor states
@@ -66,9 +69,28 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   const [fontFamily, setFontFamily] = useState<'sans' | 'serif' | 'mono'>('sans');
   const [fontSize, setFontSize] = useState(14);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
+  const [selectionPos, setSelectionPos] = useState<{ top: number; left: number } | null>(null);
   const editorRefLeft = useRef<HTMLDivElement>(null);
   const editorRefRight = useRef<HTMLDivElement>(null);
   const lastFocusedEditorRef = useRef<'left' | 'right'>('left');
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width > 0 && rect.top > 0) {
+          setSelectionPos({ top: rect.top, left: rect.left + rect.width / 2 });
+          return;
+        }
+      }
+      setSelectionPos(null);
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, []);
   
   // Highlighter hover state with delay timer
   const [isHighlighterHovered, setIsHighlighterHovered] = useState(false);
@@ -524,9 +546,37 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
     setActiveModal(null);
   };
 
-  const triggerDeleteConfirm = (type: 'topic' | 'sticky', id: string, name: string) => {
-    setDeleteTarget({ type, id, name });
-    setActiveModal('delete-confirm');
+  const triggerDeleteConfirm = (type: 'topic' | 'sticky' | 'book', id: string, name: string) => {
+    if (type === 'book') {
+      showConfirm(
+        'Delete Notebook',
+        `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+        () => {
+          deleteBook(id);
+          onBack();
+        }
+      );
+    } else if (type === 'topic') {
+      showConfirm(
+        'Delete Topic',
+        `Are you sure you want to delete topic "${name}"?`,
+        () => {
+          if (book) {
+            updateBook(book.id, { topics: book.topics.filter((t) => t.id !== id) });
+          }
+        }
+      );
+    } else if (type === 'sticky') {
+      showConfirm(
+        'Delete Sticky Note',
+        `Are you sure you want to delete this sticky note?`,
+        () => {
+          if (book) {
+            updateBook(book.id, { stickyNotes: book.stickyNotes.filter((n) => n.id !== id) });
+          }
+        }
+      );
+    }
   };
 
   const submitDelete = () => {
@@ -617,26 +667,33 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
       {/* ─── Top Header Bar ─── */}
       <div className="flex flex-col items-start justify-between gap-4 p-4 border bg-surface border-border rounded-xl sm:flex-row sm:items-center">
         
-        {/* Left header group */}
-        <div className="flex items-center gap-3.5 flex-1 min-w-0">
+        {/* Left header group with Breadcrumbs */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 transition-colors border rounded-full cursor-pointe hover:bg-surface-hover border-border/40 text-text-secondary hover:text-text-primary"
+            className="p-2 transition-colors border rounded-full cursor-pointer hover:bg-surface-hover border-border/40 text-text-secondary hover:text-text-primary"
+            title="Back to Library"
           >
             <IconArrowLeft size={16} />
           </button>
 
-            <div
-              className="flex-1 min-w-0 p-1 transition-colors rounded-lg cursor-pointer group hover:bg-surface-hover/30"
-              onClick={openEditBookDetailsModal}
-              title="Edit Notebook Configurations"
-            >
-              <h2 className="text-sm font-black text-text-primary flex items-center gap-1.5 truncate">
-                {book.title}
-                <IconPencil size={12} className="transition-opacity opacity-0 text-text-muted group-hover:opacity-100" />
-              </h2>
-              <p className="text-[10px] text-text-secondary truncate mt-0.5">{book.tagline}</p>
+          <div
+            className="flex-1 min-w-0 p-1 transition-colors rounded-lg cursor-pointer group hover:bg-surface-hover/30"
+            onClick={openEditBookDetailsModal}
+            title="Edit Notebook Configurations"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">
+              <span className="hover:text-rose-500 transition-colors" onClick={(e) => { e.stopPropagation(); onBack(); }}>
+                Library
+              </span>
+              <span>/</span>
+              <span>{book.category || 'General'}</span>
             </div>
+            <h2 className="text-sm font-black text-text-primary flex items-center gap-1.5 truncate">
+              {book.title}
+              <IconPencil size={12} className="transition-opacity opacity-0 text-text-muted group-hover:opacity-100" />
+            </h2>
+          </div>
         </div>
 
         {/* Right header actions */}
@@ -817,22 +874,23 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                     triggerToast('Notebook duplication simulated!');
                     setIsMoreMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-xs font-bold text-text-primary hover:bg-surface-hover cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 text-xs font-bold text-text-primary hover:bg-surface-hover cursor-pointer border-b border-border/40"
                 >
                   Duplicate Book
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    triggerDeleteConfirm('book', book.id, book.title);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-500/10 cursor-pointer flex items-center gap-1.5"
+                >
+                  <IconTrash size={13} />
+                  Delete Notebook
                 </button>
               </div>
             )}
           </div>
-
-          {/* Delete Book */}
-          <button
-            onClick={() => triggerDeleteConfirm('book' as any, book.id, book.title)}
-            className="px-3 py-1.5 border border-red-200 bg-red-50 dark:bg-red-950/20 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all"
-          >
-            <IconTrash size={14} />
-            Delete
-          </button>
         </div>
       </div>
 
@@ -1307,136 +1365,139 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
             
             {/* 1. Topics Panel */}
             {showTopicsPanel && (
-              <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl">
+              <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-xs font-black text-text-primary">Topics</span>
-                  <button
-                    onClick={openAddTopicModal}
-                    className="p-1 hover:bg-surface-hover rounded text-rose-500 cursor-pointer flex items-center gap-1 font-bold text-[10px] border-none active:scale-[0.97] transition-transform duration-100"
-                  >
-                    <IconPlus size={12} /> Add Topic
-                  </button>
+                  <span className="text-xs font-black text-text-primary">Topics & Progress</span>
+                  <span className="text-[10px] text-text-muted font-bold">
+                    {book.topics.filter(t => t.readingState === 'done').length}/{book.topics.length} Done
+                  </span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-1.5 text-xs font-semibold">
+                <div className="flex-1 overflow-y-auto space-y-1.5 text-xs font-semibold pr-0.5">
                   {book.topics.length === 0 ? (
-                    <div className="py-6 italic text-center text-text-muted">No topics. Add chapters.</div>
+                    <div className="py-6 italic text-center text-text-muted">No topics. Add chapters below.</div>
                   ) : (
-                    book.topics.map((topic) => (
-                      <div
-                        key={topic.id}
-                        onClick={() => {
-                          const pageTarget = topic.pageNumber % 2 === 0 ? topic.pageNumber - 1 : topic.pageNumber;
-                          updateBook(book.id, { currentPage: pageTarget });
-                        }}
-                        className={`flex items-center justify-between p-2 rounded-xl cursor-pointer hover:bg-surface-hover/60 transition-colors ${
-                          book.currentPage === topic.pageNumber || book.currentPage + 1 === topic.pageNumber
-                            ? 'bg-rose-500/10 text-rose-500 font-bold'
-                            : 'text-text-secondary'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <span
-                            className={`w-2 h-2 rounded-full`}
-                            style={{
-                              backgroundColor:
-                                topic.color === 'blue'
-                                  ? '#3B82F6'
-                                  : topic.color === 'green'
-                                  ? '#10B981'
-                                  : topic.color === 'orange'
-                                  ? '#F59E0B'
-                                  : topic.color === 'pink'
-                                  ? '#EC4899'
-                                  : topic.color === 'purple'
-                                  ? '#8B5CF6'
-                                  : '#06B6D4'
-                            }}
-                          />
-                          <span className="truncate">{topic.title}</span>
+                    book.topics.map((topic) => {
+                      const state = topic.readingState || 'unread';
+                      const stateBg =
+                        state === 'done'
+                          ? 'bg-emerald-500 text-white'
+                          : state === 'in_progress'
+                          ? 'bg-amber-500 animate-pulse'
+                          : 'bg-slate-400 dark:bg-slate-500';
+
+                      const stateTitle =
+                        state === 'done'
+                          ? 'Completed (Click to change)'
+                          : state === 'in_progress'
+                          ? 'In Progress (Click to change)'
+                          : 'Unread (Click to change)';
+
+                      return (
+                        <div
+                          key={topic.id}
+                          onClick={() => {
+                            const pageTarget = topic.pageNumber % 2 === 0 ? topic.pageNumber - 1 : topic.pageNumber;
+                            updateBook(book.id, { currentPage: pageTarget });
+                          }}
+                          className={`flex items-center justify-between p-2 rounded-xl cursor-pointer hover:bg-surface-hover/60 transition-colors ${
+                            book.currentPage === topic.pageNumber || book.currentPage + 1 === topic.pageNumber
+                              ? 'bg-rose-500/10 text-rose-500 font-bold'
+                              : 'text-text-secondary'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextState: 'unread' | 'in_progress' | 'done' =
+                                  state === 'unread' ? 'in_progress' : state === 'in_progress' ? 'done' : 'unread';
+                                const updatedTopics = book.topics.map((t) =>
+                                  t.id === topic.id ? { ...t, readingState: nextState } : t
+                                );
+                                updateBook(book.id, { topics: updatedTopics });
+                              }}
+                              className={`w-2.5 h-2.5 rounded-full shrink-0 ${stateBg} transition-transform hover:scale-125 border-none cursor-pointer`}
+                              title={stateTitle}
+                            />
+                            <span className="truncate">{topic.title}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[10px] text-text-muted font-mono">p. {topic.pageNumber}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditTopicModal(topic);
+                              }}
+                              className="text-text-muted hover:text-rose-500 font-bold px-1 py-0.5 cursor-pointer text-[10px]"
+                              title="Edit Topic"
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerDeleteConfirm('topic', topic.id, topic.title);
+                              }}
+                              className="text-text-muted hover:text-red-500 font-bold px-1 py-0.5 cursor-pointer text-[10px]"
+                              title="Delete Topic"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[10px] text-text-muted font-mono mr-1">p. {topic.pageNumber}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditTopicModal(topic);
-                            }}
-                            className="text-text-muted hover:text-rose-500 font-bold px-1 py-0.5 cursor-pointer text-[10px]"
-                            title="Edit Topic"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerDeleteConfirm('topic', topic.id, topic.title);
-                            }}
-                            className="text-text-muted hover:text-red-500 font-bold px-1 py-0.5 cursor-pointer text-[10px]"
-                            title="Delete Topic"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
+
+                  {/* Persistent + New Topic Row at End of List (Serial Position fix) */}
+                  <button
+                    type="button"
+                    onClick={openAddTopicModal}
+                    className="w-full flex items-center justify-center gap-1.5 p-2 mt-2 rounded-xl border border-dashed border-border hover:border-rose-500/50 hover:bg-rose-500/5 text-rose-500 font-bold text-xs cursor-pointer transition-all active:scale-[0.98]"
+                  >
+                    <IconPlus size={13} />
+                    <span>+ New Topic</span>
+                  </button>
                 </div>
               </div>
             )}
 
             {/* 2. Notes Panel (Sticky notes) */}
             {showNotesPanel && (
-              <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl">
+              <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-xs font-black text-text-primary">Notes</span>
+                  <span className="text-xs font-black text-text-primary">Anchored Notes</span>
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => openAddStickyModal('yellow')}
-                      className="px-2 py-0.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded font-bold text-[9px] cursor-pointer"
+                      className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-bold text-[9px] cursor-pointer"
                     >
                       + Yellow
                     </button>
                     <button
                       onClick={() => openAddStickyModal('pink')}
-                      className="px-2 py-0.5 bg-pink-100 hover:bg-pink-200 text-pink-800 rounded font-bold text-[9px] cursor-pointer"
+                      className="px-2 py-0.5 bg-pink-100 hover:bg-pink-200 text-pink-900 rounded font-bold text-[9px] cursor-pointer"
                     >
                       + Pink
                     </button>
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-3 overflow-y-auto">
+                <div className="flex-1 space-y-2 overflow-y-auto pr-0.5">
                   {book.stickyNotes.length === 0 ? (
-                    <div className="py-6 text-xs italic text-center text-text-muted">No sticky notes.</div>
+                    <div className="py-6 text-xs italic text-center text-text-muted">No anchored notes.</div>
                   ) : (
                     book.stickyNotes.map((note) => (
-                      <div
+                      <MarginNote
                         key={note.id}
-                        onClick={() => openEditStickyModal(note)}
-                        className={`p-3 rounded-2xl border text-xs text-left relative group cursor-pointer hover:scale-[1.02] transition-transform ${
-                          note.color === 'pink'
-                            ? 'bg-pink-100/50 border-pink-200 text-pink-900'
-                            : 'bg-yellow-100/50 border-yellow-200 text-yellow-900'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between font-bold">
-                          <span>{note.title}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerDeleteConfirm('sticky', note.id, note.title || 'Sticky Note');
-                            }}
-                            className="transition-opacity opacity-0 cursor-pointer text-text-muted hover:text-red-500 group-hover:opacity-100"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <div className="mt-1 leading-relaxed">{note.content}</div>
-                        <div className="text-[8px] text-text-muted mt-2">{note.date}</div>
-                      </div>
+                        note={note}
+                        onEdit={(n) => openEditStickyModal(n)}
+                        onDelete={(id) => triggerDeleteConfirm('sticky', id, 'Sticky Note')}
+                      />
                     ))
                   )}
                 </div>
@@ -2150,6 +2211,15 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
           </div>
         </div>
       )}
+
+      {/* Contextual Floating Selection Toolbar */}
+      <SelectionToolbar
+        position={selectionPos}
+        onFormat={(cmd) => executeFormatting(cmd)}
+        onHighlight={(col) => applyHighlight(col)}
+        onAddNote={() => openAddStickyModal('yellow')}
+        onClose={() => setSelectionPos(null)}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

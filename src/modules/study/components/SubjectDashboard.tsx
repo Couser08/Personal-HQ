@@ -241,10 +241,20 @@ export function SubjectDashboard({
                     <p className="text-xl font-bold text-text-primary">{totalResources}</p>
                     <p className="text-[10px] text-text-muted uppercase tracking-wider font-bold mt-1">Resources</p>
                   </div>
-                  <div className="bg-surface-alt border border-border-alt p-3 rounded-xl">
-                    <p className="text-xl font-bold text-text-primary">{totalFlashcards}</p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-wider font-bold mt-1">Cards</p>
-                  </div>
+                  <button
+                    onClick={() => {
+                      const topicWithCards = activeSubject.topics.find((t: any) => t.flashcards?.length > 0) || activeSubject.topics[0];
+                      if (topicWithCards) {
+                        setSelectedTopicId(topicWithCards.id);
+                        setTopicTab('flashcards');
+                      }
+                    }}
+                    className="bg-surface-alt border border-border-alt p-3 rounded-xl hover:border-primary/40 transition-colors text-center cursor-pointer w-full text-left"
+                    title="Click to view topic flashcards"
+                  >
+                    <p className="text-xl font-bold text-text-primary text-center">{totalFlashcards}</p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider font-bold mt-1 text-center">Cards</p>
+                  </button>
                 </div>
               </div>
             </div>

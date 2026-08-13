@@ -1,225 +1,145 @@
-import { useState, useEffect, useMemo } from 'react';
-import { 
-  IconClock, IconMapPin, IconBell, IconRepeat, 
-  IconChevronLeft, IconChevronRight, IconCalendar 
-} from '@tabler/icons-react';
-import { type TodoTask } from '../../../../store/types';
+import { useState, useEffect } from 'react';
 import { Modal } from '../../../../components/ui/Modal';
-import { Input } from '../../../../components/ui/Input';
 import { Button } from '../../../../components/ui/Button';
 import { CustomSelect } from '../../../../components/ui/CustomSelect';
+import { 
+  IconCalendar, 
+  IconChevronRight, 
+  IconChevronLeft, 
+  IconClock, 
+  IconMapPin, 
+  IconAdjustmentsHorizontal
+} from '@tabler/icons-react';
+import type { TodoTask } from '../../../../store/types';
 
 interface PlannerSidebarProps {
-  selectedDate: Date | null;
-  taskToEdit?: TodoTask | null;
-  onAddPlan: (task: Partial<TodoTask>) => void;
-  onUpdatePlan?: (id: string, updates: Partial<TodoTask>) => void;
-  onDeletePlan?: (id: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  onAddPlan: (taskData: Partial<TodoTask>) => void;
+  taskToEdit?: TodoTask | null;
+  onUpdatePlan?: (id: string, data: Partial<TodoTask>) => void;
+  onDeletePlan?: (id: string) => void;
+  selectedDate?: string | Date | null;
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'Routine', label: 'Routine' },
-  { value: 'Focus', label: 'Focus' },
-  { value: 'Learning', label: 'Learning' },
-  { value: 'Break', label: 'Break' },
-  { value: 'Work', label: 'Work' },
-  { value: 'Meeting', label: 'Meeting' },
-  { value: 'Review', label: 'Review' },
-  { value: 'Personal', label: 'Personal' }
-];
-
-const REMINDER_OPTIONS = [
-  { value: 'No reminder', label: 'No reminder' },
-  { value: '5 mins before', label: '5 mins before' },
-  { value: '15 mins before', label: '15 mins before' },
-  { value: '30 mins before', label: '30 mins before' }
-];
-
-const REPEAT_OPTIONS = [
-  { value: 'Does not repeat', label: 'Does not repeat' },
-  { value: 'Daily', label: 'Daily' },
-  { value: 'Weekly', label: 'Weekly' },
-  { value: 'Weekdays', label: 'Weekdays' }
+  { value: 'work', label: '💼 Work & Projects' },
+  { value: 'study', label: '📚 Study & Exam' },
+  { value: 'health', label: '💪 Health & Fitness' },
+  { value: 'personal', label: '🏠 Personal Life' },
+  { value: 'finance', label: '💰 Finance & Money' },
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' }
+  { value: 'low', label: '🔵 Low Priority' },
+  { value: 'medium', label: '🟡 Medium Priority' },
+  { value: 'high', label: '🔴 High Priority' },
 ];
 
-// Conversions between 12-hour AM/PM and 24-hour native inputs
-function convert12to24(time12: string | null | undefined): string {
-  if (!time12) return '09:00';
-  const match = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!match) return '09:00';
-  let h = parseInt(match[1]);
-  const m = match[2].padStart(2, '0');
-  const ampm = match[3].toUpperCase();
-  if (ampm === 'PM' && h < 12) h += 12;
-  if (ampm === 'AM' && h === 12) h = 0;
-  return `${String(h).padStart(2, '0')}:${m}`;
-}
+const REMINDER_OPTIONS = [
+  { value: 'none', label: 'No Reminder' },
+  { value: 'at_time', label: 'At time of event' },
+  { value: '5_min', label: '5 minutes before' },
+  { value: '15_min', label: '15 minutes before' },
+  { value: '1_hour', label: '1 hour before' },
+];
 
-function convert24to12(time24: string | null | undefined): string {
-  if (!time24) return '9:00 AM';
-  const parts = time24.split(':');
-  if (parts.length < 2) return '9:00 AM';
-  let h = parseInt(parts[0]);
-  const m = parts[1];
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  if (h === 0) h = 12;
-  return `${h}:${m} ${ampm}`;
-}
+const REPEAT_OPTIONS = [
+  { value: 'none', label: 'Does not repeat' },
+  { value: 'daily', label: 'Every day' },
+  { value: 'weekly', label: 'Every week' },
+  { value: 'monthly', label: 'Every month' },
+];
 
 export function PlannerSidebar({
-  selectedDate,
-  taskToEdit,
+  isOpen,
+  onClose,
   onAddPlan,
+  taskToEdit,
   onUpdatePlan,
   onDeletePlan,
-  isOpen,
-  onClose
+  selectedDate,
 }: PlannerSidebarProps) {
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [reminder, setReminder] = useState('No reminder');
-  const [repeat, setRepeat] = useState('Does not repeat');
-  const [priority, setPriority] = useState('medium');
-  const [featured, setFeatured] = useState(false);
-  
-  // Custom Date Picker states
-  const [dueDate, setDueDate] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [pickerMonth, setPickerMonth] = useState(new Date());
+  const getFormattedDateStr = (dateVal?: string | Date | null) => {
+    if (!dateVal) return new Date().toLocaleDateString('en-CA');
+    if (dateVal instanceof Date) return dateVal.toLocaleDateString('en-CA');
+    return dateVal;
+  };
 
-  // Time Slot states
+  // Form State
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('work');
+  const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState(getFormattedDateStr(selectedDate));
   const [hasTimeSlot, setHasTimeSlot] = useState(false);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
+  const [featured, setFeatured] = useState(false);
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [reminder, setReminder] = useState('none');
+  const [repeat, setRepeat] = useState('none');
 
-  const resetForm = () => {
-    setTitle('');
-    setCategory('');
-    setHasTimeSlot(false);
-    setStartTime('09:00');
-    setEndTime('10:00');
-    setDescription('');
-    setLocation('');
-    setReminder('No reminder');
-    setRepeat('Does not repeat');
-    setPriority('medium');
-    setFeatured(false);
-    
-    const initialDate = selectedDate ? selectedDate.toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA');
-    setDueDate(initialDate);
-    setPickerMonth(selectedDate || new Date());
-  };
+  // Progressive Disclosure State
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
+  // Date picker popover state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date());
+
+  // Populate form if editing
   useEffect(() => {
-    if (isOpen) {
-      if (taskToEdit) {
-        setTitle(taskToEdit.title);
-        setCategory(taskToEdit.category || '');
-        setDescription(taskToEdit.description || '');
-        setLocation(taskToEdit.location || '');
-        setReminder(taskToEdit.reminder || 'No reminder');
-        setRepeat(taskToEdit.repeat || 'Does not repeat');
-        setPriority(taskToEdit.priority || 'medium');
-        setFeatured(!!taskToEdit.featured);
-        setDueDate(taskToEdit.dueDate || '');
-        if (taskToEdit.dueDate) {
-          setPickerMonth(new Date(taskToEdit.dueDate));
-        }
-
-        if (taskToEdit.startTime) {
-          setHasTimeSlot(true);
-          setStartTime(convert12to24(taskToEdit.startTime));
-        } else {
-          setHasTimeSlot(false);
-          setStartTime('09:00');
-        }
-
-        if (taskToEdit.endTime) {
-          setEndTime(convert12to24(taskToEdit.endTime));
-        } else {
-          setEndTime('10:00');
-        }
-      } else {
-        resetForm();
-      }
+    if (taskToEdit) {
+      setTitle(taskToEdit.title || '');
+      setCategory(taskToEdit.category || 'work');
+      setPriority(taskToEdit.priority === 'none' ? 'medium' : taskToEdit.priority || 'medium');
+      setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toLocaleDateString('en-CA') : getFormattedDateStr(selectedDate));
+      setHasTimeSlot(Boolean(taskToEdit.startTime));
+      setStartTime(taskToEdit.startTime || '09:00');
+      setEndTime(taskToEdit.endTime || '10:00');
+      setFeatured(Boolean(taskToEdit.featured));
+      setDescription(taskToEdit.description || '');
+      setLocation(taskToEdit.location || '');
+      setReminder(taskToEdit.reminder || 'none');
+      setRepeat(taskToEdit.repeat || 'none');
+      setShowMoreOptions(true);
+    } else {
+      resetForm();
     }
   }, [taskToEdit, isOpen, selectedDate]);
 
-  // Compute days for custom picker calendar
-  const pickerDays = useMemo(() => {
-    const year = pickerMonth.getFullYear();
-    const month = pickerMonth.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const totalDays = new Date(year, month + 1, 0).getDate();
-
-    const days: { date: Date; isCurrentMonth: boolean }[] = [];
-    const prevMonthTotalDays = new Date(year, month, 0).getDate();
-
-    // Previous month padding
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevMonthTotalDays - i),
-        isCurrentMonth: false,
-      });
-    }
-
-    // Current month days
-    for (let i = 1; i <= totalDays; i++) {
-      days.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      });
-    }
-
-    return days;
-  }, [pickerMonth]);
-
-  const handlePrevPickerMonth = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1, 1));
+  const resetForm = () => {
+    setTitle('');
+    setCategory('work');
+    setPriority('medium');
+    setDueDate(getFormattedDateStr(selectedDate));
+    setHasTimeSlot(false);
+    setStartTime('09:00');
+    setEndTime('10:00');
+    setFeatured(false);
+    setDescription('');
+    setLocation('');
+    setReminder('none');
+    setRepeat('none');
+    setShowMoreOptions(false);
   };
-
-  const handleNextPickerMonth = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 1));
-  };
-
-  const formattedDateLabel = useMemo(() => {
-    if (!dueDate) return 'Select Date';
-    const d = new Date(dueDate + 'T12:00:00'); // Prevent timezone shift
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  }, [dueDate]);
 
   const handleSave = () => {
-    if (!title.trim()) return;
+    const trimmed = title.trim();
+    if (!trimmed) return;
 
-    const computedStartTime = hasTimeSlot ? convert24to12(startTime) : undefined;
-    const computedEndTime = hasTimeSlot ? convert24to12(endTime) : undefined;
-
-    const planData = {
-      title: title.trim(),
-      category: category || undefined,
-      startTime: computedStartTime,
-      endTime: computedEndTime,
-      description: description || undefined,
-      location: location || undefined,
-      reminder: reminder !== 'No reminder' ? reminder : undefined,
-      repeat: repeat !== 'Does not repeat' ? repeat : undefined,
+    const planData: Partial<TodoTask> = {
+      title: trimmed,
+      category,
       priority: priority as any,
-      featured: featured || undefined,
       dueDate: dueDate || undefined,
+      startTime: hasTimeSlot ? startTime : undefined,
+      endTime: hasTimeSlot ? endTime : undefined,
+      featured: featured || undefined,
+      description: description.trim() || undefined,
+      location: location.trim() || undefined,
+      reminder: reminder !== 'none' ? reminder : undefined,
+      repeat: repeat !== 'none' ? repeat : undefined,
     };
 
     if (taskToEdit) {
@@ -231,49 +151,89 @@ export function PlannerSidebar({
     resetForm();
   };
 
+  // Keyboard shortcut: Cmd/Ctrl+Enter to save
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  // Calendar Picker Helpers
+  const handlePrevPickerMonth = () => {
+    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1, 1));
+  };
+  const handleNextPickerMonth = () => {
+    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 1));
+  };
+
+  const getPickerDays = () => {
+    const year = pickerMonth.getFullYear();
+    const month = pickerMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const days: { date: Date; isCurrentMonth: boolean }[] = [];
+    const startPadding = firstDay.getDay();
+
+    for (let i = startPadding - 1; i >= 0; i--) {
+      days.push({ date: new Date(year, month, -i), isCurrentMonth: false });
+    }
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+    }
+    const endPadding = 42 - days.length;
+    for (let i = 1; i <= endPadding; i++) {
+      days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+    }
+    return days;
+  };
+
+  const pickerDays = getPickerDays();
+  const selectedDateObj = dueDate ? new Date(dueDate + 'T00:00:00') : new Date();
+  const formattedDateLabel = selectedDateObj.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={taskToEdit ? 'Edit Plan' : `Add Plan`}
-      maxWidthClassName="max-w-2xl"
+      title={taskToEdit ? 'Edit Plan' : 'Add Plan'}
+      maxWidthClassName="max-w-xl"
     >
-      <div className="flex flex-col gap-5 pt-2 select-none font-sans text-left">
-        
-        {/* Title, Category, Priority */}
+      <div 
+        onKeyDown={handleKeyDown}
+        className="flex flex-col gap-5 pt-1 select-none font-sans text-left"
+      >
+        {/* Tier 1: Fast-Path Quick Add (Title + Date + Time) */}
         <div className="flex flex-col gap-4">
-          <Input 
-            autoFocus
-            placeholder="Plan Title (e.g., Deep Work Session)" 
-            value={title} 
-            onChange={e => setTitle(e.target.value)} 
-          />
-          
-          <div className="grid grid-cols-2 gap-4">
-            <CustomSelect
-              placeholder="Select category"
-              value={category}
-              onChange={setCategory}
-              options={CATEGORY_OPTIONS}
-            />
-            <CustomSelect
-              placeholder="Priority"
-              value={priority}
-              onChange={setPriority}
-              options={PRIORITY_OPTIONS}
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-wider text-text-muted mb-1 flex items-center gap-1">
+              Plan Title <span className="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text"
+              autoFocus
+              placeholder="What do you plan to accomplish? (e.g. Deep Work Session)" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)}
+              className="input-field w-full text-sm font-semibold py-2.5 px-3.5 border-border focus:border-primary"
             />
           </div>
 
-          {/* Premium Custom Date Selector */}
+          {/* Date Selector */}
           <div className="flex flex-col gap-1.5 text-left relative">
             <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest">Plan Date</label>
             <button
               type="button"
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="w-full text-xs font-black py-3 px-4 rounded-xl border border-solid border-border bg-surface text-text-primary hover:border-indigo-650 transition-all flex items-center justify-between cursor-pointer"
+              className="w-full text-xs font-bold py-2.5 px-3.5 rounded-xl border border-border bg-surface text-text-primary hover:border-primary/50 transition-all flex items-center justify-between cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <IconCalendar size={15} className="text-indigo-600" />
+                <IconCalendar size={15} className="text-primary" />
                 {formattedDateLabel}
               </span>
               <IconChevronRight size={14} className={`text-text-muted transition-transform ${showDatePicker ? 'rotate-90' : ''}`} />
@@ -281,23 +241,21 @@ export function PlannerSidebar({
 
             {/* Custom Calendar Dropdown Panel */}
             {showDatePicker && (
-              <div className="absolute top-[65px] left-0 right-0 z-35 bg-white dark:bg-surface border border-solid border-border rounded-2xl shadow-xl p-4 flex flex-col gap-3.5 animate-fadeIn">
+              <div className="absolute top-[65px] left-0 right-0 z-35 bg-surface border border-border rounded-2xl shadow-xl p-4 flex flex-col gap-3.5 animate-fadeIn">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-black text-text-primary">
+                  <span className="text-xs font-bold text-text-primary">
                     {pickerMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <button type="button" onClick={handlePrevPickerMonth} className="p-1 rounded-lg border-none bg-transparent hover:bg-slate-50 dark:hover:bg-surface-hover text-text-secondary cursor-pointer"><IconChevronLeft size={13} strokeWidth={2.5} /></button>
-                    <button type="button" onClick={handleNextPickerMonth} className="p-1 rounded-lg border-none bg-transparent hover:bg-slate-50 dark:hover:bg-surface-hover text-text-secondary cursor-pointer"><IconChevronRight size={13} strokeWidth={2.5} /></button>
+                    <button type="button" onClick={handlePrevPickerMonth} className="p-1 rounded-lg hover:bg-surface-hover text-text-secondary cursor-pointer border-none bg-transparent"><IconChevronLeft size={13} /></button>
+                    <button type="button" onClick={handleNextPickerMonth} className="p-1 rounded-lg hover:bg-surface-hover text-text-secondary cursor-pointer border-none bg-transparent"><IconChevronRight size={13} /></button>
                   </div>
                 </div>
                 
-                {/* Days tags row */}
                 <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-text-muted uppercase">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
                 </div>
 
-                {/* Days grid selection */}
                 <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold">
                   {pickerDays.map((cell, idx) => {
                     const cellDateStr = cell.date.toLocaleDateString('en-CA');
@@ -312,13 +270,13 @@ export function PlannerSidebar({
                           setDueDate(cellDateStr);
                           setShowDatePicker(false);
                         }}
-                        className={`w-6.5 h-6.5 rounded-full flex items-center justify-center border-none bg-transparent cursor-pointer transition-all ${
+                        className={`w-7 h-7 rounded-full flex items-center justify-center border-none bg-transparent cursor-pointer transition-all ${
                           isSelected 
-                            ? 'bg-indigo-600 text-white font-black'
+                            ? 'bg-primary text-white font-black'
                             : isToday
-                              ? 'border border-indigo-650 text-indigo-600 font-black'
+                              ? 'border border-primary text-primary font-black'
                               : cell.isCurrentMonth
-                                ? 'text-text-primary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                ? 'text-text-primary hover:bg-surface-hover'
                                 : 'text-text-muted/30'
                         }`}
                       >
@@ -331,26 +289,32 @@ export function PlannerSidebar({
             )}
           </div>
 
-          {/* Time Slot Toggle */}
-          <div className="flex items-center justify-between bg-slate-50 dark:bg-surface-alt/25 p-3.5 rounded-2xl border border-solid border-border/40">
+          {/* Time Slot Toggle (Clean Custom Switch) */}
+          <div className="flex items-center justify-between bg-surface-alt/40 p-3.5 rounded-2xl border border-border/50">
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-text-primary">⏰ Set Specific Time Slot</span>
-              <span className="text-[10px] text-text-muted mt-0.5 font-bold">Schedule this as an event with a time range</span>
+              <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                <IconClock size={14} className="text-primary" /> Set Specific Time Slot
+              </span>
+              <span className="text-[10px] text-text-muted mt-0.5 font-medium">Schedule with a start and end time</span>
             </div>
-            <input 
-              type="checkbox"
-              checked={hasTimeSlot}
-              onChange={e => setHasTimeSlot(e.target.checked)}
-              className="w-4.5 h-4.5 rounded text-indigo-650 cursor-pointer"
-            />
+            
+            <button
+              type="button"
+              onClick={() => setHasTimeSlot(!hasTimeSlot)}
+              className={`w-10 h-6 rounded-full transition-colors p-0.5 cursor-pointer border-none ${
+                hasTimeSlot ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white transition-transform ${hasTimeSlot ? 'translate-x-4' : 'translate-x-0'}`} />
+            </button>
           </div>
 
-          {/* Customized Browser-like Time Input selectors */}
+          {/* Time Range Pickers */}
           {hasTimeSlot && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-                  <IconClock size={12} className="text-indigo-600" /> Start Time
+            <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-150">
+              <div className="flex flex-col gap-1 text-left">
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
+                  Start Time
                 </label>
                 <input
                   type="time"
@@ -358,91 +322,136 @@ export function PlannerSidebar({
                   onChange={e => {
                     const newStart = e.target.value;
                     setStartTime(newStart);
-                    // Automatically shift end time by 1 hour as helper
                     const [h, m] = newStart.split(':').map(Number);
                     const newEndH = (h + 1) % 24;
                     setEndTime(`${String(newEndH).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
                   }}
-                  className="w-full text-xs font-bold py-3 px-4 rounded-xl border border-solid border-border bg-surface text-text-primary focus:outline-none focus:border-indigo-650 transition-all cursor-pointer custom-time-input"
+                  className="input-field w-full text-xs font-mono font-bold py-2 px-3 border-border bg-surface cursor-pointer"
                 />
               </div>
               
-              <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-                  <IconClock size={12} className="text-indigo-600" /> End Time
+              <div className="flex flex-col gap-1 text-left">
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
+                  End Time
                 </label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
-                  className="w-full text-xs font-bold py-3 px-4 rounded-xl border border-solid border-border bg-surface text-text-primary focus:outline-none focus:border-indigo-650 transition-all cursor-pointer custom-time-input"
+                  className="input-field w-full text-xs font-mono font-bold py-2 px-3 border-border bg-surface cursor-pointer"
                 />
               </div>
             </div>
           )}
-
-          {/* Featured Task Toggle */}
-          <div className="flex items-center justify-between bg-amber-500/5 p-3.5 rounded-2xl border border-solid border-amber-500/20">
-            <div className="flex flex-col">
-              <span className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                👑 Featured Focus Task
-              </span>
-              <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5 font-bold">Highlight as the core goal of the day</span>
-            </div>
-            <input 
-              type="checkbox"
-              checked={featured}
-              onChange={e => setFeatured(e.target.checked)}
-              className="w-4.5 h-4.5 rounded text-amber-555 focus:ring-0 cursor-pointer"
-            />
-          </div>
         </div>
 
-        <div className="h-px bg-border/50 w-full" />
+        {/* Progressive Disclosure Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setShowMoreOptions(!showMoreOptions)}
+          className="flex items-center justify-between py-2 text-xs font-bold text-primary hover:text-primary-hover cursor-pointer border-t border-border/40 pt-3"
+        >
+          <span className="flex items-center gap-1.5">
+            <IconAdjustmentsHorizontal size={14} />
+            {showMoreOptions ? 'Hide additional details' : 'More options (Category, Priority, Location...)'}
+          </span>
+          <IconChevronRight size={13} className={`transition-transform ${showMoreOptions ? 'rotate-90' : ''}`} />
+        </button>
 
-        {/* Optional details (Description & Location) */}
-        <div className="flex flex-col gap-4 text-left">
-          <textarea 
-            placeholder="Description (optional)" 
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-border/80 bg-surface text-text-primary text-[13px] placeholder:text-text-muted focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all min-h-[80px] resize-y"
-          />
+        {/* Tier 2: Progressive Disclosure Section */}
+        {showMoreOptions && (
+          <div className="flex flex-col gap-4 text-left animate-in fade-in duration-150">
+            {/* Category & Priority */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Category</label>
+                <CustomSelect
+                  placeholder="Select category"
+                  value={category}
+                  onChange={setCategory}
+                  options={CATEGORY_OPTIONS}
+                />
+              </div>
+              <div>
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Priority</label>
+                <CustomSelect
+                  placeholder="Priority"
+                  value={priority}
+                  onChange={setPriority}
+                  options={PRIORITY_OPTIONS}
+                />
+              </div>
+            </div>
 
-          <div className="relative text-left">
-            <IconMapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-            <Input 
-              placeholder="Location (e.g. Home Office)" 
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+            {/* Featured Focus Task Toggle */}
+            <div className="flex items-center justify-between bg-amber-500/10 p-3.5 rounded-2xl border border-amber-500/30">
+              <div className="flex flex-col">
+                <span className="text-xs font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  👑 Featured Focus Goal
+                </span>
+                <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5 font-medium">Highlight as today's core priority task</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFeatured(!featured)}
+                className={`w-10 h-6 rounded-full transition-colors p-0.5 cursor-pointer border-none ${
+                  featured ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${featured ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
-              <IconBell size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none z-10" />
-              <CustomSelect
-                value={reminder}
-                onChange={setReminder}
-                options={REMINDER_OPTIONS}
-                className="[&>button]:pl-9"
+            {/* Description */}
+            <div>
+              <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Description</label>
+              <textarea 
+                placeholder="Add notes, links, or context..." 
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="input-field w-full p-3 text-xs placeholder:text-text-muted min-h-[70px] resize-y"
               />
             </div>
-            <div className="relative">
-              <IconRepeat size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none z-10" />
-              <CustomSelect
-                value={repeat}
-                onChange={setRepeat}
-                options={REPEAT_OPTIONS}
-                className="[&>button]:pl-9"
-              />
+
+            {/* Location (Fixed icon + input padding bug) */}
+            <div>
+              <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Location</label>
+              <div className="relative flex items-center">
+                <IconMapPin size={15} className="absolute left-3 text-text-muted pointer-events-none z-10" />
+                <input 
+                  type="text"
+                  placeholder="e.g. Home Office, Meeting Room B" 
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  className="input-field w-full text-xs py-2 pl-9 pr-3"
+                />
+              </div>
+            </div>
+
+            {/* Reminder & Repeat */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Reminder</label>
+                <CustomSelect
+                  value={reminder}
+                  onChange={setReminder}
+                  options={REMINDER_OPTIONS}
+                />
+              </div>
+              <div>
+                <label className="text-[9.5px] font-black text-text-muted uppercase tracking-widest mb-1 block">Repeat</label>
+                <CustomSelect
+                  value={repeat}
+                  onChange={setRepeat}
+                  options={REPEAT_OPTIONS}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
           {taskToEdit ? (
             <Button 
               type="button"
@@ -455,8 +464,9 @@ export function PlannerSidebar({
               Delete Plan
             </Button>
           ) : (
-            <div />
+            <span className="text-[11px] text-text-muted font-mono">Press Cmd+Enter to save</span>
           )}
+          
           <div className="flex items-center gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button type="button" variant="primary" onClick={handleSave} disabled={!title.trim()}>

@@ -539,6 +539,8 @@ export interface BookTopic {
   title: string;
   pageNumber: number;
   color: string;
+  readingState?: 'unread' | 'in_progress' | 'done';
+  orderIndex?: number;
 }
 
 export interface BookStickyNote {
@@ -550,6 +552,8 @@ export interface BookStickyNote {
   pageNumber: number;
   position?: 'middle-left' | 'bottom-right' | 'top-right';
   styleTheme?: 'hand-drawn' | 'terminal' | 'default';
+  blockId?: string;
+  anchorCharOffset?: number;
 }
 
 export interface BookHighlight {

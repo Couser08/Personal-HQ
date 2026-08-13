@@ -2,6 +2,7 @@
 import { type TodoTask } from '../../../../store/types';
 import { IconDotsVertical, IconSun, IconTarget, IconBook, IconCoffee, IconBriefcase, IconUsers, IconBrain, IconUser, IconChecklist } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
+import { EmptyState } from '../../../../components/ui/EmptyState';
 
 interface PlannerTimelineProps {
   tasks: TodoTask[];
@@ -42,9 +43,12 @@ export function PlannerTimeline({ tasks, onEditTask, onToggleComplete }: Planner
   return (
     <div className="flex flex-col relative pb-10">
       {sortedTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-text-muted">
-          <IconChecklist size={48} stroke={1} className="mb-4 opacity-50" />
-          <p>No plans scheduled for this day.</p>
+        <div className="py-12">
+          <EmptyState
+            icon={<IconChecklist className="w-10 h-10 text-text-muted" />}
+            title="No plans scheduled for this day"
+            description="Add your first plan to structure your day effectively."
+          />
         </div>
       ) : (
         <div className="relative pl-[80px]">

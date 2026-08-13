@@ -10,6 +10,7 @@ import { PlannerSidebar } from './PlannerSidebar';
 import { type TodoTask } from '../../../../store/types';
 import { ProgressRing } from '../../../../components/ui/ProgressRing';
 import { Modal } from '../../../../components/ui/Modal';
+import { Button } from '../../../../components/ui/Button';
 
 export function MonthlyCalendarView() {
   const { 
@@ -552,9 +553,6 @@ export function MonthlyCalendarView() {
             <h3 className="text-[17px] font-black text-text-primary tracking-tight">
               {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </h3>
-            <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/30 border border-solid border-indigo-100 dark:border-indigo-900/30 text-indigo-650 dark:text-indigo-400 text-[10px] font-black rounded-lg uppercase tracking-wide">
-              ☀️ 26°C
-            </span>
           </div>
           
           {/* Progress bar */}
@@ -743,16 +741,17 @@ export function MonthlyCalendarView() {
           </div>
         </div>
 
-        {/* Create Event Button at bottom */}
-        <button 
+        {/* Add Plan Button at bottom */}
+        <Button 
+          variant="primary"
           onClick={() => {
             setEditingTask(null);
             setIsAddModalOpen(true);
           }}
-          className="w-full bg-[#5850EC] hover:bg-[#4b43d3] text-white py-2.5 px-4 rounded-[18px] text-[13px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border-none shadow-md cursor-pointer transition-colors mt-auto"
+          className="w-full mt-auto flex items-center justify-center gap-1.5"
         >
-          <IconPlus size={15} /> Create Event
-        </button>
+          <IconPlus size={15} /> Add Plan
+        </Button>
       </div>
 
       {/* Modal wrapper */}

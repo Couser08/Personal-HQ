@@ -18,7 +18,7 @@ export const Modal = ({
   onClose,
   title,
   children,
-  maxWidthClassName = 'max-w-xl',
+  maxWidthClassName = 'max-w-2xl',
   bodyClassName = 'p-6'
 }: ModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);

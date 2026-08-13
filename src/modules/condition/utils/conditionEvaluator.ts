@@ -15,29 +15,37 @@ export interface Rule {
 export interface EvaluationResult {
   outcome: string;
   matchedRuleId: string | null;
-  trace: string[];
+  matchedRuleIds: string[];
+  trace: { type: 'skip' | 'match' | 'halt' | 'final'; text: string }[];
 }
 
 export const evaluateConditions = (
   variables: Variable[],
   rules: Rule[],
-  defaultOutcome: string
+  defaultOutcome: string,
+  stopsOnMatch: boolean = true
 ): EvaluationResult => {
-  const trace: string[] = [];
+  const trace: { type: 'skip' | 'match' | 'halt' | 'final'; text: string }[] = [];
   let finalOutcome = defaultOutcome;
   let matchedId: string | null = null;
+  const matchedRuleIds: string[] = [];
+  const matchedOutcomes: string[] = [];
 
-  for (const rule of rules) {
-    const variable = variables.find(v => v.name === rule.variableName);
+  for (let idx = 0; idx < rules.length; idx++) {
+    const rule = rules[idx];
+    const variable = variables.find((v) => v.name === rule.variableName);
+
     if (!variable) {
-      trace.push(`Rule "${rule.variableName} ${rule.operator}": Variable not defined.`);
+      trace.push({
+        type: 'skip',
+        text: `Rule ${idx + 1} ("${rule.variableName}") skipped: Variable undefined.`
+      });
       continue;
     }
 
     const testValStr = variable.testValue;
     let isMatch = false;
 
-    // Operator Logic
     try {
       if (rule.operator === 'equals') {
         isMatch = String(testValStr) === String(rule.value);
@@ -54,32 +62,69 @@ export const evaluateConditions = (
         isMatch = re.test(String(testValStr));
       }
     } catch (err) {
-      trace.push(`Rule failed evaluation: ${(err as Error).message}`);
+      trace.push({
+        type: 'skip',
+        text: `Rule ${idx + 1} evaluation error: ${(err as Error).message}`
+      });
     }
 
     if (isMatch) {
-      trace.push(
-        `Rule verified MATCH: Variable "${rule.variableName}" (${testValStr}) ${rule.operator.replace(
+      trace.push({
+        type: 'match',
+        text: `Rule ${idx + 1} MATCHED: "${rule.variableName}" (${testValStr}) ${rule.operator.replace(
           '_',
           ' '
-        )} "${rule.value}" matches.`
-      );
-      finalOutcome = rule.outcome;
-      matchedId = rule.id;
-      break; // Match first rule
+        )} "${rule.value}" ➔ Outcome: "${rule.outcome}"`
+      });
+
+      if (!matchedId) {
+        matchedId = rule.id;
+      }
+      matchedRuleIds.push(rule.id);
+      matchedOutcomes.push(rule.outcome);
+
+      if (stopsOnMatch) {
+        finalOutcome = rule.outcome;
+        trace.push({
+          type: 'halt',
+          text: `[First Match Wins] Execution halted at Rule ${idx + 1}. Remaining rules skipped.`
+        });
+        break;
+      }
     } else {
-      trace.push(
-        `Rule skipped: Variable "${rule.variableName}" (${testValStr}) ${rule.operator.replace(
+      trace.push({
+        type: 'skip',
+        text: `Rule ${idx + 1} SKIPPED: "${rule.variableName}" (${testValStr}) ${rule.operator.replace(
           '_',
           ' '
-        )} "${rule.value}" did NOT match.`
-      );
+        )} "${rule.value}" (No match)`
+      });
     }
   }
 
-  if (!matchedId) {
-    trace.push(`No rules matched. Applying Default Outcome: "${defaultOutcome}".`);
+  if (matchedRuleIds.length === 0) {
+    finalOutcome = defaultOutcome;
+    trace.push({
+      type: 'final',
+      text: `No rules matched. Applied Default Outcome: "${defaultOutcome}".`
+    });
+  } else if (!stopsOnMatch) {
+    finalOutcome = matchedOutcomes.join(' + ');
+    trace.push({
+      type: 'final',
+      text: `[Evaluate All Mode] Combined outcomes: "${finalOutcome}".`
+    });
+  } else {
+    trace.push({
+      type: 'final',
+      text: `Final Winning Outcome: "${finalOutcome}".`
+    });
   }
 
-  return { outcome: finalOutcome, matchedRuleId: matchedId, trace };
+  return {
+    outcome: finalOutcome,
+    matchedRuleId: matchedId,
+    matchedRuleIds,
+    trace
+  };
 };

@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
-import { supabase } from '../../lib/supabase';
 import {
   IconChecklist, IconClockPlay, IconSitemap,
   IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh,
@@ -64,23 +63,6 @@ export default function DashboardModule() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showAllTasks, setShowAllTasks] = useState(false);
-  const [illustrationUrl, setIllustrationUrl] = useState('');
-
-  const loadIllustration = () => {
-    const publicUrl = supabase.storage.from('avatars').getPublicUrl('global/dashboard_illustration.png').data.publicUrl;
-    setIllustrationUrl(`${publicUrl}?t=${Date.now()}`);
-  };
-
-  useEffect(() => {
-    loadIllustration();
-    const handleUpdate = () => {
-      loadIllustration();
-    };
-    window.addEventListener('dashboard-illustration-updated', handleUpdate);
-    return () => {
-      window.removeEventListener('dashboard-illustration-updated', handleUpdate);
-    };
-  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -293,13 +275,13 @@ export default function DashboardModule() {
       </motion.div>
 
       {/* Redesigned Premium Glassmorphic Hero Banner */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-[32px] border border-border/50 bg-surface/30 backdrop-blur-md shadow-sm grid grid-cols-12 items-center p-8 md:p-10 lg:p-12 gap-6 min-h-[340px]">
-        <div className="z-10 flex flex-col w-full col-span-12 gap-2 text-left lg:col-span-7 animate-fade-in">
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-[32px] border border-border/50 bg-surface/30 backdrop-blur-md shadow-sm p-8 md:p-10 lg:p-12 gap-6">
+        <div className="z-10 flex flex-col w-full gap-2 text-left animate-fade-in">
           <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl text-text-primary">
             Focus on<br />what matters<span className="text-rose-500">.</span>
           </h2>
-          <p className="w-full mt-3 text-xs font-medium leading-relaxed text-text-secondary">
-            Brainstorm structural concepts, lock deep sessions, and tracking goals smoothly — all inside your unified developer command center.
+          <p className="w-full mt-3 text-xs font-medium leading-relaxed text-text-secondary max-w-xl">
+            Brainstorm structural concepts, lock deep sessions, and track goals smoothly — all inside your unified developer command center.
           </p>
           
           <div className="flex flex-wrap gap-3 mt-5">
@@ -341,21 +323,6 @@ export default function DashboardModule() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="z-10 flex justify-center w-full col-span-12 mt-6 pointer-events-none select-none lg:col-span-5 lg:justify-end lg:mt-0 shrink-0">
-          <img
-            src={illustrationUrl || '/study_illustration.png'}
-            alt="Hero Illustration"
-            className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-none lg:h-64 object-contain filter drop-shadow-xl"
-            onError={(e) => {
-              if (illustrationUrl && illustrationUrl !== '/study_illustration.png') {
-                setIllustrationUrl('/study_illustration.png');
-              } else {
-                e.currentTarget.style.display = 'none';
-              }
-            }}
-          />
         </div>
 
         {/* Premium ambient glows */}
@@ -446,7 +413,9 @@ export default function DashboardModule() {
                 {formatTime(pomodoroSecondsLeft)}
               </span>
             </div>
-            <p className="text-[10px] text-text-muted font-bold tracking-wider uppercase mt-4">Deep focus active</p>
+            <p className="text-[10px] text-text-muted font-bold tracking-wider uppercase mt-4">
+              {pomodoroTimerState === 'running' ? 'Deep focus active' : pomodoroTimerState === 'paused' ? 'Focus session paused' : 'Ready to start focus'}
+            </p>
           </div>
 
           <div className="flex w-full gap-2 mt-auto">

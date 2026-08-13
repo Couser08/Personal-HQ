@@ -37,11 +37,11 @@ const INITIAL_BOOKS: Book[] = [
       5: `<p>At the pyramids, Santiago dug into the sand, weeping with joy. A group of refugees found him and beat him, stealing his gold. But one of them laughed and told him of a dream he had about treasure buried under a sycamore tree in Spain.</p>`
     },
     topics: [
-      { id: 't-1', title: 'Introduction', pageNumber: 1, color: 'blue' },
-      { id: 't-2', title: 'The Dream', pageNumber: 2, color: 'green' },
-      { id: 't-3', title: 'The Journey Begins', pageNumber: 3, color: 'blue' },
-      { id: 't-4', title: 'The Alchemist', pageNumber: 4, color: 'orange' },
-      { id: 't-5', title: 'The Treasure', pageNumber: 5, color: 'pink' }
+      { id: 't-1', title: 'Introduction', pageNumber: 1, color: 'blue', readingState: 'in_progress', orderIndex: 0 },
+      { id: 't-2', title: 'The Dream', pageNumber: 2, color: 'green', readingState: 'unread', orderIndex: 1 },
+      { id: 't-3', title: 'The Journey Begins', pageNumber: 3, color: 'blue', readingState: 'unread', orderIndex: 2 },
+      { id: 't-4', title: 'The Alchemist', pageNumber: 4, color: 'orange', readingState: 'unread', orderIndex: 3 },
+      { id: 't-5', title: 'The Treasure', pageNumber: 5, color: 'pink', readingState: 'done', orderIndex: 4 }
     ],
     stickyNotes: [
       {
@@ -50,7 +50,8 @@ const INITIAL_BOOKS: Book[] = [
         content: 'Add a note about the symbolism of the desert and the wind.',
         date: '10 May 2024',
         color: 'yellow',
-        pageNumber: 1
+        pageNumber: 1,
+        blockId: 'p-1'
       },
       {
         id: 'note-2',
@@ -58,7 +59,8 @@ const INITIAL_BOOKS: Book[] = [
         content: 'Add a real-life example of following your dreams.',
         date: '10 May 2024',
         color: 'pink',
-        pageNumber: 1
+        pageNumber: 1,
+        blockId: 'p-2'
       }
     ],
     bookmarks: [1],

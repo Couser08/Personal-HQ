@@ -62,6 +62,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     if (!textarea) return;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    const scrollTop = textarea.scrollTop;
     const text = textarea.value;
     const before = text.substring(0, start);
     const selected = text.substring(start, end);
@@ -86,12 +87,13 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const e = { target: { value: newContent } } as React.ChangeEvent<HTMLTextAreaElement>;
     handleTextareaChange(e);
 
-    // Reset selection range
-    setTimeout(() => {
+    // Restore caret position and scroll position cleanly (Doherty Threshold / Flow fix)
+    requestAnimationFrame(() => {
       textarea.focus();
       const pos = start + replacement.length - offset;
       textarea.setSelectionRange(pos, pos);
-    }, 50);
+      textarea.scrollTop = scrollTop;
+    });
   };
 
   const readingTime = Math.max(1, Math.ceil(wordCount / 225));

@@ -155,10 +155,11 @@ export default function MarkdownModule() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
 
-  // Custom document creation modal state
+  // Custom document creation modal & search state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('blank');
+  const [workspaceSearch, setWorkspaceSearch] = useState('');
 
   const getTemplateBadge = (docContent: string) => {
     if (docContent.includes('Objectives') && docContent.includes('Activity Log')) {
@@ -181,6 +182,14 @@ export default function MarkdownModule() {
     return notes.filter(n => n.tags?.includes('markdown'));
   }, [notes]);
 
+  const filteredMarkdownDocs = useMemo(() => {
+    const q = workspaceSearch.toLowerCase().trim();
+    if (!q) return markdownDocs;
+    return markdownDocs.filter(
+      (d) => d.title.toLowerCase().includes(q) || d.content.toLowerCase().includes(q)
+    );
+  }, [markdownDocs, workspaceSearch]);
+
   // Load document content ONLY when activeDocId changes to prevent cursor resets
   useEffect(() => {
     const doc = markdownDocs.find(d => d.id === activeDocId);
@@ -195,14 +204,27 @@ export default function MarkdownModule() {
     }
   }, [activeDocId, markdownDocs]);
 
+  // Helper for professional unique title auto-suffixing
+  const getUniqueTitle = (rawTitle: string) => {
+    const baseName = (rawTitle.trim() || 'untitled').replace(/\.md$/i, '');
+    let candidate = `${baseName}.md`;
+    if (!markdownDocs.some((d) => d.title.toLowerCase() === candidate.toLowerCase())) {
+      return candidate;
+    }
+    let counter = 1;
+    while (markdownDocs.some((d) => d.title.toLowerCase() === `${baseName} (${counter}).md`.toLowerCase())) {
+      counter++;
+    }
+    return `${baseName} (${counter}).md`;
+  };
+
   // Create new document
   const handleCreateNewDoc = async () => {
-    const finalTitle = newDocTitle.trim() || 'untitled.md';
-    const finalTitleWithExt = finalTitle.endsWith('.md') ? finalTitle : `${finalTitle}.md`;
+    const uniqueTitle = getUniqueTitle(newDocTitle);
     const id = crypto.randomUUID();
     const newDoc = {
       id,
-      title: finalTitleWithExt,
+      title: uniqueTitle,
       content: TEMPLATES[selectedTemplate],
       tags: ['markdown'],
       pinned: false,
@@ -637,33 +659,48 @@ export default function MarkdownModule() {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mr-1">Quick Start:</span>
-            {([
-              { key: 'blank', label: '📄 Blank' },
-              { key: 'dailyLog', label: '🗓 Daily Log' },
-              { key: 'roadmap', label: '🗺 Roadmap' },
-              { key: 'spec', label: '📐 Spec Doc' },
-            ] as const).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setNewDocTitle('');
-                  setSelectedTemplate(key);
-                  setIsCreateModalOpen(true);
-                }}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-surface border border-border hover:border-primary/40 hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all cursor-pointer"
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mr-1">Quick Start:</span>
+              {([
+                { key: 'blank', label: '📄 Blank' },
+                { key: 'dailyLog', label: '🗓 Daily Log' },
+                { key: 'roadmap', label: '🗺 Roadmap' },
+                { key: 'spec', label: '📐 Spec Doc' },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setNewDocTitle('');
+                    setSelectedTemplate(key);
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-surface border border-border hover:border-primary/40 hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Live Search Input */}
+            {markdownDocs.length > 0 && (
+              <div className="w-full sm:w-64 relative">
+                <input
+                  type="text"
+                  value={workspaceSearch}
+                  onChange={(e) => setWorkspaceSearch(e.target.value)}
+                  placeholder="Search documents..."
+                  className="input-field w-full text-xs py-2 px-3 border-border/60 bg-surface rounded-xl font-medium"
+                />
+              </div>
+            )}
           </div>
 
-          {markdownDocs.length === 0 ? (
+          {filteredMarkdownDocs.length === 0 ? (
             <EmptyState
               icon={<IconFileText className="w-10 h-10 text-text-muted" />}
-              title="No Markdown Documents"
-              description="Create a document using one of the structural presets (Daily log, Roadmap, Spec)."
+              title={markdownDocs.length === 0 ? "No Markdown Documents" : "No matching documents"}
+              description={markdownDocs.length === 0 ? "Create a document using one of the structural presets (Daily log, Roadmap, Spec)." : "Try adjusting your search query."}
               action={
                 <button
                   onClick={() => {
@@ -679,10 +716,18 @@ export default function MarkdownModule() {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-left select-none">
-              {markdownDocs.map(doc => {
+              {filteredMarkdownDocs.map(doc => {
                 const wc = doc.content.split(/\s+/).filter(Boolean).length;
                 const readTime = Math.max(1, Math.ceil(wc / 225));
-                const preview = doc.content.replace(/[#*`>_\-=\[\]]/g, '').trim().slice(0, 90);
+                const preview = doc.content
+                  .replace(/```[\s\S]*?```/g, '')
+                  .replace(/Searched for `[^`]+`/gi, '')
+                  .replace(/Read, lines \d+ to \d+/gi, '')
+                  .replace(/<[^>]+>/g, '')
+                  .replace(/[#*`>_\-=\[\]()]/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 95);
                 const badge = getTemplateBadge(doc.content);
 
                 return (

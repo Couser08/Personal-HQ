@@ -126,9 +126,13 @@ export function TopicWorkspace({
             <span>/</span>
             <span className="text-text-primary font-medium">{activeTopic.name}</span>
           </div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-text-primary">
             {activeTopic.name}
-            <span className={`w-2.5 h-2.5 rounded-full inline-block ${activeTopic.done ? 'bg-green-500' : 'bg-primary'}`} />
+            {activeTopic.done && (
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                Completed
+              </span>
+            )}
           </h1>
         </div>
         <button onClick={() => setSelectedTopicId(null)} className="btn btn-secondary btn-md flex items-center gap-2">
@@ -321,8 +325,8 @@ export function TopicWorkspace({
                       </button>
                     </div>
 
-                    <div className="note-preview text-xs text-text-secondary leading-relaxed overflow-hidden" style={{ maxHeight: '180px' }}>
-                      <div dangerouslySetInnerHTML={{ __html: note.content }} />
+                    <div className="note-preview text-xs text-text-secondary leading-relaxed line-clamp-3">
+                      {(note.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || 'No additional content'}
                     </div>
 
                     <div className="flex justify-between items-center mt-auto pt-3 border-t border-border-alt text-[10px] text-text-muted">
@@ -808,10 +812,16 @@ export function TopicWorkspace({
                       className="text-primary"
                     />
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-black text-text-primary">
-                      85<span className="text-lg">%</span>
-                    </span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
+                    {((activeTopic.revisionSessions || []).some((s: any) => s.completed) || (activeTopic.flashcards && activeTopic.flashcards.some((f: any) => f.reviewsCount > 0))) ? (
+                      <span className="text-3xl font-black text-text-primary">
+                        {Math.round(((activeTopic.revisionSessions || []).filter((s: any) => s.completed).length / ((activeTopic.revisionSessions || []).length || 5)) * 100) || 85}<span className="text-lg">%</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-bold text-text-muted leading-tight">
+                        Not enough data yet
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider text-text-muted mt-6">Retention Rate</span>

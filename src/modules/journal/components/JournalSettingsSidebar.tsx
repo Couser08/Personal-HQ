@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   IconPalette,
   IconPencil,
@@ -93,6 +94,8 @@ export function JournalSettingsSidebar({
   deleteJournalStickyNote: (id: string) => Promise<void>;
   resolvedTheme: string;
 }) {
+  const [activeTab, setActiveTab] = useState<'focus' | 'style'>('focus');
+
   return (
     <aside className="relative group/settings flex flex-col gap-4 rounded-[28px] border border-border/60 bg-surface/90 p-4 shadow-[0_16px_45px_-24px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-y-auto max-h-[calc(100vh-2rem)] transition-all duration-300 w-full sm:w-[320px]">
       {/* Hover Collapse Slider Handle */}
@@ -103,6 +106,32 @@ export function JournalSettingsSidebar({
           title="Collapse Settings"
         >
           <IconChevronRight size={12} />
+        </button>
+      </div>
+
+      {/* Top Persistent Navigation Tab Bar */}
+      <div className="grid grid-cols-2 p-1 bg-surface-alt rounded-2xl border border-border/50 text-xs font-bold shrink-0 select-none">
+        <button
+          type="button"
+          onClick={() => setActiveTab('focus')}
+          className={`py-2 px-3 rounded-xl transition-all border-none cursor-pointer text-center ${
+            activeTab === 'focus'
+              ? 'bg-surface text-primary shadow-sm font-black'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          🎯 Focus & Notes
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('style')}
+          className={`py-2 px-3 rounded-xl transition-all border-none cursor-pointer text-center ${
+            activeTab === 'style'
+              ? 'bg-surface text-primary shadow-sm font-black'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          🎨 Style & Paper
         </button>
       </div>
 

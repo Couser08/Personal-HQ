@@ -116,6 +116,7 @@ export const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(() =>
     localStorage.getItem('sidebar_collapsed') === 'true'
   );
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
   // Track expanded categories (default all expanded for quick access)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
@@ -266,31 +267,107 @@ export const Sidebar = () => {
           const isExpanded = !!expandedCategories[group.id];
 
           if (isCollapsed) {
-            // Collapsed: show one category icon per group, clicking expands sidebar + opens group
+            // Collapsed: show category icon with hover flyout menu (VS Code / Notion style parity)
             const CatIcon = group.icon;
+            const isHovered = hoveredGroupId === group.id;
+
             return (
-              <motion.button
-                key={group.id}
-                whileTap={{ scale: 0.93 }}
-                title={group.label}
-                onClick={() => {
-                  setIsCollapsed(false);
-                  localStorage.setItem('sidebar_collapsed', 'false');
-                  setExpandedCategories(prev => ({ ...prev, [group.id]: true }));
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 40, height: 40, margin: '0 auto', borderRadius: 10,
-                  border: 'none',
-                  background: groupActive
-                    ? group.color + '18'
-                    : 'transparent',
-                  color: groupActive ? group.color : 'var(--text-secondary)',
-                  cursor: 'pointer', transition: 'all 0.15s',
-                }}
+              <div 
+                key={group.id} 
+                className="relative"
+                onMouseEnter={() => setHoveredGroupId(group.id)}
+                onMouseLeave={() => setHoveredGroupId(null)}
               >
-                <CatIcon size={19} />
-              </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.93 }}
+                  title={group.label}
+                  onClick={() => {
+                    const firstItem = group.items[0];
+                    if (firstItem) setActiveModule(firstItem.id);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 40, height: 40, margin: '0 auto', borderRadius: 10,
+                    border: 'none',
+                    background: groupActive ? group.color + '22' : 'transparent',
+                    color: groupActive ? group.color : 'var(--text-secondary)',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  <CatIcon size={19} />
+                </motion.button>
+
+                {/* Hover Flyout Submenu */}
+                <AnimatePresence>
+                  {isHovered && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 6, scale: 0.96 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 4, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        left: '100%',
+                        top: 0,
+                        marginLeft: 10,
+                        zIndex: 999,
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-border)',
+                        borderRadius: 16,
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+                        padding: '8px',
+                        width: 210,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>{group.emoji}</span> {group.label}
+                        </span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)' }}>{group.items.length}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+                        {group.items.map(item => {
+                          const ItemIcon = item.icon;
+                          const isActive = activeModule === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveModule(item.id);
+                                setHoveredGroupId(null);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '7px 10px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: isActive ? 'var(--bg-surface-hover, rgba(255,255,255,0.08))' : 'transparent',
+                                color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
+                                fontWeight: isActive ? 700 : 500,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                width: '100%',
+                                transition: 'all 0.12s',
+                              }}
+                            >
+                              <ItemIcon size={14} style={{ flexShrink: 0 }} />
+                              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           }
 

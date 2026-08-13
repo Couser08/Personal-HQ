@@ -297,11 +297,38 @@ export default function JournalModule() {
     };
   }, [title, content, mood, tags, pageStyle, location, reminder, stylePreset, focusItems, activeEntryId, activeEntry, updateJournalEntry]);
 
-  const createEntry = () => {
-    const entry = buildBlankEntry();
-    addJournalEntry(entry);
-    setActiveEntryId(entry.id);
-    setPreviewMode(false);
+  const [isCreatingEntry, setIsCreatingEntry] = useState(false);
+
+  const createEntry = async () => {
+    if (isCreatingEntry) return;
+    setIsCreatingEntry(true);
+    try {
+      const baseTitle = 'New Journal Entry';
+      let candidateTitle = baseTitle;
+      let counter = 1;
+      while (journals.some(j => j.title.toLowerCase() === candidateTitle.toLowerCase())) {
+        candidateTitle = `${baseTitle} (${counter})`;
+        counter++;
+      }
+
+      const entry = {
+        ...buildBlankEntry(),
+        title: candidateTitle,
+      };
+      await addJournalEntry(entry);
+      setActiveEntryId(entry.id);
+      setPreviewMode(false);
+
+      requestAnimationFrame(() => {
+        const titleInput = document.getElementById('journal-entry-title-input') as HTMLInputElement | null;
+        if (titleInput) {
+          titleInput.focus();
+          titleInput.select();
+        }
+      });
+    } finally {
+      setIsCreatingEntry(false);
+    }
   };
 
   const saveAsTemplate = () => {
@@ -763,8 +790,8 @@ export default function JournalModule() {
 
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 rounded-full border border-border/60 bg-surface-alt px-3 py-1.5 text-[11px] font-semibold text-text-secondary">
-                {saveStatus === 'saved' ? <IconCheck size={12} className="text-emerald-500" /> : <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
-                <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Auto-save ready'}</span>
+                {saveStatus === 'saved' || saveStatus === 'idle' ? <IconCheck size={12} className="text-emerald-500" /> : <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                <span>{saveStatus === 'saving' ? 'Saving...' : 'Saved to DB'}</span>
               </div>
               <Button
                 onClick={() => {

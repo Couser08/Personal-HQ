@@ -47,11 +47,13 @@ export function SubjectCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              showConfirm('Confirm Delete', 'Delete this subject and all its topics?', () => {
+              showConfirm('Confirm Delete', `Delete "${subject.name}" and all its topics?`, () => {
                 deleteSubject(subject.id);
               });
             }}
-            className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500 opacity-0 group-hover:opacity-100"
+            className="btn btn-ghost btn-sm btn-square text-text-muted hover:text-rose-500 transition-colors cursor-pointer border-none bg-transparent"
+            title={`Delete ${subject.name}`}
+            aria-label={`Delete ${subject.name}`}
           >
             <IconTrash className="w-4 h-4" />
           </button>
