@@ -5,7 +5,6 @@ import {
   noteService,
   linkService,
   stockService,
-  subjectService,
   interestService,
   mediaService,
   countdownService,
@@ -30,7 +29,8 @@ import {
   studyMaterialService,
   examService,
   examAttemptService,
-  reflectionService
+  reflectionService,
+  visionService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
@@ -158,13 +158,10 @@ export const createCoreSlice: StateCreator<
         noteService.fetchAll(userId),
         linkService.fetchAll(userId),
         stockService.fetchAll(userId),
-        subjectService.fetchAll(userId),
         interestService.fetchAll(userId),
         mediaService.fetchAll(userId),
         countdownService.fetchAll(userId),
         snippetService.fetchAll(userId),
-        budgetCategoryService.fetchAll(userId),
-        budgetTransactionService.fetchAll(userId),
         todoProjectService.fetchAll(userId),
         todoTaskService.fetchAll(userId),
         journalService.fetchAll(userId),
@@ -184,16 +181,16 @@ export const createCoreSlice: StateCreator<
         studyMaterialService.fetchAll(userId),
         examService.fetchAll(userId),
         examAttemptService.fetchAll(userId),
-        reflectionService.fetchAll(userId)
+        reflectionService.fetchAll(userId),
+        visionService.fetchAll(userId)
       ]);
 
       const serviceNames = [
-        'notes', 'links', 'stocks', 'study tracker', 'calculator history', 'media logs',
-        'countdowns', 'code snippets', 'budget categories', 'budget transactions',
-        'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
+        'notes', 'links', 'stocks', 'interest history', 'media logs',
+        'countdowns', 'code snippets', 'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
         'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
         'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
-        'study materials', 'exams', 'exam attempts', 'daily reflections'
+        'study materials', 'exams', 'exam attempts', 'daily reflections', 'visions'
       ];
 
       const failedServices = results
@@ -203,33 +200,31 @@ export const createCoreSlice: StateCreator<
       const notes = results[0].status === 'fulfilled' ? results[0].value : [];
       const links = results[1].status === 'fulfilled' ? results[1].value : [];
       const stocks = results[2].status === 'fulfilled' ? results[2].value : [];
-      const subjects = results[3].status === 'fulfilled' ? results[3].value : [];
-      const interestHistory = results[4].status === 'fulfilled' ? results[4].value : [];
-      const mediaLogs = results[5].status === 'fulfilled' ? results[5].value : [];
-      const countdowns = results[6].status === 'fulfilled' ? results[6].value : [];
-      const snippets = results[7].status === 'fulfilled' ? results[7].value : [];
-      const budgetCategories = results[8].status === 'fulfilled' ? results[8].value : [];
-      const budgetTransactions = results[9].status === 'fulfilled' ? results[9].value : [];
-      const todoProjects = results[10].status === 'fulfilled' ? results[10].value : [];
-      const todoTasks = results[11].status === 'fulfilled' ? results[11].value : [];
-      const journals = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
-      const mindmaps = results[13].status === 'fulfilled' ? results[13].value as any[] : [];
-      const standardHistory = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
-      const habits = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
-      const settingsResult = results[16].status === 'fulfilled' ? results[16].value : null;
-      const sprints = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
-      const dsaProblems = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
-      const tilLogs = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
-      const roadmaps = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
-      const resources = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
-      const devGoals = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
-      const journalStickyNotes = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
-      const savedLinks = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
-      const appTags = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
-      const studyMaterials = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
-      const exams = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
-      const examAttempts = results[28].status === 'fulfilled' ? results[28].value as any[] : [];
-      const dailyReflections = results[29].status === 'fulfilled' ? results[29].value as any[] : [];
+      const interestHistory = results[3].status === 'fulfilled' ? results[3].value : [];
+      const mediaLogs = results[4].status === 'fulfilled' ? results[4].value : [];
+      const countdowns = results[5].status === 'fulfilled' ? results[5].value : [];
+      const snippets = results[6].status === 'fulfilled' ? results[6].value : [];
+      const todoProjects = results[7].status === 'fulfilled' ? results[7].value : [];
+      const todoTasks = results[8].status === 'fulfilled' ? results[8].value : [];
+      const journals = results[9].status === 'fulfilled' ? results[9].value as any[] : [];
+      const mindmaps = results[10].status === 'fulfilled' ? results[10].value as any[] : [];
+      const standardHistory = results[11].status === 'fulfilled' ? results[11].value as any[] : [];
+      const habits = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
+      const settingsResult = results[13].status === 'fulfilled' ? results[13].value : null;
+      const sprints = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
+      const dsaProblems = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
+      const tilLogs = results[16].status === 'fulfilled' ? results[16].value as any[] : [];
+      const roadmaps = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
+      const resources = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
+      const devGoals = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
+      const journalStickyNotes = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
+      const savedLinks = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
+      const appTags = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
+      const studyMaterials = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
+      const exams = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
+      const examAttempts = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
+      const dailyReflections = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
+      const visions = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
 
       if (failedServices.length > 0) {
         console.warn('Supabase sync skipped some modules:', failedServices);
@@ -291,10 +286,10 @@ export const createCoreSlice: StateCreator<
       }
 
       set({
-        notes, links, stocks, subjects, interestHistory, mediaLogs, countdowns, snippets,
-        budgetCategories, budgetTransactions, todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
+        notes, links, stocks, interestHistory, mediaLogs, countdowns, snippets,
+        todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
         sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections,
+        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions,
         theme: dbTheme,
         settings: dbSettings,
         activeFocusItem: dbActiveFocusItem,
@@ -316,12 +311,11 @@ export const createCoreSlice: StateCreator<
     localStorage.removeItem('phq_active_focus_item');
     clearRestCache().catch((e) => console.error('[Cache] Failed to clear rest cache:', e));
     set({
-      notes: [], links: [], stocks: [], subjects: [],
-      interestHistory: [], mediaLogs: [], countdowns: [], snippets: [],
-      budgetCategories: [], budgetTransactions: [], todoProjects: [], todoTasks: [],
+      notes: [], links: [], stocks: [], interestHistory: [], mediaLogs: [], countdowns: [], snippets: [],
+      todoProjects: [], todoTasks: [],
       journals: [], mindmaps: [], standardHistory: [], habits: [],
       sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [], journalStickyNotes: [],
-      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [],
+      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [], dailyReflections: [], visions: [],
       dataLoaded: false,
       isSyncing: false
     } as any);

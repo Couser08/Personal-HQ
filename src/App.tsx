@@ -9,7 +9,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
-const StudyModule = lazy(() => import('./modules/study/StudyModule'));
 const StudyExamModule = lazy(() => import('./modules/exam/StudyExamModule'));
 const MediaModule = lazy(() => import('./modules/media/MediaModule'));
 const CodeSnippetModule = lazy(() => import('./modules/snippets/CodeSnippetModule'));
@@ -25,8 +24,10 @@ const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
 const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
+const HabitModule = lazy(() => import('./modules/habits/HabitTrackerModule'));
 const TilModule = lazy(() => import('./modules/til/TilModule'));
 const BooksModule = lazy(() => import('./modules/books/BooksModule'));
+const VisionModule = lazy(() => import('./modules/vision/VisionModule'));
 const ChangelogModule = lazy(() => import('./modules/changelog/ChangelogModule'));
 const DesignLabPage = lazy(() => import('./pages/design-lab/DesignLabPage'));
 
@@ -210,8 +211,8 @@ function AppContent() {
       case 'journal': return <JournalModule />;
       case 'utilities':
       case 'linksaver': return <UtilitiesModule />;
-      case 'study': return <StudyModule />;
       case 'exam': return <StudyExamModule />;
+      case 'vision': return <VisionModule />;
       case 'media': return <MediaModule />;
       case 'snippets': return <CodeSnippetModule />;
       case 'til': return <TilModule />;

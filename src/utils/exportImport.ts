@@ -18,13 +18,15 @@ type BackupPayload = {
   notes: AppStore['notes'];
   links: AppStore['links'];
   stocks: AppStore['stocks'];
-  subjects: AppStore['subjects'];
   interestHistory: AppStore['interestHistory'];
+  examAttempts: AppStore['examAttempts'];
+  dailyReflections: AppStore['dailyReflections'];
+  visions: AppStore['visions'];
   mediaLogs: AppStore['mediaLogs'];
   countdowns: AppStore['countdowns'];
   snippets: AppStore['snippets'];
-  budgetCategories: AppStore['budgetCategories'];
-  budgetTransactions: AppStore['budgetTransactions'];
+  todoProjects: AppStore['todoProjects'];
+  todoTasks: AppStore['todoTasks'];
   pomodoroStats: AppStore['pomodoroStats'];
   journals: AppStore['journals'];
   settings: AppSettings;
@@ -52,13 +54,15 @@ export const buildBackupData = (state: AppStore, owner: BackupOwner): BackupPayl
   notes: state.notes,
   links: state.links,
   stocks: state.stocks,
-  subjects: state.subjects,
   interestHistory: state.interestHistory,
+  examAttempts: state.examAttempts,
+  dailyReflections: state.dailyReflections,
+  visions: state.visions,
   mediaLogs: state.mediaLogs,
   countdowns: state.countdowns,
   snippets: state.snippets,
-  budgetCategories: state.budgetCategories,
-  budgetTransactions: state.budgetTransactions,
+  todoProjects: state.todoProjects,
+  todoTasks: state.todoTasks,
   pomodoroStats: state.pomodoroStats,
   journals: state.journals,
   settings: state.settings,
@@ -89,13 +93,15 @@ export const normalizeImportedState = (data: Partial<BackupPayload>): Partial<Ap
   notes: Array.isArray(data.notes) ? data.notes : [],
   links: Array.isArray(data.links) ? data.links : [],
   stocks: Array.isArray(data.stocks) ? data.stocks : [],
-  subjects: Array.isArray(data.subjects) ? data.subjects : [],
   interestHistory: Array.isArray(data.interestHistory) ? data.interestHistory : [],
+  examAttempts: Array.isArray(data.examAttempts) ? data.examAttempts : [],
+  dailyReflections: Array.isArray(data.dailyReflections) ? data.dailyReflections : [],
+  visions: Array.isArray(data.visions) ? data.visions : [],
   mediaLogs: Array.isArray(data.mediaLogs) ? data.mediaLogs : [],
   countdowns: Array.isArray(data.countdowns) ? data.countdowns : [],
   snippets: Array.isArray(data.snippets) ? data.snippets : [],
-  budgetCategories: Array.isArray(data.budgetCategories) ? data.budgetCategories : [],
-  budgetTransactions: Array.isArray(data.budgetTransactions) ? data.budgetTransactions : [],
+  todoProjects: Array.isArray(data.todoProjects) ? data.todoProjects : [],
+  todoTasks: Array.isArray(data.todoTasks) ? data.todoTasks : [],
   pomodoroStats: data.pomodoroStats ?? { totalSessions: 0, totalMinutes: 0 },
   journals: Array.isArray(data.journals) ? data.journals : [],
   settings: { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) },

@@ -37,6 +37,8 @@ import {
   IconWriting,
   IconClockPlay,
   IconLayoutGrid,
+  IconUser,
+  IconEye,
 } from '@tabler/icons-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,6 +63,40 @@ interface Release {
 }
 
 const RELEASES: Release[] = [
+  {
+    version: 'v4.4.0',
+    codename: 'Vision & Speed',
+    date: 'August 14, 2026',
+    headline: 'Vision Board arrives. Profile & Changelog redesigned. Study module retired.',
+    sub: 'Massive cleanup and forward momentum. The Study module has been fully removed, making way for the new Vision Board. Performance modes are coming soon.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconUser,
+        title: 'Profile & Changelog — Redesigned',
+        desc: 'Both pages have been fully redesigned with a clean, flat, editorial aesthetic. Removed all gradients and glassmorphism for a premium, minimal look.',
+        badge: 'Redesigned',
+      },
+      {
+        Icon: IconEye,
+        title: 'Vision Board — Added',
+        desc: 'New Vision Board module introduced. A dedicated space to map out long-term goals and visualise your future.',
+        badge: 'New',
+      },
+      {
+        Icon: IconTrash,
+        title: 'Study Module — Removed',
+        desc: 'The Study module (Dashboards, Timers, Workspaces) has been entirely removed from the codebase to streamline the app\'s core focus.',
+        badge: 'Removed',
+      },
+      {
+        Icon: IconBolt,
+        title: 'Performance Modes — Coming Soon',
+        desc: 'Groundwork laid for upcoming performance profiles: Power (max animations), Default, and Potato (zero animations for maximum battery/speed).',
+        badge: 'Upcoming',
+      },
+    ],
+  },
   {
     version: 'v4.3.0',
     codename: 'Focus & Annotate',
@@ -437,7 +473,22 @@ function ReleaseCard({ release, index, isLatest }: {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 
+type TabFilter = 'all' | 'new' | 'updates' | 'fixes';
+
 export default function ChangelogModule() {
+  const [activeTab, setActiveTab] = useState<TabFilter>('all');
+
+  const filteredReleases = RELEASES.map(r => {
+    let filteredFeatures = r.features;
+    if (activeTab === 'new') {
+      filteredFeatures = r.features.filter(f => f.badge === 'New');
+    } else if (activeTab === 'updates') {
+      filteredFeatures = r.features.filter(f => !f.badge || f.badge === 'Upgraded' || f.badge === 'Improved');
+    } else if (activeTab === 'fixes') {
+      filteredFeatures = r.features.filter(f => f.badge === 'Fixed');
+    }
+    return { ...r, features: filteredFeatures };
+  }).filter(r => r.features.length > 0);
   return (
     <div className="w-full max-w-3xl mx-auto py-8">
       {/* Flat Header */}
@@ -484,13 +535,39 @@ export default function ChangelogModule() {
         </div>
       </motion.div>
 
-      <div className="h-px bg-border mb-10" />
+      {/* Tabs */}
+      <div className="flex items-center gap-2 mb-8 border-b border-border pb-4 overflow-x-auto scrollbar-hide">
+        {[
+          { id: 'all', label: 'All Changes' },
+          { id: 'new', label: 'New Features' },
+          { id: 'updates', label: 'Updates & Improvements' },
+          { id: 'fixes', label: 'Bug Fixes' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as TabFilter)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors whitespace-nowrap border ${
+              activeTab === tab.id
+                ? 'bg-text-primary text-background border-text-primary'
+                : 'bg-surface text-text-secondary border-border hover:bg-surface-alt hover:text-text-primary'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* Flat Timeline */}
       <div>
-        {RELEASES.map((r, i) => (
-          <ReleaseCard key={r.version} release={r} index={i} isLatest={i === 0} />
-        ))}
+        {filteredReleases.length === 0 ? (
+          <div className="py-12 text-center text-text-secondary">
+            No changes found for this category.
+          </div>
+        ) : (
+          filteredReleases.map((r, i) => (
+            <ReleaseCard key={r.version} release={r} index={i} isLatest={i === 0 && activeTab === 'all'} />
+          ))
+        )}
       </div>
 
       <motion.div

@@ -1,11 +1,11 @@
 import { supabase } from './supabase';
 import type {
-  Note, Link, SavedLink, AppTag, StockEntry, Subject, InterestRecord,
-  MediaLog, Countdown, CodeSnippet, BudgetCategory, BudgetTransaction,
+  Note, Link, SavedLink, AppTag, StockEntry, InterestRecord,
+  MediaLog, Countdown, CodeSnippet,
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal,
-  StudyMaterial, Exam, ExamAttempt, DailyReflection
-} from '../store/useAppStore';
+  StudyMaterial, Exam, ExamAttempt, DailyReflection, Vision
+} from '../store/types';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
 
@@ -275,49 +275,6 @@ export const stockService = {
 
   async delete(id: string) {
     const { error } = await supabase.from('stocks').delete().eq('id', id);
-    if (error) throw error;
-  },
-};
-
-// ─── Subjects ─────────────────────────────────────────────────────────────────
-
-export const subjectService = {
-  async fetchAll(userId: string): Promise<Subject[]> {
-    const { data, error } = await supabase
-      .from('subjects')
-      .select('id, name, semester, topics')
-      .eq('user_id', userId);
-    if (error) throw error;
-    return (data ?? []).map((r) => ({
-      id: r.id,
-      name: r.name,
-      semester: r.semester,
-      topics: r.topics ?? [],
-    }));
-  },
-
-  async create(userId: string, subject: Subject) {
-    const { error } = await supabase.from('subjects').insert({
-      id: subject.id,
-      user_id: userId,
-      name: subject.name,
-      semester: subject.semester,
-      topics: subject.topics,
-    });
-    if (error) throw error;
-  },
-
-  async update(id: string, data: Partial<Subject>) {
-    const { error } = await supabase.from('subjects').update({
-      ...(data.name !== undefined && { name: data.name }),
-      ...(data.topics !== undefined && { topics: data.topics }),
-      ...(data.semester !== undefined && { semester: data.semester }),
-    }).eq('id', id);
-    if (error) throw error;
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase.from('subjects').delete().eq('id', id);
     if (error) throw error;
   },
 };
@@ -1904,4 +1861,61 @@ export const reflectionService = {
     const { error } = await supabase.from('daily_reflections').delete().eq('id', id);
     if (error) throw error;
   },
+};
+
+// ─── Visions ──────────────────────────────────────────────────────────────────
+
+export const visionService = {
+  async fetchAll(userId: string): Promise<Vision[]> {
+    const { data, error } = await supabase.from('visions').select('*').eq('user_id', userId);
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      category: r.category,
+      imageUrl: r.image_url,
+      targetDate: r.target_date,
+      whyText: r.why_text,
+      status: r.status,
+      progress: r.progress,
+      linkedHabitIds: r.linked_habit_ids ?? [],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+  },
+  async create(userId: string, vision: Vision) {
+    const { error } = await supabase.from('visions').insert({
+      id: vision.id,
+      user_id: userId,
+      title: vision.title,
+      category: vision.category,
+      image_url: vision.imageUrl,
+      target_date: vision.targetDate,
+      why_text: vision.whyText,
+      status: vision.status,
+      progress: vision.progress,
+      linked_habit_ids: vision.linkedHabitIds,
+      created_at: vision.createdAt,
+      updated_at: vision.updatedAt
+    });
+    if (error) throw error;
+  },
+  async update(id: string, data: Partial<Vision>) {
+    const { error } = await supabase.from('visions').update({
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.category !== undefined && { category: data.category }),
+      ...(data.imageUrl !== undefined && { image_url: data.imageUrl }),
+      ...(data.targetDate !== undefined && { target_date: data.targetDate }),
+      ...(data.whyText !== undefined && { why_text: data.whyText }),
+      ...(data.status !== undefined && { status: data.status }),
+      ...(data.progress !== undefined && { progress: data.progress }),
+      ...(data.linkedHabitIds !== undefined && { linked_habit_ids: data.linkedHabitIds }),
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) throw error;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('visions').delete().eq('id', id);
+    if (error) throw error;
+  }
 };

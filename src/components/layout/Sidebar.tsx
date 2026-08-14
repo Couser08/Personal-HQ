@@ -6,7 +6,7 @@ import {
   IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb, IconBook,
   IconTag, IconChartBar, IconLink, IconPlus, IconX, IconCalendar,
-  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket
+  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket, IconTarget
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -55,7 +55,7 @@ const NAV_GROUPS = [
     desc: 'Focus, study and finances.',
     items: [
       { id: 'pomodoro',  label: 'Pomodoro',         icon: IconClockPlay, desc: 'Focus timer & goals' },
-      { id: 'study',     label: 'Study Tracker',    icon: IconBook,      desc: 'Session logs & streaks' },
+      { id: 'vision',    label: 'Vision Board',     icon: IconTarget,    desc: 'Map your aspirations' },
       { id: 'exam',      label: 'AI Exam Prep',     icon: IconBrain,     desc: 'Generate & take AI exams' },
     ],
   },

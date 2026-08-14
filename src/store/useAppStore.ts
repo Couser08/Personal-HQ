@@ -3,12 +3,11 @@ import { type AppStore } from './types';
 import { createCoreSlice } from './slices/coreSlice';
 import { createJournalSlice } from './slices/journalSlice';
 import { createMindmapSlice } from './slices/mindmapSlice';
-import { createStudySlice } from './slices/studySlice';
-import { createBudgetSlice } from './slices/budgetSlice';
 import { createTodoSlice } from './slices/todoSlice';
 import { createHabitSlice } from './slices/habitSlice';
 import { createBooksSlice } from './slices/booksSlice';
 import { createStudyExamSlice } from './slices/studyExamSlice';
+import { createVisionSlice } from './slices/visionSlice';
 import { useAuthStore } from './useAuthStore';
 import {
   createUtilitySlice,
@@ -26,13 +25,12 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createCoreSlice(...a),
   ...createJournalSlice(...a),
   ...createMindmapSlice(...a),
-  ...createStudySlice(...a),
-  ...createBudgetSlice(...a),
   ...createTodoSlice(...a),
   ...createHabitSlice(...a),
   ...createUtilitySlice(...a),
   ...createBooksSlice(...a),
   ...createStudyExamSlice(...a),
+  ...createVisionSlice(...a),
 }));
 
 if (typeof window !== 'undefined') {
@@ -104,10 +102,14 @@ if (typeof window !== 'undefined') {
     safeSetItem('phq_saved_links', JSON.stringify(state.savedLinks));
     safeSetItem('phq_app_tags', JSON.stringify(state.appTags));
     safeSetItem('phq_links', JSON.stringify(state.links));
-    safeSetItem('phq_subjects', JSON.stringify(state.subjects));
     safeSetItem('phq_media_logs', JSON.stringify(state.mediaLogs));
     safeSetItem('phq_countdowns', JSON.stringify(state.countdowns));
-    safeSetItem('phq_budget_categories', JSON.stringify(state.budgetCategories));
-    safeSetItem('phq_budget_transactions', JSON.stringify(state.budgetTransactions));
+    
+    // Modern Modules Missing from Cache:
+    safeSetItem('phq_visions', JSON.stringify(state.visions));
+    safeSetItem('phq_exams', JSON.stringify(state.exams));
+    safeSetItem('phq_exam_attempts', JSON.stringify(state.examAttempts));
+    safeSetItem('phq_study_materials', JSON.stringify(state.studyMaterials));
+    safeSetItem('phq_daily_reflections', JSON.stringify(state.dailyReflections));
   });
 }

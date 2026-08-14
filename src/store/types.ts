@@ -107,164 +107,6 @@ export interface TodoTask {
   featured?: boolean;
 }
 
-export interface TopicNote {
-  id: string;
-  title: string;
-  content: string;
-  pinned?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TopicSnippet {
-  id: string;
-  title: string;
-  language: string;
-  code: string;
-  description?: string;
-  tags?: string[];
-}
-
-export interface TopicResource {
-  id: string;
-  title: string;
-  type: 'link' | 'pdf' | 'doc' | 'image' | 'video' | 'youtube';
-  url: string;
-  fileSize?: string;
-  tags?: string[];
-  uploadDate: string;
-}
-
-export interface TopicQuestion {
-  id: string;
-  question: string;
-  answer?: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  status: 'solved' | 'unsolved';
-  repeated?: boolean;
-}
-
-export interface TopicFlashcard {
-  id: string;
-  front: string;
-  back: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  lastReviewed?: string;
-  nextReview?: string;
-  revisionCount?: number;
-}
-
-export interface TopicTask {
-  id: string;
-  title: string;
-  done: boolean;
-}
-
-export interface TopicAnalytics {
-  timeSpent?: number;
-  studySessions?: number;
-}
-
-export interface Topic {
-  id: string;
-  name: string;
-  done: boolean;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  priority?: 'low' | 'medium' | 'high';
-  timeSpent?: number;
-  lastOpened?: string;
-  description?: string;
-  tags?: string[];
-  notes?: TopicNote[];
-  snippets?: TopicSnippet[];
-  resources?: TopicResource[];
-  questions?: TopicQuestion[];
-  flashcards?: TopicFlashcard[];
-  tasks?: TopicTask[];
-  analytics?: TopicAnalytics;
-  learningStreak?: number;
-}
-
-export interface SprintTask {
-  id: string;
-  title: string;
-  description?: string;
-  storyPoints: number;
-  priority: 'low' | 'medium' | 'high';
-  status: 'backlog' | 'todo' | 'in_progress' | 'review' | 'done';
-  tags: string[];
-}
-
-export interface Sprint {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  tasks: SprintTask[];
-  status: 'planned' | 'active' | 'completed';
-}
-
-export interface DsaProblem {
-  id: string;
-  title: string;
-  platform: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  topic: string;
-  link?: string;
-  status: 'solved' | 'review' | 'revision';
-  notes?: string;
-  solvedAt: string;
-}
-
-export interface TilLog {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-}
-
-export interface RoadmapNode {
-  id: string;
-  label: string;
-  completed: boolean;
-  children?: string[];
-}
-
-export interface LearningRoadmap {
-  id: string;
-  title: string;
-  description: string;
-  nodes: RoadmapNode[];
-}
-
-export interface ResourceBookmark {
-  id: string;
-  title: string;
-  url: string;
-  description?: string;
-  tags: string[];
-  status: 'to_read' | 'reading' | 'completed';
-  savedAt: string;
-}
-
-export interface DevGoal {
-  id: string;
-  title: string;
-  target: number;
-  current: number;
-  metric: string;
-  dueDate: string;
-  completed: boolean;
-}
-
-export interface Subject {
-  id: string;
-  name: string;
-  topics: Topic[];
-  semester: string;
-}
-
 export interface InterestRecord {
   id: string;
   type: 'SI' | 'CI';
@@ -300,23 +142,6 @@ export interface Countdown {
   createdAt: string;
 }
 
-export interface BudgetCategory {
-  id: string;
-  name: string;
-  budget: number;
-  color: 'rose' | 'blue' | 'green' | 'amber' | 'purple';
-  icon: string;
-}
-
-export interface BudgetTransaction {
-  id: string;
-  categoryId: string;
-  amount: number;
-  description: string;
-  date: string;
-  type: 'income' | 'expense';
-  paymentMethod?: 'cash' | 'online';
-}
 
 export interface CodeSnippet {
   id: string;
@@ -460,6 +285,20 @@ export interface AiClarificationField {
   options?: string[];
   required?: boolean;
   defaultValue?: string | string[];
+}
+
+export interface Vision {
+  id: string;
+  title: string;
+  category: string;
+  imageUrl?: string;
+  targetDate?: string;
+  whyText?: string;
+  status: 'Not Started' | 'In Progress' | 'Achieved' | 'Paused';
+  progress: number;
+  linkedHabitIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AiChatMessage {
@@ -724,14 +563,6 @@ export interface AppStore {
   stocks: StockEntry[];
   addStock: (entry: StockEntry, userId?: string) => Promise<void>;
   deleteStock: (id: string) => Promise<void>;
-
-  subjects: Subject[];
-  addSubject: (subject: Subject, userId?: string) => Promise<void>;
-  addTopic: (subjectId: string, topic: Topic, userId?: string) => Promise<void>;
-  toggleTopic: (subjectId: string, topicId: string, userId?: string) => Promise<void>;
-  updateTopic: (subjectId: string, topicId: string, data: Partial<Topic>) => Promise<void>;
-  deleteSubject: (id: string) => Promise<void>;
-  deleteTopic: (subjectId: string, topicId: string, userId?: string) => Promise<void>;
 
   interestHistory: InterestRecord[];
   addInterestRecord: (record: InterestRecord, userId?: string) => Promise<void>;
