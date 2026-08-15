@@ -578,7 +578,7 @@ export default function JournalModule() {
                       </span>
                       <button
                         onClick={() => setActiveEntryId(featuredEntry.id)}
-                        className="flex items-center gap-1 bg-primary hover:bg-primary-muted text-white text-[10px] font-bold px-3.5 py-2 rounded-full transition-all cursor-pointer shadow-subtle border-none active:scale-95"
+                        className="flex items-center gap-1 bg-primary hover:bg-primary-muted text-text-on-accent text-[10px] font-bold px-3.5 py-2 rounded-full transition-all cursor-pointer shadow-subtle border-none active:scale-95"
                       >
                         <span>Open Entry</span>
                         <IconChevronRight className="w-3 h-3" />

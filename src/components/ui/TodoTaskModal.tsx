@@ -281,7 +281,7 @@ export function TodoTaskModal() {
                 disabled={!title.trim()}
                 className={`px-5 py-2.5 rounded-full border-none font-bold text-sm flex items-center justify-center transition-all duration-200 ${
                   title.trim()
-                    ? 'bg-primary hover:bg-primary-muted text-white cursor-pointer hover:brightness-105 active:scale-98 shadow-sm shadow-primary/15'
+                    ? 'bg-primary hover:bg-primary-muted text-text-on-accent cursor-pointer hover:brightness-105 active:scale-98 shadow-sm shadow-primary/15'
                     : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50'
                 }`}
               >

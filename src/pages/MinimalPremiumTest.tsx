@@ -12,20 +12,30 @@ import {
   IconPaperclip,
   IconFlame,
   IconWallet,
-  IconCalendarEvent
+  IconCalendarEvent,
+  IconBug
 } from '@tabler/icons-react';
 
 import { Card } from '../components/ui/Card';
 import { ListRow } from '../components/ui/ListRow';
 import { StatCard } from '../components/ui/StatCard';
+import { useBugReportStore } from '../store/useBugReportStore';
 
 const MinimalPremiumTest = () => {
   return (
     <div className="min-h-screen bg-background text-text-primary p-4 sm:p-8 font-sans minimal-premium antialiased pb-32">
       <div className="max-w-4xl mx-auto space-y-12">
-        <header className="pt-4">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Design System Test</h1>
-          <p className="text-text-secondary">Minimal-Premium Layout (Soft Canvas + Floating Cards)</p>
+        <header className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Design System Test</h1>
+            <p className="text-text-secondary">Minimal-Premium Layout (Soft Canvas + Floating Cards)</p>
+          </div>
+          <button
+            onClick={() => useBugReportStore.getState().startInspection()}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer w-fit"
+          >
+            <IconBug size={18} /> Test Bug Reporter (Ctrl+Shift+B)
+          </button>
         </header>
 
         {/* 1. Buttons Test */}

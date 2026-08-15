@@ -163,6 +163,7 @@
     --text-primary:   #00ffcc;
     --text-secondary: #ff007f;
     --text-muted:     #787ca5;
+    --text-on-accent: #FFFFFF;
 
     --accent-primary:       #ff007f;
     --accent-primary-muted: #c2005f;
@@ -183,6 +184,7 @@
     --text-primary:   #f0ece1;
     --text-secondary: #a3b899;
     --text-muted:     #6f8b70;
+    --text-on-accent: #1b2421;
 
     --accent-primary:       #a3b899;
     --accent-primary-muted: #7d9672;
@@ -203,6 +205,7 @@
     --text-primary:   #4b0082;
     --text-secondary: #db7093;
     --text-muted:     #bc8f8f;
+    --text-on-accent: #FFFFFF;
 
     --accent-primary:       #db7093;
     --accent-primary-muted: #b0486c;
@@ -223,6 +226,7 @@
     --text-primary:   #fafafa;
     --text-secondary: #c084fc;
     --text-muted:     #8b5cf6;
+    --text-on-accent: #FFFFFF;
 
     --accent-primary:       #a78bfa;
     --accent-primary-muted: #8b5cf6;
@@ -337,14 +341,14 @@
 }
 
 /* Variants */
-.btn-primary  { background: var(--color-primary); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-.btn-primary:hover { background: var(--color-primary-muted); box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+.btn-primary  { background: var(--color-primary); color: var(--color-text-on-accent); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.btn-primary:hover { background: var(--color-primary-muted); color: var(--color-text-on-accent); box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 .btn-secondary { background: var(--bg-surface); border-color: var(--border-border); color: var(--text-secondary); }
 .btn-secondary:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
 .btn-ghost:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
-.btn-danger { background: rgba(244,63,94,0.08); border-color: rgba(244,63,94,0.2); color: var(--color-primary); }
-.btn-danger:hover { background: rgba(244,63,94,0.15); }
+.btn-danger { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); color: var(--color-accent-danger); }
+.btn-danger:hover { background: rgba(244,63,94,0.2); color: var(--color-accent-danger); }
 
 /* Form Controls */
 .input-field,

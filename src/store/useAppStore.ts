@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
 
   const syncData = () => {
     const now = Date.now();
-    if (now - lastSyncTime < 10000) return; // 10s throttle
+    if (now - lastSyncTime < 2 * 60 * 1000) return; // 2-minute throttle prevents aggressive 28-table network thrashing
     lastSyncTime = now;
 
     const state = useAppStore.getState();

@@ -272,7 +272,7 @@ export function PlannerSidebar({
                         }}
                         className={`w-7 h-7 rounded-full flex items-center justify-center border-none bg-transparent cursor-pointer transition-all ${
                           isSelected 
-                            ? 'bg-primary text-white font-black'
+                            ? 'bg-primary text-text-on-accent font-black'
                             : isToday
                               ? 'border border-primary text-primary font-black'
                               : cell.isCurrentMonth

@@ -12,15 +12,26 @@ export interface VisionSlice {
 }
 
 export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (set, get) => ({
-  visions: [],
+  visions: (() => {
+    try {
+      const raw = localStorage.getItem('phq_visions');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
 
   addVision: async (vision, userId) => {
     const activeUserId = userId || useAuthStore.getState().user?.id;
-    set({ visions: [vision, ...get().visions] });
+    const next = [vision, ...get().visions];
+    set({ visions: next });
+    localStorage.setItem('phq_visions', JSON.stringify(next));
     if (activeUserId) {
       await visionService.create(activeUserId, vision).catch(err => {
         console.error('Failed to create vision in db', err);
-        set({ visions: get().visions.filter(v => v.id !== vision.id) });
+        const rollback = get().visions.filter(v => v.id !== vision.id);
+        set({ visions: rollback });
+        localStorage.setItem('phq_visions', JSON.stringify(rollback));
         throw err;
       });
     }
@@ -28,14 +39,15 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
 
   updateVision: async (id, updates) => {
     const prev = get().visions;
-    set({
-      visions: prev.map(v => (v.id === id ? { ...v, ...updates } : v)),
-    });
+    const next = prev.map(v => (v.id === id ? { ...v, ...updates } : v));
+    set({ visions: next });
+    localStorage.setItem('phq_visions', JSON.stringify(next));
     const user = useAuthStore.getState().user;
     if (user) {
       await visionService.update(id, updates).catch(err => {
         console.error('Failed to update vision in db', err);
         set({ visions: prev });
+        localStorage.setItem('phq_visions', JSON.stringify(prev));
         throw err;
       });
     }
@@ -43,12 +55,15 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
 
   deleteVision: async (id) => {
     const prev = get().visions;
-    set({ visions: prev.filter(v => v.id !== id) });
+    const next = prev.filter(v => v.id !== id);
+    set({ visions: next });
+    localStorage.setItem('phq_visions', JSON.stringify(next));
     const user = useAuthStore.getState().user;
     if (user) {
       await visionService.delete(id).catch(err => {
         console.error('Failed to delete vision in db', err);
         set({ visions: prev });
+        localStorage.setItem('phq_visions', JSON.stringify(prev));
         throw err;
       });
     }

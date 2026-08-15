@@ -34,7 +34,7 @@ export const MarkdownSidebar: React.FC<MarkdownSidebarProps> = ({
         <span className="text-xs font-black uppercase tracking-widest text-text-muted">Documents</span>
         <button
           onClick={onOpenCreateModal}
-          className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
+          className="w-7 h-7 rounded-xl bg-primary text-text-on-accent flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-subtle"
           title="Create New Doc"
         >
           <IconPlus size={15} />

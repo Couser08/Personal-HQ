@@ -864,7 +864,7 @@ export default function MarkdownModule() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-[0_4px_12px_rgba(244,63,94,0.15)]"
+              className="px-4 py-2 bg-primary hover:opacity-90 text-text-on-accent rounded-xl text-xs font-bold cursor-pointer transition-all shadow-subtle"
             >
               Create
             </button>

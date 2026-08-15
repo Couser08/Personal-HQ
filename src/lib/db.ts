@@ -5,7 +5,7 @@ import type {
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal,
   StudyMaterial, Exam, ExamAttempt, DailyReflection, Vision,
-  BudgetCategory, BudgetTransaction
+  BudgetCategory, BudgetTransaction, BugReport
 } from '../store/types';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
@@ -1920,3 +1920,109 @@ export const visionService = {
     if (error) throw error;
   }
 };
+
+// ─── Bug Reports ─────────────────────────────────────────────────────────────
+
+export const bugReportService = {
+  async fetchForAdmin(): Promise<BugReport[]> {
+    const { data, error } = await supabase
+      .from('bug_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      userId: r.user_id,
+      userEmail: r.user_email,
+      title: r.title,
+      description: r.description,
+      category: r.category,
+      severity: r.severity,
+      status: r.status,
+      elementInfo: r.element_position ? {
+        tag: r.element_tag,
+        classes: (r.element_classes || '').split(' ').filter(Boolean),
+        selector: r.element_selector,
+        boundingRect: r.element_position,
+        viewport: r.viewport || {}
+      } : undefined,
+      route: r.route,
+      screenshotData: r.screenshot_data,
+      markdownContent: r.markdown_content,
+      userAgent: r.user_agent,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+  },
+
+  async fetchAll(userId?: string): Promise<BugReport[]> {
+    let query = supabase.from('bug_reports').select('*').order('created_at', { ascending: false });
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      userId: r.user_id,
+      userEmail: r.user_email,
+      title: r.title,
+      description: r.description,
+      category: r.category,
+      severity: r.severity,
+      status: r.status,
+      elementInfo: r.element_position ? {
+        tag: r.element_tag,
+        classes: (r.element_classes || '').split(' ').filter(Boolean),
+        selector: r.element_selector,
+        boundingRect: r.element_position,
+        viewport: r.viewport || {}
+      } : undefined,
+      route: r.route,
+      screenshotData: r.screenshot_data,
+      markdownContent: r.markdown_content,
+      userAgent: r.user_agent,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+  },
+
+  async create(report: BugReport): Promise<void> {
+    const { error } = await supabase.from('bug_reports').insert({
+      id: report.id,
+      user_id: report.userId || null,
+      user_email: report.userEmail || null,
+      title: report.title,
+      description: report.description,
+      category: report.category,
+      severity: report.severity,
+      status: report.status || 'Open',
+      element_selector: report.elementInfo?.selector || null,
+      element_tag: report.elementInfo?.tag || null,
+      element_classes: report.elementInfo?.classes?.join(' ') || null,
+      element_position: report.elementInfo?.boundingRect || {},
+      viewport: report.elementInfo?.viewport || {},
+      route: report.route,
+      screenshot_data: report.screenshotData || null,
+      markdown_content: report.markdownContent || null,
+      user_agent: report.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : null),
+      created_at: report.createdAt || new Date().toISOString(),
+      updated_at: report.updatedAt || new Date().toISOString()
+    });
+    if (error) throw error;
+  },
+
+  async updateStatus(id: string, status: BugReport['status']): Promise<void> {
+    const { error } = await supabase.from('bug_reports').update({
+      status,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase.from('bug_reports').delete().eq('id', id);
+    if (error) throw error;
+  }
+};
+

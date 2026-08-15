@@ -96,7 +96,7 @@ export function StudyMaterialFlashcards({ material, onBack }: Props) {
           <button 
             disabled={isGenerating}
             onClick={handleGenerate}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            className="bg-primary hover:opacity-90 text-text-on-accent px-6 py-3 rounded-2xl font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isGenerating ? <><IconLoader2 size={20} className="animate-spin" /> Generating...</> : <><IconWand size={20} /> Generate AI Flashcards</>}
           </button>
@@ -141,10 +141,10 @@ export function StudyMaterialFlashcards({ material, onBack }: Props) {
 
               {/* BACK */}
               <div 
-                className="absolute inset-0 bg-primary text-white shadow-xl shadow-primary/20 rounded-3xl p-10 flex flex-col items-center justify-center text-center overflow-y-auto custom-scrollbar"
+                className="absolute inset-0 bg-primary text-text-on-accent shadow-xl shadow-primary/20 rounded-3xl p-10 flex flex-col items-center justify-center text-center overflow-y-auto custom-scrollbar"
                 style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateX(180deg)" }}
               >
-                <span className="absolute top-6 left-6 text-xs font-bold text-white/50 uppercase tracking-widest">Answer</span>
+                <span className="absolute top-6 left-6 text-xs font-bold opacity-60 uppercase tracking-widest">Answer</span>
                 <p className="text-lg md:text-xl font-medium leading-relaxed whitespace-pre-wrap">{card.back}</p>
               </div>
             </motion.div>

@@ -90,7 +90,7 @@ export const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
               e.stopPropagation();
               handleCreateNewSketch();
             }}
-            className="w-7 h-7 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-primary/10"
+            className="w-7 h-7 rounded-xl bg-primary text-text-on-accent flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-subtle"
             title="Create New Canvas"
           >
             <IconPlus size={15} />

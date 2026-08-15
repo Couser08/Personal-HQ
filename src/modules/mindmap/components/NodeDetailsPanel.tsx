@@ -128,7 +128,7 @@ export function NodeDetailsPanel({
             <button
               type="button"
               onClick={handleAddLink}
-              className="px-3 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-alt transition-colors cursor-pointer border-none"
+              className="px-3 bg-primary text-text-on-accent text-xs font-bold rounded-xl hover:opacity-90 transition-opacity cursor-pointer border-none"
             >
               Add
             </button>

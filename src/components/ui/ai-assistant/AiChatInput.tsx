@@ -53,7 +53,7 @@ export const AiChatInput = ({
           whileTap={{ scale: 0.92 }}
           onClick={() => handleChatSubmit()}
           disabled={isGenerating || !prompt.trim()}
-          className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white cursor-pointer hover:opacity-90 disabled:opacity-40 transition-all shrink-0 shadow-sm"
+          className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-text-on-accent cursor-pointer hover:opacity-90 disabled:opacity-40 transition-all shrink-0 shadow-sm"
         >
           <IconSend size={16} />
         </motion.button>

@@ -600,6 +600,51 @@ export interface PomodoroStats {
   completedSessions?: number;
 }
 
+export type BugReportSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type BugReportStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+export type BugReportCategory = 'UI Glitch' | 'Performance' | 'Data Sync' | 'Crash / Error' | 'Other';
+
+export interface BugReportElementInfo {
+  tag: string;
+  id?: string;
+  classes: string[];
+  selector: string;
+  xpath?: string;
+  boundingRect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+  };
+  viewport: {
+    width: number;
+    height: number;
+    scrollX: number;
+    scrollY: number;
+  };
+  innerTextSnippet?: string;
+}
+
+export interface BugReport {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  title: string;
+  description: string;
+  category: BugReportCategory;
+  severity: BugReportSeverity;
+  status: BugReportStatus;
+  elementInfo?: BugReportElementInfo;
+  route: string;
+  screenshotData?: string;
+  markdownContent?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppStore {
   activeModule: string;
   setActiveModule: (module: string) => void;

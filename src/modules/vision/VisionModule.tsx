@@ -73,7 +73,7 @@ export default function VisionModule() {
                     </div>
                     <button
                       onClick={() => setIsCreateOpen(true)}
-                      className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 w-full sm:w-auto justify-center"
+                      className="bg-primary hover:opacity-90 text-text-on-accent px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 w-full sm:w-auto justify-center cursor-pointer"
                     >
                       <IconPlus size={18} /> Add Vision
                     </button>
@@ -514,7 +514,7 @@ function CreateVisionModal({ isOpen, onClose, onSave, userId }: { isOpen: boolea
     }
 
     const newVision: Vision = {
-      id: `vision_${Date.now()}`,
+      id: crypto.randomUUID(),
       title: title.trim(),
       category: finalCategory,
       targetDate: targetDate || undefined,
@@ -529,6 +529,9 @@ function CreateVisionModal({ isOpen, onClose, onSave, userId }: { isOpen: boolea
 
     try {
       await onSave(newVision);
+    } catch (err: any) {
+      console.error('Failed to create vision:', err);
+      addToast('Error', 'Failed to save vision: ' + (err.message || 'Unknown error'), 'error');
     } finally {
       setIsUploading(false);
     }
@@ -611,7 +614,7 @@ function CreateVisionModal({ isOpen, onClose, onSave, userId }: { isOpen: boolea
           <button 
             onClick={handleSave} 
             disabled={isUploading}
-            className="px-6 py-2.5 text-[14px] font-bold bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-md flex items-center gap-2"
+            className="px-6 py-2.5 text-[14px] font-bold bg-primary text-text-on-accent rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md flex items-center gap-2 cursor-pointer"
           >
             {isUploading ? <IconLoader2 size={16} className="animate-spin" /> : <IconTarget size={16} />}
             {isUploading ? 'Planting...' : 'Create Vision'}

@@ -62,7 +62,7 @@ export const AiMessageBubble = ({
       }`}>
         <div className={`relative group px-4 py-3 rounded-2xl text-xs leading-relaxed ${
           msg.sender === 'user'
-            ? 'bg-primary text-white rounded-tr-none'
+            ? 'bg-primary text-text-on-accent rounded-tr-none'
             : 'bg-surface-alt border border-border text-text-primary rounded-tl-none'
         }`}>
           {msg.sender === 'ai' ? (
@@ -154,7 +154,7 @@ export const AiMessageBubble = ({
                 )}
               </>
             )}
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setActiveModule('todo'); onClose(); }} className="w-full mt-1 py-2 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity">
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setActiveModule('todo'); onClose(); }} className="w-full mt-1 py-2 rounded-lg bg-primary text-text-on-accent text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity">
               <IconArrowRight size={13} /> View in To-Do
             </motion.button>
           </motion.div>
@@ -170,7 +170,7 @@ export const AiMessageBubble = ({
             <p className="text-[11px] leading-relaxed text-text-secondary bg-surface-alt rounded-lg p-2.5 border border-border">
               {plainPreviewFromMarkdown(msg.resultCard.data.content || '', 180)}
             </p>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={async () => { try { await addNote({ id: `note_${Date.now()}`, title: msg.resultCard.data.title, content: msg.resultCard.data.content, tags: ['ai'], pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); setActiveModule('markdown'); onClose(); } catch(e: any) { addToast('Error', e.message, 'error'); } }} className="w-full py-2 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity">
+            <motion.button whileTap={{ scale: 0.97 }} onClick={async () => { try { await addNote({ id: `note_${Date.now()}`, title: msg.resultCard.data.title, content: msg.resultCard.data.content, tags: ['ai'], pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); setActiveModule('markdown'); onClose(); } catch(e: any) { addToast('Error', e.message, 'error'); } }} className="w-full py-2 rounded-lg bg-primary text-text-on-accent text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity">
               <IconArrowRight size={13} /> Open in Markdown
             </motion.button>
           </motion.div>
@@ -231,7 +231,7 @@ export const AiMessageBubble = ({
                 </div>
               ))}
             </div>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleExecuteInChatPlan(msg.id)} disabled={isGenerating} className="w-full py-2 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50">
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleExecuteInChatPlan(msg.id)} disabled={isGenerating} className="w-full py-2 rounded-lg bg-primary text-text-on-accent text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50">
               {isGenerating ? <><IconLoader2 size={13} className="animate-spin" /> Executing ({executionProgress}%)...</> : <><IconPlayerPlay size={13} /> Execute All Steps</>}
             </motion.button>
           </motion.div>

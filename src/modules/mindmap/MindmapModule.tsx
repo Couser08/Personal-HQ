@@ -554,7 +554,7 @@ export default function MindmapModule() {
                   <IconDownload className="w-3.5 h-3.5 rotate-180" /> Import
                 </button>
                 <button
-                  className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0 border-none"
+                  className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-text-on-accent font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0 border-none"
                   onClick={() => alert('Sharing features are synced locally. Export JSON/SVG to backup.')}
                 >
                   <IconShare className="w-3.5 h-3.5" /> Share

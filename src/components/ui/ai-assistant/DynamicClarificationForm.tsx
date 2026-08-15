@@ -168,7 +168,7 @@ export const DynamicClarificationForm = ({
                     >
                       <span
                         className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                          selected ? 'border-primary bg-primary text-white' : 'border-border bg-surface'
+                          selected ? 'border-primary bg-primary text-text-on-accent' : 'border-border bg-surface'
                         }`}
                       >
                         {selected && <IconCheck size={11} stroke={2.5} />}

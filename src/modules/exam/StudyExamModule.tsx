@@ -142,7 +142,7 @@ function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSele
         </div>
         <button
           onClick={onAdd}
-          className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+          className="bg-primary hover:opacity-90 text-text-on-accent px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
         >
           <IconPlus size={18} /> Ingest Content
         </button>
@@ -156,7 +156,7 @@ function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSele
             <p className="text-sm text-text-tertiary max-w-sm mx-auto mb-4">
               Upload or paste your notes, textbook chapters, or PDFs to generate exams.
             </p>
-            <button onClick={onAdd} className="bg-surface border border-primary/20 text-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary hover:text-white transition-colors">
+            <button onClick={onAdd} className="bg-surface border border-primary/20 text-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary hover:text-text-on-accent transition-colors cursor-pointer">
               Add Material
             </button>
           </div>
@@ -264,7 +264,7 @@ function IngestMaterial({ apiKey, onBack, onSuccess }: any) {
           <button
             disabled={isParsing}
             onClick={handleIngest}
-            className="w-full bg-primary hover:bg-primary-hover text-white py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 disabled:opacity-70"
+            className="w-full bg-primary hover:opacity-90 text-text-on-accent py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 disabled:opacity-70 cursor-pointer"
           >
             {isParsing ? <IconLoader2 size={18} className="animate-spin" /> : <IconBrain size={18} />}
             {isParsing ? 'Structuring Losslessly...' : 'Ingest & Structure'}
@@ -323,7 +323,7 @@ function ExamGenerator({ apiKey, material, onBack, onStart }: any) {
         <button
           disabled={isGenerating}
           onClick={handleGenerate}
-          className="mt-4 w-full bg-primary hover:bg-primary-hover text-white py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 disabled:opacity-70"
+          className="mt-4 w-full bg-primary hover:opacity-90 text-text-on-accent py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 disabled:opacity-70 cursor-pointer"
         >
           {isGenerating ? <IconLoader2 size={18} className="animate-spin" /> : <IconPlayerPlay size={18} />}
           {isGenerating ? 'Generating Zero-Hallucination Exam...' : 'Generate Exam Paper'}
@@ -420,7 +420,7 @@ function ActiveExam({ apiKey, exam, onBack, onComplete }: any) {
         <button
           disabled={isGrading}
           onClick={handleSubmit}
-          className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2"
+          className="bg-primary hover:opacity-90 text-text-on-accent px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 cursor-pointer"
         >
           {isGrading ? <IconLoader2 size={18} className="animate-spin" /> : <IconCheck size={18} />}
           {isGrading ? 'AI is Grading...' : 'Submit Paper'}

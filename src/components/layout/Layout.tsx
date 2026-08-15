@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Sidebar, MobileBottomNav } from './Sidebar';
-import { ToastContainer } from '../ui/Toast';
 import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
 import { BugFixBanner } from '../ui/BugFixBanner';
@@ -87,8 +86,7 @@ export const Layout = ({ children }: LayoutProps) => {
         initialAction={aiInitialAction}
       />
 
-      {/* Toast notifications */}
-      <ToastContainer />
+      {/* Modals and overlays */}
       <AppTour />
       <UpdatePopup />
       <BugFixBanner />

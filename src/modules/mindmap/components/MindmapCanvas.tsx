@@ -1411,7 +1411,7 @@ export function MindmapCanvas({
           <button
             onClick={handleAddChildNode}
             disabled={!selectedNodeId}
-            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-2 sm:px-3 py-1.5 bg-primary text-white hover:bg-primary/95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none border-none shrink-0"
+            className="flex items-center gap-1 font-bold text-[10px] rounded-lg px-2 sm:px-3 py-1.5 bg-primary text-text-on-accent hover:opacity-90 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none border-none shrink-0"
           >
             <IconPlus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sub-topic</span>
           </button>

@@ -18,9 +18,30 @@ export interface StudyExamSlice {
 }
 
 export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice> = (set, get) => ({
-  studyMaterials: [],
-  exams: [],
-  examAttempts: [],
+  studyMaterials: (() => {
+    try {
+      const raw = localStorage.getItem('phq_study_materials');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  exams: (() => {
+    try {
+      const raw = localStorage.getItem('phq_exams');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  examAttempts: (() => {
+    try {
+      const raw = localStorage.getItem('phq_exam_attempts');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
 
   addStudyMaterial: async (mat) => {
     const uid = useAuthStore.getState().user?.id;

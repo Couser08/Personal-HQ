@@ -191,7 +191,7 @@ export function JournalSettingsSidebar({
               onClick={() => setPageStyle(option.value)}
               className={`rounded-xl border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all ${
                 pageStyle === option.value
-                  ? 'border-primary bg-primary text-white'
+                  ? 'border-primary bg-primary text-text-on-accent'
                   : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'
               }`}
             >
@@ -349,7 +349,7 @@ export function JournalSettingsSidebar({
                 <span className="text-[9px] font-semibold text-text-muted">{day}</span>
                 <span
                   className={`flex h-6.5 w-6.5 items-center justify-center rounded-full border text-[10px] font-bold ${
-                    index <= streakDays % 7 ? 'border-primary bg-primary text-white' : 'border-border bg-surface text-text-muted'
+                    index <= streakDays % 7 ? 'border-primary bg-primary text-text-on-accent' : 'border-border bg-surface text-text-muted'
                   }`}
                 >
                   {index < streakDays % 7 ? <IconCheck size={10} /> : ''}

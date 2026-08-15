@@ -6,11 +6,13 @@ import { useToastStore } from '../../store/useToastStore';
 import {
   IconPalette, IconBell, IconHourglass,
   IconCheck, IconX, IconCompass, IconSparkles,
-  IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink
+  IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink,
+  IconBug, IconFileText, IconDownload
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { Card } from '../../components/ui/Card';
 import { testGeminiApiKey } from '../../lib/gemini';
+import { useBugReportStore } from '../../store/useBugReportStore';
 
 const COUNTDOWN_TEMPLATES = [
   { value: 'default',  label: 'Default Cards' },
@@ -760,6 +762,55 @@ export default function SettingsModule() {
             <IconChevronRight className="w-5 h-5 text-zinc-400" />
           </button>
 
+        </Card>
+      </section>
+
+      {/* ── Bug Reporting & Diagnostics Section ── */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">Bug Reporting & Diagnostics</h2>
+        <Card padding="lg" className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/15 shrink-0 mt-0.5">
+                <IconBug className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-text-primary">Interactive Bug Reporter</p>
+                <p className="text-[13px] text-text-secondary mt-0.5">
+                  Point at any element on screen to automatically capture its ID, styles, position & visual snapshot.
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[11px] font-mono text-text-muted bg-surface-alt px-2 py-0.5 rounded-md border border-border">
+                    Shortcut: <kbd className="font-bold">Ctrl+Shift+B</kbd>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => useBugReportStore.getState().startInspection()}
+              className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-[13px] shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <IconBug size={16} /> Inspect & Report Bug
+            </button>
+          </div>
+
+          <div className="h-px w-full bg-border-hairline my-1" />
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface-alt/50 p-3.5 rounded-xl border border-border/60">
+            <div className="flex items-center gap-2.5">
+              <IconFileText className="w-4 h-4 text-text-secondary" />
+              <span className="text-[13px] font-medium text-text-secondary">
+                Bug reports are maintained in local markdown ledger and synchronized with the database.
+              </span>
+            </div>
+            <button
+              onClick={() => useBugReportStore.getState().downloadMarkdownFile()}
+              className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary-hover px-3 py-1.5 rounded-lg bg-surface border border-border hover:border-primary transition-colors cursor-pointer shrink-0"
+            >
+              <IconDownload size={14} /> Download reports.md
+            </button>
+          </div>
         </Card>
       </section>
     </motion.div>

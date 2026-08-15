@@ -265,13 +265,13 @@ export default function CalculatorModule() {
           <div className="flex bg-surface-alt p-1 rounded-lg">
             <button
               onClick={() => { setType('SI'); setResult(null); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'SI' ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'SI' ? 'bg-primary text-text-on-accent shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
             >
               Simple Interest
             </button>
             <button
               onClick={() => { setType('CI'); setResult(null); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'CI' ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'CI' ? 'bg-primary text-text-on-accent shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
             >
               Compound Interest
             </button>
@@ -347,7 +347,7 @@ export default function CalculatorModule() {
 
           <button
             onClick={calculate}
-            className="w-full bg-primary hover:bg-primary-muted text-white font-medium py-3 rounded-lg mt-2 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-primary hover:bg-primary-muted text-text-on-accent font-medium py-3 rounded-lg mt-2 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <IconCalculator className="w-5 h-5" /> Calculate
           </button>

@@ -38,6 +38,9 @@ import {
   IconLayoutGrid,
   IconUser,
   IconEye,
+  IconBug,
+  IconShieldLock,
+  IconPalette,
 } from '@tabler/icons-react';
 import { Card } from '../../components/ui/Card';
 import { StatCard } from '../../components/ui/StatCard';
@@ -64,6 +67,33 @@ interface Release {
 }
 
 const RELEASES: Release[] = [
+  {
+    version: 'v4.6.0',
+    codename: 'Quality & Control',
+    date: 'August 15, 2026',
+    headline: 'Interactive Bug Reporter and massive Admin Module expansion.',
+    sub: 'Introducing a built-in diagnostics tool to capture bugs instantly, alongside a heavily expanded Admin module to manage reports, users, and app telemetry.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconBug,
+        title: 'Interactive Bug Reporter',
+        desc: 'New built-in diagnostics tool (Ctrl+Shift+B). Point at any element to instantly capture its ID, styles, position, and visual snapshot. Reports sync directly to the database.',
+        badge: 'New',
+      },
+      {
+        Icon: IconShieldLock,
+        title: 'Admin Module — Massive Expansion',
+        desc: 'Admin dashboard heavily expanded (+808 lines) to review incoming bug reports, monitor system telemetry, and manage users. Added detailed bug review views.',
+        badge: 'Expanded',
+      },
+      {
+        Icon: IconPalette,
+        title: 'Theme Contrast Improvements',
+        desc: 'Added new CSS variables across all themes to ensure perfect text contrast on primary accent coloured buttons and backgrounds.',
+      },
+    ],
+  },
   {
     version: 'v4.5.0',
     codename: 'Minimal Premium',

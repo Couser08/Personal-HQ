@@ -511,7 +511,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveView(v => v === 'history' ? 'chat' : 'history')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${activeView === 'history' ? 'bg-primary text-white border-primary' : 'bg-surface-alt text-text-secondary border-border hover:border-primary/40'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${activeView === 'history' ? 'bg-primary text-text-on-accent border-primary' : 'bg-surface-alt text-text-secondary border-border hover:border-primary/40'}`}
               >
                 <IconHistory size={14} />
                 <span className="hidden sm:inline">History</span>
@@ -519,7 +519,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
 
               <button
                 onClick={() => setShowKeyInput(v => !v)}
-                className={`p-2 rounded-lg border text-xs transition-all cursor-pointer ${showKeyInput ? 'bg-primary text-white border-primary' : 'bg-surface-alt text-text-muted border-border hover:border-primary/40'}`}
+                className={`p-2 rounded-lg border text-xs transition-all cursor-pointer ${showKeyInput ? 'bg-primary text-text-on-accent border-primary' : 'bg-surface-alt text-text-muted border-border hover:border-primary/40'}`}
                 title="API Key"
               >
                 <IconKey size={14} />
@@ -527,7 +527,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
 
               <button
                 onClick={() => { setMessages([]); setMultiStepPlan(null); setPendingIntent(null); setOriginalPrompt(null); }}
-                className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold border border-primary cursor-pointer hover:opacity-90 transition-opacity hidden sm:flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-primary text-text-on-accent text-xs font-bold border border-primary cursor-pointer hover:opacity-90 transition-opacity hidden sm:flex items-center gap-1"
               >
                 <IconPlus size={14} /> New Chat
               </button>

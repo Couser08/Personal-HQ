@@ -73,7 +73,6 @@ export interface CoreSlice {
 
   activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
   setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
-  addDailyReflection: (ref: any) => Promise<void>;
   addTilLog: (log: any) => void;
   deleteTilLog: (id: string) => void;
 
@@ -337,20 +336,6 @@ export const createCoreSlice: StateCreator<
       localStorage.removeItem('phq_active_focus_item');
     }
     set({ activeFocusItem: item });
-  },
-
-  addDailyReflection: async (ref) => {
-    const previous = (get() as any).dailyReflections || [];
-    const next = [ref, ...previous.filter((r: any) => r.date !== ref.date)];
-    set({ dailyReflections: next });
-    try {
-      const uid = useAuthStore.getState().user?.id;
-      if (uid) {
-        await reflectionService.create(uid, ref);
-      }
-    } catch (e) {
-      console.error('Failed to sync daily reflection:', e);
-    }
   },
 
   addTilLog: (log) => set((s: any) => ({ tilLogs: [log, ...(s.tilLogs || [])] })),

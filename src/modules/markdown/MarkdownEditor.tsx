@@ -146,7 +146,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           
           <button
             onClick={handleDownload}
-            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-subtle border-none"
+            className="px-3.5 py-2 bg-primary hover:opacity-90 text-text-on-accent rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-subtle border-none"
             title="Download .md file"
           >
             <IconDownload size={14} />
