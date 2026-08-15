@@ -65,6 +65,38 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.5.0',
+    codename: 'Minimal Premium',
+    date: 'August 15, 2026',
+    headline: 'Deep UI polish across Dashboards, Habits, and Pomodoro.',
+    sub: 'Hundreds of micro-interactions refined. The Habit Tracker, Pomodoro module, and Dashboard received extensive styling updates to match the new flat, premium aesthetic.',
+    type: 'minor',
+    features: [
+      {
+        Icon: IconLayoutGrid,
+        title: 'Dashboard & Habits — Deep Redesign',
+        desc: 'Dashboard widgets, HabitCard, HabitModal, and HabitTrackerModule fully updated. Replaced all remaining glassmorphism with crisp borders and solid contrasting colours.',
+        badge: 'Redesigned',
+      },
+      {
+        Icon: IconClockPlay,
+        title: 'Pomodoro Module — Streamlined',
+        desc: 'Massive code reduction and visual refresh in the Pomodoro module to ensure it aligns with the clean, flat UI language.',
+      },
+      {
+        Icon: IconSparkles,
+        title: 'New Shared Components',
+        desc: 'Introduced standard ListRow and StatCard components. These will unify list items and statistics widgets across the entire application.',
+        badge: 'New',
+      },
+      {
+        Icon: IconBrain,
+        title: 'AI Types & Styling Fixed',
+        desc: 'AiSuggestion interface fixed to properly pass target data for prioritisation workflows. AI chat history and structure reply styling tweaked.',
+      },
+    ],
+  },
+  {
     version: 'v4.4.0',
     codename: 'Vision & Speed',
     date: 'August 14, 2026',
