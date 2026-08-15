@@ -350,6 +350,7 @@ export interface AiSuggestion {
   actionLabel?: string;
   contextTag?: string;
   action?: any;
+  targetData?: any;
 }
 
 export interface AiHistoryItem {
