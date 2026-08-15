@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Sidebar, MobileBottomNav } from './Sidebar';
+import { Sidebar } from './Sidebar';
+import { MobileHeader } from './MobileHeader';
+import { MobileSlideDrawer } from './MobileSlideDrawer';
 import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
 import { BugFixBanner } from '../ui/BugFixBanner';
@@ -24,6 +26,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [isFocusMode, setIsFocusMode] = useState(() => localStorage.getItem('phq_focus_mode') === 'true');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiInitialAction, setAiInitialAction] = useState<string | undefined>(undefined);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const geminiApiKey = useAppStore(state => state.settings?.geminiApiKey);
 
   useEffect(() => {
@@ -34,14 +37,34 @@ export const Layout = ({ children }: LayoutProps) => {
     return () => window.removeEventListener('phq-focus-mode-change', checkFocusMode);
   }, []);
 
+  const handleOpenAi = (actionType?: string) => {
+    setAiInitialAction(actionType);
+    setIsAiModalOpen(true);
+  };
+
   return (
     <div className={`flex min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
-      {/* Desktop/Tablet sidebar */}
+      {/* Dedicated Mobile Header (visible only on small screens) */}
+      {!isFocusMode && (
+        <MobileHeader
+          onOpenDrawer={() => setIsMobileDrawerOpen(true)}
+          onOpenAi={handleOpenAi}
+        />
+      )}
+
+      {/* Desktop/Tablet Sidebar */}
       {!isFocusMode && <Sidebar />}
 
-      {/* Main content */}
+      {/* Mobile Slide-Out Navigation Drawer */}
+      <MobileSlideDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        onOpenAi={handleOpenAi}
+      />
+
+      {/* Main Content Area with safe spacing for mobile top and bottom bars */}
       <main className="flex-1 w-full min-w-0 relative">
-        {/* Toggle focus mode banner if active so user can exit */}
+        {/* Focus Mode Exit Pill */}
         {isFocusMode && (
           <div className="fixed bottom-4 right-4 z-9997">
             <button
@@ -56,26 +79,25 @@ export const Layout = ({ children }: LayoutProps) => {
             </button>
           </div>
         )}
-        <div className={`main-content-area p-6 lg:p-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''}`}>
+
+        <div
+          className={`main-content-area p-3 sm:p-6 lg:p-8 pt-14 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
+            isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''
+          }`}
+        >
           {children}
         </div>
       </main>
 
-      {/* Mobile bottom navigation */}
-      {!isFocusMode && <MobileBottomNav />}
-
-      {/* Dynamic notifications & overlay widgets */}
+      {/* Dynamic Notifications & Overlays */}
       <DynamicIsland />
       <TaskFocusIsland />
       <CommandPalette />
 
-      {/* Mini AI Floating Trigger & Assistant Modal */}
+      {/* Desktop AI Floating Trigger & Assistant Modal */}
       <AiFloatingButton
         hasApiKey={!!geminiApiKey}
-        onClick={(actionType) => {
-          setAiInitialAction(actionType);
-          setIsAiModalOpen(true);
-        }}
+        onClick={handleOpenAi}
       />
       <AiAssistantModal
         isOpen={isAiModalOpen}
@@ -86,7 +108,7 @@ export const Layout = ({ children }: LayoutProps) => {
         initialAction={aiInitialAction}
       />
 
-      {/* Modals and overlays */}
+      {/* Auxiliary Modals */}
       <AppTour />
       <UpdatePopup />
       <BugFixBanner />

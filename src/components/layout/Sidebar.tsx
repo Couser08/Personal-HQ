@@ -2,10 +2,10 @@ import {
   IconBook2, IconLayout, IconNotebook,
   IconDeviceGamepad2, IconCode, IconSettings, IconDownload, IconUpload,
   IconLogout, IconSun, IconMoon, IconUser, IconClockPlay,
-  IconChecklist, IconSitemap, IconDots,
+  IconChecklist, IconSitemap,
   IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb,
-  IconTag, IconChartBar, IconLink, IconPlus, IconX, IconCalendar,
+  IconTag, IconChartBar, IconLink, IconPlus, IconCalendar,
   IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket, IconTarget
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
@@ -593,112 +593,5 @@ export const Sidebar = () => {
         <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="application/json" onChange={handleFileChange} />
       </div>
     </aside>
-  );
-};
-
-// ── Mobile Floating Pill Bottom Nav ──────────────────────────────────────────
-export const MobileBottomNav = () => {
-  const { activeModule, setActiveModule } = useAppStore(useShallow(state => ({
-    activeModule: state.activeModule,
-    setActiveModule: state.setActiveModule,
-  })));
-  const { user } = useAuthStore();
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
-
-  const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
-
-  const PINNED = [
-    { id: 'dashboard', label: 'Home',    icon: IconLayout },
-    { id: 'journal',   label: 'Journal', icon: IconBook2 },
-    { id: 'todo',      label: 'Planner', icon: IconChecklist },
-    { id: 'habits',    label: 'Habits',  icon: IconFlame },
-  ];
-
-  return (
-    <>
-      {isMoreOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setIsMoreOpen(false)}
-        />
-      )}
-
-      {/* Floating Bottom Sheet for All Modules */}
-      <AnimatePresence>
-        {isMoreOpen && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-24 left-4 right-4 z-50 bg-surface shadow-float rounded-[24px] p-6 max-h-[65vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-hairline">
-              <p className="text-[14px] font-semibold text-text-primary">All Workspaces</p>
-              <button onClick={() => setIsMoreOpen(false)} className="w-7 h-7 rounded-full bg-surface-alt text-text-secondary hover:text-text-primary flex items-center justify-center cursor-pointer">
-                <IconX size={14} />
-              </button>
-            </div>
-            {NAV_GROUPS.map(group => (
-              <div key={group.id} className="mb-5 last:mb-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-text-tertiary mb-3 flex items-center gap-2">
-                  <span>{group.emoji}</span> {group.label}
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {group.items.filter(i => i.id !== 'admin' || isAdmin).map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      onClick={() => { setActiveModule(id); setIsMoreOpen(false); }}
-                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-none cursor-pointer transition-colors ${
-                        activeModule === id ? 'bg-surface-alt text-text-primary' : 'bg-transparent text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-surface-alt flex items-center justify-center">
-                        <Icon size={18} />
-                      </div>
-                      <span className="text-[10px] font-medium text-center truncate max-w-full">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Pill Nav Bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden">
-        <nav className="bg-surface shadow-float rounded-full p-1.5 flex items-center gap-1 border border-border-hairline/40">
-          {PINNED.map(({ id, label, icon: Icon }) => {
-            const active = activeModule === id;
-            return (
-              <motion.button
-                key={id}
-                onClick={() => { setActiveModule(id); setIsMoreOpen(false); }}
-                whileTap={{ scale: 0.92 }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full cursor-pointer transition-all ${
-                  active ? 'bg-primary text-surface font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <Icon size={17} />
-                {active && <span className="text-[12px] whitespace-nowrap">{label}</span>}
-              </motion.button>
-            );
-          })}
-          <div className="w-px h-5 bg-border-hairline mx-0.5" />
-          <motion.button
-            onClick={() => setIsMoreOpen(!isMoreOpen)}
-            whileTap={{ scale: 0.92 }}
-            aria-haspopup="true"
-            aria-expanded={isMoreOpen}
-            className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-              isMoreOpen ? 'bg-surface-alt text-text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            <IconDots size={18} />
-          </motion.button>
-        </nav>
-      </div>
-    </>
   );
 };

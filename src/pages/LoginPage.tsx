@@ -1,162 +1,281 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconShieldCheck, IconDevices, IconBolt } from '@tabler/icons-react';
+import {
+  IconShieldCheck,
+  IconBolt,
+  IconSparkles,
+  IconDeviceLaptop,
+} from '@tabler/icons-react';
 import { AppLogo } from '../components/ui/AppLogo';
 import { LoginForm } from './login/components/LoginForm';
 import { RegisterForm } from './login/components/RegisterForm';
+import { ForgotPasswordForm } from './login/components/ForgotPasswordForm';
+import { AuthLoadingOverlay } from './login/components/AuthLoadingOverlay';
 
-const pageIn = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.35 } },
-};
+interface LoginPageProps {
+  onLoginSuccess?: () => void;
+}
 
-// Apple-style snappy spring physics
-const appleSpring = { type: 'spring' as const, stiffness: 350, damping: 32, mass: 0.8 };
-const softSpring = { type: 'spring' as const, stiffness: 200, damping: 28 };
-
-const cardIn = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { ...appleSpring, delay: 0.1 } },
-};
-
-const features = [
-  { Icon: IconShieldCheck, text: 'Private & Secure' },
-  { Icon: IconDevices,     text: 'Cross-Device Sync' },
-  { Icon: IconBolt,        text: 'Fast & Lightweight' },
+const valueProps = [
+  {
+    Icon: IconShieldCheck,
+    title: 'Private & Secure',
+    desc: 'Local-first cache + cloud encrypted sync',
+  },
+  {
+    Icon: IconDeviceLaptop,
+    title: 'Cross-Device Hub',
+    desc: 'Instant real-time sync across your devices',
+  },
+  {
+    Icon: IconBolt,
+    title: 'Lightning Fast',
+    desc: 'Keyboard-first workflow & optimistic updates',
+  },
 ];
 
-export const LoginPage = ({ onLoginSuccess: _onLoginSuccess }: { onLoginSuccess: () => void }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const handleAuthSuccess = () => {
+    setIsAuthenticating(true);
+    setTimeout(() => {
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+    }, 1200);
+  };
 
   return (
-    <motion.div 
-      variants={pageIn} 
-      initial="hidden" 
-      animate="visible"
-      className="min-h-dvh flex items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-gradient-to-br from-slate-50 via-gray-100 to-slate-200"
-    >
-      {/* Ambient glow blobs - Apple style subtle blurs */}
-      <motion.div 
-        animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute w-[500px] h-[500px] rounded-full -top-[150px] -left-[150px] bg-primary/10 blur-[80px] pointer-events-none" 
+    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 bg-background text-text-primary relative overflow-hidden selection:bg-primary/20">
+      {/* Ambient background glows */}
+      <motion.div
+        animate={{
+          scale: [1, 1.08, 1],
+          opacity: [0.35, 0.55, 0.35],
+        }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute w-[500px] h-[500px] rounded-full -top-32 -left-32 bg-primary/10 blur-[120px] pointer-events-none"
       />
-      <motion.div 
-        animate={{ scale: [1, 1.05, 1], opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute w-[400px] h-[400px] rounded-full -bottom-[100px] -right-[100px] bg-primary-muted/5 blur-[80px] pointer-events-none" 
+      <motion.div
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.25, 0.45, 0.25],
+        }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        className="absolute w-[450px] h-[450px] rounded-full -bottom-32 -right-32 bg-accent-identity/10 blur-[120px] pointer-events-none"
       />
 
-      {/* ── Outer card wrapper ── */}
-      <motion.div 
-        variants={cardIn}
-        className="w-full max-w-[980px] min-h-[600px] flex flex-col md:flex-row bg-white/70 backdrop-blur-sm rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden"
+      {/* Main Split Authentication Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+        className="w-full max-w-[1020px] min-h-[620px] flex flex-col md:flex-row bg-surface rounded-[var(--radius-card)] border border-border shadow-[var(--shadow-float)] overflow-hidden relative z-10"
       >
-        {/* ── LEFT COLUMN: Branding + Illustration ── */}
-        <div className="hidden md:flex flex-col justify-between w-[38%] shrink-0 p-8 relative overflow-hidden bg-gradient-to-br from-slate-50/50 to-slate-100/50 border-r border-slate-200/50">
-          
-          {/* Decorative circle */}
-          <div className="absolute w-[300px] h-[300px] rounded-full -top-[80px] -right-[80px] bg-primary/5 blur-[40px] pointer-events-none" />
+        {/* ── LEFT SHOWCASE PANEL (Desktop only) ── */}
+        <div className="hidden md:flex flex-col justify-between w-[44%] shrink-0 p-8 lg:p-10 bg-surface-alt/70 border-r border-border relative overflow-hidden">
+          {/* Subtle inner decorative glow */}
+          <div className="absolute w-[280px] h-[280px] rounded-full -top-12 -right-12 bg-primary/5 blur-[60px] pointer-events-none" />
 
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 relative z-10">
-            <AppLogo className="w-9 h-9 shrink-0" />
-            <span className="font-extrabold text-[16px] text-slate-900 tracking-tight">Personal HQ</span>
+          {/* Top Brand Logo */}
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-10 h-10 rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center">
+              <AppLogo className="w-full h-full" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-[17px] tracking-tight text-text-primary leading-none">
+                Personal HQ
+              </span>
+              <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mt-1">
+                Workspace
+              </span>
+            </div>
           </div>
 
-          {/* Illustration */}
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-            className="flex items-center justify-center flex-1 py-5 relative z-10"
-          >
-            <img 
-              src="/login-hero.png" 
-              alt="Personal HQ dashboard illustration"
-              className="w-full max-w-[260px] h-auto object-contain drop-shadow-xl"
-              onError={(e) => { e.currentTarget.style.display='none'; }}
-            />
-          </motion.div>
+          {/* Center Brand Pitch & Value Props */}
+          <div className="flex flex-col gap-6 my-auto py-6 relative z-10">
+            <div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 mb-3">
+                <IconSparkles size={13} />
+                <span>Unified Productivity OS</span>
+              </span>
+              <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-text-primary leading-tight">
+                Organize your mind, elevate your daily flow.
+              </h2>
+              <p className="text-[13px] text-text-secondary leading-relaxed mt-2.5 font-medium">
+                One unified space for your markdown notes, daily journals, habit loops, focus timers, link vault, and exams.
+              </p>
+            </div>
 
-          {/* Quote card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-lg p-4 relative z-10 shadow-sm border border-slate-100">
-            <div className="flex gap-0.5 mb-2">
-              {[0,1,2,3,4].map((i) => (
-                <svg key={i} className="w-3 h-3 text-primary fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
+            {/* Value propositions */}
+            <div className="flex flex-col gap-3 pt-1">
+              {valueProps.map(({ Icon, title, desc }) => (
+                <div
+                  key={title}
+                  className="flex items-start gap-3 p-2.5 rounded-[var(--radius-input)] bg-surface/80 border border-border-hairline shadow-subtle"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-surface-alt flex items-center justify-center shrink-0 mt-0.5 text-text-primary">
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] font-bold text-text-primary">
+                      {title}
+                    </span>
+                    <span className="text-[11px] text-text-secondary leading-snug">
+                      {desc}
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="text-[13px] text-slate-600 leading-relaxed italic m-0">
-              "Organize your life, stay productive, and achieve more every day."
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                <span className="text-[11px] text-white font-bold">P</span>
-              </div>
-              <span className="text-[12px] font-semibold text-slate-400">Personal HQ</span>
-            </div>
           </div>
 
-          {/* Feature list */}
-          <div className="flex flex-col gap-2 mt-5 relative z-10">
-            {features.map(({ Icon, text }) => (
-              <div key={text} className="flex items-center gap-2">
-                <div className="w-[26px] h-[26px] rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon size={14} className="text-primary" />
-                </div>
-                <span className="text-[12px] text-slate-500 font-medium">{text}</span>
-              </div>
-            ))}
+          {/* Bottom Quote Badge */}
+          <div className="relative z-10 pt-2 border-t border-border-hairline">
+            <p className="text-[12px] text-text-tertiary italic leading-relaxed">
+              "Focus is a muscle. Build the environment where deep work is effortless."
+            </p>
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN: Forms ── */}
-        <div className="flex-1 flex flex-col relative min-h-[600px] bg-white/40">
-          <div className="flex-1 flex flex-col justify-center p-8 sm:p-10 relative">
+        {/* ── RIGHT FORM CONTAINER ── */}
+        <div className="flex-1 flex flex-col justify-center p-6 sm:p-10 lg:p-12 relative bg-surface">
+          {/* Mobile Top Brand Header */}
+          <div className="flex md:hidden items-center gap-2.5 mb-6 pb-4 border-b border-border">
+            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
+              <AppLogo className="w-full h-full" />
+            </div>
+            <span className="font-black text-lg tracking-tight text-text-primary">
+              Personal HQ
+            </span>
+          </div>
+
+          <div className="w-full max-w-[400px] mx-auto flex flex-col">
+            {/* Segmented Tab Switcher (Visible in login & register modes) */}
+            {authMode !== 'forgot' && (
+              <div className="grid grid-cols-2 p-1 mb-6 rounded-full bg-surface-alt border border-border-alt relative">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('login')}
+                  className={`relative py-1.5 px-4 text-[13px] font-bold rounded-full transition-colors z-10 cursor-pointer ${
+                    authMode === 'login'
+                      ? 'text-text-on-accent'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {authMode === 'login' && (
+                    <motion.div
+                      layoutId="activeAuthTab"
+                      className="absolute inset-0 bg-primary rounded-full shadow-sm"
+                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('register')}
+                  className={`relative py-1.5 px-4 text-[13px] font-bold rounded-full transition-colors z-10 cursor-pointer ${
+                    authMode === 'register'
+                      ? 'text-text-on-accent'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {authMode === 'register' && (
+                    <motion.div
+                      layoutId="activeAuthTab"
+                      className="absolute inset-0 bg-primary rounded-full shadow-sm"
+                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">Create Account</span>
+                </button>
+              </div>
+            )}
+
+            {/* Dynamic Form Header */}
+            {authMode !== 'forgot' && (
+              <div className="mb-6">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary">
+                  {authMode === 'login' ? 'Welcome back' : 'Create workspace'}
+                </h1>
+                <p className="text-[13px] text-text-secondary mt-1 font-medium">
+                  {authMode === 'login'
+                    ? 'Enter your credentials to access your Personal HQ.'
+                    : 'Set up your free, private productivity hub in seconds.'}
+                </p>
+              </div>
+            )}
+
+            {/* Form Views with Smooth Spring Transitions */}
             <AnimatePresence mode="wait">
-              {mode === 'login' ? (
-                <motion.div 
-                  key="login"
-                  initial={{ opacity: 0, x: -15 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  exit={{ opacity: 0, x: 15 }}
-                  transition={softSpring}
-                  className="w-full max-w-[400px] mx-auto"
+              {authMode === 'login' && (
+                <motion.div
+                  key="login-view"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 12 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                 >
-                  <h1 className="text-3xl font-extrabold text-slate-900 mb-1 tracking-tight">
-                    Welcome back 👋
-                  </h1>
-                  <p className="text-[15px] text-slate-500 mb-8">
-                    Log in to access your Personal HQ dashboard
-                  </p>
-                  <LoginForm onSwitchToRegister={() => setMode('register')} />
+                  <LoginForm
+                    onSwitchToRegister={() => setAuthMode('register')}
+                    onForgotPassword={() => setAuthMode('forgot')}
+                    onAuthSuccess={handleAuthSuccess}
+                  />
                 </motion.div>
-              ) : (
-                <motion.div 
-                  key="register"
-                  initial={{ opacity: 0, x: 15 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  exit={{ opacity: 0, x: -15 }}
-                  transition={softSpring}
-                  className="w-full max-w-[400px] mx-auto"
+              )}
+
+              {authMode === 'register' && (
+                <motion.div
+                  key="register-view"
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                 >
-                  <h2 className="text-3xl font-extrabold text-slate-900 mb-1 tracking-tight">
-                    Create{' '}
-                    <span className="bg-gradient-to-r from-primary to-primary-muted bg-clip-text text-transparent">
-                      your account
-                    </span>
-                  </h2>
-                  <p className="text-[15px] text-slate-500 mb-8">
-                    Sign up to get started with Personal HQ
-                  </p>
-                  <RegisterForm onSwitchToLogin={() => setMode('login')} />
+                  <RegisterForm
+                    onSwitchToLogin={() => setAuthMode('login')}
+                    onAuthSuccess={handleAuthSuccess}
+                  />
+                </motion.div>
+              )}
+
+              {authMode === 'forgot' && (
+                <motion.div
+                  key="forgot-view"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                >
+                  <ForgotPasswordForm
+                    onBackToLogin={() => setAuthMode('login')}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
       </motion.div>
-    </motion.div>
+
+      {/* Post-Auth Loading Overlay with App Logo */}
+      <AnimatePresence>
+        {isAuthenticating && (
+          <AuthLoadingOverlay
+            customMessage={
+              authMode === 'register'
+                ? 'Setting up your workspace…'
+                : 'Signing in to Personal HQ…'
+            }
+            subMessage="Preparing your notes, tasks and habits…"
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
+
+export default LoginPage;

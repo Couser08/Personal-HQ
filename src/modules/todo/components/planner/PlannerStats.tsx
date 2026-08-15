@@ -20,7 +20,7 @@ export function PlannerStats({ tasks }: PlannerStatsProps) {
   const productivityTarget = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
       {/* Plans Today */}
       <div className="bg-surface rounded-xl p-3 border border-border/50 shadow-subtle flex items-center gap-3">
         <div className="w-10 h-10 rounded-[12px] bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">

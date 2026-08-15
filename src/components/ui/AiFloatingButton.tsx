@@ -21,7 +21,7 @@ export const AiFloatingButton = ({ onClick, hasApiKey }: AiFloatingButtonProps) 
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 select-none">
+    <div className="hidden md:flex fixed bottom-6 right-6 z-40 flex-col items-end gap-3 select-none">
       {/* Speed-Dial Quick Menu */}
       <AnimatePresence>
         {isExpanded && (

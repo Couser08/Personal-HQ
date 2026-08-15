@@ -251,8 +251,8 @@ export default function DashboardModule() {
     >
       {/* ── 1. Hero Greeting Banner (Minimal-Premium Floating Card) ── */}
       <motion.div variants={itemVariants}>
-        <Card padding="lg" className="relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="flex flex-col gap-2 max-w-xl z-10">
+        <Card padding="lg" className="relative flex flex-col items-start justify-between gap-6 overflow-hidden md:flex-row md:items-center">
+          <div className="z-10 flex flex-col max-w-2xl gap-2">
             <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">
               {greeting} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </span>
@@ -305,7 +305,7 @@ export default function DashboardModule() {
       </motion.div>
 
       {/* ── 2. KPI Metrics Stats Grid (StatCard Primitives) ── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Focus Time"
           value={focusTimeLabel}
@@ -334,7 +334,7 @@ export default function DashboardModule() {
       {/* ── 3. Day Planner Week Strip Card (Reference Pattern) ── */}
       <motion.div variants={itemVariants}>
         <Card padding="lg" className="flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-[18px] font-semibold text-text-primary">Week Planner</h2>
               <p className="text-[13px] text-text-secondary">Select a day to view agenda and tasks</p>
@@ -379,7 +379,7 @@ export default function DashboardModule() {
             })}
           </div>
 
-          <div className="h-px w-full bg-border-hairline" />
+          <div className="w-full h-px bg-border-hairline" />
 
           {/* Quick Task Entry inside Planner */}
           <div className="flex flex-col gap-4">
@@ -395,7 +395,7 @@ export default function DashboardModule() {
               </button>
             </div>
 
-            <form onSubmit={handleAddTask} className="flex gap-2 w-full">
+            <form onSubmit={handleAddTask} className="flex w-full gap-2">
               <input
                 type="text"
                 placeholder="Add a new task for today..."
@@ -482,12 +482,12 @@ export default function DashboardModule() {
       </motion.div>
 
       {/* ── 4. Side-by-Side: Focus Timer Dock & Habits + Mindmaps ── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <motion.div variants={itemVariants} className="grid items-start grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Focus Timer Dock */}
         <Card padding="lg" className="flex flex-col gap-6 lg:col-span-1 min-h-[360px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-primary">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-alt text-text-primary">
                 <IconClockPlay size={17} />
               </div>
               <span className="text-[15px] font-semibold text-text-primary">Focus Timer</span>
@@ -525,7 +525,7 @@ export default function DashboardModule() {
             </p>
           </div>
 
-          <div className="flex gap-2 w-full mt-auto">
+          <div className="flex w-full gap-2 mt-auto">
             {pomodoroTimerState === 'running' ? (
               <button
                 onClick={pauseGlobalPomodoro}
@@ -545,7 +545,7 @@ export default function DashboardModule() {
               onClick={stopGlobalPomodoro}
               disabled={pomodoroTimerState === 'idle'}
               title="Reset Timer"
-              className="w-10 h-10 rounded-full bg-surface-alt hover:bg-surface-hover text-text-secondary disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="flex items-center justify-center w-10 h-10 transition-colors rounded-full cursor-pointer bg-surface-alt hover:bg-surface-hover text-text-secondary disabled:opacity-30 shrink-0"
             >
               <IconRefresh size={16} />
             </button>
@@ -558,7 +558,7 @@ export default function DashboardModule() {
           <Card padding="lg" className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-accent-success">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-alt text-accent-success">
                   <IconFlame size={17} />
                 </div>
                 <div>
@@ -587,7 +587,7 @@ export default function DashboardModule() {
                     >
                       <button
                         onClick={() => toggleHabitCompletion(habit.id, todayStr)}
-                        className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
+                        className="flex items-center flex-1 min-w-0 gap-3 text-left cursor-pointer"
                       >
                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
                           isCompleted
@@ -613,7 +613,7 @@ export default function DashboardModule() {
           <Card padding="lg" className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-primary">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-alt text-text-primary">
                   <IconSitemap size={17} />
                 </div>
                 <h3 className="text-[15px] font-semibold text-text-primary">Recent Mindmaps</h3>
@@ -626,14 +626,14 @@ export default function DashboardModule() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {mindmaps.slice(0, 2).map(m => (
                 <button
                   key={m.id}
                   onClick={() => handleOpenMindmap(m.id)}
                   className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-alt hover:bg-surface-hover transition-colors text-left cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary shrink-0 shadow-sm">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg shadow-sm bg-surface text-text-secondary shrink-0">
                     <IconSitemap size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -669,7 +669,7 @@ export default function DashboardModule() {
                   className="flex items-center justify-between py-3.5 hover:bg-surface-alt/50 transition-colors text-left cursor-pointer px-2 rounded-[10px]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-secondary shrink-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-alt text-text-secondary shrink-0">
                       <activity.icon size={16} />
                     </div>
                     <div>

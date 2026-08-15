@@ -90,7 +90,7 @@ export function JournalEditor({
           boxShadow: `0 20px 45px -30px ${currentStyle.glow}, 0 2px 10px rgba(0,0,0,0.01)`,
         }}
       >
-        <div className="flex-1 flex flex-col p-6 md:p-10 rounded-[32px] overflow-y-auto" style={editorPaperStyle}>
+        <div className="flex-1 flex flex-col p-3.5 sm:p-6 md:p-10 rounded-[32px] overflow-y-auto" style={editorPaperStyle}>
           {/* Paper Meta indicators */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3 mb-5">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-text-muted">

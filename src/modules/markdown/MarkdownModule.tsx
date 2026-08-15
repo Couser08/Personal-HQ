@@ -284,6 +284,7 @@ export default function MarkdownModule() {
   const [copied, setCopied] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(true);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
 
   // Slash commands popup state
   const [slashMenu, setSlashMenu] = useState<{
@@ -784,40 +785,83 @@ export default function MarkdownModule() {
           )}
         </div>
       ) : (
-        <div className="w-full h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-2 relative text-left">
-          
-          {isEditorOpen && (
-            <MarkdownEditor
-              title={title}
-              handleTitleChange={handleTitleChange}
-              content={content}
-              handleTextareaChange={handleTextareaChange}
-              handleTextareaKeyDown={handleTextareaKeyDown}
-              wordCount={wordCount}
-              copied={copied}
-              handleCopy={handleCopy}
-              handleDownload={handleDownload}
-              handleExportPDF={handleExportPDF}
-              isWorkspaceOpen={isWorkspaceOpen}
-              setIsWorkspaceOpen={setIsWorkspaceOpen}
-              setActiveDocId={setActiveDocId}
-              slashMenu={slashMenu}
-              filteredCommands={filteredCommands}
-              activeCommandIndex={activeCommandIndex}
-              handleSelectSlashCommand={handleSelectSlashCommand}
-              isSaving={isSaving}
-              isFocusMode={isFocusMode}
-              setIsFocusMode={setIsFocusMode}
-            />
-          )}
+        <div className="w-full min-h-[calc(100vh-140px)] flex flex-col gap-2 p-1 sm:p-2 relative text-left">
+          {/* Mobile Edit / Preview Segmented Switcher */}
+          <div className="lg:hidden flex items-center justify-between p-1.5 bg-surface rounded-2xl border border-border shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveDocId(null)}
+              className="px-3 py-1 text-[12px] font-bold text-text-secondary hover:text-text-primary rounded-xl cursor-pointer"
+            >
+              ← All Docs
+            </button>
 
-          {isWorkspaceOpen && !isFocusMode && (
-            <MarkdownPreview
-              parsedHtml={parsedHtml}
-              isEditorOpen={isEditorOpen}
-              setIsEditorOpen={setIsEditorOpen}
-            />
-          )}
+            <div className="flex items-center p-0.5 rounded-xl bg-surface-alt border border-border">
+              <button
+                type="button"
+                onClick={() => setMobileTab('editor')}
+                className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
+                  mobileTab === 'editor'
+                    ? 'bg-surface text-text-primary shadow-xs font-black'
+                    : 'text-text-secondary'
+                }`}
+              >
+                ✏️ Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab('preview')}
+                className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
+                  mobileTab === 'preview'
+                    ? 'bg-surface text-text-primary shadow-xs font-black'
+                    : 'text-text-secondary'
+                }`}
+              >
+                👁️ Preview
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 relative">
+            {/* Editor Panel */}
+            <div className={`flex-1 ${mobileTab === 'editor' ? 'block' : 'hidden lg:block'}`}>
+              {isEditorOpen && (
+                <MarkdownEditor
+                  title={title}
+                  handleTitleChange={handleTitleChange}
+                  content={content}
+                  handleTextareaChange={handleTextareaChange}
+                  handleTextareaKeyDown={handleTextareaKeyDown}
+                  wordCount={wordCount}
+                  copied={copied}
+                  handleCopy={handleCopy}
+                  handleDownload={handleDownload}
+                  handleExportPDF={handleExportPDF}
+                  isWorkspaceOpen={isWorkspaceOpen}
+                  setIsWorkspaceOpen={setIsWorkspaceOpen}
+                  setActiveDocId={setActiveDocId}
+                  slashMenu={slashMenu}
+                  filteredCommands={filteredCommands}
+                  activeCommandIndex={activeCommandIndex}
+                  handleSelectSlashCommand={handleSelectSlashCommand}
+                  isSaving={isSaving}
+                  isFocusMode={isFocusMode}
+                  setIsFocusMode={setIsFocusMode}
+                />
+              )}
+            </div>
+
+            {/* Preview Panel */}
+            <div className={`flex-1 ${mobileTab === 'preview' ? 'block' : 'hidden lg:block'}`}>
+              {isWorkspaceOpen && !isFocusMode && (
+                <MarkdownPreview
+                  parsedHtml={parsedHtml}
+                  isEditorOpen={isEditorOpen}
+                  setIsEditorOpen={setIsEditorOpen}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
 

@@ -10,6 +10,7 @@ interface AuthStore {
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   setUser: (user: User | null) => void;
 }
@@ -51,6 +52,14 @@ export const useAuthStore = create<AuthStore>()((set) => ({
     if (data.session) {
       set({ user: data.user ?? null });
     }
+    return { error: null };
+  },
+
+  resetPassword: async (email: string) => {
+    set({ loading: true });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    set({ loading: false });
+    if (error) return { error: error.message };
     return { error: null };
   },
 

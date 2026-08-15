@@ -397,7 +397,7 @@ export const RichTextEditor = ({ value, onChange, onBlur, placeholder = 'Write y
       <div
         role="toolbar"
         aria-label="Text formatting"
-        className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-surface-alt border-b border-border"
+        className="flex items-center gap-0.5 px-2 py-1.5 bg-surface-alt border-b border-border overflow-x-auto custom-scrollbar shrink-0"
         onMouseDown={e => e.preventDefault()}
       >
         {GROUPS.map((group, gi) => (

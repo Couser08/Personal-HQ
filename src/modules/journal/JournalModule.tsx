@@ -430,7 +430,7 @@ export default function JournalModule() {
         }
       : { backgroundColor: currentStyle.paperBg };
 
-  const gridColsClass = `grid min-h-[calc(100vh-2rem)] gap-4 transition-all duration-300 ${
+  const gridColsClass = `grid grid-cols-1 min-h-[calc(100vh-2rem)] gap-4 transition-all duration-300 ${
     isSettingsOpen ? 'xl:grid-cols-[1fr_320px]' : 'xl:grid-cols-1'
   }`;
 
@@ -758,7 +758,7 @@ export default function JournalModule() {
     >
       <div className={gridColsClass}>
         {/* Center column (Workspace Editor) */}
-        <section className="relative group/workspace flex min-h-0 flex-col gap-4 rounded-4xl border border-border/70 bg-surface/90 p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-sm transition-all duration-300">
+        <section className="relative group/workspace flex min-h-0 flex-col gap-3 sm:gap-4 rounded-3xl sm:rounded-4xl border border-border/70 bg-surface/90 p-2 sm:p-4 shadow-[0_18px_55px_-30px_rgba(0,0,0,0.25)] backdrop-blur-sm transition-all duration-300">
           {/* Hover Expand Right Slider Handle */}
           {!isSettingsOpen && activeEntry && (
             <div className="absolute top-1/2 right-0 -translate-y-1/2 z-20 opacity-0 group-hover/workspace:opacity-100 transition-opacity duration-200">
@@ -772,26 +772,34 @@ export default function JournalModule() {
             </div>
           )}
           {/* Header Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-border/60 bg-surface px-5 py-3 shadow-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 rounded-2xl sm:rounded-[28px] border border-border/60 bg-surface px-3 py-2 sm:px-5 sm:py-3 shadow-sm">
+            <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={forceSaveAndClose}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-surface-alt text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary border-none cursor-pointer"
+                className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl border border-border bg-surface-alt text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary border-none cursor-pointer shrink-0"
                 title="Back to Journal Catalog"
               >
-                <IconArrowLeft size={18} />
+                <IconArrowLeft size={16} />
               </button>
 
-              <div className="hidden sm:block">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-text-muted">Journal Workspace</p>
-                <p className="text-[11px] text-text-secondary">{activeEntry ? formatDateTime(activeEntry.date) : 'No entry active'}</p>
+              <div className="min-w-0">
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-text-muted truncate">
+                  Journal
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-text-secondary font-medium truncate">
+                  {activeEntry ? formatDateTime(activeEntry.date) : 'No entry active'}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 rounded-full border border-border/60 bg-surface-alt px-3 py-1.5 text-[11px] font-semibold text-text-secondary">
-                {saveStatus === 'saved' || saveStatus === 'idle' ? <IconCheck size={12} className="text-emerald-500" /> : <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />}
-                <span>{saveStatus === 'saving' ? 'Saving...' : 'Saved to DB'}</span>
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 rounded-full border border-border/60 bg-surface-alt px-2 sm:px-3 py-1 text-[10px] sm:text-[11px] font-semibold text-text-secondary">
+                {saveStatus === 'saved' || saveStatus === 'idle' ? (
+                  <IconCheck size={12} className="text-emerald-500" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                )}
+                <span className="hidden sm:inline">{saveStatus === 'saving' ? 'Saving...' : 'Saved'}</span>
               </div>
               <Button
                 onClick={() => {
@@ -799,30 +807,30 @@ export default function JournalModule() {
                   void forceSave();
                 }}
                 variant="secondary"
-                className={previewMode ? 'border-primary text-primary' : ''}
+                className={`text-[11px] sm:text-xs px-2.5 sm:px-3 py-1 h-8 sm:h-9 ${previewMode ? 'border-primary text-primary' : ''}`}
                 disabled={!activeEntry}
               >
-                <IconEye size={16} />
-                {previewMode ? 'Edit' : 'Preview'}
+                <IconEye size={14} />
+                <span>{previewMode ? 'Edit' : 'Preview'}</span>
               </Button>
-              <IconButton onClick={togglePinned} variant="ghost" title="Pin entry" disabled={!activeEntry}>
-                {activeEntry?.pinned ? <IconHeartFilled size={18} className="text-red-500" /> : <IconHeart size={18} />}
+              <IconButton onClick={togglePinned} variant="ghost" title="Pin entry" disabled={!activeEntry} className="p-1.5 sm:p-2">
+                {activeEntry?.pinned ? <IconHeartFilled size={16} className="text-red-500" /> : <IconHeart size={16} />}
               </IconButton>
-              <IconButton onClick={deleteCurrentEntry} variant="ghost" className="text-red-500" title="Delete entry" disabled={!activeEntry}>
-                <IconTrash size={18} />
+              <IconButton onClick={deleteCurrentEntry} variant="ghost" className="text-red-500 p-1.5 sm:p-2" title="Delete entry" disabled={!activeEntry}>
+                <IconTrash size={16} />
               </IconButton>
 
               {/* Right Settings Toggle button */}
               <button
                 onClick={() => setIsSettingsOpen((open) => !open)}
-                className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition-all cursor-pointer ${
+                className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl border transition-all cursor-pointer ${
                   isSettingsOpen
                     ? 'border-primary/30 bg-primary/5 text-primary'
                     : 'border-border bg-surface-alt text-text-secondary hover:bg-surface-hover'
                 }`}
                 title="Toggle Styles & Settings"
               >
-                <IconPalette size={18} />
+                <IconPalette size={16} />
               </button>
             </div>
           </div>

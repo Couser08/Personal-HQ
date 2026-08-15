@@ -907,10 +907,10 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
       </div>
 
       {/* ─── Editor Layout Spread ─── */}
-      <div className="flex-1 flex gap-5 min-h-[480px]">
+      <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-5 min-h-[480px]">
         
-        {/* Left Toolbar Strip */}
-        <div className="w-12 bg-surface border border-border rounded-2xl p-1.5 flex flex-col gap-2.5 items-center">
+        {/* Left Toolbar Strip (Horizontal on mobile, vertical on desktop) */}
+        <div className="w-full sm:w-12 bg-surface border border-border rounded-2xl p-1.5 flex flex-row sm:flex-col gap-1.5 sm:gap-2.5 items-center justify-between sm:justify-start overflow-x-auto sm:overflow-visible shrink-0">
           {[
             { id: 'toc', icon: IconList, label: 'Table of Contents', toggle: () => setShowTopicsPanel(!showTopicsPanel) },
             { id: 'add-topic', icon: IconPlus, label: 'Add Topic', toggle: openAddTopicModal },
@@ -1073,7 +1073,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
         </div>
 
         {/* Centered Ruled Notebook Area */}
-        <div className={`flex-1 rounded-2xl p-6 sm:p-8 flex flex-col justify-between relative transition-shadow duration-300 shadow-high ${
+        <div className={`flex-1 rounded-2xl p-3.5 sm:p-8 flex flex-col justify-between relative transition-shadow duration-300 shadow-high ${
           isEditMode 
             ? 'bg-vellum border-l-[14px] border-l-amber-800 dark:border-l-zinc-900 border border-border' 
             : readingStyle === 'warm'
@@ -1168,14 +1168,14 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
               })()}
 
               {/* Ruled Notebook content */}
-              <div className="relative flex flex-1 pl-6">
+              <div className="relative flex flex-1 pl-2 sm:pl-6">
                 
                 {/* Vertical Ruled margin line */}
-                {isEditMode && <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-rose-500/40" />}
+                {isEditMode && <div className="hidden sm:block absolute left-4 top-0 bottom-0 w-0.5 bg-rose-500/40" />}
 
                 {/* Line numbers margin */}
                 {isEditMode && (
-                  <div className="w-4 select-none font-mono text-[10px] text-text-muted/50 text-right pr-3 pt-1 space-y-3 leading-[24px]">
+                  <div className="hidden sm:block w-4 select-none font-mono text-[10px] text-text-muted/50 text-right pr-3 pt-1 space-y-3 leading-[24px]">
                     {Array.from({ length: 15 }).map((_, idx) => (
                       <div key={idx}>{idx + 1}</div>
                     ))}
@@ -1347,12 +1347,33 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
 
           </div>
 
-          {/* Navigation Page Turn Arrows */}
-          <div className="absolute text-center z-30 flex justify-between pointer-events-none inset-y-1/2 -left-6 -right-6">
+          {/* Mobile Page Turn Strip */}
+          <div className="flex sm:hidden items-center justify-between pt-3 border-t border-border/30 mt-3 select-none">
             <button
               onClick={() => handlePageTurn('prev')}
               disabled={book.currentPage <= 1}
-              className={` p-4 bg-surface hover:bg-surface-hover border border-border shadow-high rounded-full text-text-primary hover:text-rose-500 hover:scale-110 pointer-events-auto cursor-pointer transition-all active:scale-[0.9] transition-transform duration-100 ${
+              className="px-3 py-1.5 rounded-xl bg-surface border border-border text-xs font-bold text-text-primary disabled:opacity-30 cursor-pointer shadow-xs"
+            >
+              ← Prev
+            </button>
+            <span className="text-xs font-mono font-bold text-text-muted">
+              Page {book.currentPage} / {book.pagesCount}
+            </span>
+            <button
+              onClick={() => handlePageTurn('next')}
+              disabled={book.currentPage >= book.pagesCount}
+              className="px-3 py-1.5 rounded-xl bg-surface border border-border text-xs font-bold text-text-primary disabled:opacity-30 cursor-pointer shadow-xs"
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Desktop Navigation Page Turn Arrows */}
+          <div className="hidden sm:flex absolute text-center z-30 justify-between pointer-events-none inset-y-1/2 -left-6 -right-6">
+            <button
+              onClick={() => handlePageTurn('prev')}
+              disabled={book.currentPage <= 1}
+              className={`p-3.5 bg-surface hover:bg-surface-hover border border-border shadow-high rounded-full text-text-primary hover:text-rose-500 hover:scale-110 pointer-events-auto cursor-pointer transition-all active:scale-[0.9] transition-transform duration-100 ${
                 book.currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : ''
               }`}
             >
@@ -1361,7 +1382,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
             <button
               onClick={() => handlePageTurn('next')}
               disabled={book.currentPage >= book.pagesCount - 1}
-              className={`p-4 bg-surface hover:bg-surface-hover border border-border shadow-high rounded-full text-text-primary hover:text-rose-500 hover:scale-110 pointer-events-auto cursor-pointer transition-all active:scale-[0.9] transition-transform duration-100 ${
+              className={`p-3.5 bg-surface hover:bg-surface-hover border border-border shadow-high rounded-full text-text-primary hover:text-rose-500 hover:scale-110 pointer-events-auto cursor-pointer transition-all active:scale-[0.9] transition-transform duration-100 ${
                 book.currentPage >= book.pagesCount - 1 ? 'opacity-30 cursor-not-allowed' : ''
               }`}
             >

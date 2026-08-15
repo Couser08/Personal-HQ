@@ -69,6 +69,27 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.6.0 (Beta)',
+    codename: 'Mobile Foundation',
+    date: 'August 15, 2026',
+    headline: 'Massive mobile responsiveness update is under development!',
+    sub: 'We are completely overhauling the app for mobile devices. Some changes are live now. This is a beta patch — please use the Interactive Bug Reporter (Ctrl+Shift+B) to report any UI glitches and help us develop faster.',
+    type: 'minor',
+    features: [
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile UI — Work in Progress',
+        desc: 'New bottom navigation, mobile slide drawers, and responsive headers are being rolled out. Expect layout shifts as we perfect the mobile experience.',
+        badge: 'Beta',
+      },
+      {
+        Icon: IconBug,
+        title: 'Report Bugs for Fast Development',
+        desc: 'Encountered a weird layout on your screen size? Use the new Bug Reporter to snap a visual report instantly so we can fix it.',
+      },
+    ],
+  },
+  {
     version: 'v4.5.0',
     codename: 'Velocity & Quality',
     date: 'August 15, 2026',

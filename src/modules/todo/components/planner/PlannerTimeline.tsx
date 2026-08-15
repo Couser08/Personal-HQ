@@ -51,9 +51,9 @@ export function PlannerTimeline({ tasks, onEditTask, onToggleComplete }: Planner
           />
         </div>
       ) : (
-        <div className="relative pl-[80px]">
-          {/* Vertical Timeline Line */}
-          <div className="absolute left-[92px] top-6 bottom-0 w-px bg-border/60" />
+        <div className="relative pl-0 sm:pl-[80px]">
+          {/* Vertical Timeline Line (Desktop/Tablet) */}
+          <div className="hidden sm:block absolute left-[92px] top-6 bottom-0 w-px bg-border/60" />
 
           {sortedTasks.map((task, index) => {
             const style = task.category && CATEGORY_STYLES[task.category] ? CATEGORY_STYLES[task.category] : DEFAULT_STYLE;
@@ -65,38 +65,43 @@ export function PlannerTimeline({ tasks, onEditTask, onToggleComplete }: Planner
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="relative flex items-center mb-4 group"
+                className="relative flex flex-col sm:flex-row sm:items-center mb-3 group"
               >
-                {/* Time Label on left */}
-                <div className="absolute left-[-80px] w-16 text-right">
+                {/* Time Label on left (Desktop) */}
+                <div className="hidden sm:block absolute left-[-80px] w-16 text-right">
                   <span className="text-[12px] font-semibold text-text-secondary">{task.startTime || '--:--'}</span>
                 </div>
 
-                {/* Timeline Dot */}
-                <div className="absolute left-[9.5px] z-10 flex items-center justify-center w-[6px] h-[6px] bg-bg-primary">
+                {/* Timeline Dot (Desktop) */}
+                <div className="hidden sm:flex absolute left-[9.5px] z-10 items-center justify-center w-[6px] h-[6px] bg-bg-primary">
                   <div className={`w-[6px] h-[6px] rounded-full ${style.dot} ring-4 ring-bg-primary`} />
                 </div>
 
                 {/* Task Card */}
                 <div 
-                  className={`ml-8 w-full transition-colors rounded-2xl p-3 flex items-center justify-between shadow-subtle cursor-pointer border border-solid ${
+                  className={`sm:ml-8 w-full transition-colors rounded-2xl p-3 flex items-center justify-between shadow-subtle cursor-pointer border border-solid ${
                     task.featured 
                       ? 'border-amber-400 dark:border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20 hover:bg-amber-500/10' 
                       : 'bg-surface border-border/40 hover:border-border/80'
                   }`} 
                   onClick={() => onToggleComplete(task.id)}
                 >
-                  
-                  <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                     {/* Icon */}
-                    <div className={`w-10 h-10 rounded-xl ${task.featured ? 'bg-amber-500/10 text-amber-550' : `${style.bg} ${style.text}`} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}>
-                      <Icon size={20} stroke={1.5} />
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${task.featured ? 'bg-amber-500/10 text-amber-550' : `${style.bg} ${style.text}`} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}>
+                      <Icon size={18} stroke={1.5} />
                     </div>
 
                     {/* Content */}
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`text-[14px] font-extrabold truncate ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+                        {/* Mobile Time Badge */}
+                        {task.startTime && (
+                          <span className="sm:hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-alt text-text-secondary border border-border-hairline shrink-0">
+                            {task.startTime}
+                          </span>
+                        )}
+                        <h3 className={`text-[13.5px] sm:text-[14px] font-extrabold truncate ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}>
                           {task.title}
                         </h3>
                         {task.featured && (

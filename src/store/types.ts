@@ -480,6 +480,14 @@ export interface Book {
   updatedAt?: string;
 }
 
+export interface VisionTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  dueDate?: string | null;
+  priority?: 'none' | 'low' | 'medium' | 'high' | 'urgent';
+}
+
 export interface Vision {
   id: string;
   title: string;
@@ -490,6 +498,11 @@ export interface Vision {
   status: 'Not Started' | 'In Progress' | 'Achieved' | 'Paused';
   progress: number;
   linkedHabitIds: string[];
+  linkedTaskIds?: string[];
+  tasks?: VisionTask[];
+  position?: { x: number; y: number };
+  rotation?: number;
+  ropeTier?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -849,6 +862,12 @@ export interface AppStore {
   addVision: (vision: Vision, userId?: string) => Promise<void>;
   updateVision: (id: string, updates: Partial<Vision>) => Promise<void>;
   deleteVision: (id: string) => Promise<void>;
+  updateVisionPosition: (id: string, position: { x: number; y: number }, rotation?: number) => Promise<void>;
+  assignTaskToVision: (visionId: string, taskId: string) => Promise<void>;
+  unassignTaskFromVision: (visionId: string, taskId: string) => Promise<void>;
+  addVisionTask: (visionId: string, taskTitle: string, dueDate?: string, priority?: 'none' | 'low' | 'medium' | 'high' | 'urgent') => Promise<void>;
+  toggleVisionTask: (visionId: string, taskId: string) => Promise<void>;
+  deleteVisionTask: (visionId: string, taskId: string) => Promise<void>;
 
   importData: (data: any) => void;
 }

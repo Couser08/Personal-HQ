@@ -3,6 +3,7 @@ import { LoginPage } from './pages/LoginPage';
 import { Layout } from './components/layout/Layout';
 import { useAppStore } from './store/useAppStore';
 import { useAuthStore } from './store/useAuthStore';
+import { AppLogo } from './components/ui/AppLogo';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
@@ -35,43 +36,82 @@ const MinimalPremiumTest = lazy(() => import('./pages/MinimalPremiumTest'));
 function LoadingSplash() {
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen flex flex-col items-center justify-center gap-6"
-      style={{ background: 'var(--bg-background)' }}
+      className="min-h-screen flex flex-col items-center justify-center gap-6 bg-background text-text-primary relative overflow-hidden"
     >
-      {/* Premium Circular Dash Progress Loader */}
-      <div className="relative w-20 h-20">
-        <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.2s' }} viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" stroke="var(--border-border-alt)" strokeWidth="6" fill="none" opacity="0.3" />
-          <circle
-            cx="50"
-            cy="50"
-            r="42"
-            stroke="var(--text-primary)"
-            strokeWidth="6"
-            strokeDasharray="60 200"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-      </div>
+      {/* Ambient background glow */}
+      <motion.div
+        animate={{
+          scale: [1, 1.15, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute w-72 h-72 rounded-full bg-primary/10 blur-[80px] pointer-events-none"
+      />
 
-      {/* Spaced "Loading" Text */}
-      <div className="text-xs uppercase tracking-[0.4em] font-semibold text-text-secondary select-none">
-        Loading
-      </div>
+      <div className="relative flex flex-col items-center gap-5 z-10">
+        {/* Animated App Logo with Orbiting Loader */}
+        <div className="relative flex items-center justify-center">
+          <svg
+            className="absolute -inset-3.5 w-24 h-24 sm:w-28 sm:h-28 animate-spin text-text-primary pointer-events-none"
+            style={{ animationDuration: '1.8s' }}
+            viewBox="0 0 100 100"
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="var(--border-border-alt)"
+              strokeWidth="3.5"
+              fill="none"
+              opacity="0.35"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="currentColor"
+              strokeWidth="4"
+              strokeDasharray="65 180"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
 
-      {/* 3 dots loading animation */}
-      <div className="flex justify-center items-center gap-1.5 mt-1">
-        {[0, 1, 2].map((idx) => (
-          <motion.span
-            key={idx}
-            animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.9, 1.1, 0.9] }}
-            transition={{ duration: 1.2, repeat: Infinity, delay: idx * 0.2 }}
-            className="w-1.5 h-1.5 rounded-full bg-text-secondary"
-          />
-        ))}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="w-16 h-16 sm:w-20 sm:h-20 shadow-xl rounded-[24px] overflow-hidden"
+          >
+            <AppLogo className="w-full h-full" />
+          </motion.div>
+        </div>
+
+        {/* Branding & Loading Text */}
+        <div className="flex flex-col items-center text-center gap-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.35em] text-text-secondary">
+            Personal HQ
+          </span>
+          <span className="text-[13px] font-medium text-text-tertiary">
+            Loading workspace…
+          </span>
+        </div>
+
+        {/* 3-Dot Stagger Loader */}
+        <div className="flex justify-center items-center gap-1.5 mt-1">
+          {[0, 1, 2].map((idx) => (
+            <motion.span
+              key={idx}
+              animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: idx * 0.2 }}
+              className="w-1.5 h-1.5 rounded-full bg-text-secondary"
+            />
+          ))}
+        </div>
       </div>
     </motion.div>
   );

@@ -1,0 +1,111 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import {
+  IconMenu2,
+  IconSparkles,
+  IconSun,
+  IconMoon,
+} from '@tabler/icons-react';
+import { AppLogo } from '../ui/AppLogo';
+import { useAppStore } from '../../store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
+
+interface MobileHeaderProps {
+  onOpenDrawer: () => void;
+  onOpenAi: (actionType?: string) => void;
+}
+
+const MODULE_TITLES: Record<string, { label: string; emoji: string }> = {
+  dashboard: { label: 'Dashboard', emoji: '🏠' },
+  todo: { label: 'Daily Planner', emoji: '📅' },
+  journal: { label: 'Journal', emoji: '📖' },
+  vision: { label: 'Vision Board', emoji: '🎯' },
+  books: { label: 'My Library', emoji: '📚' },
+  markdown: { label: 'Markdown', emoji: '✍️' },
+  habits: { label: 'Habits', emoji: '🔥' },
+  pomodoro: { label: 'Pomodoro', emoji: '⏱️' },
+  exam: { label: 'AI Exam Prep', emoji: '🧠' },
+  mindmap: { label: 'Mindmap', emoji: '🗺️' },
+  drawing: { label: 'Drawing', emoji: '🎨' },
+  media: { label: 'Media Log', emoji: '🎮' },
+  condition: { label: 'Workstation', emoji: '📊' },
+  utilities: { label: 'Utilities', emoji: '🛠️' },
+  linksaver: { label: 'Link Vault', emoji: '🔗' },
+  snippets: { label: 'Snippets', emoji: '💻' },
+  til: { label: 'Today I Learned', emoji: '💡' },
+  tags: { label: 'Tags', emoji: '🏷️' },
+  settings: { label: 'Settings', emoji: '⚙️' },
+};
+
+export const MobileHeader: React.FC<MobileHeaderProps> = ({
+  onOpenDrawer,
+  onOpenAi,
+}) => {
+  const { activeModule, theme, setTheme } = useAppStore(
+    useShallow((state) => ({
+      activeModule: state.activeModule,
+      theme: state.theme,
+      setTheme: state.setTheme,
+    }))
+  );
+
+  const currentMod = MODULE_TITLES[activeModule] || {
+    label: 'Personal HQ',
+    emoji: '✨',
+  };
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-40 md:hidden bg-surface/85 backdrop-blur-2xl border-b border-border/60 px-3.5 py-2.5 flex items-center justify-between shadow-xs select-none">
+      {/* Left: Drawer Trigger + App Logo */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={onOpenDrawer}
+          className="w-9 h-9 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-primary active:scale-95 transition-transform cursor-pointer"
+          aria-label="Open Navigation Menu"
+        >
+          <IconMenu2 size={19} />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <AppLogo className="w-7 h-7 rounded-lg shadow-xs" />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px]">{currentMod.emoji}</span>
+              <h1 className="font-extrabold text-[13.5px] tracking-tight leading-none text-text-primary">
+                {currentMod.label}
+              </h1>
+            </div>
+            <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">
+              Personal HQ
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: AI Trigger Pill + Theme Switcher */}
+      <div className="flex items-center gap-2">
+        {/* Glowing Ask AI Pill */}
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.94 }}
+          onClick={() => onOpenAi()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 text-white text-[11px] font-black shadow-md active:scale-95 transition-all cursor-pointer border border-white/20"
+        >
+          <IconSparkles size={13} className="animate-pulse" />
+          <span>Ask AI</span>
+        </motion.button>
+
+        {/* Theme Toggle */}
+        <button
+          type="button"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-8 h-8 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          title="Toggle Theme"
+        >
+          {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+        </button>
+      </div>
+    </header>
+  );
+};

@@ -80,8 +80,8 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 text-left min-h-full">
-      {/* ─── Library Module Left Navigation ─── */}
-      <div className="w-full lg:w-60 flex-shrink-0 flex flex-col gap-6">
+      {/* ─── Library Module Left Navigation (Desktop) ─── */}
+      <div className="hidden lg:flex lg:w-60 flex-shrink-0 flex-col gap-6">
         <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col gap-5">
           <div className="flex items-center gap-2.5 px-2 py-1.5 border-b border-border/40 pb-3">
             <span className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg">
@@ -165,25 +165,47 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
       </div>
 
       {/* ─── Main Content Area ─── */}
-      <div className="flex-1 flex flex-col gap-6">
+      <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-w-0">
         
         {/* Header greeting */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-text-primary tracking-tight">
-              Welcome back, Ramesh 👋
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-text-primary tracking-tight">
+              My Library 📚
             </h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              What would you like to read today?
+              Read, draft notes, and organize your knowledge.
             </p>
           </div>
+        </div>
 
-          {/* Header Accessories */}
-          <div className="flex items-center gap-3">
-            <button className="p-2 bg-surface hover:bg-surface-hover border border-border rounded-xl cursor-pointer text-text-secondary transition-[background-color,color] duration-150 ease-out active:scale-95">
-              <IconSearch size={16} />
-            </button>
-          </div>
+        {/* ─── Mobile Horizontal Tabs & Categories Strip (Visible only on mobile) ─── */}
+        <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+          {[
+            { id: 'home', label: 'Home' },
+            { id: 'all', label: 'All' },
+            { id: 'favorites', label: '⭐ Favorites' },
+            { id: 'reading-list', label: '🔖 Reading' },
+            { id: 'audiobooks', label: '🎧 Audio' },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id && !selectedCategory;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setSelectedCategory(null);
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-rose-500 text-white shadow-xs'
+                    : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search bar & Add button */}
@@ -290,7 +312,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
               }
             />
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
               {filteredBooks.map((book) => (
                 <div
                   key={book.id}
