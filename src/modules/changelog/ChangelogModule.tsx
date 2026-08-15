@@ -41,6 +41,7 @@ import {
   IconBug,
   IconShieldLock,
   IconPalette,
+  IconCpu,
 } from '@tabler/icons-react';
 import { Card } from '../../components/ui/Card';
 import { StatCard } from '../../components/ui/StatCard';
@@ -67,6 +68,27 @@ interface Release {
 }
 
 const RELEASES: Release[] = [
+  {
+    version: 'v4.7.0',
+    codename: 'Velocity Engine',
+    date: 'August 15, 2026',
+    headline: 'Deeply integrated Performance Modes: Potato, Balanced, and Performance.',
+    sub: 'Full control over the rendering pipeline. Switch between 120 FPS GPU compositing, smooth glassmorphic springs, or absolute zero-idle CPU potato mode.',
+    type: 'minor',
+    features: [
+      {
+        Icon: IconCpu,
+        title: 'Performance & Rendering Engine',
+        desc: 'New interactive settings to toggle between Performance (120 FPS), Balanced (Fluid physics & blur), and Potato (Zero idle CPU, instant snap) modes.',
+        badge: 'New',
+      },
+      {
+        Icon: IconBolt,
+        title: 'Global CSS Mode Integration',
+        desc: 'Deeply integrated CSS overrides that instantly disable backdrop-filters, transitions, and particle loops across the entire app when Potato mode is engaged.',
+      },
+    ],
+  },
   {
     version: 'v4.6.0',
     codename: 'Quality & Control',

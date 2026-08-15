@@ -92,8 +92,8 @@ export const WavyEffectOverlay = () => {
   useEffect(() => {
     const handleTrigger = (e: Event) => {
       const customEvent = e as CustomEvent<{ type: EffectType }>;
-      const isEnabled = settings?.wavyEffectEnabled !== false;
-      const isReduced = settings?.reduceAnimations === true;
+      const isEnabled = settings?.wavyEffectEnabled !== false && settings?.performanceMode !== 'potato';
+      const isReduced = settings?.reduceAnimations === true || settings?.performanceMode === 'potato';
       
       if (customEvent.detail?.type && isEnabled && !isReduced) {
         // Pick a random variant (1, 2, or 3)

@@ -2,6 +2,7 @@ export type Theme = 'light' | 'dark' | 'system' | 'cyberpunk' | 'nordic' | 'saku
 export type AccentColor = 'rose' | 'purple' | 'blue' | 'green' | 'amber' | 'teal' | 'gray';
 export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
 export type ClockStyle = 'digital' | 'flip' | 'analog' | 'minimal-ring';
+export type PerformanceMode = 'performance' | 'balanced' | 'potato';
 
 export interface AppSettings {
   countdownTemplate: CountdownTemplate;
@@ -14,6 +15,7 @@ export interface AppSettings {
   currencySymbol?: string;
   mediaQuote?: string;
   clockStyle?: ClockStyle;
+  performanceMode?: PerformanceMode;
   reduceBlur?: boolean;
   reduceAnimations?: boolean;
   wavyEffectEnabled?: boolean;

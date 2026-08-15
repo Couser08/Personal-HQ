@@ -287,7 +287,39 @@
   background-color: var(--bg-surface-alt) !important;
 }
 
-/* ─── Reduce Motion ─────────────────────────────────────────────────── */
+/* ─── Performance Modes Global Engine ───────────────────────────────── */
+.mode-potato *,
+.mode-potato *::before,
+.mode-potato *::after,
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.mode-potato *,
+.mode-performance *,
+.reduce-blur * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.mode-potato {
+  --shadow-subtle: none;
+  --shadow-float: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-float-hover: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.mode-performance {
+  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-float: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-float-hover: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+/* ─── Reduce Motion (OS Level) ──────────────────────────────────────── */
 /* Respects user's OS-level "Reduce Motion" accessibility setting */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

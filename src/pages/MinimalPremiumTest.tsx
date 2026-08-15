@@ -21,14 +21,20 @@ import { ListRow } from '../components/ui/ListRow';
 import { StatCard } from '../components/ui/StatCard';
 import { useBugReportStore } from '../store/useBugReportStore';
 
+import { MotionModeSwitcher } from '../components/test-motion/MotionModeSwitcher';
+import { InteractiveHoloCard } from '../components/test-motion/InteractiveHoloCard';
+import { MorphingHabitRing } from '../components/test-motion/MorphingHabitRing';
+import { KineticCommandDock } from '../components/test-motion/KineticCommandDock';
+import { DataFlowVisualizer } from '../components/test-motion/DataFlowVisualizer';
+
 const MinimalPremiumTest = () => {
   return (
     <div className="min-h-screen bg-background text-text-primary p-4 sm:p-8 font-sans minimal-premium antialiased pb-32">
       <div className="max-w-4xl mx-auto space-y-12">
         <header className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Design System Test</h1>
-            <p className="text-text-secondary">Minimal-Premium Layout (Soft Canvas + Floating Cards)</p>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Design System & Motion Test Lab</h1>
+            <p className="text-text-secondary">Explore 4 High-Frequency Animated Components Across Performance, Balanced & Potato Modes</p>
           </div>
           <button
             onClick={() => useBugReportStore.getState().startInspection()}
@@ -37,6 +43,30 @@ const MinimalPremiumTest = () => {
             <IconBug size={18} /> Test Bug Reporter (Ctrl+Shift+B)
           </button>
         </header>
+
+        {/* ── Motion & Rendering Engine Switcher ── */}
+        <section className="space-y-4">
+          <MotionModeSwitcher />
+        </section>
+
+        {/* ── Highly Animated Components Showcase Grid ── */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+              Interactive Motion Components (3-Mode Compatible)
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <InteractiveHoloCard />
+            <MorphingHabitRing />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <KineticCommandDock />
+            <DataFlowVisualizer />
+          </div>
+        </section>
 
         {/* 1. Buttons Test */}
         <section className="space-y-4">

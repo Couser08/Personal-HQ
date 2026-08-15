@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   initialBankBalance: 0,
   initialCashBalance: 0,
+  performanceMode: 'balanced',
   reduceBlur: false,
   reduceAnimations: false,
   wavyEffectEnabled: true,

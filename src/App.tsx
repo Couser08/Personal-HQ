@@ -132,12 +132,17 @@ function App() {
   }, [initialize]);
 
   useEffect(() => {
-    if (settings?.reduceBlur) {
-      document.documentElement.classList.add('reduce-blur');
-    } else {
-      document.documentElement.classList.remove('reduce-blur');
+    const mode = settings?.performanceMode || 'balanced';
+    document.documentElement.classList.remove('mode-performance', 'mode-balanced', 'mode-potato', 'reduce-blur', 'reduce-motion');
+    document.documentElement.classList.add(`mode-${mode}`);
+
+    if (mode === 'potato' || settings?.reduceAnimations) {
+      document.documentElement.classList.add('reduce-motion');
     }
-  }, [settings?.reduceBlur]);
+    if (mode === 'potato' || mode === 'performance' || settings?.reduceBlur) {
+      document.documentElement.classList.add('reduce-blur');
+    }
+  }, [settings?.performanceMode, settings?.reduceBlur, settings?.reduceAnimations]);
 
   useEffect(() => {
     const applyTheme = () => {
@@ -196,7 +201,7 @@ function App() {
 
   return (
     <BugReportProvider>
-      <MotionConfig reducedMotion={settings?.reduceAnimations ? "always" : "user"}>
+      <MotionConfig reducedMotion={settings?.performanceMode === 'potato' || settings?.reduceAnimations ? "always" : "user"}>
         <AnimatePresence mode="wait">
           {!user ? (
             <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}>

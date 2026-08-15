@@ -7,12 +7,14 @@ import {
   IconPalette, IconBell, IconHourglass,
   IconCheck, IconX, IconCompass, IconSparkles,
   IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink,
-  IconBug, IconFileText, IconDownload
+  IconBug, IconFileText, IconDownload, IconHelp, IconCpu, IconInfoCircle
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 import { testGeminiApiKey } from '../../lib/gemini';
 import { useBugReportStore } from '../../store/useBugReportStore';
+import { type PerformanceMode } from '../../store/types';
 
 const COUNTDOWN_TEMPLATES = [
   { value: 'default',  label: 'Default Cards' },
@@ -73,6 +75,36 @@ export default function SettingsModule() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testStatus, setTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [isPerformanceHelpOpen, setIsPerformanceHelpOpen] = useState(false);
+
+  const currentPerfMode: PerformanceMode = settings.performanceMode || 'balanced';
+
+  const handleSetPerformanceMode = (newMode: PerformanceMode) => {
+    updateSettings({
+      performanceMode: newMode,
+      reduceBlur: newMode !== 'balanced',
+      reduceAnimations: newMode === 'potato',
+      wavyEffectEnabled: newMode !== 'potato',
+      wavyEffectMode: newMode === 'balanced' ? 'premium' : 'minimal'
+    });
+
+    const labels: Record<PerformanceMode, { title: string; desc: string }> = {
+      performance: {
+        title: '⚡ Performance Mode Active',
+        desc: '120 FPS pure GPU compositing enabled. Blurs disabled for maximum frame rate.'
+      },
+      balanced: {
+        title: '✨ Balanced Mode Active',
+        desc: 'Smooth spring physics and glassmorphism enabled.'
+      },
+      potato: {
+        title: '🥔 Potato Mode Active',
+        desc: 'Zero idle CPU load. Instant snap transitions and blurs disabled.'
+      }
+    };
+
+    addToast(labels[newMode].title, labels[newMode].desc, 'info');
+  };
 
   useEffect(() => {
     setApiKeyInput(settings.geminiApiKey || '');
@@ -722,44 +754,140 @@ export default function SettingsModule() {
 
       {/* ── System & Performance Section ── */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">System & Performance</h2>
-        <Card padding="none" className="flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between ml-2 mr-1">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">
+            System & Performance Engine
+          </h2>
+          <button
+            onClick={() => setIsPerformanceHelpOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-text-secondary hover:text-primary transition-colors cursor-pointer"
+            title="View Performance Guide"
+          >
+            <span className="w-4 h-4 rounded-full bg-surface-alt border border-border flex items-center justify-center text-[10px] font-black">?</span>
+            <span>Guide</span>
+          </button>
+        </div>
+
+        <Card padding="lg" className="flex flex-col gap-5">
           
-          <div className="flex items-center justify-between p-4 sm:p-5">
-             <div>
-              <p className="text-base font-medium text-zinc-900 dark:text-white">Reduce Transparency</p>
-              <p className="text-[13px] text-zinc-500 mt-0.5">Disables backdrop filters and blur effects</p>
+          {/* Header & Help Trigger */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shrink-0">
+                <IconCpu className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-base font-bold text-text-primary">Rendering & Animation Engine</p>
+                  <button
+                    onClick={() => setIsPerformanceHelpOpen(true)}
+                    className="w-5 h-5 rounded-full bg-surface-alt hover:bg-surface-hover border border-border text-text-secondary hover:text-text-primary flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                    title="What does each mode change?"
+                  >
+                    ?
+                  </button>
+                </div>
+                <p className="text-[13px] text-text-secondary mt-0.5">
+                  Select your device profile to tune frame rates, backdrop blurs, and animation physics.
+                </p>
+              </div>
             </div>
-            <ToggleSwitch 
-              checked={!!settings.reduceBlur} 
-              onChange={() => updateSettings({ reduceBlur: !settings.reduceBlur })} 
-            />
+
+            <button
+              onClick={() => setIsPerformanceHelpOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-secondary hover:text-text-primary text-xs font-bold border border-border transition-all cursor-pointer shrink-0"
+            >
+              <IconHelp size={15} /> Mode Breakdown
+            </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 sm:p-5">
-             <div>
-              <p className="text-base font-medium text-zinc-900 dark:text-white">Reduce Motion</p>
-              <p className="text-[13px] text-zinc-500 mt-0.5">Disables UI transitions and physics</p>
+          {/* 3-Mode Segmented Controller */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                id: 'performance' as PerformanceMode,
+                label: 'Performance',
+                emoji: '⚡',
+                sub: '120 FPS GPU Only',
+                desc: 'Snappy composite transforms, zero blur, max throughput.',
+                badge: '120 FPS',
+                badgeColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+              },
+              {
+                id: 'balanced' as PerformanceMode,
+                label: 'Balanced',
+                emoji: '✨',
+                sub: 'Smooth & Glassmorphic',
+                desc: 'Default physics, 3D parallax, fluid springs & soft blur.',
+                badge: '60 FPS',
+                badgeColor: 'text-purple-500 bg-purple-500/10 border-purple-500/20'
+              },
+              {
+                id: 'potato' as PerformanceMode,
+                label: 'Potato',
+                emoji: '🥔',
+                sub: 'Zero Idle CPU',
+                desc: 'Instant transitions, loops disabled, max battery saver.',
+                badge: '0% Idle',
+                badgeColor: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+              }
+            ].map((item) => {
+              const isSelected = currentPerfMode === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSetPerformanceMode(item.id)}
+                  className={`flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden select-none ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary'
+                      : 'border-border bg-surface-alt/60 hover:bg-surface-alt hover:border-border/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{item.emoji}</span>
+                      <span className="text-sm font-bold text-text-primary">{item.label}</span>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${item.badgeColor}`}>
+                      {item.badge}
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-text-secondary mb-1">{item.sub}</span>
+                  <p className="text-[11px] text-text-muted leading-snug">{item.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Mode Summary Status Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 rounded-xl bg-surface-alt/50 border border-border text-xs gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-text-secondary">Current Engine Status:</span>
+              <span className="font-mono font-bold text-text-primary uppercase bg-surface px-2 py-0.5 rounded border border-border">
+                {currentPerfMode} mode
+              </span>
             </div>
-            <ToggleSwitch 
-              checked={!!settings.reduceAnimations} 
-              onChange={() => updateSettings({ reduceAnimations: !settings.reduceAnimations })} 
-            />
+            <div className="flex items-center gap-3 text-text-muted text-[11px]">
+              <span>Blur: <strong>{currentPerfMode === 'balanced' ? 'Enabled' : 'Disabled'}</strong></span>
+              <span>•</span>
+              <span>Transitions: <strong>{currentPerfMode === 'potato' ? 'Instant Snap' : 'Spring Physics'}</strong></span>
+            </div>
           </div>
 
           <div className="h-px w-full bg-border-hairline" />
 
+          {/* Restart Tour button */}
           <button 
             onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
-            className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-surface-alt transition-colors text-left cursor-pointer"
           >
             <div className="flex items-center gap-3">
                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white shadow-sm">
                 <IconCompass className="w-5 h-5" stroke={1.5} />
               </div>
-              <p className="text-base font-medium text-blue-500 dark:text-blue-400">Restart Onboarding Tour</p>
+              <p className="text-sm font-semibold text-blue-500 dark:text-blue-400">Restart Onboarding Tour</p>
             </div>
-            <IconChevronRight className="w-5 h-5 text-zinc-400" />
+            <IconChevronRight className="w-4 h-4 text-text-muted" />
           </button>
 
         </Card>
@@ -813,6 +941,119 @@ export default function SettingsModule() {
           </div>
         </Card>
       </section>
+
+      {/* ── Performance Guide Help Modal ── */}
+      <Modal
+        isOpen={isPerformanceHelpOpen}
+        onClose={() => setIsPerformanceHelpOpen(false)}
+        title="Performance & Animation Engine Guide"
+        maxWidthClassName="max-w-3xl"
+      >
+        <div className="flex flex-col gap-6 py-2">
+          
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-alt border border-border">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+              <IconInfoCircle size={22} />
+            </div>
+            <div className="text-xs text-text-secondary leading-relaxed">
+              <p className="font-bold text-text-primary text-sm mb-0.5">Why does Personal HQ have 3 rendering modes?</p>
+              Personal HQ is engineered to deliver 120 FPS high-refresh rate speed on gaming rigs while remaining battery-friendly on laptops and ultra-lightweight on low-power devices. Switch modes at any time without reloading.
+            </div>
+          </div>
+
+          {/* Comparison Matrix Table */}
+          <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-surface-alt/70 font-bold text-text-primary">
+                  <th className="p-3.5">Engine Spec</th>
+                  <th className="p-3.5">⚡ Performance</th>
+                  <th className="p-3.5">✨ Balanced (Default)</th>
+                  <th className="p-3.5">🥔 Potato</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60 text-text-secondary font-medium">
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Target Frame Rate</td>
+                  <td className="p-3.5 text-amber-500 font-bold font-mono">120 FPS</td>
+                  <td className="p-3.5 text-purple-500 font-bold font-mono">60 FPS Fluid</td>
+                  <td className="p-3.5 text-emerald-500 font-bold font-mono">0 FPS Idle (Instant)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">GPU & Rendering</td>
+                  <td className="p-3.5">Compositor Only (<code className="text-[10px]">transform, opacity</code>)</td>
+                  <td className="p-3.5">3D Parallax & Fluid Springs</td>
+                  <td className="p-3.5">Flat 2D Elements</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Backdrop Blur</td>
+                  <td className="p-3.5 font-mono text-text-muted">Disabled (0px)</td>
+                  <td className="p-3.5 font-mono text-emerald-500 font-bold">Enabled (16px blur)</td>
+                  <td className="p-3.5 font-mono text-text-muted">Disabled (0px)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Spring Physics</td>
+                  <td className="p-3.5">Snappy (Stiffness: 500)</td>
+                  <td className="p-3.5">Organic (Stiffness: 320)</td>
+                  <td className="p-3.5">Instant Snap (0ms)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Continuous Loops</td>
+                  <td className="p-3.5">Optimized RAF</td>
+                  <td className="p-3.5">Continuous Particle Wave</td>
+                  <td className="p-3.5 font-bold text-emerald-500">Terminated (0% CPU)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Battery & CPU Load</td>
+                  <td className="p-3.5">Very Low</td>
+                  <td className="p-3.5">Moderate</td>
+                  <td className="p-3.5 font-bold text-emerald-500">Minimal (Max Battery)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 font-bold text-text-primary">Best Suited For</td>
+                  <td className="p-3.5">144Hz+ monitors, fast typists, dense dashboards</td>
+                  <td className="p-3.5">Modern MacBooks, Windows laptops, iOS/Android</td>
+                  <td className="p-3.5">Older PCs, virtual machines, weak battery mode</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Quick 1-Click Switch inside Modal */}
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl bg-surface-alt border border-border gap-4">
+            <div>
+              <p className="text-xs font-bold text-text-primary">Quick Switch Now</p>
+              <p className="text-[11px] text-text-secondary">Changes take effect immediately across all windows.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {(['performance', 'balanced', 'potato'] as PerformanceMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleSetPerformanceMode(m)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    currentPerfMode === m
+                      ? 'bg-primary text-text-on-accent shadow-sm'
+                      : 'bg-surface hover:bg-surface-hover border border-border text-text-secondary'
+                  }`}
+                >
+                  <span>{m === 'performance' ? '⚡' : m === 'balanced' ? '✨' : '🥔'}</span>
+                  <span className="capitalize">{m}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => setIsPerformanceHelpOpen(false)}
+              className="px-5 py-2.5 rounded-xl bg-primary text-text-on-accent text-xs font-bold cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              Done
+            </button>
+          </div>
+
+        </div>
+      </Modal>
     </motion.div>
   );
 }
