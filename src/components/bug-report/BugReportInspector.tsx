@@ -115,9 +115,11 @@ export function BugReportInspector() {
       let screenshotData: string | null = null;
       try {
         screenshotData = await toPng(targetEl, {
-          pixelRatio: Math.min(window.devicePixelRatio || 2, 2.5),
-          quality: 0.95,
+          pixelRatio: Math.min(window.devicePixelRatio || 1.5, 2),
+          quality: 0.85,
           cacheBust: true,
+          skipFonts: true,
+          fontEmbedCSS: '',
           filter: (node: HTMLElement) => {
             return !node.id?.includes('bug-report-inspector-ui');
           },
@@ -127,8 +129,10 @@ export function BugReportInspector() {
         if (targetEl.parentElement) {
           try {
             screenshotData = await toPng(targetEl.parentElement, {
-              pixelRatio: 2,
-              quality: 0.9,
+              pixelRatio: 1.5,
+              quality: 0.8,
+              skipFonts: true,
+              fontEmbedCSS: '',
             });
           } catch {
             // fallback gracefully

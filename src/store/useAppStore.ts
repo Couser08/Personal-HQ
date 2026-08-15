@@ -85,31 +85,32 @@ if (typeof window !== 'undefined') {
     }
   });
 
-  // Automatically persist state changes to localStorage
+  // Automatically persist state changes to localStorage only when slice references change
+  let prevState: any = {};
   useAppStore.subscribe((state) => {
-    safeSetItem('phq_todo_projects', JSON.stringify(state.todoProjects));
-    safeSetItem('phq_todo_tasks', JSON.stringify(state.todoTasks));
-    safeSetItem('phq_journals', JSON.stringify(state.journals));
-    safeSetItem('phq_mindmaps', JSON.stringify(state.mindmaps));
-    safeSetItem('phq_habits', JSON.stringify(state.habits));
-    safeSetItem('phq_sprints', JSON.stringify(state.sprints));
-    safeSetItem('phq_dsa_problems', JSON.stringify(state.dsaProblems));
-    safeSetItem('phq_til_logs', JSON.stringify(state.tilLogs));
-    safeSetItem('phq_roadmaps', JSON.stringify(state.roadmaps));
-    safeSetItem('phq_resources', JSON.stringify(state.resources));
-    safeSetItem('phq_dev_goals', JSON.stringify(state.devGoals));
-    safeSetItem('phq_journal_sticky_notes', JSON.stringify(state.journalStickyNotes));
-    safeSetItem('phq_saved_links', JSON.stringify(state.savedLinks));
-    safeSetItem('phq_app_tags', JSON.stringify(state.appTags));
-    safeSetItem('phq_links', JSON.stringify(state.links));
-    safeSetItem('phq_media_logs', JSON.stringify(state.mediaLogs));
-    safeSetItem('phq_countdowns', JSON.stringify(state.countdowns));
+    if (state.todoProjects !== prevState.todoProjects) safeSetItem('phq_todo_projects', JSON.stringify(state.todoProjects));
+    if (state.todoTasks !== prevState.todoTasks) safeSetItem('phq_todo_tasks', JSON.stringify(state.todoTasks));
+    if (state.journals !== prevState.journals) safeSetItem('phq_journals', JSON.stringify(state.journals));
+    if (state.mindmaps !== prevState.mindmaps) safeSetItem('phq_mindmaps', JSON.stringify(state.mindmaps));
+    if (state.habits !== prevState.habits) safeSetItem('phq_habits', JSON.stringify(state.habits));
+    if (state.sprints !== prevState.sprints) safeSetItem('phq_sprints', JSON.stringify(state.sprints));
+    if (state.dsaProblems !== prevState.dsaProblems) safeSetItem('phq_dsa_problems', JSON.stringify(state.dsaProblems));
+    if (state.tilLogs !== prevState.tilLogs) safeSetItem('phq_til_logs', JSON.stringify(state.tilLogs));
+    if (state.roadmaps !== prevState.roadmaps) safeSetItem('phq_roadmaps', JSON.stringify(state.roadmaps));
+    if (state.resources !== prevState.resources) safeSetItem('phq_resources', JSON.stringify(state.resources));
+    if (state.devGoals !== prevState.devGoals) safeSetItem('phq_dev_goals', JSON.stringify(state.devGoals));
+    if (state.journalStickyNotes !== prevState.journalStickyNotes) safeSetItem('phq_journal_sticky_notes', JSON.stringify(state.journalStickyNotes));
+    if (state.savedLinks !== prevState.savedLinks) safeSetItem('phq_saved_links', JSON.stringify(state.savedLinks));
+    if (state.appTags !== prevState.appTags) safeSetItem('phq_app_tags', JSON.stringify(state.appTags));
+    if (state.links !== prevState.links) safeSetItem('phq_links', JSON.stringify(state.links));
+    if (state.mediaLogs !== prevState.mediaLogs) safeSetItem('phq_media_logs', JSON.stringify(state.mediaLogs));
+    if (state.countdowns !== prevState.countdowns) safeSetItem('phq_countdowns', JSON.stringify(state.countdowns));
+    if (state.visions !== prevState.visions) safeSetItem('phq_visions', JSON.stringify(state.visions));
+    if (state.exams !== prevState.exams) safeSetItem('phq_exams', JSON.stringify(state.exams));
+    if (state.examAttempts !== prevState.examAttempts) safeSetItem('phq_exam_attempts', JSON.stringify(state.examAttempts));
+    if (state.studyMaterials !== prevState.studyMaterials) safeSetItem('phq_study_materials', JSON.stringify(state.studyMaterials));
+    if (state.dailyReflections !== prevState.dailyReflections) safeSetItem('phq_daily_reflections', JSON.stringify(state.dailyReflections));
     
-    // Modern Modules Missing from Cache:
-    safeSetItem('phq_visions', JSON.stringify(state.visions));
-    safeSetItem('phq_exams', JSON.stringify(state.exams));
-    safeSetItem('phq_exam_attempts', JSON.stringify(state.examAttempts));
-    safeSetItem('phq_study_materials', JSON.stringify(state.studyMaterials));
-    safeSetItem('phq_daily_reflections', JSON.stringify(state.dailyReflections));
+    prevState = state;
   });
 }

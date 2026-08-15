@@ -3,7 +3,16 @@ import { type BugReport, type BugReportElementInfo, type BugReportCategory, type
 import { bugReportService } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
-import { safeSetItem } from '../utils/storage';
+import { safeSetItem, setIDBItem } from '../utils/storage';
+
+function persistBugReports(reportsList: BugReport[]) {
+  void setIDBItem('phq_bug_reports_full', reportsList);
+  const sanitized = reportsList.map((r) => ({
+    ...r,
+    screenshotData: r.screenshotData && r.screenshotData.length > 500 ? undefined : r.screenshotData,
+  }));
+  safeSetItem('phq_bug_reports', JSON.stringify(sanitized));
+}
 
 export function formatReportMarkdown(report: BugReport): string {
   const dateStr = new Date(report.createdAt).toLocaleString();
