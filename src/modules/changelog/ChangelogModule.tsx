@@ -69,65 +69,35 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    version: 'v4.7.0',
-    codename: 'Velocity Engine',
+    version: 'v4.5.0',
+    codename: 'Velocity & Quality',
     date: 'August 15, 2026',
-    headline: 'Deeply integrated Performance Modes: Potato, Balanced, and Performance.',
-    sub: 'Full control over the rendering pipeline. Switch between 120 FPS GPU compositing, smooth glassmorphic springs, or absolute zero-idle CPU potato mode.',
-    type: 'minor',
+    headline: 'Performance Engine, Bug Reporter, and Deep UI Polish.',
+    sub: 'Massive combined update. Features the new Potato/Balanced/Performance rendering engine, an Interactive Bug Reporter (Ctrl+Shift+B), massive Admin module expansion, and a unified minimal-premium redesign across Dashboards, Habits, and Pomodoro.',
+    type: 'major',
     features: [
       {
         Icon: IconCpu,
         title: 'Performance & Rendering Engine',
-        desc: 'New interactive settings to toggle between Performance (120 FPS), Balanced (Fluid physics & blur), and Potato (Zero idle CPU, instant snap) modes.',
+        desc: 'Toggle between Performance (120 FPS), Balanced (Fluid physics & blur), and Potato (Zero idle CPU, instant snap) modes. Deeply integrated CSS overrides.',
         badge: 'New',
       },
       {
-        Icon: IconBolt,
-        title: 'Global CSS Mode Integration',
-        desc: 'Deeply integrated CSS overrides that instantly disable backdrop-filters, transitions, and particle loops across the entire app when Potato mode is engaged.',
-      },
-    ],
-  },
-  {
-    version: 'v4.6.0',
-    codename: 'Quality & Control',
-    date: 'August 15, 2026',
-    headline: 'Interactive Bug Reporter and massive Admin Module expansion.',
-    sub: 'Introducing a built-in diagnostics tool to capture bugs instantly, alongside a heavily expanded Admin module to manage reports, users, and app telemetry.',
-    type: 'major',
-    features: [
-      {
         Icon: IconBug,
         title: 'Interactive Bug Reporter',
-        desc: 'New built-in diagnostics tool (Ctrl+Shift+B). Point at any element to instantly capture its ID, styles, position, and visual snapshot. Reports sync directly to the database.',
+        desc: 'New built-in diagnostics tool (Ctrl+Shift+B). Point at any element to instantly capture its ID, styles, position, and visual snapshot.',
         badge: 'New',
       },
       {
         Icon: IconShieldLock,
         title: 'Admin Module — Massive Expansion',
-        desc: 'Admin dashboard heavily expanded (+808 lines) to review incoming bug reports, monitor system telemetry, and manage users. Added detailed bug review views.',
+        desc: 'Admin dashboard heavily expanded (+808 lines) to review incoming bug reports, monitor system telemetry, and manage users.',
         badge: 'Expanded',
       },
       {
-        Icon: IconPalette,
-        title: 'Theme Contrast Improvements',
-        desc: 'Added new CSS variables across all themes to ensure perfect text contrast on primary accent coloured buttons and backgrounds.',
-      },
-    ],
-  },
-  {
-    version: 'v4.5.0',
-    codename: 'Minimal Premium',
-    date: 'August 15, 2026',
-    headline: 'Deep UI polish across Dashboards, Habits, and Pomodoro.',
-    sub: 'Hundreds of micro-interactions refined. The Habit Tracker, Pomodoro module, and Dashboard received extensive styling updates to match the new flat, premium aesthetic.',
-    type: 'minor',
-    features: [
-      {
         Icon: IconLayoutGrid,
         title: 'Dashboard & Habits — Deep Redesign',
-        desc: 'Dashboard widgets, HabitCard, HabitModal, and HabitTrackerModule fully updated. Replaced all remaining glassmorphism with crisp borders and solid contrasting colours.',
+        desc: 'Dashboard widgets, HabitCard, HabitModal, and HabitTrackerModule fully updated. Replaced glassmorphism with crisp borders and solid contrasting colours.',
         badge: 'Redesigned',
       },
       {
@@ -136,15 +106,9 @@ const RELEASES: Release[] = [
         desc: 'Massive code reduction and visual refresh in the Pomodoro module to ensure it aligns with the clean, flat UI language.',
       },
       {
-        Icon: IconSparkles,
-        title: 'New Shared Components',
-        desc: 'Introduced standard ListRow and StatCard components. These will unify list items and statistics widgets across the entire application.',
-        badge: 'New',
-      },
-      {
-        Icon: IconBrain,
-        title: 'AI Types & Styling Fixed',
-        desc: 'AiSuggestion interface fixed to properly pass target data for prioritisation workflows. AI chat history and structure reply styling tweaked.',
+        Icon: IconPalette,
+        title: 'Theme Contrast & Shared Components',
+        desc: 'Added new --text-on-accent variables for perfect contrast. Introduced standard ListRow and StatCard components to unify the application.',
       },
     ],
   },
