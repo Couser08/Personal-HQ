@@ -175,7 +175,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
 
     const nextReports = [newReport, ...reports];
     set({ reports: nextReports, isModalOpen: false, capturedElement: null, capturedScreenshot: null });
-    safeSetItem('phq_bug_reports', JSON.stringify(nextReports));
+    persistBugReports(nextReports);
 
     // Sync to Supabase
     try {
@@ -193,7 +193,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     const prev = get().reports;
     const next = prev.map((r) => (r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r));
     set({ reports: next });
-    safeSetItem('phq_bug_reports', JSON.stringify(next));
+    persistBugReports(next);
 
     try {
       await bugReportService.updateStatus(id, status);
@@ -207,7 +207,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     const prev = get().reports;
     const next = prev.filter((r) => r.id !== id);
     set({ reports: next });
-    safeSetItem('phq_bug_reports', JSON.stringify(next));
+    persistBugReports(next);
 
     try {
       await bugReportService.delete(id);
@@ -226,7 +226,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
         : await bugReportService.fetchAll(user?.id);
       if (data && data.length > 0) {
         set({ reports: data });
-        safeSetItem('phq_bug_reports', JSON.stringify(data));
+        persistBugReports(data);
       }
     } catch (err) {
       console.error('Failed to fetch bug reports:', err);
