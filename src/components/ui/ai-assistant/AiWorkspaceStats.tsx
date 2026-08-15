@@ -111,7 +111,7 @@ export const AiWorkspaceStats = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-text-primary truncate group-hover:text-primary transition-colors">{item.title}</p>
-                  <p className="text-[10px] text-text-muted">{new Date(item.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</p>
+                  <p className="text-[10px] text-text-muted">{new Date(item.createdAt || item.timestamp || Date.now()).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</p>
                 </div>
               </button>
             ))}

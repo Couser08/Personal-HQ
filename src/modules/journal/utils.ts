@@ -1,8 +1,8 @@
 import { type JournalEntry } from '../../store/types';
 
-export type EntryMood = JournalEntry['mood'];
-export type EntryPageStyle = JournalEntry['pageStyle'];
-export type EntryStylePreset = JournalEntry['stylePreset'];
+export type EntryMood = string;
+export type EntryPageStyle = string;
+export type EntryStylePreset = string;
 
 export const STYLE_PRESETS: Array<{
   id: EntryStylePreset;

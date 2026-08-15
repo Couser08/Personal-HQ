@@ -4,11 +4,13 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   IconChecklist, IconClockPlay, IconSitemap,
   IconPlus, IconPlayerPlay, IconPlayerPause, IconRefresh,
-  IconCheck, IconArrowRight, IconFlame, IconCalendar,
-  IconChevronDown, IconRocket, IconLayoutList, IconTarget,
+  IconCheck, IconArrowRight, IconFlame,
+  IconRocket, IconLayoutList, IconTarget,
   IconFileText, IconNotes, IconCode, IconStar
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Card } from '../../components/ui/Card';
+import { StatCard } from '../../components/ui/StatCard';
 
 export default function DashboardModule() {
   const {
@@ -63,6 +65,7 @@ export default function DashboardModule() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [selectedDayOffset, setSelectedDayOffset] = useState<number>(0); // 0 = today
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -131,44 +134,50 @@ export default function DashboardModule() {
     const activities: { id: string; title: string; type: string; date: string; icon: any; module: string; color: string }[] = [];
     
     todoTasks.filter(t => t.completed).forEach(t => {
-      activities.push({ id: t.id, title: t.title, type: 'Completed Task', date: t.createdAt || new Date().toISOString(), icon: IconChecklist, module: 'todo', color: 'text-rose-500' });
+      activities.push({ id: t.id, title: t.title, type: 'Completed Task', date: t.createdAt || new Date().toISOString(), icon: IconChecklist, module: 'todo', color: 'text-accent-success' });
     });
     
     journals.forEach(j => {
-      activities.push({ id: j.id, title: j.title || 'Journal Entry', type: 'Journal', date: j.date, icon: IconFileText, module: 'journal', color: 'text-blue-500' });
+      activities.push({ id: j.id, title: j.title || 'Journal Entry', type: 'Journal', date: j.date, icon: IconFileText, module: 'journal', color: 'text-text-primary' });
     });
     
     notes.forEach(n => {
-      activities.push({ id: n.id, title: n.title || 'Note', type: 'Note', date: n.updatedAt || n.createdAt, icon: IconNotes, module: 'markdown', color: 'text-purple-500' });
+      activities.push({ id: n.id, title: n.title || 'Note', type: 'Note', date: n.updatedAt || n.createdAt, icon: IconNotes, module: 'markdown', color: 'text-text-primary' });
     });
 
     snippets.forEach(s => {
-      activities.push({ id: s.id, title: s.title || 'Snippet', type: 'Snippet', date: s.updatedAt || s.createdAt || new Date().toISOString(), icon: IconCode, module: 'snippets', color: 'text-amber-500' });
+      activities.push({ id: s.id, title: s.title || 'Snippet', type: 'Snippet', date: s.updatedAt || s.createdAt || new Date().toISOString(), icon: IconCode, module: 'snippets', color: 'text-text-primary' });
     });
 
-    tilLogs.forEach(t => {
-      activities.push({ id: t.id, title: t.title || 'TIL', type: 'TIL', date: t.createdAt, icon: IconStar, module: 'til', color: 'text-emerald-500' });
+    (tilLogs || []).forEach(t => {
+      activities.push({ id: t.id, title: t.title || 'TIL', type: 'TIL', date: t.createdAt, icon: IconStar, module: 'til', color: 'text-accent-highlight' });
     });
 
     return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
   }, [todoTasks, journals, notes, snippets, tilLogs]);
 
-  const timerRadius = 52;
+  const timerRadius = 48;
   const timerCircumference = 2 * Math.PI * timerRadius;
 
+  // 7-day Week Strip
   const weekDays = useMemo(() => {
     const today = new Date();
-    const dayOfWeek = today.getDay();
+    const dayOfWeek = today.getDay(); // 0 = Sun
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek);
-    const days: { label: string; date: number; isToday: boolean }[] = [];
-    const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    // Start on Monday
+    const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    startOfWeek.setDate(today.getDate() + distanceToMonday);
+
+    const days: { dayName: string; dateNum: number; fullDate: Date; isToday: boolean }[] = [];
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     for (let i = 0; i < 7; i++) {
       const d = new Date(startOfWeek);
       d.setDate(startOfWeek.getDate() + i);
       days.push({
-        label: labels[i],
-        date: d.getDate(),
+        dayName: labels[i],
+        dateNum: d.getDate(),
+        fullDate: d,
         isToday: d.toDateString() === today.toDateString(),
       });
     }
@@ -209,31 +218,26 @@ export default function DashboardModule() {
     return dueHabits.filter(h => h.completedDates.includes(todayStr)).length;
   }, [dueHabits, todayStr]);
 
-
-
-  const currentMonthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.05
+        staggerChildren: 0.04,
+        delayChildren: 0.02
       }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
+    hidden: { opacity: 0, y: 12 },
     show: {
       opacity: 1,
       y: 0,
       transition: {
         type: 'spring' as const,
-        stiffness: 300,
-        damping: 24,
-        mass: 0.8
+        stiffness: 350,
+        damping: 26,
       }
     }
   };
@@ -243,469 +247,445 @@ export default function DashboardModule() {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="flex flex-col w-full max-w-6xl gap-6 px-4 pb-24 mx-auto antialiased text-left md:px-8"
+      className="flex flex-col w-full max-w-5xl gap-8 pb-24 mx-auto antialiased text-left"
     >
-      
-      {/* Redesigned Minimal & Premium Header */}
-      <motion.div variants={itemVariants} className="flex flex-col justify-between gap-4 mt-2 md:flex-row md:items-center">
-        <div>
-          <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] leading-none">{greeting} 👋</span>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight mt-1.5">Welcome to command center</h1>
-        </div>
-        
-        {/* Micro Calendar Widget nested in header */}
-        <div className="bg-surface border border-border/50 rounded-2xl p-3 flex items-center gap-4 shadow-sm max-w-[280px]">
-          <div className="flex items-center min-w-0 gap-2">
-            <IconCalendar className="w-4 h-4 text-text-muted shrink-0" />
-            <span className="text-[10px] font-black text-text-secondary uppercase tracking-wider truncate">{currentMonthYear}</span>
-          </div>
-          <div className="grid flex-1 grid-cols-7 gap-1">
-            {weekDays.map((day, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5">
-                <span className="text-[8px] font-extrabold text-text-muted uppercase leading-none">{day.label}</span>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold font-mono transition-all ${
-                  day.isToday ? 'bg-rose-500 text-white shadow-sm' : 'text-text-secondary'
-                }`}>
-                  {day.date}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Redesigned Premium Glassmorphic Hero Banner */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-[32px] border border-border/50 bg-surface/30 backdrop-blur-md shadow-sm p-8 md:p-10 lg:p-12 gap-6">
-        <div className="z-10 flex flex-col w-full gap-2 text-left animate-fade-in">
-          <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl text-text-primary">
-            Focus on<br />what matters<span className="text-rose-500">.</span>
-          </h2>
-          <p className="w-full mt-3 text-xs font-medium leading-relaxed text-text-secondary max-w-xl">
-            Brainstorm structural concepts, lock deep sessions, and track goals smoothly — all inside your unified developer command center.
-          </p>
-          
-          <div className="flex flex-wrap gap-3 mt-5">
-            <motion.button 
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              onClick={() => {
-                if (pomodoroTimerState !== 'running') {
-                  if (pomodoroTimerState === 'paused') {
-                    resumeGlobalPomodoro();
-                  } else {
-                    startGlobalPomodoro();
+      {/* ── 1. Hero Greeting Banner (Minimal-Premium Floating Card) ── */}
+      <motion.div variants={itemVariants}>
+        <Card padding="lg" className="relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex flex-col gap-2 max-w-xl z-10">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">
+              {greeting} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </span>
+            <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-text-primary leading-tight">
+              Focus on what matters today.
+            </h1>
+            <p className="text-[14px] text-text-secondary leading-relaxed mt-1">
+              Organise your thoughts, track daily habits, and lock in deep work sessions inside your personal headquarters.
+            </p>
+            
+            <div className="flex flex-wrap gap-3 mt-4">
+              <button 
+                onClick={() => {
+                  if (pomodoroTimerState !== 'running') {
+                    if (pomodoroTimerState === 'paused') {
+                      resumeGlobalPomodoro();
+                    } else {
+                      startGlobalPomodoro();
+                    }
                   }
-                }
-                setActiveModule('pomodoro');
-              }}
-              className="flex items-center h-10 gap-2 px-5 text-xs font-bold text-white transition-all shadow-sm cursor-pointer bg-rose-500 hover:bg-rose-600 rounded-xl"
-            >
-              <IconRocket className="w-4 h-4" /> Start Focus Session
-            </motion.button>
-            <motion.button 
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              onClick={() => setActiveModule('todo')}
-              className="flex items-center h-10 gap-2 px-5 text-xs font-bold transition-all border cursor-pointer bg-surface border-border hover:bg-surface-hover text-text-primary rounded-xl"
-            >
-              <IconLayoutList className="w-4 h-4 text-text-secondary" /> View My Tasks
-            </motion.button>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-1.5 text-left">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500">Today's Plan</span>
-            <div className="flex items-center justify-between px-4 py-2.5 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/15 rounded-xl w-60">
-              <span className="text-xs font-bold text-text-primary">{todayTasks.length} tasks scheduled</span>
-              <div className="w-4.5 h-4.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
-                <IconCheck className="w-3 h-3 stroke-[3]" />
-              </div>
+                  setActiveModule('pomodoro');
+                }}
+                className="bg-primary text-surface px-6 py-2.5 rounded-full font-semibold text-[13px] hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2 shadow-sm"
+              >
+                <IconRocket size={16} /> Start Focus Session
+              </button>
+              <button 
+                onClick={() => setActiveModule('todo')}
+                className="bg-surface-alt text-text-primary px-5 py-2.5 rounded-full font-semibold text-[13px] hover:bg-surface-hover transition-colors cursor-pointer flex items-center gap-2"
+              >
+                <IconLayoutList size={16} className="text-text-secondary" /> View Tasks
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Premium ambient glows */}
-        <div className="absolute -right-24 -top-24 w-72 h-72 rounded-full bg-rose-500/[0.04] blur-[100px] pointer-events-none" />
-        <div className="absolute left-1/4 -bottom-16 w-56 h-56 rounded-full bg-blue-500/[0.03] blur-[80px] pointer-events-none" />
-      </motion.div>
-
-      {/* Redesigned KPI metrics summary bar */}
-      <motion.div variants={itemVariants} className="grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="bg-surface border border-border/50 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="flex items-center justify-center border w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shrink-0">
-            <IconClockPlay className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-wider uppercase text-text-muted">Focus Time</p>
-            <p className="text-lg font-black text-text-primary font-mono tracking-tight mt-0.5">{focusTimeLabel}</p>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border/50 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="flex items-center justify-center border w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 border-rose-500/10 shrink-0">
-            <IconCheck className="w-4 h-4 stroke-[2.5]" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-wider uppercase text-text-muted">Tasks Ratio</p>
-            <p className="text-lg font-black text-text-primary font-mono tracking-tight mt-0.5">{completedTasksCount}/{totalTasks}</p>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border/50 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="flex items-center justify-center text-orange-500 border w-9 h-9 rounded-xl bg-orange-500/10 border-orange-500/10 shrink-0">
-            <IconFlame className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-wider uppercase text-text-muted">Consistency</p>
-            <p className="text-lg font-black text-text-primary font-mono tracking-tight mt-0.5">{completedTodayCount}/{dueHabits.length} habits</p>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border/50 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="flex items-center justify-center text-purple-500 border w-9 h-9 rounded-xl bg-purple-500/10 border-purple-500/10 shrink-0">
-            <IconSitemap className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-wider uppercase text-text-muted">Focus Streak</p>
-            <p className="text-lg font-black text-text-primary font-mono tracking-tight mt-0.5">{pomodoroStreak} days</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Main content grid */}
-      <motion.div variants={itemVariants} className="grid items-start w-full grid-cols-1 gap-6 lg:grid-cols-3">
-        
-        {/* Column 1: Focus Control Dock */}
-        <div className="bg-surface border border-border/50 rounded-3xl p-6 flex flex-col gap-6 shadow-sm relative overflow-hidden h-full min-h-[380px]">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center border rounded-lg w-7 h-7 bg-emerald-500/10 text-emerald-500 border-emerald-500/10">
-                <IconClockPlay className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-xs font-black tracking-wider uppercase text-text-primary">Focus Session</span>
+          {/* Quick Schedule Preview Pill inside Hero */}
+          <div className="z-10 flex flex-col gap-2 bg-surface-alt p-4 rounded-[18px] w-full md:w-auto min-w-[200px] shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">Daily Target</span>
+              <span className="w-2 h-2 rounded-full bg-accent-success" />
             </div>
-            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded border transition-all ${
-              pomodoroTimerState === 'running'
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                : pomodoroTimerState === 'paused'
-                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                  : 'bg-surface-alt text-text-muted border-border/50'
-            }`}>
-              {pomodoroTimerState === 'running' ? 'Active' : pomodoroTimerState === 'paused' ? 'Paused' : 'Idle'}
+            <div className="text-[18px] font-semibold text-text-primary">
+              {completedTasksCount} / {totalTasks} Done
+            </div>
+            <span className="text-[12px] text-text-secondary">
+              {todayTasks.length} tasks remaining
+            </span>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* ── 2. KPI Metrics Stats Grid (StatCard Primitives) ── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Focus Time"
+          value={focusTimeLabel}
+          icon={<IconClockPlay size={20} />}
+          trend={focusHours > 0 ? { value: `${focusHours}h logged`, isPositive: true } : undefined}
+        />
+        <StatCard
+          label="Habit Progress"
+          value={`${completedTodayCount}/${dueHabits.length}`}
+          icon={<IconFlame size={20} />}
+          trend={completedTodayCount === dueHabits.length && dueHabits.length > 0 ? { value: 'All done!', isPositive: true } : undefined}
+        />
+        <StatCard
+          label="Active Tasks"
+          value={todayTasks.length}
+          icon={<IconChecklist size={20} />}
+        />
+        <StatCard
+          label="Streak Record"
+          value={`${pomodoroStreak} days`}
+          icon={<IconStar size={20} />}
+          trend={pomodoroStreak > 0 ? { value: 'On fire', isPositive: true } : undefined}
+        />
+      </motion.div>
+
+      {/* ── 3. Day Planner Week Strip Card (Reference Pattern) ── */}
+      <motion.div variants={itemVariants}>
+        <Card padding="lg" className="flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-[18px] font-semibold text-text-primary">Week Planner</h2>
+              <p className="text-[13px] text-text-secondary">Select a day to view agenda and tasks</p>
+            </div>
+            <span className="text-[12px] font-medium text-text-tertiary">
+              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center flex-1 py-4">
-            <div className="relative flex items-center justify-center w-36 h-36">
-              <svg className="absolute top-0 left-0 w-full h-full -rotate-90" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="4.5" className="text-border/40" />
-                <circle
-                  cx="60" cy="60" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="4.5"
-                  strokeLinecap="round"
-                  className={pomodoroTimerState !== 'idle' ? 'text-emerald-500' : 'text-text-muted/40'}
-                  strokeDasharray={`${timerCircumference}`}
-                  strokeDashoffset={`${timerCircumference * (1 - pomodoroProgress / 100)}`}
-                  style={{ transition: 'stroke-dashoffset 1s linear' }}
-                />
-              </svg>
-              <span className="text-[28px] font-black text-text-primary font-mono tracking-tight leading-none z-10">
-                {formatTime(pomodoroSecondsLeft)}
+          {/* 7-Day Horizontal Strip */}
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map((d, index) => {
+              const isSelected = selectedDayOffset === index;
+              return (
+                <button
+                  key={d.dayName}
+                  onClick={() => setSelectedDayOffset(index)}
+                  className="flex flex-col items-center gap-2 p-2 rounded-[14px] hover:bg-surface-alt transition-colors cursor-pointer group"
+                >
+                  <span className={`text-[11px] font-semibold uppercase transition-colors ${
+                    d.isToday ? 'text-accent-highlight' : 'text-text-secondary group-hover:text-text-primary'
+                  }`}>
+                    {d.dayName}
+                  </span>
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[14px] sm:text-[15px] font-semibold transition-all ${
+                    d.isToday
+                      ? 'bg-accent-highlight text-white shadow-sm'
+                      : isSelected
+                        ? 'bg-primary text-surface shadow-sm'
+                        : 'text-text-primary group-hover:bg-surface-alt'
+                  }`}>
+                    {d.dateNum}
+                  </div>
+                  {d.isToday && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent-highlight mt-0.5" />
+                  )}
+                  {!d.isToday && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-transparent mt-0.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-px w-full bg-border-hairline" />
+
+          {/* Quick Task Entry inside Planner */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">
+                Today's Action Items ({todayTasks.length})
               </span>
-            </div>
-            <p className="text-[10px] text-text-muted font-bold tracking-wider uppercase mt-4">
-              {pomodoroTimerState === 'running' ? 'Deep focus active' : pomodoroTimerState === 'paused' ? 'Focus session paused' : 'Ready to start focus'}
-            </p>
-          </div>
-
-          <div className="flex w-full gap-2 mt-auto">
-            {pomodoroTimerState === 'running' ? (
-              <motion.button 
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                onClick={pauseGlobalPomodoro}
-                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+              <button
+                onClick={() => setActiveModule('todo')}
+                className="text-[12px] font-semibold text-text-primary hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <IconPlayerPause className="w-3.5 h-3.5 fill-white" /> Pause
-              </motion.button>
-            ) : (
-              <motion.button 
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
-                className="flex-grow h-10 flex items-center justify-center gap-1.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
-              >
-                <IconPlayerPlay className="w-3.5 h-3.5 fill-white" />
-                {pomodoroTimerState === 'paused' ? 'Resume' : 'Start Focus'}
-              </motion.button>
-            )}
-            <motion.button 
-              whileHover={pomodoroTimerState !== 'idle' ? { scale: 1.05, rotate: 15 } : {}}
-              whileTap={pomodoroTimerState !== 'idle' ? { scale: 0.95 } : {}}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              onClick={stopGlobalPomodoro} 
-              disabled={pomodoroTimerState === 'idle'} 
-              title="Reset Timer"
-              className="flex items-center justify-center w-10 h-10 transition-all border cursor-pointer rounded-xl bg-surface-alt hover:bg-surface-hover border-border text-text-secondary disabled:opacity-30 shrink-0"
-            >
-              <IconRefresh className="w-3.5 h-3.5" />
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Column 2: Today's Tasks */}
-        <div className="bg-surface border border-border/50 rounded-3xl p-6 flex flex-col gap-4 shadow-sm h-full min-h-[380px]">
-          <div className="flex items-center justify-between w-full shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center border rounded-lg w-7 h-7 bg-rose-500/10 text-rose-500 border-rose-500/10">
-                <IconChecklist className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-xs font-black tracking-wider uppercase text-text-primary">Today's Tasks</span>
+                Open Planner <IconArrowRight size={14} />
+              </button>
             </div>
-            <button onClick={() => setActiveModule('todo')}
-              className="flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer transition-colors">
-              View all <IconArrowRight className="w-3 h-3" />
-            </button>
-          </div>
 
-          <form onSubmit={handleAddTask} className="flex w-full gap-2 shrink-0">
-            <input
-              type="text"
-              placeholder="Add a fast task…"
-              value={newTaskTitle}
-              onChange={e => setNewTaskTitle(e.target.value)}
-              className="flex-1 min-w-0 bg-surface-alt border border-border/80 rounded-xl px-3.5 h-9 text-xs font-medium focus:outline-none focus:border-rose-500/50 text-text-primary placeholder:text-text-muted transition-all"
-            />
-            <button type="submit" disabled={!newTaskTitle.trim()}
-              className="flex items-center justify-center text-white transition-all cursor-pointer w-9 h-9 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-30 shrink-0 active:scale-95">
-              <IconPlus className="w-4 h-4" />
-            </button>
-          </form>
+            <form onSubmit={handleAddTask} className="flex gap-2 w-full">
+              <input
+                type="text"
+                placeholder="Add a new task for today..."
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                className="flex-1 bg-surface-alt border border-transparent rounded-[12px] px-4 py-2.5 text-[14px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+              <button
+                type="submit"
+                disabled={!newTaskTitle.trim()}
+                className="bg-primary text-surface px-5 py-2.5 rounded-[12px] font-semibold text-[13px] hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+              >
+                <IconPlus size={16} /> Add
+              </button>
+            </form>
 
-          <div className="flex-1 flex flex-col gap-2 overflow-y-auto scrollbar-none w-full max-h-[220px]">
-            {todayTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-1.5 py-6">
-                <span className="text-lg">🎉</span>
-                <p className="text-[11px] text-text-muted font-bold tracking-tight italic text-center">All clear for today!</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 w-full relative">
-                <AnimatePresence initial={false} mode="popLayout">
+            {/* Tasks List */}
+            <div className="flex flex-col gap-2">
+              {todayTasks.length === 0 ? (
+                <div className="p-8 text-center bg-surface-alt rounded-[14px]">
+                  <p className="text-[13px] font-medium text-text-secondary">🎉 All caught up! No pending tasks for today.</p>
+                </div>
+              ) : (
+                <AnimatePresence initial={false}>
                   {visibleTasks.map(task => (
-                    <motion.div 
+                    <motion.div
                       key={task.id}
                       layout
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20, transition: { duration: 0.15 } }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group"
+                      exit={{ opacity: 0, x: -10 }}
+                      className="flex items-center justify-between p-3.5 rounded-[14px] bg-surface-alt hover:bg-surface-hover transition-colors group"
                     >
-                      <button onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
-                        className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
-                        <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                          task.completed ? 'bg-rose-500 border-rose-500' : 'border-border group-hover:border-rose-500'
+                      <button
+                        onClick={() => updateTodoTask(task.id, { completed: !task.completed })}
+                        className="flex items-center gap-3.5 flex-1 min-w-0 text-left cursor-pointer"
+                      >
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                          task.completed
+                            ? 'bg-accent-success border-accent-success text-white'
+                            : 'border-border-alt group-hover:border-text-primary'
                         }`}>
-                          <AnimatePresence>
-                            {task.completed && (
-                              <motion.div
-                                initial={{ scale: 0, rotate: -20 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                exit={{ scale: 0 }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                              >
-                                <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                          {task.completed && <IconCheck size={12} stroke={3} />}
                         </div>
-                        <span className={`text-xs font-semibold truncate flex-grow transition-all duration-300 ${
-                          task.completed ? 'line-through text-text-muted font-normal' : 'text-text-primary'
-                        }`}>{task.title}</span>
+                        <span className={`text-[14px] truncate ${
+                          task.completed ? 'line-through text-text-tertiary' : 'font-medium text-text-primary'
+                        }`}>
+                          {task.title}
+                        </span>
                       </button>
+
                       {!task.completed && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             const isActive = activeFocusItem?.id === task.id;
                             setActiveFocusItem(isActive ? null : { type: 'todo', id: task.id, title: task.title });
                           }}
-                          className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
+                          title={activeFocusItem?.id === task.id ? "Active Focus" : "Focus on Task"}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                             activeFocusItem?.id === task.id
-                              ? 'text-blue-500 bg-blue-500/10'
-                              : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10 opacity-0 group-hover:opacity-100'
+                              ? 'bg-primary text-surface'
+                              : 'text-text-tertiary hover:text-text-primary opacity-0 group-hover:opacity-100'
                           }`}
-                          title={activeFocusItem?.id === task.id ? "Deactivate focus" : "Focus on this task"}
                         >
-                          <IconTarget size={13} />
+                          <IconTarget size={15} />
                         </button>
                       )}
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </div>
-            )}
-          </div>
+              )}
 
-          {todayTasks.length > 4 && (
-            <button onClick={() => setShowAllTasks(!showAllTasks)}
-              className="flex items-center justify-center gap-1 h-8 text-[11px] font-bold text-text-secondary hover:text-text-primary transition-all cursor-pointer shrink-0 bg-surface-alt/50 rounded-xl w-full border border-border/40">
-              {showAllTasks ? 'Show less' : 'Show more'} <IconChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAllTasks ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-        </div>
-
-        {/* Column 3: Habits & Mindmaps */}
-        <div className="flex flex-col w-full h-full gap-6">
-          
-          {/* Habits Mini widget */}
-          <div className="flex flex-col w-full gap-4 p-5 border shadow-sm bg-surface border-border/50 rounded-3xl">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center text-orange-500 border rounded-lg w-7 h-7 bg-orange-500/10 border-orange-500/10">
-                  <IconFlame className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-xs font-black tracking-wider uppercase text-text-primary">Daily Habits</span>
-              </div>
-              <button onClick={() => setActiveModule('habits')}
-                className="text-[11px] font-bold text-orange-500 hover:text-orange-600 cursor-pointer">
-                Manage
-              </button>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              {dueHabits.slice(0, 2).map(habit => {
-                const isCompleted = habit.completedDates.includes(todayStr);
-                return (
-                  <div key={habit.id} className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full group">
-                    <button onClick={() => toggleHabitCompletion(habit.id, todayStr)}
-                      className="flex items-center gap-3 min-w-0 flex-grow text-left cursor-pointer">
-                      <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
-                        isCompleted ? 'bg-orange-500 border-orange-500' : 'border-border group-hover:border-orange-500'
-                      }`}>
-                        <AnimatePresence>
-                          {isCompleted && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -20 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              exit={{ scale: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                            >
-                              <IconCheck className="w-2.5 h-2.5 text-white stroke-[3]" />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <span className={`text-xs font-semibold truncate flex-grow transition-all duration-300 ${
-                        isCompleted ? 'line-through text-text-muted font-normal' : 'text-text-primary'
-                      }`}>{habit.name}</span>
-                    </button>
-                    {!isCompleted && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const isActive = activeFocusItem?.id === habit.id;
-                          setActiveFocusItem(isActive ? null : { type: 'habit', id: habit.id, title: habit.name });
-                        }}
-                        className={`p-1 rounded transition-colors cursor-pointer shrink-0 ${
-                          activeFocusItem?.id === habit.id
-                            ? 'text-orange-500 bg-orange-500/10'
-                            : 'text-text-muted hover:text-orange-500 hover:bg-orange-500/10 opacity-0 group-hover:opacity-100'
-                        }`}
-                        title={activeFocusItem?.id === habit.id ? "Deactivate focus" : "Focus on this habit"}
-                      >
-                        <IconTarget size={13} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-              {dueHabits.length === 0 && (
-                <p className="text-[11px] text-text-muted italic py-1">No habits due today.</p>
+              {todayTasks.length > 4 && (
+                <button
+                  onClick={() => setShowAllTasks(!showAllTasks)}
+                  className="w-full py-2 text-[12px] font-semibold text-text-secondary hover:text-text-primary transition-colors cursor-pointer text-center"
+                >
+                  {showAllTasks ? 'Show fewer tasks' : `Show all ${todayTasks.length} tasks`}
+                </button>
               )}
             </div>
           </div>
+        </Card>
+      </motion.div>
 
-          {/* Mindmaps Mini widget */}
-          <div className="flex flex-col flex-grow w-full gap-4 p-5 border shadow-sm bg-surface border-border/50 rounded-3xl">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center text-purple-500 border rounded-lg w-7 h-7 bg-purple-500/10 border-purple-500/10">
-                  <IconSitemap className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-xs font-black tracking-wider uppercase text-text-primary">Mindmaps</span>
+      {/* ── 4. Side-by-Side: Focus Timer Dock & Habits + Mindmaps ── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Focus Timer Dock */}
+        <Card padding="lg" className="flex flex-col gap-6 lg:col-span-1 min-h-[360px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-primary">
+                <IconClockPlay size={17} />
               </div>
-              <button onClick={handleCreateMindmap}
-                className="text-[11px] font-bold text-purple-500 hover:text-purple-600 flex items-center gap-0.5 cursor-pointer">
-                <IconPlus size={10} /> Create
+              <span className="text-[15px] font-semibold text-text-primary">Focus Timer</span>
+            </div>
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
+              pomodoroTimerState === 'running'
+                ? 'bg-accent-success/10 text-accent-success'
+                : pomodoroTimerState === 'paused'
+                  ? 'bg-accent-warning/10 text-accent-warning'
+                  : 'bg-surface-alt text-text-tertiary'
+            }`}>
+              {pomodoroTimerState === 'running' ? 'Running' : pomodoroTimerState === 'paused' ? 'Paused' : 'Ready'}
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center py-6">
+            <div className="relative flex items-center justify-center w-36 h-36">
+              <svg className="absolute top-0 left-0 w-full h-full -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="4" className="text-border-hairline" />
+                <circle
+                  cx="60" cy="60" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="4"
+                  strokeLinecap="round"
+                  className={pomodoroTimerState !== 'idle' ? 'text-primary' : 'text-text-tertiary/30'}
+                  strokeDasharray={`${timerCircumference}`}
+                  strokeDashoffset={`${timerCircumference * (1 - pomodoroProgress / 100)}`}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span className="text-[32px] font-semibold text-text-primary font-mono tracking-tight z-10">
+                {formatTime(pomodoroSecondsLeft)}
+              </span>
+            </div>
+            <p className="text-[12px] text-text-secondary mt-4 font-medium">
+              {pomodoroTimerState === 'running' ? 'Deep work active' : 'Standard 25-min interval'}
+            </p>
+          </div>
+
+          <div className="flex gap-2 w-full mt-auto">
+            {pomodoroTimerState === 'running' ? (
+              <button
+                onClick={pauseGlobalPomodoro}
+                className="flex-1 py-2.5 rounded-full bg-surface-alt hover:bg-surface-hover text-text-primary font-semibold text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <IconPlayerPause size={16} /> Pause
+              </button>
+            ) : (
+              <button
+                onClick={pomodoroTimerState === 'paused' ? resumeGlobalPomodoro : startGlobalPomodoro}
+                className="flex-1 py-2.5 rounded-full bg-primary text-surface font-semibold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+              >
+                <IconPlayerPlay size={16} /> {pomodoroTimerState === 'paused' ? 'Resume' : 'Start Focus'}
+              </button>
+            )}
+            <button
+              onClick={stopGlobalPomodoro}
+              disabled={pomodoroTimerState === 'idle'}
+              title="Reset Timer"
+              className="w-10 h-10 rounded-full bg-surface-alt hover:bg-surface-hover text-text-secondary disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              <IconRefresh size={16} />
+            </button>
+          </div>
+        </Card>
+
+        {/* Daily Habits & Recent Workspaces */}
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          {/* Habits Card */}
+          <Card padding="lg" className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-accent-success">
+                  <IconFlame size={17} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-text-primary">Daily Habits</h3>
+                  <span className="text-[12px] text-text-secondary">{completedTodayCount} of {dueHabits.length} completed</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModule('habits')}
+                className="text-[12px] font-semibold text-text-primary hover:underline cursor-pointer"
+              >
+                Manage
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 overflow-y-auto max-h-[140px] pr-1">
+            <div className="flex flex-col gap-2">
+              {dueHabits.length === 0 ? (
+                <p className="text-[13px] text-text-secondary italic py-2">No habits scheduled for today.</p>
+              ) : (
+                dueHabits.slice(0, 3).map(habit => {
+                  const isCompleted = habit.completedDates.includes(todayStr);
+                  return (
+                    <div
+                      key={habit.id}
+                      className="flex items-center justify-between p-3 rounded-[14px] bg-surface-alt hover:bg-surface-hover transition-colors"
+                    >
+                      <button
+                        onClick={() => toggleHabitCompletion(habit.id, todayStr)}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
+                      >
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                          isCompleted
+                            ? 'bg-accent-success border-accent-success text-white'
+                            : 'border-border-alt'
+                        }`}>
+                          {isCompleted && <IconCheck size={12} stroke={3} />}
+                        </div>
+                        <span className={`text-[14px] truncate ${
+                          isCompleted ? 'line-through text-text-tertiary' : 'font-medium text-text-primary'
+                        }`}>
+                          {habit.name}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+
+          {/* Quick Mindmaps Card */}
+          <Card padding="lg" className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-primary">
+                  <IconSitemap size={17} />
+                </div>
+                <h3 className="text-[15px] font-semibold text-text-primary">Recent Mindmaps</h3>
+              </div>
+              <button
+                onClick={handleCreateMindmap}
+                className="text-[12px] font-semibold text-text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <IconPlus size={14} /> New Mindmap
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {mindmaps.slice(0, 2).map(m => (
-                <button key={m.id} onClick={() => handleOpenMindmap(m.id)}
-                  className="flex items-center gap-2.5 p-2 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full cursor-pointer">
-                  <div className="flex items-center justify-center text-purple-500 border rounded-lg w-7 h-7 bg-purple-500/5 shrink-0 border-purple-500/10">
-                    <IconSitemap className="w-3.5 h-3.5" />
+                <button
+                  key={m.id}
+                  onClick={() => handleOpenMindmap(m.id)}
+                  className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-alt hover:bg-surface-hover transition-colors text-left cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary shrink-0 shadow-sm">
+                    <IconSitemap size={16} />
                   </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-xs font-bold leading-none truncate text-text-primary">{m.title}</p>
-                    <span className="text-[9px] text-text-muted font-bold block mt-1">
-                      {m.nodes.length} nodes
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-text-primary truncate">{m.title}</p>
+                    <span className="text-[11px] text-text-secondary">{m.nodes.length} nodes</span>
                   </div>
                 </button>
               ))}
               {mindmaps.length === 0 && (
-                <p className="text-[11px] text-text-muted italic py-1">No mindmaps yet.</p>
+                <p className="text-[13px] text-text-secondary italic col-span-2 py-2">No mindmaps created yet.</p>
               )}
             </div>
-          </div>
-
+          </Card>
         </div>
-
       </motion.div>
 
-      {/* Recent Activity Feed */}
-      <motion.div variants={itemVariants} className="w-full">
-        <div className="bg-surface border border-border/50 rounded-3xl p-6 flex flex-col gap-4 shadow-sm w-full">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center border rounded-lg w-7 h-7 bg-blue-500/10 text-blue-500 border-blue-500/10">
-                <IconStar className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-xs font-black tracking-wider uppercase text-text-primary">Recent Activity</span>
-            </div>
+      {/* ── 5. Recent Activity Feed ── */}
+      <motion.div variants={itemVariants}>
+        <Card padding="lg" className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[15px] font-semibold text-text-primary">Recent Activity</h3>
+            <span className="text-[12px] text-text-tertiary">Auto-synced</span>
           </div>
-          
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col divide-y divide-border-hairline">
             {recentActivity.length === 0 ? (
-              <p className="text-[11px] text-text-muted italic py-1">No recent activity.</p>
+              <p className="text-[13px] text-text-secondary italic py-4">No recent activity logged.</p>
             ) : (
               recentActivity.map((activity, i) => (
-                <button key={`${activity.id}-${i}`} onClick={() => setActiveModule(activity.module)}
-                  className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-surface-alt/45 hover:bg-surface-alt border border-border/20 text-left transition-all w-full cursor-pointer group">
+                <button
+                  key={`${activity.id}-${i}`}
+                  onClick={() => setActiveModule(activity.module)}
+                  className="flex items-center justify-between py-3.5 hover:bg-surface-alt/50 transition-colors text-left cursor-pointer px-2 rounded-[10px]"
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center bg-surface border border-border shrink-0 ${activity.color}`}>
-                      <activity.icon className="w-3.5 h-3.5" />
+                    <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center text-text-secondary shrink-0">
+                      <activity.icon size={16} />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-text-primary truncate">{activity.title}</span>
-                      <span className="text-[10px] text-text-muted font-semibold">{activity.type}</span>
+                    <div>
+                      <p className="text-[14px] font-medium text-text-primary truncate max-w-sm">{activity.title}</p>
+                      <span className="text-[11px] text-text-secondary">{activity.type}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-text-muted font-bold whitespace-nowrap">
-                    {new Date(activity.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  <span className="text-[12px] text-text-tertiary shrink-0">
+                    {new Date(activity.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </button>
               ))
             )}
           </div>
-        </div>
+        </Card>
       </motion.div>
-
     </motion.div>
   );
 }

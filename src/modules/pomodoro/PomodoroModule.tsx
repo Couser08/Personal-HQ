@@ -8,235 +8,19 @@ import { useAppStore, type Habit } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useToastStore } from '../../store/useToastStore';
 import { ProgressRing } from '../../components/ui/ProgressRing';
+import { Card } from '../../components/ui/Card';
+import { StatCard } from '../../components/ui/StatCard';
 
 const SESSIONS = [
-  { id: 'focus',        label: 'Focus Session',        minutes: 25, color: '#f43f5e', hex2: 'rgba(244,63,94,0.06)' },
-  { id: 'short-break',  label: 'Short Break',          minutes: 5,  color: '#22c55e', hex2: 'rgba(34,197,94,0.06)'  },
-  { id: 'long-break',   label: 'Long Break',           minutes: 15, color: '#3b82f6', hex2: 'rgba(59,130,246,0.06)' },
+  { id: 'focus',        label: 'Focus Session',        minutes: 25, color: '#111111' },
+  { id: 'short-break',  label: 'Short Break',          minutes: 5,  color: '#22C55E' },
+  { id: 'long-break',   label: 'Long Break',           minutes: 15, color: '#3B82F6' },
 ] as const;
 
 type SessionId = typeof SESSIONS[number]['id'];
 const PRESETS = [5, 10, 20, 25, 45, 60];
 
 const pad = (n: number) => String(n).padStart(2, '0');
-
-// Page-scoped Theme overrides
-const themeStyles = {
-  default: '',
-  'tokyo-sakura': `
-    .pomodoro-wrapper {
-      position: relative;
-      background: radial-gradient(circle at top right, #ffd6e0 0%, #fff0f3 100%) !important;
-      --bg-surface: rgba(255, 255, 255, 0.45) !important;
-      --bg-surface-alt: rgba(255, 255, 255, 0.65) !important;
-      --border-border: rgba(249, 203, 211, 0.7) !important;
-      --text-primary: #471018 !important;
-      --text-secondary: #7a3541 !important;
-      --text-muted: #af6b77 !important;
-      --color-primary: #ff5e7e !important;
-      border-radius: 32px !important;
-      padding: 28px !important;
-      box-shadow: 0 20px 40px rgba(255, 94, 126, 0.04), inset 0 0 80px rgba(255, 255, 255, 0.6) !important;
-      border: 1px solid rgba(249, 203, 211, 0.5) !important;
-      backdrop-filter: blur(12px) !important;
-      overflow: hidden;
-    }
-    .dark .pomodoro-wrapper {
-      background: radial-gradient(circle at top right, #2b1419 0%, #1a0b0e 100%) !important;
-      --bg-surface: rgba(26, 14, 17, 0.55) !important;
-      --bg-surface-alt: rgba(38, 20, 24, 0.55) !important;
-      --border-border: rgba(82, 38, 46, 0.55) !important;
-      --text-primary: #ffdce1 !important;
-      --text-secondary: #d69ca6 !important;
-      --text-muted: #9c626d !important;
-      --color-primary: #ff5e7e !important;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), inset 0 0 80px rgba(255, 94, 126, 0.01) !important;
-      border: 1px solid rgba(82, 38, 46, 0.35) !important;
-    }
-    /* Force background, border, text color on internal cards */
-    .pomodoro-wrapper .bg-surface {
-      background-color: var(--bg-surface) !important;
-      border-color: var(--border-border) !important;
-      box-shadow: 0 4px 12px rgba(255, 94, 126, 0.02) !important;
-    }
-    .pomodoro-wrapper .bg-surface-alt {
-      background-color: var(--bg-surface-alt) !important;
-      border-color: var(--border-border) !important;
-    }
-    .pomodoro-wrapper select {
-      background-color: var(--bg-surface-alt) !important;
-      border-color: var(--border-border) !important;
-      color: var(--text-primary) !important;
-    }
-    .pomodoro-wrapper .border,
-    .pomodoro-wrapper .border-border,
-    .pomodoro-wrapper .border-t,
-    .pomodoro-wrapper .divide-y > * {
-      border-color: var(--border-border) !important;
-    }
-    .pomodoro-wrapper .text-text-primary {
-      color: var(--text-primary) !important;
-    }
-    .pomodoro-wrapper .text-text-secondary {
-      color: var(--text-secondary) !important;
-    }
-    .pomodoro-wrapper .text-text-muted {
-      color: var(--text-muted) !important;
-    }
-    /* Sakura petals styling */
-    @keyframes fall {
-      0% {
-        transform: translateY(-20px) rotate(0deg) translateX(0);
-        opacity: 0;
-      }
-      10% { opacity: 0.7; }
-      90% { opacity: 0.7; }
-      100% {
-        transform: translateY(600px) rotate(360deg) translateX(80px);
-        opacity: 0;
-      }
-    }
-    .sakura-petal {
-      position: absolute;
-      background: linear-gradient(135deg, #ffc0cb 0%, #ffb7c5 100%);
-      border-radius: 150% 0 150% 150%;
-      pointer-events: none;
-      transform-origin: left top;
-      box-shadow: 0 1px 3px rgba(255, 94, 126, 0.1);
-      z-index: 0;
-    }
-    .sakura-petal-1 { left: 8%; width: 11px; height: 7px; animation: fall 7s linear infinite; animation-delay: 0s; }
-    .sakura-petal-2 { left: 24%; width: 14px; height: 9px; animation: fall 9s linear infinite; animation-delay: 1.5s; }
-    .sakura-petal-3 { left: 38%; width: 9px; height: 6px; animation: fall 6s linear infinite; animation-delay: 3s; }
-    .sakura-petal-4 { left: 52%; width: 15px; height: 10px; animation: fall 11s linear infinite; animation-delay: 0.8s; }
-    .sakura-petal-5 { left: 66%; width: 12px; height: 8px; animation: fall 8s linear infinite; animation-delay: 4.2s; }
-    .sakura-petal-6 { left: 80%; width: 13px; height: 8px; animation: fall 10s linear infinite; animation-delay: 2.1s; }
-    .sakura-petal-7 { left: 16%; width: 10px; height: 7px; animation: fall 10s linear infinite; animation-delay: 5s; }
-    .sakura-petal-8 { left: 32%; width: 12px; height: 8px; animation: fall 7.5s linear infinite; animation-delay: 1.1s; }
-    .sakura-petal-9 { left: 58%; width: 14px; height: 9px; animation: fall 9.2s linear infinite; animation-delay: 6s; }
-    .sakura-petal-10 { left: 74%; width: 9px; height: 6px; animation: fall 12s linear infinite; animation-delay: 0.4s; }
-    .sakura-petal-11 { left: 88%; width: 11px; height: 7px; animation: fall 8.2s linear infinite; animation-delay: 3.5s; }
-    .sakura-petal-12 { left: 45%; width: 13px; height: 9px; animation: fall 8.8s linear infinite; animation-delay: 2.5s; }
-  `,
-  'dark-academia': `
-    .pomodoro-wrapper {
-      position: relative;
-      background: #fdfbf7 url('https://www.transparenttextures.com/patterns/cream-paper.png') !important;
-      --bg-surface: #ffffff !important;
-      --bg-surface-alt: #f5f5f7 !important;
-      --border-border: #e4e4e7 !important;
-      --text-primary: #18181b !important;
-      --text-secondary: #52525b !important;
-      --text-muted: #a1a1aa !important;
-      --color-primary: #1d4ed8 !important;
-      border-radius: 24px !important;
-      padding: 28px !important;
-      border: 1px solid #e4e4e7 !important;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
-      overflow: hidden;
-    }
-    .dark .pomodoro-wrapper {
-      background: #18181b url('https://www.transparenttextures.com/patterns/black-paper.png') !important;
-      --bg-surface: #27272a !important;
-      --bg-surface-alt: #1f1f22 !important;
-      --border-border: #3f3f46 !important;
-      --text-primary: #f4f4f5 !important;
-      --text-secondary: #a1a1aa !important;
-      --text-muted: #71717a !important;
-      --color-primary: #3b82f6 !important;
-      border: 1px solid #3f3f46 !important;
-      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.4), 0 15px 30px rgba(0, 0, 0, 0.3) !important;
-    }
-    /* Font override for all children for Academia vibe */
-    .pomodoro-wrapper, 
-    .pomodoro-wrapper select, 
-    .pomodoro-wrapper button, 
-    .pomodoro-wrapper span, 
-    .pomodoro-wrapper p, 
-    .pomodoro-wrapper h1, 
-    .pomodoro-wrapper h2, 
-    .pomodoro-wrapper h3, 
-    .pomodoro-wrapper h4,
-    .pomodoro-wrapper select option {
-      font-family: Georgia, 'Times New Roman', Cambria, serif !important;
-    }
-    /* Force background, border, text color on internal cards */
-    .pomodoro-wrapper .bg-surface {
-      background-color: var(--bg-surface) !important;
-      border-color: var(--border-border) !important;
-      box-shadow: none !important;
-    }
-    .pomodoro-wrapper .bg-surface-alt {
-      background-color: var(--bg-surface-alt) !important;
-      border-color: var(--border-border) !important;
-    }
-    .pomodoro-wrapper select {
-      background-color: var(--bg-surface-alt) !important;
-      border-color: var(--border-border) !important;
-      color: var(--text-primary) !important;
-    }
-    .pomodoro-wrapper .border,
-    .pomodoro-wrapper .border-border,
-    .pomodoro-wrapper .border-t,
-    .pomodoro-wrapper .divide-y > * {
-      border-color: var(--border-border) !important;
-    }
-    .pomodoro-wrapper .text-text-primary {
-      color: var(--text-primary) !important;
-    }
-    .pomodoro-wrapper .text-text-secondary {
-      color: var(--text-secondary) !important;
-    }
-    .pomodoro-wrapper .text-text-muted {
-      color: var(--text-muted) !important;
-    }
-    /* Candlelight flicker effect */
-    @keyframes flicker {
-      0%, 100% { opacity: 0.15; }
-      50% { opacity: 0.28; }
-      25% { opacity: 0.2; }
-      75% { opacity: 0.24; }
-    }
-    @keyframes float-up {
-      0% {
-        transform: translateY(600px) translateX(0) scale(0.6);
-        opacity: 0;
-      }
-      20% { opacity: 0.35; }
-      80% { opacity: 0.35; }
-      100% {
-        transform: translateY(-40px) translateX(30px) scale(1.1);
-        opacity: 0;
-      }
-    }
-    .candle-flicker-overlay {
-      background: radial-gradient(circle at 50% 50%, rgba(253, 186, 116, 0.09) 0%, transparent 65%);
-      animation: flicker 5s infinite alternate ease-in-out;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .academia-dust {
-      position: absolute;
-      background: rgba(212, 163, 115, 0.25);
-      border-radius: 50%;
-      pointer-events: none;
-      filter: blur(0.5px);
-      z-index: 0;
-    }
-    .academia-dust-1 { left: 10%; width: 4px; height: 4px; animation: float-up 10s linear infinite; animation-delay: 0s; }
-    .academia-dust-2 { left: 26%; width: 3px; height: 3px; animation: float-up 12s linear infinite; animation-delay: 2.2s; }
-    .academia-dust-3 { left: 42%; width: 5px; height: 5px; animation: float-up 9s linear infinite; animation-delay: 4.5s; }
-    .academia-dust-4 { left: 58%; width: 3px; height: 3px; animation: float-up 14s linear infinite; animation-delay: 1.2s; }
-    .academia-dust-5 { left: 74%; width: 4px; height: 4px; animation: float-up 11s linear infinite; animation-delay: 5.5s; }
-    .academia-dust-6 { left: 88%; width: 3px; height: 3px; animation: float-up 13s linear infinite; animation-delay: 3.1s; }
-    .academia-dust-7 { left: 18%; width: 4px; height: 4px; animation: float-up 11s linear infinite; animation-delay: 6.5s; }
-    .academia-dust-8 { left: 34%; width: 5px; height: 5px; animation: float-up 8.5s linear infinite; animation-delay: 1.8s; }
-    .academia-dust-9 { left: 50%; width: 3px; height: 3px; animation: float-up 12.5s linear infinite; animation-delay: 7s; }
-    .academia-dust-10 { left: 66%; width: 4px; height: 4px; animation: float-up 10.5s linear infinite; animation-delay: 0.5s; }
-    .academia-dust-11 { left: 82%; width: 5px; height: 5px; animation: float-up 13.5s linear infinite; animation-delay: 3.8s; }
-    .academia-dust-12 { left: 94%; width: 3px; height: 3px; animation: float-up 9.5s linear infinite; animation-delay: 2.8s; }
-  `
-};
 
 export default function PomodoroModule() {
   const {
@@ -257,11 +41,10 @@ export default function PomodoroModule() {
     resumeGlobalPomodoro,
     stopGlobalPomodoro,
     skipGlobalPomodoro,
-    habits,
-    settings
+    habits
   } = useAppStore(useShallow(state => ({
-    pomodoroStats: state.pomodoroStats,
-    todoTasks: state.todoTasks,
+    pomodoroStats: state.pomodoroStats || { totalSessions: 0, totalMinutes: 0 },
+    todoTasks: state.todoTasks || [],
     pomodoroSecondsLeft: state.pomodoroSecondsLeft,
     pomodoroTotalSeconds: state.pomodoroTotalSeconds,
     pomodoroTimerState: state.pomodoroTimerState,
@@ -277,18 +60,14 @@ export default function PomodoroModule() {
     resumeGlobalPomodoro: state.resumeGlobalPomodoro,
     stopGlobalPomodoro: state.stopGlobalPomodoro,
     skipGlobalPomodoro: state.skipGlobalPomodoro,
-    habits: state.habits,
-    settings: state.settings
+    habits: state.habits || []
   })));
 
   const addToast = useToastStore(s => s.addToast);
 
   // Cosmetic Customization States
   const [fontStyle, setFontStyle] = useState<'font-mono' | 'font-sans' | 'font-serif'>('font-mono');
-  const [ringStyle, setRingStyle] = useState<'solid' | 'dashed' | 'glowing' | 'dotted' | 'double'>('dashed');
-  const [pomodoroTheme, setPomodoroTheme] = useState<'default' | 'tokyo-sakura' | 'dark-academia'>(() => {
-    return (localStorage.getItem('pomodoro_theme') as any) || 'default';
-  });
+  const [ringStyle, setRingStyle] = useState<'solid' | 'dashed' | 'glowing' | 'dotted' | 'double'>('solid');
 
   // Custom Task Session configs
   const [customSessions, setCustomSessions] = useState<Record<string, { minutes: number; total: number }>>(() => {
@@ -304,7 +83,7 @@ export default function PomodoroModule() {
   const [dailyGoal, setDailyGoal] = useState(4);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState(4);
-  const todaySessions = pomodoroStreak % dailyGoal;
+  const todaySessions = (pomodoroStreak || 0) % dailyGoal;
 
   const weeklyFocusData = useMemo(() => {
     const days = [];
@@ -312,13 +91,7 @@ export default function PomodoroModule() {
     const now = new Date();
     
     const seeds: { [key: number]: number } = {
-      0: 30, // Sunday
-      1: 45, // Monday
-      2: 25, // Tuesday
-      3: 50, // Wednesday
-      4: 30, // Thursday
-      5: 40, // Friday
-      6: 15, // Saturday
+      0: 30, 1: 45, 2: 25, 3: 50, 4: 30, 5: 40, 6: 15,
     };
 
     for (let i = 6; i >= 0; i--) {
@@ -340,17 +113,17 @@ export default function PomodoroModule() {
     return days;
   }, [todaySessions]);
 
-  const [ringSize, setRingSize] = useState(280);
+  const [ringSize, setRingSize] = useState(260);
   useEffect(() => {
     const handleResize = () => {
-      setRingSize(window.innerWidth < 640 ? 220 : 280);
+      setRingSize(window.innerWidth < 640 ? 200 : 260);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const session = SESSIONS.find(s => s.id === pomodoroSessionId)!;
+  const session = SESSIONS.find(s => s.id === pomodoroSessionId) || SESSIONS[0];
   const progress = pomodoroTotalSeconds > 0 ? 1 - (pomodoroSecondsLeft / pomodoroTotalSeconds) : 1;
   const mins = Math.floor(pomodoroSecondsLeft / 60);
   const secs = pomodoroSecondsLeft % 60;
@@ -363,16 +136,10 @@ export default function PomodoroModule() {
     setPomodoroSecondsLeft(minutes * 60);
   }, [stopGlobalPomodoro, setPomodoroSessionId, setPomodoroTotalSeconds, setPomodoroSecondsLeft]);
 
-  const handleThemeChange = (t: 'default' | 'tokyo-sakura' | 'dark-academia') => {
-    setPomodoroTheme(t);
-    localStorage.setItem('pomodoro_theme', t);
-  };
-
   const handleAssociatedTaskChange = (id: string | null) => {
     setPomodoroAssociatedTaskId(id);
     if (id) {
       localStorage.setItem('pomodoro_associated_task_id', id);
-      // Auto-apply custom timer settings if configured
       if (customSessions[id]) {
         applyTimer(customSessions[id].minutes, 'focus');
       }
@@ -412,60 +179,53 @@ export default function PomodoroModule() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -16 }}
-      transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-      className="pomodoro-wrapper relative flex flex-col gap-6 max-w-5xl mx-auto w-full pb-10"
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.2 }}
+      className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-20 text-left font-sans select-none"
     >
-      <style>{themeStyles[pomodoroTheme]}</style>
-
-      {/* Immersive Theme Background Overlays */}
-      {pomodoroTheme === 'tokyo-sakura' && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-4xl z-0">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className={`sakura-petal sakura-petal-${i + 1}`} />
-          ))}
-        </div>
-      )}
-      {pomodoroTheme === 'dark-academia' && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[16px] z-0">
-          <div className="candle-flicker-overlay absolute inset-0" />
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className={`academia-dust academia-dust-${i + 1}`} />
-          ))}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            Pomodoro Timer <span className="w-2 h-2 rounded-full bg-primary inline-block" style={{ backgroundColor: 'var(--color-primary)' }} />
+          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
+            Pomodoro Focus
           </h1>
-          <p className="text-text-secondary text-sm mt-1">Deep work, one session at a time.</p>
+          <p className="text-[13px] text-text-secondary mt-0.5">
+            Deep, uninterrupted work sessions designed for flow state.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={togglePlayPause} 
-            className="flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm hover:opacity-90 cursor-pointer"
-            style={{ backgroundColor: 'var(--color-primary)' }}
-          >
-            {isRunning ? <IconPlayerPause className="w-4 h-4" /> : <IconPlayerPlay className="w-4 h-4" />}
-            {isRunning ? 'Pause Focus' : 'Start Focus'}
-          </button>
+        
+        {/* Session Type Pill Switcher */}
+        <div className="flex items-center gap-1.5 bg-surface p-1 rounded-full shadow-sm">
+          {SESSIONS.map((s) => {
+            const isActive = pomodoroSessionId === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => applyTimer(s.minutes, s.id)}
+                className={`px-4 py-2 rounded-full text-[12px] font-semibold transition-all cursor-pointer border-none ${
+                  isActive
+                    ? 'bg-text-primary text-background shadow-sm'
+                    : 'bg-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Task Association Selector */}
-      <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+      {/* Task Association Row */}
+      <Card padding="md" className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/10 text-rose-500" style={{ background: 'rgba(var(--color-primary), 0.1)', color: 'var(--color-primary)' }}>
-            <IconTarget className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-surface-alt text-text-primary">
+            <IconTarget size={18} />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-text-primary">Focusing On</h3>
-            <p className="text-[10px] text-text-muted">Associate a To-Do task with your session</p>
+            <h3 className="text-[13px] font-semibold text-text-primary">Focus Target</h3>
+            <p className="text-[11px] text-text-secondary">Attach a todo item or habit to this timer</p>
           </div>
         </div>
         
@@ -473,7 +233,7 @@ export default function PomodoroModule() {
           <select
             value={pomodoroAssociatedTaskId || ''}
             onChange={e => handleAssociatedTaskChange(e.target.value || null)}
-            className="bg-surface-alt border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text-primary focus:outline-none focus:border-primary cursor-pointer min-w-55"
+            className="bg-surface-alt rounded-[var(--radius-input)] px-4 py-2.5 text-[13px] font-medium text-text-primary focus:outline-none focus:ring-1 focus:ring-text-primary cursor-pointer min-w-56 border-none"
           >
             <option value="">No Associated Target</option>
             <optgroup label="To-Do Tasks">
@@ -492,22 +252,17 @@ export default function PomodoroModule() {
             </optgroup>
           </select>
         </div>
-      </div>
+      </Card>
 
-      {/* Custom Task Session setup */}
+      {/* Custom Task Session setup (if active task) */}
       {associatedTask && (
-        <div className="bg-surface-alt/40 backdrop-blur-md border border-border/60 rounded-3xl p-5 -mt-3 shadow-sm flex flex-col gap-4 text-left transition-all duration-300">
+        <Card padding="md" className="flex flex-col gap-3 -mt-2">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary/10 text-primary animate-pulse"
-                style={{ backgroundColor: 'rgba(var(--color-primary), 0.1)', color: 'var(--color-primary)' }}
-              >
-                <IconSparkles className="w-4 h-4" />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <IconSparkles size={16} className="text-text-primary" />
               <div>
-                <h4 className="text-xs font-bold text-text-primary">Custom Session Target</h4>
-                <p className="text-[10px] text-text-muted mt-0.5">Set specific time and session goals for this task</p>
+                <h4 className="text-[13px] font-semibold text-text-primary">Custom Target for "{associatedTask.title}"</h4>
+                <p className="text-[11px] text-text-secondary">Configure specific duration and quota for this item</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -529,424 +284,318 @@ export default function PomodoroModule() {
                 }}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-9 h-5 bg-neutral-200 dark:bg-neutral-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-text-primary"></div>
             </label>
           </div>
 
           {customSessions[associatedTask.id] && (
-            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border/30">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Focus Minutes</label>
-                <div className="relative flex items-center">
-                  <input
-                    type="number"
-                    min={1}
-                    max={180}
-                    value={customSessions[associatedTask.id].minutes}
-                    onChange={(e) => {
-                      const mins = Math.max(1, parseInt(e.target.value) || 25);
-                      const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], minutes: mins } };
-                      setCustomSessions(updated);
-                      localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
-                      applyTimer(mins, 'focus');
-                    }}
-                    className="w-full bg-surface border border-border/80 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text-primary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <span className="absolute right-3 text-[10px] text-text-muted font-bold pointer-events-none">min</span>
-                </div>
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border-hairline">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">Minutes</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={customSessions[associatedTask.id].minutes}
+                  onChange={(e) => {
+                    const m = Math.max(1, parseInt(e.target.value) || 25);
+                    const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], minutes: m } };
+                    setCustomSessions(updated);
+                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                    applyTimer(m, 'focus');
+                  }}
+                  className="bg-surface-alt rounded-[var(--radius-input)] px-3 py-2 text-[13px] font-medium text-text-primary outline-none border-none"
+                />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Session Target</label>
-                <div className="relative flex items-center">
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={customSessions[associatedTask.id].total}
-                    onChange={(e) => {
-                      const total = Math.max(1, parseInt(e.target.value) || 4);
-                      const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], total } };
-                      setCustomSessions(updated);
-                      localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
-                    }}
-                    className="w-full bg-surface border border-border/80 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text-primary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <span className="absolute right-3 text-[10px] text-text-muted font-bold pointer-events-none">qty</span>
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">Target Count</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={customSessions[associatedTask.id].total}
+                  onChange={(e) => {
+                    const tot = Math.max(1, parseInt(e.target.value) || 4);
+                    const updated = { ...customSessions, [associatedTask.id]: { ...customSessions[associatedTask.id], total: tot } };
+                    setCustomSessions(updated);
+                    localStorage.setItem('phq_task_custom_sessions', JSON.stringify(updated));
+                  }}
+                  className="bg-surface-alt rounded-[var(--radius-input)] px-3 py-2 text-[13px] font-medium text-text-primary outline-none border-none"
+                />
               </div>
             </div>
           )}
-
-          {customSessions[associatedTask.id] && (
-            <div className="text-[11px] text-text-secondary flex flex-col gap-2 mt-1">
-              <div className="flex justify-between items-center font-bold">
-                <span className="text-xs text-text-primary">Sessions Progress</span>
-                <span className="text-primary font-mono" style={{ color: 'var(--color-primary)' }}>
-                  {associatedTask.pomodoroCount || 0} / {customSessions[associatedTask.id].total} completed
-                </span>
-              </div>
-              <div className="w-full bg-surface h-2 rounded-full overflow-hidden p-[1px] border border-border/40">
-                <div 
-                  className="h-full rounded-full transition-all duration-500 relative" 
-                  style={{ 
-                    width: `${Math.min(100, ((associatedTask.pomodoroCount || 0) / customSessions[associatedTask.id].total) * 100)}%`,
-                    backgroundColor: 'var(--color-primary)' 
-                  }} 
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/30 animate-pulse" />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        </Card>
       )}
 
-      {/* Preset Selectors */}
-      <div className="flex flex-wrap gap-2 pt-2 items-center">
+      {/* Preset Duration Buttons */}
+      <div className="flex flex-wrap gap-2 items-center">
         {PRESETS.map(m => {
           const isActive = pomodoroTotalSeconds === m * 60 && pomodoroTimerState === 'idle';
           return (
             <button
               key={m}
               onClick={() => applyTimer(m, pomodoroSessionId)}
-              aria-label={`Set ${m} minutes`}
-              className={`px-6 py-2 rounded-xl text-xs font-bold border transition-all ${
+              className={`px-5 py-2 rounded-full text-[12px] font-semibold transition-all border-none cursor-pointer ${
                 isActive
-                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-sm'
-                  : 'border-transparent bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary'
+                  ? 'bg-text-primary text-background shadow-sm'
+                  : 'bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary shadow-sm'
               }`}
-              style={isActive ? { backgroundColor: 'rgba(244,63,94,0.1)', color: 'var(--color-primary)' } : {}}
             >
-              {m} mins
+              {m}m
             </button>
           );
         })}
         <button
           onClick={handleCustomPreset}
-          className="px-6 py-2 rounded-xl text-xs font-bold border border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-all flex items-center gap-2"
+          className="px-5 py-2 rounded-full text-[12px] font-semibold bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all flex items-center gap-1.5 border-none shadow-sm cursor-pointer"
         >
-          Custom <IconEdit className="w-3 h-3" />
+          Custom <IconEdit size={13} />
         </button>
       </div>
 
-      {/* Main Card Layout */}
-      {(() => {
-        const clockStyle = settings.clockStyle || 'digital';
-        const cardBgClass = clockStyle === 'analog' 
-          ? 'bg-zinc-950 border-zinc-850 text-zinc-100 shadow-[0_20px_50px_rgba(244,63,94,0.12)]' 
-          : 'bg-surface border-border text-text-primary';
-
-        const [minutesStr, secondsStr] = display.split(':');
-
-        return (
-          <div className={`${cardBgClass} border rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden shadow-sm transition-all duration-300`}>
+      {/* Main Clock Card */}
+      <Card padding="lg" className="flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden">
+        {/* Left pane: digital clock & controls */}
+        <div className="flex-1 flex flex-col justify-center gap-6 text-center md:text-left w-full">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary block mb-2">
+              {pomodoroSessionId === 'focus' ? 'Focus Mode' : 'Break Time'}
+            </span>
             
-            {/* Left pane: digital clock */}
-            <div className="flex-1 flex flex-col justify-center h-full gap-8 text-center md:text-left w-full md:pl-10">
-              <div>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] block mb-4 ${clockStyle === 'analog' ? 'text-rose-500/70' : 'text-text-secondary'}`}>
-                  {pomodoroSessionId === 'focus' ? 'FOCUS TIME' : 'BREAK TIME'}
+            <div className={`text-6xl sm:text-7xl md:text-[6.5rem] leading-none font-semibold tracking-tight text-text-primary select-none ${fontStyle}`}>
+              {display}
+            </div>
+            
+            <div className="mt-6 flex flex-col gap-2 items-center md:items-start">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[12px] font-semibold bg-surface-alt text-text-primary">
+                <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+                {pomodoroSessionId === 'focus' ? `Session ${pomodoroStreak + 1}` : 'Rest & Recharge'}
+              </span>
+              {associatedTask && (
+                <span className="text-[13px] text-text-secondary">
+                  🎯 Target: <span className="font-semibold text-text-primary">{associatedTask.title}</span>
                 </span>
-                
-                {/* Custom Clock Renderers */}
-                {clockStyle === 'flip' ? (
-                  <div className="flex items-center justify-center md:justify-start gap-2 select-none">
-                    <div className="bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-2xl px-4 py-3 text-5xl sm:text-6xl md:text-7xl font-bold font-mono text-center shadow-lg relative min-w-[70px] sm:min-w-[90px] md:min-w-[110px]">
-                      <div className="absolute top-1/2 left-0 right-0 h-px bg-black/45" />
-                      {minutesStr}
-                    </div>
-                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-secondary select-none">:</span>
-                    <div className="bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-2xl px-4 py-3 text-5xl sm:text-6xl md:text-7xl font-bold font-mono text-center shadow-lg relative min-w-[70px] sm:min-w-[90px] md:min-w-[110px]">
-                      <div className="absolute top-1/2 left-0 right-0 h-px bg-black/45" />
-                      {secondsStr}
-                    </div>
-                  </div>
-                ) : clockStyle === 'analog' ? (
-                  <div 
-                    className="text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-rose-500 select-none"
-                    style={{ textShadow: '0 0 20px rgba(244,63,94,0.6), 0 0 40px rgba(244,63,94,0.3)' }}
-                  >
-                    {display}
-                  </div>
-                ) : clockStyle === 'minimal-ring' ? (
-                  <div className="text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-extralight tracking-tight text-text-primary select-none">
-                    {display}
-                  </div>
-                ) : (
-                  /* Variant 1 - Digital (default) */
-                  <div className={`text-6xl sm:text-7xl md:text-[7.5rem] leading-none font-bold tracking-tighter text-text-primary select-none ${fontStyle}`}>
-                    {display}
-                  </div>
-                )}
-                
-                <div className="mt-8 flex flex-col gap-2 items-center md:items-start">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20" style={{ backgroundColor: 'rgba(244,63,94,0.1)', color: 'var(--color-primary)', borderColor: 'rgba(244,63,94,0.2)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }} />
-                    {pomodoroSessionId === 'focus' ? `Focus Session ${pomodoroStreak + 1}` : 'Break Time'}
-                  </span>
-                  {associatedTask && (
-                    <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-                      🎯 Working on: <span className="font-bold text-text-primary">{associatedTask.title}</span>
-                    </span>
-                  )}
-                  {associatedHabit && (
-                    <span className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-                      🔥 Working on Habit: <span className="font-bold text-text-primary">{associatedHabit.name}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-     
-               <div className="flex items-center gap-3">
-                 <button
-                   onClick={stopGlobalPomodoro}
-                   disabled={pomodoroTimerState === 'idle'}
-                   className={`px-5 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
-                     clockStyle === 'analog' 
-                       ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
-                       : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
-                   }`}
-                 >
-                   <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'var(--color-primary)' }} /> Stop
-                 </button>
-                 <button
-                   onClick={skipGlobalPomodoro}
-                   disabled={pomodoroTimerState === 'idle'}
-                   className={`px-5 py-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 w-max cursor-pointer ${
-                     clockStyle === 'analog' 
-                       ? 'border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200' 
-                       : 'border-border bg-surface-alt hover:bg-surface-hover hover:border-text-primary/20 text-text-primary'
-                   }`}
-                   title={pomodoroSessionId === 'focus' && pomodoroSecondsLeft < 120 ? 'Skip & log as completed session (< 2 min left)' : 'Skip this session'}
-                 >
-                   <IconArrowRight className="w-4 h-4 text-text-secondary" /> Skip
-                 </button>
-               </div>
-            </div>
-     
-            {/* Vertical Divider */}
-            <div className={`hidden md:block w-px h-64 ${clockStyle === 'analog' ? 'bg-zinc-850' : 'bg-border/60'}`} />
-     
-            {/* Right pane: Ticked Dial Timer & Play/Pause */}
-            <div className="flex-1 flex flex-col items-center justify-center relative w-full md:pr-10">
-              <div 
-                className="relative flex items-center justify-center transition-all" 
-                style={{ 
-                  width: ringSize, 
-                  height: ringSize,
-                  filter: clockStyle === 'analog' ? 'drop-shadow(0 0 10px rgba(244,63,94,0.4))' : 'none'
-                }}
-              >
-                {/* The SVG Ring */}
-                <ProgressRing 
-                  progress={progress} 
-                  size={ringSize} 
-                  strokeWidth={8} 
-                  color={clockStyle === 'analog' ? '#f43f5e' : (pomodoroTheme !== 'default' ? 'var(--color-primary)' : session.color)} 
-                  style={
-                    clockStyle === 'flip' 
-                      ? 'dotted' 
-                      : clockStyle === 'minimal-ring' 
-                      ? 'solid' 
-                      : clockStyle === 'analog' 
-                      ? 'dashed' 
-                      : ringStyle
-                  } 
-                />
-                
-                {/* Play Button inside Ring */}
-                <button
-                  onClick={togglePlayPause}
-                  aria-label={isRunning ? 'Pause' : 'Play'}
-                  className={`absolute w-24 h-24 rounded-full border-4 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-10 cursor-pointer ${
-                    clockStyle === 'analog' 
-                      ? 'bg-zinc-900 border-rose-500/25 shadow-rose-950/40 text-rose-500' 
-                      : 'bg-surface border-zinc-100 dark:border-zinc-800 text-primary'
-                  }`}
-                  style={clockStyle !== 'analog' ? { borderColor: 'rgba(244,63,94,0.1)' } : {}}
-                >
-                  {isRunning ? (
-                    <IconPlayerPause className="w-10 h-10 animate-pulse" style={{ color: 'var(--color-primary)' }} />
-                  ) : (
-                    <IconPlayerPlay className="w-10 h-10 translate-x-0.5" style={{ color: 'var(--color-primary)' }} />
-                  )}
-                </button>
-              </div>
+              )}
+              {associatedHabit && (
+                <span className="text-[13px] text-text-secondary">
+                  🔥 Habit: <span className="font-semibold text-text-primary">{associatedHabit.name}</span>
+                </span>
+              )}
             </div>
           </div>
-        );
-      })()}
 
-      {/* Stats Area */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface border border-border rounded-2xl p-6 flex items-start gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-orange-500/10 text-orange-500">
-            <IconFlame className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">Current Streak</p>
-            <p className="text-3xl font-bold text-text-primary flex items-baseline gap-2">
-              {pomodoroStreak} <span className="text-xl">🍅</span>
-            </p>
-            <p className="text-xs text-text-secondary mt-1">{pomodoroStreak > 0 ? 'Keep building momentum!' : 'Start a session to build momentum'}</p>
-          </div>
-        </div>
-        
-        <div className="bg-surface border border-border rounded-2xl p-6 flex items-start gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-500">
-            <IconClock className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">Total Sessions</p>
-            <p className="text-3xl font-bold text-text-primary">{pomodoroStats.totalSessions}</p>
-            <p className="text-xs text-text-secondary mt-1">All time focus sessions</p>
-          </div>
-        </div>
-        
-        <div className="bg-surface border border-border rounded-2xl p-6 flex items-start gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-green-500/10 text-green-500">
-            <IconTarget className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">Minutes Focused</p>
-            <p className="text-3xl font-bold text-text-primary">{pomodoroStats.totalMinutes}m</p>
-            <p className="text-xs text-text-secondary mt-1">All time study time</p>
+          <div className="flex items-center gap-3 justify-center md:justify-start">
+            <button
+              onClick={togglePlayPause}
+              className="px-8 py-3 rounded-full text-[14px] font-semibold bg-text-primary text-background hover:opacity-90 transition-all flex items-center gap-2 border-none shadow-sm cursor-pointer"
+            >
+              {isRunning ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
+              {isRunning ? 'Pause' : 'Start Focus'}
+            </button>
+            <button
+              onClick={stopGlobalPomodoro}
+              disabled={pomodoroTimerState === 'idle'}
+              className="px-5 py-3 rounded-full text-[13px] font-semibold bg-surface-alt hover:bg-neutral-200 dark:hover:bg-neutral-800 text-text-primary transition-all disabled:opacity-40 border-none cursor-pointer"
+            >
+              Stop
+            </button>
+            <button
+              onClick={skipGlobalPomodoro}
+              disabled={pomodoroTimerState === 'idle'}
+              className="px-5 py-3 rounded-full text-[13px] font-semibold bg-surface-alt hover:bg-neutral-200 dark:hover:bg-neutral-800 text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 border-none cursor-pointer flex items-center gap-1"
+            >
+              <IconArrowRight size={15} /> Skip
+            </button>
           </div>
         </div>
+
+        {/* Vertical Hairline Divider */}
+        <div className="hidden md:block w-px h-56 bg-border-hairline" />
+
+        {/* Right pane: Radial Progress Ring */}
+        <div className="flex-1 flex flex-col items-center justify-center relative w-full">
+          <div 
+            className="relative flex items-center justify-center" 
+            style={{ width: ringSize, height: ringSize }}
+          >
+            <ProgressRing 
+              progress={progress} 
+              size={ringSize} 
+              strokeWidth={8} 
+              color={pomodoroSessionId === 'focus' ? '#111111' : session.color} 
+              style={ringStyle} 
+            />
+            
+            {/* Center interactive button */}
+            <button
+              onClick={togglePlayPause}
+              aria-label={isRunning ? 'Pause' : 'Play'}
+              className="absolute w-20 h-20 rounded-full bg-surface shadow-float flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-10 cursor-pointer border-none"
+            >
+              {isRunning ? (
+                <IconPlayerPause size={28} className="text-text-primary" />
+              ) : (
+                <IconPlayerPlay size={28} className="text-text-primary translate-x-0.5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <StatCard
+          title="Current Streak"
+          value={`${pomodoroStreak} sessions`}
+          subtitle={pomodoroStreak > 0 ? 'Momentum is strong!' : 'Start a session to build momentum'}
+          icon={<IconFlame size={20} className="text-[#FF7A45]" />}
+          trend={pomodoroStreak > 0 ? { value: `${pomodoroStreak} in flow`, isPositive: true } : undefined}
+        />
+        <StatCard
+          title="Total Sessions"
+          value={String(pomodoroStats.totalSessions || 0)}
+          subtitle="All-time completed sessions"
+          icon={<IconClock size={20} className="text-text-primary" />}
+        />
+        <StatCard
+          title="Minutes Focused"
+          value={`${pomodoroStats.totalMinutes || 0}m`}
+          subtitle="Total deep work recorded"
+          icon={<IconTarget size={20} className="text-[#22C55E]" />}
+        />
       </div>
 
-      {/* Daily Progress, Weekly Chart & settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Daily Progress & Weekly Focus Trend */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         
-        {/* Card 1: Today's Progress */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
+        {/* Today's Target */}
+        <Card padding="md" className="flex flex-col justify-between h-[260px]">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-bold text-text-primary">Today's Progress</h3>
-                <p className="text-xs text-text-muted mt-1">{Math.floor((todaySessions / dailyGoal) * 100)}% Complete</p>
+                <h3 className="text-[14px] font-semibold text-text-primary">Daily Goal</h3>
+                <p className="text-[12px] text-text-secondary mt-0.5">
+                  {Math.floor((todaySessions / dailyGoal) * 100)}% accomplished
+                </p>
               </div>
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Goal</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">Target</span>
             </div>
             
-            {/* Apple style progress bar */}
-            <div className="mt-6">
+            <div className="mt-4">
               <div className="flex items-baseline justify-between mb-2">
-                <span className="text-2xl font-extrabold text-text-primary">
-                  {todaySessions} <span className="text-xs font-medium text-text-secondary">/ {dailyGoal} sessions</span>
+                <span className="text-2xl font-semibold text-text-primary">
+                  {todaySessions} <span className="text-[13px] text-text-secondary font-normal">/ {dailyGoal} sessions</span>
                 </span>
-                <span className="text-xs font-bold text-primary">{todaySessions >= dailyGoal ? 'Goal Achieved! 🎉' : 'Keep pushing!'}</span>
+                <span className="text-[12px] font-semibold text-[#22C55E]">
+                  {todaySessions >= dailyGoal ? 'Goal Met! 🎉' : 'In progress'}
+                </span>
               </div>
-              <div className="w-full h-3 bg-surface-alt rounded-full overflow-hidden p-0.5 border border-border/20">
+              <div className="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
                 <div 
-                  className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-rose-500 to-amber-500" 
+                  className="h-full rounded-full transition-all duration-300 bg-[#22C55E]" 
                   style={{ width: `${Math.min(100, (todaySessions / dailyGoal) * 100)}%` }} 
                 />
               </div>
             </div>
           </div>
 
-          <div className="border-t border-border/40 pt-4 flex items-center justify-between">
+          <div className="border-t border-border-hairline pt-3 flex items-center justify-between">
             {isEditingGoal ? (
               <div className="flex items-center gap-2 w-full justify-between">
-                <span className="text-xs text-text-secondary">Set Daily Goal:</span>
-                <div className="flex items-center gap-1.5">
+                <span className="text-[12px] text-text-secondary">Daily Goal:</span>
+                <div className="flex items-center gap-2">
                   <input 
                     type="number" 
                     min={1} 
                     value={tempGoal} 
                     onChange={e => setTempGoal(Number(e.target.value))} 
-                    className="w-14 bg-surface-alt border border-border rounded-lg px-2 py-1 text-xs outline-none text-text-primary text-center font-bold" 
+                    className="w-14 bg-surface-alt rounded-[var(--radius-input)] px-2 py-1 text-[12px] outline-none text-text-primary text-center font-semibold border-none" 
                   />
-                  <button onClick={saveGoal} aria-label="Save goal" className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center cursor-pointer hover:bg-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500/40"><IconCheck className="w-4 h-4" /></button>
+                  <button 
+                    onClick={saveGoal} 
+                    className="w-7 h-7 rounded-full bg-[#22C55E] text-white flex items-center justify-center cursor-pointer border-none"
+                  >
+                    <IconCheck size={14} />
+                  </button>
                 </div>
               </div>
             ) : (
               <>
-                <span className="text-xs text-text-secondary">Current target: {dailyGoal} daily</span>
+                <span className="text-[12px] text-text-secondary">Target: {dailyGoal} sessions</span>
                 <button 
                   onClick={() => { setTempGoal(dailyGoal); setIsEditingGoal(true); }} 
-                  className="px-2.5 py-1.5 rounded-xl border border-border text-[10px] font-bold flex items-center gap-1 hover:bg-surface-hover text-text-secondary cursor-pointer"
+                  className="px-3 py-1 rounded-full bg-surface-alt text-[11px] font-semibold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 border-none cursor-pointer"
                 >
-                  <IconEdit className="w-3.5 h-3.5" /> Edit Goal
+                  <IconEdit size={12} /> Edit
                 </button>
               </>
             )}
           </div>
-        </div>
+        </Card>
 
-        {/* Card 2: Weekly Focus Trend */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
+        {/* Weekly Trend */}
+        <Card padding="md" className="flex flex-col justify-between h-[260px]">
           <div>
-            <h3 className="text-sm font-bold text-text-primary mb-1">Weekly Focus Trend</h3>
-            <p className="text-xs text-text-muted">Daily distribution of focus minutes</p>
+            <h3 className="text-[14px] font-semibold text-text-primary">Weekly Trend</h3>
+            <p className="text-[12px] text-text-secondary mt-0.5">Focus minutes distribution</p>
           </div>
 
-          <div className="h-36 flex flex-col justify-end select-none">
-            <div className="flex items-end justify-between h-28 gap-2 mt-1">
-              {weeklyFocusData.map((day: { label: string; minutes: number; isToday: boolean }, idx: number) => {
-                const maxMinutes = Math.max(...weeklyFocusData.map((d: { minutes: number }) => d.minutes), 60);
+          <div className="h-32 flex flex-col justify-end select-none">
+            <div className="flex items-end justify-between h-24 gap-2">
+              {weeklyFocusData.map((day, idx) => {
+                const maxMinutes = Math.max(...weeklyFocusData.map(d => d.minutes), 60);
                 const barHeightPct = Math.round((day.minutes / maxMinutes) * 100);
                 return (
                   <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative">
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full mb-2 bg-neutral-900 dark:bg-neutral-800 text-white text-[9px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-30">
-                      {day.minutes} mins
-                    </div>
-                    {/* Bar */}
                     <div 
-                      className={`w-full rounded-t-lg transition-all duration-300 cursor-pointer ${
+                      className={`w-full rounded-t-lg transition-colors cursor-pointer ${
                         day.isToday 
-                          ? 'bg-gradient-to-t from-rose-500 to-rose-400 shadow-md shadow-rose-500/10 hover:brightness-110' 
-                          : 'bg-surface-alt border border-border/40 hover:bg-primary/10 hover:border-primary/20'
+                          ? 'bg-[#FF7A45]' 
+                          : 'bg-surface-alt hover:bg-neutral-300 dark:hover:bg-neutral-700'
                       }`}
-                      style={{ height: `${Math.max(8, barHeightPct)}%` }}
+                      style={{ height: `${Math.max(10, barHeightPct)}%` }}
                     />
-                    <span className="text-[9px] font-bold text-text-muted mt-0.5">{day.label}</span>
+                    <span className="text-[10px] font-medium text-text-secondary">{day.label}</span>
                   </div>
                 );
               })}
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* Card 3: Customization Settings */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between h-[280px]">
-          <h3 className="text-sm font-bold text-text-primary">Timer Settings</h3>
+        {/* Timer Customization */}
+        <Card padding="md" className="flex flex-col justify-between h-[260px]">
+          <h3 className="text-[14px] font-semibold text-text-primary">Customization</h3>
           
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3">
             <div>
-              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Aesthetic Theme</span>
-              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
-                <button onClick={() => handleThemeChange('default')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'default' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Default</button>
-                <button onClick={() => handleThemeChange('tokyo-sakura')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'tokyo-sakura' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Sakura</button>
-                <button onClick={() => handleThemeChange('dark-academia')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${pomodoroTheme === 'dark-academia' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Academia</button>
+              <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
+                Typography
+              </span>
+              <div className="flex gap-1.5 bg-surface-alt p-1 rounded-full">
+                <button onClick={() => setFontStyle('font-mono')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${fontStyle === 'font-mono' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Mono</button>
+                <button onClick={() => setFontStyle('font-sans')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${fontStyle === 'font-sans' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Sans</button>
+                <button onClick={() => setFontStyle('font-serif')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${fontStyle === 'font-serif' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Serif</button>
               </div>
             </div>
 
             <div>
-              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Font Style</span>
-              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
-                <button onClick={() => setFontStyle('font-mono')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-mono' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Mono</button>
-                <button onClick={() => setFontStyle('font-sans')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-sans' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Sans</button>
-                <button onClick={() => setFontStyle('font-serif')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${fontStyle === 'font-serif' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Serif</button>
-              </div>
-            </div>
-
-            <div>
-              <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1">Progress Ring Style</span>
-              <div className="flex gap-1.5 bg-surface-alt p-0.5 rounded-xl border border-border/20">
-                <button onClick={() => setRingStyle('solid')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'solid' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Solid</button>
-                <button onClick={() => setRingStyle('dashed')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'dashed' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Dashed</button>
-                <button onClick={() => setRingStyle('dotted')} className={`flex-1 py-1 text-[10px] rounded-lg transition-all cursor-pointer ${ringStyle === 'dotted' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>Dotted</button>
+              <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
+                Ring Dial
+              </span>
+              <div className="flex gap-1.5 bg-surface-alt p-1 rounded-full">
+                <button onClick={() => setRingStyle('solid')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${ringStyle === 'solid' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Solid</button>
+                <button onClick={() => setRingStyle('dashed')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${ringStyle === 'dashed' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Dashed</button>
+                <button onClick={() => setRingStyle('dotted')} className={`flex-1 py-1 text-[11px] rounded-full transition-all cursor-pointer border-none ${ringStyle === 'dotted' ? 'bg-text-primary text-background font-semibold shadow-sm' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}>Dotted</button>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface-alt px-2.5 py-1 text-[9px] text-text-secondary">
-            Island handles the compact timer while Pomodoro stays in-page.
+          <div className="rounded-[var(--radius-input)] bg-surface-alt px-3 py-1.5 text-[11px] text-text-secondary">
+            Settings auto-persist across sessions.
           </div>
-        </div>
+        </Card>
       </div>
     </motion.div>
   );

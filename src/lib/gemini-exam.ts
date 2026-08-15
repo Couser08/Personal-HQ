@@ -53,7 +53,7 @@ Respond ONLY with valid JSON in this structure:
     return parsed.map((u: StudyUnit, i: number) => ({
       ...u,
       id: `unit_${Date.now()}_${i}`,
-      topics: u.topics.map((t, j) => ({
+      topics: (u.topics || []).map((t: any, j: number) => ({
         ...t,
         id: `topic_${Date.now()}_${i}_${j}`,
       })),

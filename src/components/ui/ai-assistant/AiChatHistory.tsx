@@ -32,7 +32,7 @@ export const AiChatHistory = ({
           <h4 className="text-sm font-bold text-text-primary">{selectedHistoryItem.title}</h4>
           <p className="text-xs text-text-muted">{selectedHistoryItem.summary}</p>
           <div className="flex flex-col gap-2">
-            {selectedHistoryItem.messages.map(m => (
+            {selectedHistoryItem.messages.map((m: any) => (
               <div 
                 key={m.id} 
                 className={`p-3 rounded-xl text-xs ${m.sender === 'user' ? 'bg-primary text-white self-end' : 'bg-surface-alt border border-border self-start text-text-primary'}`}

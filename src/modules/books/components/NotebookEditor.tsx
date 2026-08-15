@@ -51,7 +51,19 @@ interface NotebookEditorProps {
 
 export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }) => {
   const { books, updateBook, deleteBook, showConfirm } = useAppStore();
-  const book = books.find((b) => b.id === bookId);
+  const rawBook = books.find((b) => b.id === bookId);
+  const book = rawBook
+    ? {
+        ...rawBook,
+        pages: rawBook.pages || {},
+        topics: (rawBook.topics || []) as BookTopic[],
+        stickyNotes: (rawBook.stickyNotes || []) as BookStickyNote[],
+        bookmarks: (rawBook.bookmarks || []) as number[],
+        highlights: rawBook.highlights || [],
+        pagesCount: rawBook.pagesCount || 10,
+        currentPage: rawBook.currentPage || 1,
+      }
+    : undefined;
 
   // Local editor states
   const [isEditMode, setIsEditMode] = useState(true);
@@ -243,10 +255,10 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   };
 
   const openEditBookDetailsModal = () => {
-    setTitleInput(book.title);
-    setTaglineInput(book.tagline);
+    setTitleInput(book.title || '');
+    setTaglineInput(book.tagline || '');
     setBookAuthorInput(book.author || '');
-    setBookCoverInput(book.coverImage);
+    setBookCoverInput(book.coverImage || '');
     setActiveModal('edit-book-details');
   };
 
@@ -498,12 +510,12 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   };
 
   const openEditStickyModal = (note: BookStickyNote) => {
-    setModalStickyTitle(note.title);
-    setModalStickyContent(note.content);
+    setModalStickyTitle(note.title || '');
+    setModalStickyContent(note.content || note.text || '');
     setModalStickyColor(note.color === 'pink' ? 'pink' : 'yellow');
     setModalStickyId(note.id);
-    setModalStickyPosition(note.position || 'bottom-right');
-    setModalStickyStyleTheme(note.styleTheme || 'default');
+    setModalStickyPosition((note.position as 'top-right' | 'bottom-right' | 'middle-left') || 'bottom-right');
+    setModalStickyStyleTheme((note.styleTheme as 'default' | 'terminal' | 'hand-drawn') || 'default');
     setActiveModal('edit-sticky');
   };
 
@@ -1655,9 +1667,9 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
             <IconFileText size={16} />
           </button>
           <button
-            onClick={() => toggleBookmark(book.currentPage)}
+            onClick={() => toggleBookmark(book.currentPage || 1)}
             className={`p-2 border rounded-xl cursor-pointer transition-colors ${
-              book.bookmarks.includes(book.currentPage)
+              (book.bookmarks || []).includes(book.currentPage || 1)
                 ? 'bg-rose-500/10 text-rose-500 border-rose-200'
                 : 'hover:bg-surface-hover text-text-secondary border-border'
             }`}
@@ -1679,7 +1691,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
           <button
             type="button"
             onClick={() => {
-              const newLimit = book.pagesCount + 5;
+              const newLimit = (book.pagesCount || 5) + 5;
               updateBook(book.id, { pagesCount: newLimit });
               triggerToast(`Added 5 more pages! New limit is ${newLimit} pages.`);
             }}
@@ -1763,22 +1775,22 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
             <div className="flex items-center justify-between">
               <span>Created At</span>
               <span className="font-bold text-text-secondary">
-                {new Date(book.createdAt).toLocaleDateString()}
+                {new Date(book.createdAt || Date.now()).toLocaleDateString()}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4 pt-1">
               <span>Adjust Page Count</span>
               <div className="flex items-center bg-surface-alt border border-border rounded-xl p-0.5">
                 <button
-                  onClick={() => updateBook(book.id, { pagesCount: Math.max(5, book.pagesCount - 5) })}
+                  onClick={() => updateBook(book.id, { pagesCount: Math.max(5, (book.pagesCount || 5) - 5) })}
                   className="px-2.5 py-1 hover:bg-surface rounded-lg cursor-pointer font-bold text-xs"
                   title="Remove 5 pages"
                 >
                   -5
                 </button>
-                <span className="px-2 font-mono font-bold text-[10px]">{book.pagesCount}</span>
+                <span className="px-2 font-mono font-bold text-[10px]">{book.pagesCount || 5}</span>
                 <button
-                  onClick={() => updateBook(book.id, { pagesCount: book.pagesCount + 5 })}
+                  onClick={() => updateBook(book.id, { pagesCount: (book.pagesCount || 5) + 5 })}
                   className="px-2.5 py-1 hover:bg-surface rounded-lg cursor-pointer font-bold text-xs"
                   title="Add 5 pages"
                 >
@@ -1835,7 +1847,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                       onChange={(e) => setModalTopicPage(Number(e.target.value))}
                       className="px-4 py-3 text-sm transition-all border cursor-pointer bg-surface-alt border-border rounded-2xl text-text-primary focus:outline-none focus:border-rose-500"
                     >
-                      {Array.from({ length: book.pagesCount }).map((_, idx) => (
+                      {Array.from({ length: book.pagesCount || 5 }).map((_, idx) => (
                         <option key={idx + 1} value={idx + 1}>
                           Page {idx + 1}
                         </option>

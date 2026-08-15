@@ -174,9 +174,9 @@ export default function JournalModule() {
       if (isDifferentEntry) {
         setTitle(activeEntry.title);
         setContent(activeEntry.content);
-        setMood(activeEntry.mood);
-        setTags(activeEntry.tags);
-        setPageStyle(activeEntry.pageStyle);
+        setMood(activeEntry.mood || 'good');
+        setTags(activeEntry.tags || []);
+        setPageStyle(activeEntry.pageStyle || 'blank');
         setLocation(activeEntry.location || '');
         setReminder(activeEntry.reminder || '');
         setStylePreset(activeEntry.stylePreset || 'calm');
@@ -663,7 +663,7 @@ export default function JournalModule() {
                             {new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </span>
                           <div className="w-12 h-12 rounded-2xl bg-surface/50 border border-border flex items-center justify-center shrink-0">
-                            {renderMoodIllustration(entry.mood)}
+                            {renderMoodIllustration(entry.mood || '')}
                           </div>
                         </div>
 
@@ -835,7 +835,7 @@ export default function JournalModule() {
               setTitle={setTitle}
               content={content}
               setContent={setContent}
-              mood={mood}
+              mood={mood || ''}
               tags={tags}
               currentStyle={currentStyle}
               editorPaperStyle={editorPaperStyle}

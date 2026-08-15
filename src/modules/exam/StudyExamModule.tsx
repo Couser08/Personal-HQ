@@ -176,7 +176,7 @@ function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSele
                 </div>
                 <h3 className="font-bold text-text-primary text-lg mb-1 line-clamp-1 cursor-pointer" onClick={() => onRead(m)}>{m.title}</h3>
                 <p className="text-xs text-text-secondary mb-4 line-clamp-2 cursor-pointer" onClick={() => onRead(m)}>
-                  {m.structuredData.length} Units • {m.structuredData.reduce((acc, u) => acc + u.topics.length, 0)} Topics
+                  {((m.structuredData as any[]) || []).length} Units • {((m.structuredData as any[]) || []).reduce((acc: number, u: any) => acc + (u.topics?.length || 0), 0)} Topics
                 </p>
                 <div className="mt-auto pt-4 border-t border-border flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs font-semibold text-text-secondary">
@@ -381,12 +381,12 @@ function ActiveExam({ apiKey, exam, onBack, onComplete }: any) {
           <div key={q.id} className="bg-surface rounded-2xl border border-border overflow-hidden">
             <div className="bg-background/50 px-5 py-3 border-b border-border flex justify-between items-center">
               <span className="text-sm font-bold text-text-secondary">Question {index + 1}</span>
-              <span className="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded-md">[{q.marks} Marks]</span>
+              <span className="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded-md">[{q.marks || 1} Marks]</span>
             </div>
             <div className="p-5">
-              <p className="text-text-primary font-medium mb-4 whitespace-pre-wrap">{q.questionText}</p>
+              <p className="text-text-primary font-medium mb-4 whitespace-pre-wrap">{q.questionText || q.question || ''}</p>
               
-              {q.type === 'mcq' && q.options ? (
+              {(q.type === 'mcq' || q.options) && q.options ? (
                 <div className="space-y-2">
                   {q.options.map((opt: string) => (
                     <label key={opt} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${answers[q.id] === opt ? 'border-primary bg-primary/5' : 'border-border hover:border-text-secondary'}`}>

@@ -27,7 +27,7 @@ export function StickyNotes({
 
   const handleStartEdit = (note: JournalStickyNote) => {
     setEditingId(note.id);
-    setEditText(note.content);
+    setEditText(note.content || note.text || '');
   };
 
   const handleSaveEdit = async (id: string) => {

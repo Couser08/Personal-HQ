@@ -74,7 +74,7 @@ export default function AnimeReviewCenter({
   const recentReviews = useMemo(() => {
     return animeLogs
       .filter(a => a.rating !== null)
-      .sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime())
+      .sort((a, b) => new Date(b.addedAt || b.createdAt || 0).getTime() - new Date(a.addedAt || a.createdAt || 0).getTime())
       .slice(0, 3);
   }, [animeLogs]);
 

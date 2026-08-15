@@ -66,7 +66,7 @@ export function MediaEntryModal() {
         setRating(editingLog.rating || 0);
         setEpisodes(editingLog.episodes?.toString() || '');
         
-        let parsedNotes = editingLog.notes;
+        let parsedNotes = editingLog.notes || '';
         let parsedSeason = '';
         try {
           if (editingLog.notes && editingLog.notes.trim().startsWith('{')) {

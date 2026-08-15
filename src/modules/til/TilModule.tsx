@@ -140,8 +140,8 @@ export default function TilModule() {
   // Get all unique tags sorted by popularity
   const allTags = useMemo(() => {
     const counts: Record<string, number> = {};
-    tilLogs.forEach(log => {
-      log.tags.forEach(tag => {
+    (tilLogs || []).forEach((log: TilLog) => {
+      (log.tags || []).forEach((tag: string) => {
         counts[tag] = (counts[tag] || 0) + 1;
       });
     });
@@ -152,18 +152,18 @@ export default function TilModule() {
 
   // Filter logs based on search and tag selection
   const filteredLogs = useMemo(() => {
-    let result = [...tilLogs];
+    let result = [...(tilLogs || [])];
 
     if (selectedTag) {
-      result = result.filter(log => log.tags.includes(selectedTag));
+      result = result.filter(log => (log.tags || []).includes(selectedTag));
     }
 
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(log => 
-        log.title.toLowerCase().includes(q) || 
-        log.content.toLowerCase().includes(q) ||
-        log.tags.some(t => t.toLowerCase().includes(q))
+        (log.title || '').toLowerCase().includes(q) || 
+        (log.content || '').toLowerCase().includes(q) ||
+        (log.tags || []).some((t: string) => t.toLowerCase().includes(q))
       );
     }
 
@@ -458,7 +458,7 @@ export default function TilModule() {
 
                     {/* Tag list */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {log.tags.map(t => (
+                      {(log.tags || []).map((t: string) => (
                         <span 
                           key={t}
                           onClick={() => setSelectedTag(t === selectedTag ? null : t)}

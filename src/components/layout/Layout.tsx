@@ -36,12 +36,12 @@ export const Layout = ({ children }: LayoutProps) => {
   }, []);
 
   return (
-    <div className={`flex h-screen bg-background overflow-hidden text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
+    <div className={`flex min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
       {/* Desktop/Tablet sidebar */}
       {!isFocusMode && <Sidebar />}
 
       {/* Main content */}
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative">
+      <main className="flex-1 w-full min-w-0 relative">
         {/* Toggle focus mode banner if active so user can exit */}
         {isFocusMode && (
           <div className="fixed bottom-4 right-4 z-9997">

@@ -24,12 +24,12 @@ const DrawingModule = lazy(() => import('./modules/drawing/DrawingModule'));
 const MarkdownModule = lazy(() => import('./modules/markdown/MarkdownModule'));
 const ConditionModule = lazy(() => import('./modules/condition/ConditionModule'));
 const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
-const HabitModule = lazy(() => import('./modules/habits/HabitTrackerModule'));
 const TilModule = lazy(() => import('./modules/til/TilModule'));
 const BooksModule = lazy(() => import('./modules/books/BooksModule'));
 const VisionModule = lazy(() => import('./modules/vision/VisionModule'));
 const ChangelogModule = lazy(() => import('./modules/changelog/ChangelogModule'));
 const DesignLabPage = lazy(() => import('./pages/design-lab/DesignLabPage'));
+const MinimalPremiumTest = lazy(() => import('./pages/MinimalPremiumTest'));
 
 function LoadingSplash() {
   return (
@@ -115,6 +115,7 @@ function ModuleFallback() {
 
 function App() {
   const isDesignLab = typeof window !== 'undefined' && window.location.search.includes('design_lab=true');
+  const isMinimalPremiumTest = typeof window !== 'undefined' && window.location.search.includes('test_layout=true');
 
   const { user, initialized, initialize } = useAuthStore();
   const { theme, settings, loadAllData, clearAllData, dataLoaded } = useAppStore(useShallow(state => ({
@@ -172,6 +173,14 @@ function App() {
     return (
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">Loading Design Lab...</div>}>
         <DesignLabPage />
+      </Suspense>
+    );
+  }
+
+  if (isMinimalPremiumTest) {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">Loading Test...</div>}>
+        <MinimalPremiumTest />
       </Suspense>
     );
   }

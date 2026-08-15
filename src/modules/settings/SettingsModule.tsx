@@ -9,6 +9,7 @@ import {
   IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { Card } from '../../components/ui/Card';
 import { testGeminiApiKey } from '../../lib/gemini';
 
 const COUNTDOWN_TEMPLATES = [
@@ -368,9 +369,9 @@ export default function SettingsModule() {
       </div>
 
       {/* ── Appearance Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Appearance</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">Appearance</h2>
+        <Card padding="none" className="flex flex-col overflow-hidden">
           
           <div className="p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-4">
@@ -407,6 +408,8 @@ export default function SettingsModule() {
             </div>
           </div>
 
+          <div className="h-px w-full bg-border-hairline" />
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-4">
             <div>
               <p className="text-base font-medium text-zinc-900 dark:text-white">Accent Color</p>
@@ -428,18 +431,18 @@ export default function SettingsModule() {
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ── AI Assistant & Gemini API Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2 flex items-center justify-between">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2 flex items-center justify-between">
           <span>AI & Gemini Settings</span>
           <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
             <IconSparkles size={12} /> Powered by Gemini
           </span>
         </h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-purple-500/20 dark:border-purple-500/30 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-6 flex flex-col gap-5">
+        <Card padding="lg" className="flex flex-col gap-5 border border-purple-500/20 dark:border-purple-500/30">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-100 dark:border-zinc-800/60 pb-4">
             <div className="flex items-center gap-3">
@@ -559,13 +562,13 @@ export default function SettingsModule() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ── Notifications & Behavior Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Notifications & Behavior</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">Notifications & Behavior</h2>
+        <Card padding="none" className="flex flex-col overflow-hidden">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4">
             <div className="flex items-center gap-3">
@@ -578,6 +581,8 @@ export default function SettingsModule() {
               <CustomSelect value={toastPos} onChange={handleToastPos} options={TOAST_POSITIONS} />
             </div>
           </div>
+
+          <div className="h-px w-full bg-border-hairline" />
 
           {/* Restored Test Notification Buttons */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4 bg-zinc-50/50 dark:bg-zinc-800/20">
@@ -613,7 +618,9 @@ export default function SettingsModule() {
           </div>
 
           {settings.wavyEffectEnabled !== false && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-zinc-50/50 dark:bg-zinc-800/20 gap-4">
+            <>
+            <div className="h-px w-full bg-border-hairline" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-surface-alt gap-4">
               <div>
                 <p className="text-base font-medium text-zinc-900 dark:text-white">Effect Quality</p>
                 <p className="text-[13px] text-zinc-500 mt-0.5 max-w-[250px] leading-snug">Choose Minimal to reduce GPU load.</p>
@@ -637,7 +644,10 @@ export default function SettingsModule() {
                 </button>
               </div>
             </div>
+            </>
           )}
+
+          <div className="h-px w-full bg-border-hairline" />
 
           <div className="p-4 sm:p-5">
             <button
@@ -647,13 +657,13 @@ export default function SettingsModule() {
               <IconSparkles className="w-4 h-4 text-amber-500" /> Trigger Test Ripple
             </button>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ── Dashboard Cards Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Dashboard</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">Dashboard</h2>
+        <Card padding="md">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
                <div className="flex items-center gap-3 mb-3">
@@ -673,13 +683,13 @@ export default function SettingsModule() {
               {renderCountdownPreview()}
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ── Pomodoro Clock Style Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">Pomodoro</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm p-4 sm:p-5">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">Pomodoro</h2>
+        <Card padding="md">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
                <div className="flex items-center gap-3 mb-3">
@@ -704,14 +714,14 @@ export default function SettingsModule() {
               {renderClockPreview(settings.clockStyle || 'digital')}
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
 
       {/* ── System & Performance Section ── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-zinc-500 px-4 sm:px-2">System & Performance</h2>
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary ml-2">System & Performance</h2>
+        <Card padding="none" className="flex flex-col overflow-hidden">
           
           <div className="flex items-center justify-between p-4 sm:p-5">
              <div>
@@ -735,6 +745,8 @@ export default function SettingsModule() {
             />
           </div>
 
+          <div className="h-px w-full bg-border-hairline" />
+
           <button 
             onClick={() => window.dispatchEvent(new Event('start-app-tour'))}
             className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
@@ -748,7 +760,7 @@ export default function SettingsModule() {
             <IconChevronRight className="w-5 h-5 text-zinc-400" />
           </button>
 
-        </div>
+        </Card>
       </section>
     </motion.div>
   );

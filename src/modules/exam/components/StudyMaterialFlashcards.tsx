@@ -31,7 +31,7 @@ export function StudyMaterialFlashcards({ material, onBack }: Props) {
     try {
       let allCards: ExamFlashcard[] = [];
       // Generate unit by unit to control volume as requested
-      for (const unit of material.structuredData) {
+      for (const unit of ((material.structuredData as any[]) || [])) {
         const generated = await generateFlashcardsFromUnit(settings.geminiApiKey, unit);
         const mapped = generated.map((c, i) => ({
           id: `fc_${unit.id}_${Date.now()}_${i}`,

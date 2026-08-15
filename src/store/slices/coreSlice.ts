@@ -9,8 +9,6 @@ import {
   mediaService,
   countdownService,
   snippetService,
-  budgetCategoryService,
-  budgetTransactionService,
   todoProjectService,
   todoTaskService,
   journalService,
@@ -72,6 +70,12 @@ export interface CoreSlice {
   drawingElements: readonly any[];
   drawingAppState: any;
   setDrawingData: (elements: readonly any[], appState: any) => void;
+
+  activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
+  setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
+  addDailyReflection: (ref: any) => Promise<void>;
+  addTilLog: (log: any) => void;
+  deleteTilLog: (id: string) => void;
 
   importData: (data: any) => void;
 }
@@ -324,6 +328,33 @@ export const createCoreSlice: StateCreator<
   drawingElements: [],
   drawingAppState: {},
   setDrawingData: (elements, appState) => set({ drawingElements: elements, drawingAppState: appState }),
+
+  activeFocusItem: null,
+  setActiveFocusItem: (item) => {
+    if (item) {
+      localStorage.setItem('phq_active_focus_item', JSON.stringify(item));
+    } else {
+      localStorage.removeItem('phq_active_focus_item');
+    }
+    set({ activeFocusItem: item });
+  },
+
+  addDailyReflection: async (ref) => {
+    const previous = (get() as any).dailyReflections || [];
+    const next = [ref, ...previous.filter((r: any) => r.date !== ref.date)];
+    set({ dailyReflections: next });
+    try {
+      const uid = useAuthStore.getState().user?.id;
+      if (uid) {
+        await reflectionService.create(uid, ref);
+      }
+    } catch (e) {
+      console.error('Failed to sync daily reflection:', e);
+    }
+  },
+
+  addTilLog: (log) => set((s: any) => ({ tilLogs: [log, ...(s.tilLogs || [])] })),
+  deleteTilLog: (id) => set((s: any) => ({ tilLogs: (s.tilLogs || []).filter((l: any) => l.id !== id) })),
 
   importData: (data) => {
     if (data.notes) {

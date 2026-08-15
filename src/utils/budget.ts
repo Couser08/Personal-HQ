@@ -1,4 +1,4 @@
-﻿import type { BudgetCategory, BudgetTransaction } from '../store/useAppStore';
+import type { BudgetCategory, BudgetTransaction } from '../store/useAppStore';
 
 export const calculateBudgetStats = (transactions: BudgetTransaction[]) => {
   const income = transactions
@@ -16,7 +16,7 @@ export const calculateCategorySpending = (
   transactions: BudgetTransaction[],
 ) => categories.map((category) => {
   const spent = transactions
-    .filter((transaction) => transaction.categoryId === category.id && transaction.type === 'expense')
+    .filter((transaction) => (transaction.categoryId === category.id || transaction.category_id === category.id) && transaction.type === 'expense')
     .reduce((sum, transaction) => sum + transaction.amount, 0);
   const progress = category.budget > 0 ? Math.min((spent / category.budget) * 100, 100) : 0;
   return { ...category, spent, progress };

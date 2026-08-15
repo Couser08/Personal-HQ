@@ -273,7 +273,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
                   {/* Date */}
                   <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mt-auto">
-                    {new Date(log.addedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {new Date(log.addedAt || log.createdAt || Date.now()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 </motion.div>
               );

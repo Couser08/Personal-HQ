@@ -35,7 +35,7 @@ export const AiStructuredReply = ({ text, blocks }: AiStructuredReplyProps) => {
           case 'bullets':
             return (
               <ul key={i} className="flex flex-col gap-1.5 m-0 pl-0 list-none">
-                {block.items.map((item, j) => (
+                {(block.items || []).map((item: any, j: number) => (
                   <li key={j} className="flex items-start gap-2 text-xs text-text-secondary">
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     <span className="leading-relaxed">{item}</span>
@@ -46,7 +46,7 @@ export const AiStructuredReply = ({ text, blocks }: AiStructuredReplyProps) => {
           case 'steps':
             return (
               <ol key={i} className="flex flex-col gap-2 m-0 pl-0 list-none">
-                {block.items.map((item, j) => (
+                {(block.items || []).map((item: any, j: number) => (
                   <li key={j} className="flex items-start gap-2.5 text-xs text-text-secondary">
                     <span className="w-5 h-5 rounded-md bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
                       {j + 1}

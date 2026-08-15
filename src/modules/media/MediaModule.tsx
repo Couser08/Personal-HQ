@@ -62,7 +62,7 @@ export default function MediaModule() {
     if (filterStatus) {
       filtered = filtered.filter(m => m.status === filterStatus);
     }
-    return filtered.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+    return filtered.sort((a, b) => new Date(b.addedAt || b.createdAt || 0).getTime() - new Date(a.addedAt || a.createdAt || 0).getTime());
   }, [mediaLogs, activeTab, filterStatus]);
 
   const stats = useMemo(() => {

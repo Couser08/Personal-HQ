@@ -4,7 +4,8 @@ import type {
   MediaLog, Countdown, CodeSnippet,
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal,
-  StudyMaterial, Exam, ExamAttempt, DailyReflection, Vision
+  StudyMaterial, Exam, ExamAttempt, DailyReflection, Vision,
+  BudgetCategory, BudgetTransaction
 } from '../store/types';
 
 // ─── Notes ────────────────────────────────────────────────────────────────────

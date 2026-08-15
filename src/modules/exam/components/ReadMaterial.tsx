@@ -29,11 +29,11 @@ export function ReadMaterial({ material, onBack, onStudyFlashcards }: ReadMateri
         <p className="text-sm text-text-secondary mb-8">Review the extracted units, key concepts, and highly probable exam questions.</p>
 
         <div className="flex flex-col gap-10">
-          {material.structuredData.map((unit, uIdx) => {
+          {((material.structuredData as any[]) || []).map((unit: any, uIdx: number) => {
             const hasQna = unit.qna && unit.qna.length > 0;
-            const highProb = unit.qna?.filter(q => q.probability === 'high') || [];
-            const medProb = unit.qna?.filter(q => q.probability === 'medium') || [];
-            const lowProb = unit.qna?.filter(q => q.probability === 'low') || [];
+            const highProb = unit.qna?.filter((q: any) => q.probability === 'high') || [];
+            const medProb = unit.qna?.filter((q: any) => q.probability === 'medium') || [];
+            const lowProb = unit.qna?.filter((q: any) => q.probability === 'low') || [];
 
             return (
               <div key={unit.id} className="flex flex-col gap-4">
@@ -46,11 +46,11 @@ export function ReadMaterial({ material, onBack, onStudyFlashcards }: ReadMateri
                 
                 {/* Topics / Key Points */}
                 <div className="pl-12 flex flex-col gap-4 mb-4">
-                  {unit.topics.map(topic => (
+                  {(unit.topics || []).map((topic: any) => (
                     <div key={topic.id} className="bg-surface-alt/50 rounded-2xl p-4 border border-border/50">
-                      <h4 className="font-bold text-text-primary mb-2 text-sm">{topic.title}</h4>
-                      <ul className="list-disc pl-4 space-y-1">
-                        {topic.keyPoints.map((kp, i) => (
+                      <h4 className="font-bold text-text-primary mb-2">{topic.name}</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {(topic.keyPoints || []).map((kp: string, i: number) => (
                           <li key={i} className="text-sm text-text-secondary">{kp}</li>
                         ))}
                       </ul>
@@ -106,7 +106,7 @@ export function ReadMaterial({ material, onBack, onStudyFlashcards }: ReadMateri
                       
                       return (
                         <div key={group.title} className="flex flex-col gap-1">
-                          {group.items.map((qna, idx) => (
+                          {group.items.map((qna: any, idx: number) => (
                             <StudyQuestionCard key={qna.id} qna={qna} index={idx} />
                           ))}
                         </div>

@@ -396,7 +396,7 @@ export function MindmapCanvas({
     if (!parent) return;
 
     const childId = crypto.randomUUID();
-    let side: 'left' | 'right' | 'bottom' = parent.side || 'right';
+    let side: 'left' | 'right' | 'bottom' = (parent.side as any) || 'right';
     let x = parent.x;
     let y = parent.y;
 

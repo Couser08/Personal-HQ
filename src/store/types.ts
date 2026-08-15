@@ -1,27 +1,27 @@
-import { type JournalStickyNote } from '../lib/db';
-export { type JournalStickyNote };
-
 export type Theme = 'light' | 'dark' | 'system' | 'cyberpunk' | 'nordic' | 'sakura' | 'auraglass';
+export type AccentColor = 'rose' | 'purple' | 'blue' | 'green' | 'amber' | 'teal' | 'gray';
+export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
+export type ClockStyle = 'digital' | 'flip' | 'analog' | 'minimal-ring';
 
-export interface JournalEntry {
-  id: string;
-  title: string;
-  content: string;
-  date: string;
-  mood: 'great' | 'good' | 'meh' | 'bad' | 'terrible';
-  tags: string[];
-  images: string[];
-  pinned: boolean;
-  reflection: {
-    whatWentWell: string;
-    whatCanBeBetter: string;
-  };
-  focusList: { text: string; checked: boolean }[];
-  attachments: { name: string; size: string }[];
-  pageStyle: 'default' | 'lines' | 'dotted' | 'grid' | 'cornell';
-  location: string;
-  reminder: string;
-  stylePreset: 'calm' | 'warm' | 'evergreen' | 'ocean';
+export interface AppSettings {
+  countdownTemplate: CountdownTemplate;
+  accentColor: AccentColor;
+  animationSpeed: 'normal' | 'fast' | 'slow';
+  compactMode: boolean;
+  soundEnabled: boolean;
+  initialBankBalance: number;
+  initialCashBalance: number;
+  currencySymbol?: string;
+  mediaQuote?: string;
+  clockStyle?: ClockStyle;
+  reduceBlur?: boolean;
+  reduceAnimations?: boolean;
+  wavyEffectEnabled?: boolean;
+  wavyEffectMode?: 'minimal' | 'premium';
+  todoCompletionAnimation?: string | boolean;
+  geminiApiKey?: string;
+  geminiModel?: string;
+  aiPersona?: 'Professional' | 'Friendly/Coaching' | 'Strict';
 }
 
 export interface Note {
@@ -36,45 +36,127 @@ export interface Note {
 
 export interface Link {
   id: string;
-  url: string;
   title: string;
-  tags: string[];
-  type?: 'youtube' | 'instagram' | 'pinterest' | 'other';
-  termType?: 'short' | 'long';
-  savedAt: string;
+  url: string;
+  category?: string;
+  tags?: string[];
+  type?: string;
+  termType?: string;
+  savedAt?: string;
+  createdAt?: string;
 }
 
 export interface SavedLink {
   id: string;
-  url: string;
   title: string;
-  type: 'youtube' | 'instagram' | 'pinterest' | 'other';
-  termType?: 'short' | 'long';
+  url: string;
+  category?: string;
+  type?: string;
   tags?: string[];
-  savedAt: string;
+  faviconUrl?: string;
+  notes?: string;
+  savedAt?: string;
+  createdAt?: string;
 }
 
 export interface AppTag {
   id: string;
   name: string;
-  color: string;
+  color?: string;
   createdAt: string;
 }
 
 export interface StockEntry {
   id: string;
   ticker: string;
-  entryPrice: number;
-  quantity: number;
-  action: 'BUY' | 'SELL' | 'WATCHLIST';
-  notes: string;
-  date: string;
+  name?: string;
+  entryPrice?: number;
+  buyPrice?: number;
+  currentPrice?: number;
+  shares?: number;
+  quantity?: number;
+  action?: 'BUY' | 'SELL';
+  notes?: string;
+  date?: string;
+  createdAt?: string;
 }
 
-export interface TodoProject {
+export interface InterestRecord {
   id: string;
-  name: string;
-  color: string;
+  principal: number;
+  rate: number;
+  timeYears?: number;
+  time?: number;
+  timeUnit?: string;
+  compoundingFrequency?: any;
+  compoundFrequency?: any;
+  type: 'simple' | 'compound' | 'SI' | 'CI';
+  calculatedInterest?: number;
+  interest?: number;
+  totalAmount: number;
+  label?: string;
+  notes?: string;
+  calculatedAt?: string;
+  createdAt?: string;
+}
+
+export interface MediaLog {
+  id: string;
+  type: 'ANIME' | 'MOVIE' | 'GAME' | 'SERIES';
+  title: string;
+  originalTitle?: string;
+  coverImage?: string;
+  bannerImage?: string;
+  rating?: number | null;
+  status: 'WATCHING' | 'COMPLETED' | 'PLAN_TO_WATCH' | 'DROPPED' | 'PLAYING' | 'PAUSED' | 'PLANNING' | 'FINISHED' | 'WISHLIST';
+  progress?: {
+    current: number;
+    total: number;
+    unit: string;
+  };
+  review?: string;
+  notes?: string;
+  tags?: string[];
+  genres?: string[];
+  favoriteCharacters?: string[];
+  quotes?: string[];
+  startDate?: string;
+  finishDate?: string;
+  hoursPlayed?: number;
+  releaseYear?: number;
+  studioOrDeveloper?: string;
+  platform?: string;
+  season?: string | number;
+  episodes?: number;
+  addedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Countdown {
+  id: string;
+  title?: string;
+  targetDate: string;
+  description?: string;
+  category?: string;
+  icon?: string;
+  label?: string;
+  emoji?: string;
+  color?: any;
+  createdAt: string;
+}
+
+export interface CodeSnippet {
+  id: string;
+  title: string;
+  code: string;
+  language: string;
+  tags: string[];
+  category?: string;
+  description?: string;
+  isFavorite?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SubTask {
@@ -83,94 +165,66 @@ export interface SubTask {
   completed: boolean;
 }
 
+export interface TodoProject {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+  createdAt?: string;
+}
+
 export interface TodoTask {
   id: string;
-  projectId: string | null;
   title: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high' | 'none';
+  projectId: string | null;
+  priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
   tags: string[];
+  completed: boolean;
   dueDate: string | null;
   startTime?: string | null;
   endTime?: string | null;
-  pomodoroCount?: number;
-  deleted?: boolean;
   createdAt: string;
-  subtasks?: SubTask[];
-  
-  // Daily Planner fields
+  order?: number;
+  deleted?: boolean;
+  pomodoroCount?: number;
   category?: string;
   description?: string;
   location?: string;
   reminder?: string;
   repeat?: string;
   featured?: boolean;
+  subtasks?: SubTask[];
 }
 
-export interface InterestRecord {
-  id: string;
-  type: 'SI' | 'CI';
-  principal: number;
-  rate: number;
-  time: number;
-  timeUnit: 'years' | 'months';
-  interest: number;
-  totalAmount: number;
-  compoundFrequency?: 'annually' | 'semi-annually' | 'quarterly' | 'monthly';
-  label: string;
-  calculatedAt: string;
-}
-
-export interface MediaLog {
-  id: string;
-  type: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE';
-  title: string;
-  status: 'WATCHING' | 'COMPLETED' | 'DROPPED' | 'PLANNING' | 'PLAYING' | 'FINISHED' | 'WISHLIST';
-  rating: number | null;
-  episodes?: number;
-  season?: number;
-  notes: string;
-  addedAt: string;
-}
-
-export interface Countdown {
-  id: string;
-  label: string;
-  targetDate: string;
-  emoji: string;
-  color: 'rose' | 'amber' | 'blue' | 'green' | 'purple';
-  createdAt: string;
-}
-
-
-export interface CodeSnippet {
+export interface JournalEntry {
   id: string;
   title: string;
-  description?: string;
-  language: string;
-  code: string;
+  content: string;
+  date: string;
   tags: string[];
-  isFavorite?: boolean;
-  createdAt: string;
-  updatedAt?: string;
+  mood?: string;
+  bookmarked?: boolean;
+  pinned?: boolean;
+  reflection?: any;
+  focusList?: any;
+  attachments?: any;
+  pageStyle?: any;
+  location?: any;
+  reminder?: any;
+  stylePreset?: any;
+  images?: string[];
 }
 
-export interface ConfirmDialogState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-}
-
-export interface MediaEntryModalState {
-  isOpen: boolean;
-  editingLog: MediaLog | null;
-  activeTab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE';
-}
-
-export interface TodoTaskModalState {
-  isOpen: boolean;
-  task: TodoTask | null;
+export interface JournalStickyNote {
+  id: string;
+  content?: string;
+  text?: string;
+  title?: string;
+  color?: string;
+  date?: string;
+  x?: number;
+  y?: number;
+  createdAt?: string;
 }
 
 export interface MindmapNode {
@@ -178,18 +232,18 @@ export interface MindmapNode {
   text: string;
   x: number;
   y: number;
-  color?: 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'gray';
+  color: string;
   isRoot?: boolean;
   parentId?: string;
-  side?: 'left' | 'right' | 'bottom';
-  collapsed?: boolean;
+  side?: any;
   icon?: string;
-  notes?: string;
   linkUrl?: string;
   imageUrl?: string;
-  images?: string[];
-  pdfs?: { name: string; base64: string }[];
+  pdfs?: any[];
+  notes?: string;
   links?: string[];
+  images?: string[];
+  collapsed?: boolean;
 }
 
 export interface MindmapLink {
@@ -202,89 +256,225 @@ export interface Mindmap {
   title: string;
   nodes: MindmapNode[];
   links: MindmapLink[];
-  edgeStyle?: 'solid' | 'dashed' | 'dotted';
+  edgeStyle?: string;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface StandardCalculation {
   id: string;
   expression: string;
   result: string;
-  createdAt: string;
+  timestamp?: string;
+  createdAt?: string;
 }
+
+export type HabitFrequency = 'daily' | 'weekly_days' | 'weekly_count';
 
 export interface Habit {
   id: string;
   name: string;
-  description: string;
-  frequencyType: 'daily' | 'weekly_days' | 'weekly_count';
-  frequencyDays: number[]; // 0 = Sunday, 6 = Saturday
+  description?: string;
+  color?: string;
+  icon?: string;
+  frequencyType: HabitFrequency;
+  frequencyDays: number[];
   frequencyCount: number;
-  completedDates: string[]; // YYYY-MM-DD
-  streak: number;
-  bestStreak: number;
   createdAt: string;
+  completedDates: string[];
+  completionDetails?: Record<string, any>;
+  habitType?: string;
+  streak?: number;
+  bestStreak?: number;
   whyText?: string;
-  habitType?: 'coding' | 'reading' | 'workout' | 'meditation' | 'generic';
-  completionDetails?: Record<string, { time: string; value?: number; unit?: string }>;
-  targetTime?: string; // e.g. '08:00', '17:00'
-  relationships?: string[]; // IDs of habits in sequence
-  timerActive?: boolean;
-  timerStart?: string;
-  timerSeconds?: number;
+  targetTime?: string;
+  relationships?: any;
 }
 
 export interface DailyReflection {
   id: string;
-  date: string; // YYYY-MM-DD
-  score: number; // 1-10
-  whatWentWell: string;
-  blockers: string;
-  tomorrowPlan: string;
+  date: string;
+  score?: number;
+  whatWentWell?: string;
+  blockers?: string;
+  tomorrowPlan?: string;
+  highlightOfDay?: string;
+  gratitude?: string;
+  improvement?: string;
+  rating?: number;
+  createdAt?: string;
 }
 
-export type CountdownTemplate = 'default' | 'minimal' | 'gradient' | 'circle' | 'event' | 'sale' | 'dark' | 'compact' | 'flip' | 'progress' | 'vertical' | 'split';
-export type ClockStyle = 'digital' | 'flip' | 'analog' | 'minimal-ring';
-export type AccentColor = 'rose' | 'blue' | 'green' | 'amber' | 'purple' | 'teal' | 'gray';
-export type AnimationSpeed = 'fast' | 'normal' | 'slow';
-
-export interface AppSettings {
-  countdownTemplate: CountdownTemplate;
-  clockStyle?: ClockStyle;
-  accentColor: AccentColor;
-  animationSpeed: AnimationSpeed;
-  compactMode: boolean;
-  soundEnabled: boolean;
-  initialBankBalance: number;
-  initialCashBalance: number;
-  currencySymbol?: string;
-  mediaQuote?: string;
-  reduceBlur: boolean;
-  reduceAnimations: boolean;
-  wavyEffectEnabled?: boolean;
-  wavyEffectMode?: 'premium' | 'minimal';
-  todoCompletionAnimation?: string;
-  geminiApiKey?: string;
-  geminiModel?: string;
-  aiPersona?: 'Professional' | 'Friendly/Coaching' | 'Strict';
+export interface ExamFlashcard {
+  id?: string;
+  front: string;
+  back: string;
+  category?: string;
 }
 
-export type AiReplyBlock =
-  | { type: 'heading'; text: string }
-  | { type: 'paragraph'; text: string }
-  | { type: 'bullets'; items: string[] }
-  | { type: 'steps'; items: string[] }
-  | { type: 'callout'; variant: 'tip' | 'note' | 'warning'; text: string };
+export interface ExamQuestion {
+  id: string;
+  question?: string;
+  questionText?: string;
+  options?: string[];
+  correctIndex?: number;
+  correctAnswer?: string | number;
+  explanation?: string;
+  marks?: number;
+  type?: string;
+}
+
+export interface StudyUnit {
+  id: string;
+  title: string;
+  topics?: any[];
+  qna?: any[];
+}
+
+export interface ExamGradingReport {
+  score?: number;
+  totalScore?: number;
+  totalQuestions?: number;
+  feedback: any;
+  weaknessSummary?: string;
+  weaknesses?: string[];
+  answers: any[];
+}
+
+export interface AiSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  reason?: string;
+  type?: string;
+  actionType?: string;
+  actionLabel?: string;
+  contextTag?: string;
+  action?: any;
+}
+
+export interface AiHistoryItem {
+  id: string;
+  title: string;
+  timestamp?: string;
+  createdAt?: string;
+  summary?: string;
+  isStarred?: boolean;
+  actionType?: string;
+  messages: any[];
+}
+
+export interface AiReplyBlock {
+  type: string;
+  title?: string;
+  text?: string;
+  variant?: string;
+  content?: any;
+  items?: any[];
+  itemsList?: any[];
+  headers?: string[];
+  rows?: any[][];
+}
 
 export interface AiClarificationField {
   id: string;
   label: string;
-  type: 'input' | 'textarea' | 'radio' | 'checkbox' | 'time';
+  type: 'text' | 'input' | 'textarea' | 'time' | 'select' | 'checkbox' | 'radio' | 'date';
   placeholder?: string;
-  options?: string[];
+  options?: any[];
+  defaultValue?: any;
   required?: boolean;
-  defaultValue?: string | string[];
+}
+
+export interface StudyMaterial {
+  id: string;
+  title: string;
+  content?: string;
+  rawContent?: string;
+  summary?: string;
+  keyPoints?: string[];
+  flashcards?: { front: string; back: string }[];
+  tags?: string[];
+  structuredData?: any;
+  createdAt?: string;
+}
+
+export interface Exam {
+  id: string;
+  title: string;
+  materialId?: string;
+  description?: string;
+  timeLimitMinutes?: number;
+  totalMarks?: number;
+  specPrompt?: string;
+  questions: ExamQuestion[];
+  createdAt?: string;
+}
+
+export interface ExamAttempt {
+  id: string;
+  examId: string;
+  score?: number;
+  totalScore?: number;
+  totalQuestions?: number;
+  answers: any;
+  feedback?: string;
+  weaknessSummary?: string;
+  timeTakenSeconds?: number;
+  date?: string;
+  createdAt?: string;
+}
+
+export interface BookTopic {
+  id: string;
+  title: string;
+  pageNumber: number;
+  color?: string;
+  orderIndex?: number;
+  readingState?: string;
+  createdAt?: string;
+}
+
+export interface BookStickyNote {
+  id: string;
+  title?: string;
+  pageNumber?: number;
+  text?: string;
+  content?: string;
+  blockId?: string;
+  date?: string;
+  color?: string;
+  styleTheme?: string;
+  position?: string;
+  x?: number;
+  y?: number;
+  createdAt?: string;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  tagline?: string;
+  coverImage?: string;
+  totalPages?: number;
+  pagesCount?: number;
+  currentPage?: number;
+  category?: string;
+  isFavorite?: boolean;
+  readingList?: boolean;
+  audiobook?: boolean;
+  progress?: number;
+  pages?: Record<number | string, string>;
+  topics?: BookTopic[];
+  stickyNotes?: BookStickyNote[];
+  bookmarks?: number[];
+  highlights?: any[];
+  status?: 'Reading' | 'Completed' | 'Want to Read' | 'Dropped';
+  notes?: string;
+  rating?: number;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Vision {
@@ -301,214 +491,116 @@ export interface Vision {
   updatedAt: string;
 }
 
+export interface BudgetCategory {
+  id: string;
+  name: string;
+  budget: number;
+  color: string;
+  icon: string;
+}
+
+export interface BudgetTransaction {
+  id: string;
+  category_id?: string;
+  categoryId?: string;
+  amount: number;
+  description: string;
+  date: string;
+  type: 'expense' | 'income';
+  payment_method?: string;
+  paymentMethod?: string;
+}
+
+export interface Sprint {
+  id: string;
+  title: string;
+  goal?: string;
+  startDate: string;
+  endDate: string;
+  status: 'planning' | 'active' | 'completed';
+  tasks: SprintTask[];
+}
+
+export interface SprintTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  points?: number;
+}
+
+export interface DsaProblem {
+  id: string;
+  title: string;
+  platform?: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  topic?: string;
+  category?: string;
+  status: 'Todo' | 'Attempted' | 'Solved';
+  notes?: string;
+  link?: string;
+  dateSolved?: string;
+  solvedAt?: string;
+}
+
+export interface TilLog {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface LearningRoadmap {
+  id: string;
+  title: string;
+  description: string;
+  nodes: { id: string; title: string; completed: boolean }[];
+}
+
+export interface ResourceBookmark {
+  id: string;
+  title: string;
+  url: string;
+  category?: string;
+  description?: string;
+  tags?: string[];
+  status?: string;
+  savedAt?: string;
+  notes?: string;
+}
+
+export interface DevGoal {
+  id: string;
+  title: string;
+  target?: number;
+  current?: number;
+  metric?: string;
+  dueDate?: string;
+  targetDate?: string;
+  completed: boolean;
+}
+
 export interface AiChatMessage {
   id: string;
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
-  /** Structured reply sections — preferred over dumping markdown into chat */
-  blocks?: AiReplyBlock[];
+  blocks?: any[];
   options?: { label: string; value: string }[];
   questionId?: string;
   resultCard?: any;
-  /** When AI asked clarification, remember what to do after answers */
   pendingIntent?: string;
   originalPrompt?: string;
 }
 
-export interface AiHistoryItem {
-  id: string;
-  title: string;
-  actionType: 'breakdown' | 'goal' | 'add_task' | 'markdown' | 'journal' | 'habit' | 'multistep' | 'general';
-  summary: string;
-  createdAt: string;
-  isStarred?: boolean;
-  messages: AiChatMessage[];
-  actionTaken?: {
-    label: string;
-    module: string;
-    count?: number;
-  };
-  helpfulRating?: 'up' | 'down' | null;
-}
-
-export interface AiSuggestion {
-  id: string;
-  title: string;
-  description: string;
-  contextTag: 'Current Tasks' | 'Goal Progress' | 'Upcoming Event' | 'Your Pattern' | 'Brain Dump';
-  reason: string;
-  actionLabel: string;
-  actionType: 'prioritize' | 'adjust_plan' | 'create_plan' | 'schedule' | 'organize';
-  targetData?: any;
-  dismissed?: boolean;
-}
-
-export interface AiStepItem {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  type: 'task' | 'subtasks' | 'markdown' | 'habit' | 'journal';
-  output?: any;
-}
-
-export interface AiMultiStepState {
-  id: string;
-  userRequest: string;
-  currentStepIndex: number;
-  clarificationQuestions?: {
-    id: string;
-    question: string;
-    options: string[];
-    selectedAnswer?: string;
-  }[];
-  steps: AiStepItem[];
-  isExecuting: boolean;
-  progressPct: number;
-}
-
 export interface PomodoroStats {
-  totalSessions: number;
   totalMinutes: number;
+  totalSessions?: number;
+  completedSessions?: number;
 }
-
-export interface BookTopic {
-  id: string;
-  title: string;
-  pageNumber: number;
-  color: string;
-  readingState?: 'unread' | 'in_progress' | 'done';
-  orderIndex?: number;
-}
-
-export interface BookStickyNote {
-  id: string;
-  title: string;
-  content: string;
-  date: string;
-  color?: string;
-  pageNumber: number;
-  position?: 'middle-left' | 'bottom-right' | 'top-right';
-  styleTheme?: 'hand-drawn' | 'terminal' | 'default';
-  blockId?: string;
-  anchorCharOffset?: number;
-}
-
-export interface BookHighlight {
-  id: string;
-  text: string;
-  color: string;
-  pageNumber: number;
-  startOffset: number;
-  endOffset: number;
-}
-
-export interface Book {
-  id: string;
-  title: string;
-  author: string;
-  tagline: string;
-  rating: number;
-  coverImage: string;
-  pagesCount: number;
-  category: string;
-  isFavorite: boolean;
-  readingList: boolean;
-  audiobook: boolean;
-  progress: number;
-  currentPage: number;
-  pages: { [pageNumber: number]: string };
-  topics: BookTopic[];
-  stickyNotes: BookStickyNote[];
-  bookmarks: number[];
-  highlights: BookHighlight[];
-  createdAt: string;
-}
-
-// ─── Study Content & Exam Generator ──────────────────────────────────────────
-
-export interface StudyUnit {
-  id: string;
-  title: string;
-  topics: {
-    id: string;
-    title: string;
-    keyPoints: string[];
-  }[];
-  qna?: {
-    id: string;
-    question: string;
-    answer: string;
-    probability: 'high' | 'medium' | 'low';
-  }[];
-}
-
-export interface ExamFlashcard {
-  id: string;
-  unitId: string;
-  front: string;
-  back: string;
-}
-
-export interface StudyMaterial {
-  id: string;
-  title: string;
-  rawContent: string;
-  structuredData: StudyUnit[];
-  flashcards?: ExamFlashcard[];
-  createdAt: string;
-}
-
-export interface ExamQuestion {
-  id: string;
-  type: 'mcq' | 'subjective';
-  unitId: string;
-  marks: number;
-  questionText: string;
-  options?: string[]; // Only for mcq
-  correctAnswer: string; // The correct option for MCQ, or key concepts for subjective
-}
-
-export interface Exam {
-  id: string;
-  materialId: string;
-  title: string;
-  totalMarks: number;
-  specPrompt: string;
-  questions: ExamQuestion[];
-  createdAt: string;
-}
-
-export interface ExamGradingFeedback {
-  questionId: string;
-  marksGiven: number;
-  isCorrect: boolean;
-  missingPoints: string[];
-  wrongPoints: string[];
-  explanation: string;
-}
-
-export interface ExamAttempt {
-  id: string;
-  examId: string;
-  answers: Record<string, string>;
-  totalScore: number;
-  feedback: ExamGradingFeedback[];
-  weaknessSummary: string;
-  createdAt: string;
-}
-
-export interface ExamGradingReport {
-  totalScore: number;
-  feedback: ExamGradingFeedback[];
-  weaknessSummary: string;
-}
-
 
 export interface AppStore {
   activeModule: string;
-
   setActiveModule: (module: string) => void;
 
   theme: Theme;
@@ -517,19 +609,33 @@ export interface AppStore {
   settings: AppSettings;
   updateSettings: (settings: Partial<AppSettings>) => void;
 
-  confirmDialog: ConfirmDialogState;
+  confirmDialog: {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  };
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
   closeConfirm: () => void;
 
-  mediaEntryModal: MediaEntryModalState;
-  openMediaEntryModal: (tab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE', log?: MediaLog) => void;
+  mediaEntryModal: {
+    isOpen: boolean;
+    editingLog: MediaLog | null;
+    activeTab: 'ANIME' | 'MOVIE' | 'GAME' | 'SERIES';
+  };
+  openMediaEntryModal: (tab: 'ANIME' | 'MOVIE' | 'GAME' | 'SERIES', log?: MediaLog | null) => void;
   closeMediaEntryModal: () => void;
 
-  todoProjectModal: { isOpen: boolean };
+  todoProjectModal: {
+    isOpen: boolean;
+  };
   openTodoProjectModal: () => void;
   closeTodoProjectModal: () => void;
 
-  todoTaskModal: TodoTaskModalState;
+  todoTaskModal: {
+    isOpen: boolean;
+    task: TodoTask | null;
+  };
   openTodoTaskModal: (task?: TodoTask | null) => void;
   closeTodoTaskModal: () => void;
 
@@ -606,18 +712,6 @@ export interface AppStore {
   stopGlobalPomodoro: () => void;
   skipGlobalPomodoro: () => void;
 
-  // Budget Tracker
-  selectedCurrency: string;
-  setSelectedCurrency: (currency: string) => void;
-  budgetCategories: BudgetCategory[];
-  budgetTransactions: BudgetTransaction[];
-  addBudgetCategory: (category: BudgetCategory) => Promise<void>;
-  updateBudgetCategory: (id: string, data: Partial<BudgetCategory>) => Promise<void>;
-  deleteBudgetCategory: (id: string) => Promise<void>;
-  addBudgetTransaction: (transaction: BudgetTransaction) => Promise<void>;
-  deleteBudgetTransaction: (id: string) => Promise<void>;
-  updateBudgetTransaction: (id: string, data: Partial<BudgetTransaction>) => Promise<void>;
-  
   // To-Do
   todoTasks: TodoTask[];
   todoProjects: TodoProject[];
@@ -636,8 +730,8 @@ export interface AppStore {
   deleteJournalEntry: (id: string) => Promise<void>;
   
   journalStickyNotes: JournalStickyNote[];
-  addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
-  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
+  addJournalStickyNote: (note: any) => Promise<void>;
+  updateJournalStickyNote: (id: string, data: any) => Promise<void>;
   deleteJournalStickyNote: (id: string) => Promise<void>;
   
   // Mindmap Creator
@@ -666,38 +760,19 @@ export interface AppStore {
   // Reflections state and actions
   dailyReflections: DailyReflection[];
   addDailyReflection: (ref: DailyReflection) => Promise<void>;
-  updateDailyReflection: (id: string, data: Partial<DailyReflection>) => Promise<void>;
-  deleteDailyReflection: (id: string) => Promise<void>;
+  updateDailyReflection?: (id: string, data: Partial<DailyReflection>) => Promise<void>;
+  deleteDailyReflection?: (id: string) => Promise<void>;
 
-  // Coder Hub / Projects State
-  sprints: Sprint[];
-  dsaProblems: DsaProblem[];
-  tilLogs: TilLog[];
-  roadmaps: LearningRoadmap[];
-  resources: ResourceBookmark[];
-  devGoals: DevGoal[];
+  // Coder Hub / Projects State (Hydrated from DB)
+  sprints?: Sprint[];
+  dsaProblems?: DsaProblem[];
+  tilLogs?: TilLog[];
+  roadmaps?: LearningRoadmap[];
+  resources?: ResourceBookmark[];
+  devGoals?: DevGoal[];
 
-  // Coder Hub Actions
-  addSprint: (sprint: Sprint) => void;
-  updateSprint: (id: string, data: Partial<Sprint>) => void;
-  deleteSprint: (id: string) => void;
-  addSprintTask: (sprintId: string, task: SprintTask) => void;
-  updateSprintTask: (sprintId: string, taskId: string, data: Partial<SprintTask>) => void;
-  deleteSprintTask: (sprintId: string, taskId: string) => void;
-  addDsaProblem: (prob: DsaProblem) => void;
-  updateDsaProblem: (id: string, data: Partial<DsaProblem>) => void;
-  deleteDsaProblem: (id: string) => void;
   addTilLog: (log: TilLog) => void;
   deleteTilLog: (id: string) => void;
-  updateRoadmapNode: (roadmapId: string, nodeId: string, completed: boolean) => void;
-  addRoadmap: (roadmap: LearningRoadmap) => void;
-  deleteRoadmap: (id: string) => void;
-  addResource: (res: ResourceBookmark) => void;
-  updateResource: (id: string, data: Partial<ResourceBookmark>) => void;
-  deleteResource: (id: string) => void;
-  addDevGoal: (goal: DevGoal) => void;
-  updateDevGoal: (id: string, data: Partial<DevGoal>) => void;
-  deleteDevGoal: (id: string) => void;
 
   activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
   setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
@@ -721,5 +796,11 @@ export interface AppStore {
   addExamAttempt: (attempt: ExamAttempt) => void;
   deleteExamAttempt: (id: string) => void;
 
-  importData: (data: Partial<AppStore>) => void;
+  // Vision Board
+  visions: Vision[];
+  addVision: (vision: Vision, userId?: string) => Promise<void>;
+  updateVision: (id: string, updates: Partial<Vision>) => Promise<void>;
+  deleteVision: (id: string) => Promise<void>;
+
+  importData: (data: any) => void;
 }

@@ -114,7 +114,7 @@ export const DynamicClarificationForm = ({
 
             {f.type === 'radio' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5" role="radiogroup" aria-label={f.label}>
-                {(f.options || []).map((opt) => {
+                {(f.options || []).map((opt: string) => {
                   const selected = formData[f.id] === opt;
                   const inputId = `${f.id}_${opt.replace(/\s+/g, '_')}`;
                   return (
@@ -153,7 +153,7 @@ export const DynamicClarificationForm = ({
 
             {f.type === 'checkbox' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5" role="group" aria-label={f.label}>
-                {(f.options || []).map((opt) => {
+                {(f.options || []).map((opt: string) => {
                   const selected = ((formData[f.id] as string[]) || []).includes(opt);
                   const inputId = `${f.id}_${opt.replace(/\s+/g, '_')}`;
                   return (

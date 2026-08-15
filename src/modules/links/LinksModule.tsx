@@ -121,7 +121,7 @@ export default function LinksModule() {
     setTitle(link.title);
     setUrl(link.url);
     setTags(link.tags || []);
-    setTermType(link.termType || 'short');
+    setTermType((link.termType as 'short' | 'long') || 'short');
     setIsModalOpen(true);
   };
 
@@ -211,7 +211,7 @@ export default function LinksModule() {
   // Compile unique tags
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
-    links.forEach(l => l.tags?.forEach(t => tagsSet.add(t)));
+    links.forEach(l => (l.tags || []).forEach((t: string) => tagsSet.add(t)));
     return Array.from(tagsSet);
   }, [links]);
 
@@ -233,7 +233,7 @@ export default function LinksModule() {
       list = list.filter(l => (l.termType || 'short') === selectedTerm);
     }
     
-    return list.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+    return list.sort((a, b) => new Date(b.savedAt || b.createdAt || 0).getTime() - new Date(a.savedAt || a.createdAt || 0).getTime());
   }, [links, search, selectedTag, selectedPlatform, selectedTerm]);
 
   return (
@@ -501,7 +501,7 @@ export default function LinksModule() {
                     {/* Tags slice */}
                     <div className="flex flex-wrap gap-1 max-w-[55%] overflow-hidden">
                       {link.tags && link.tags.length > 0 ? (
-                        link.tags.slice(0, 2).map((t) => (
+                        link.tags.slice(0, 2).map((t: string) => (
                           <Badge key={t} className="text-[9px] py-0.5 px-2 bg-primary/5 text-primary border-none rounded-md font-semibold">
                             {t}
                           </Badge>
@@ -703,7 +703,7 @@ export default function LinksModule() {
               <div className="flex flex-col gap-1.5 pt-2 border-t border-border/20">
                 <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Attached Tags</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {activeDetailLink.tags.map((t) => (
+                  {(activeDetailLink.tags || []).map((t: string) => (
                     <Badge key={t} variant="primary" className="text-[10px] font-bold py-0.5 px-2.5">
                       {t}
                     </Badge>
@@ -715,7 +715,7 @@ export default function LinksModule() {
             {/* Footer action logs */}
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/40">
               <span className="text-[9px] font-bold text-text-muted">
-                Saved on {new Date(activeDetailLink.savedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                Saved on {new Date(activeDetailLink.savedAt || activeDetailLink.createdAt || Date.now()).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
               </span>
               <div className="flex gap-2">
                 <button

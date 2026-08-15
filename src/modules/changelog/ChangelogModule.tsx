@@ -2,10 +2,9 @@
  * ChangelogModule — A dedicated, navigable changelog page.
  *
  * Accessible via the sidebar ("What's New" / changelog link).
- * Displays all releases in a beautiful vertical timeline.
+ * Displays all releases in a vertical timeline.
  *
- * Design: Flat, clean, editorial typography (Linear/Vercel inspired).
- * No gradients, no glassmorphism, no neo themes. Solid borders and backgrounds.
+ * Design: Minimal-Premium. Soft canvas, floating cards, disciplined accents.
  */
 
 import { useState } from 'react';
@@ -40,6 +39,8 @@ import {
   IconUser,
   IconEye,
 } from '@tabler/icons-react';
+import { Card } from '../../components/ui/Card';
+import { StatCard } from '../../components/ui/StatCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -353,30 +354,34 @@ function FeatureRow({ f, i }: { f: Feature; i: number }) {
       initial={{ opacity: 0, x: -4 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.2, delay: i * 0.05, ease: [0.25, 0.1, 0.25, 1] }}
-      className="flex items-start gap-4 py-4 border-b border-border last:border-b-0"
+      className="flex items-start gap-4"
     >
-      {/* Flat Icon */}
+      {/* Icon */}
       <div
-        className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5 border border-border bg-surface"
+        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 bg-surface-alt text-text-secondary"
       >
-        <f.Icon size={16} className="text-text-primary" strokeWidth={1.5} />
+        <f.Icon size={20} strokeWidth={1.5} />
       </div>
 
       {/* Text */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pt-0.5">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-sm font-semibold text-text-primary tracking-tight">
+          <span className="text-[15px] font-semibold text-text-primary tracking-tight">
             {f.title}
           </span>
           {f.badge && (
             <span
-              className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-sm border border-border bg-background text-text-secondary"
+              className={`text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full ${
+                f.badge === 'New' ? 'bg-accent-success/10 text-accent-success' : 
+                f.badge === 'Removed' ? 'bg-rose-500/10 text-rose-500' :
+                'bg-surface-alt text-text-secondary'
+              }`}
             >
               {f.badge}
             </span>
           )}
         </div>
-        <p className="text-[13px] leading-relaxed text-text-secondary">
+        <p className="text-[14px] leading-relaxed text-text-secondary">
           {f.desc}
         </p>
       </div>
@@ -402,68 +407,69 @@ function ReleaseCard({ release, index, isLatest }: {
       transition={{ duration: 0.3, delay: index * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
       className="flex gap-4 md:gap-6"
     >
-      {/* Flat Timeline spine */}
+      {/* Timeline spine */}
       <div className="flex flex-col items-center shrink-0 pt-2">
         <div
-          className={`w-2.5 h-2.5 rounded-sm shrink-0 border ${isLatest ? 'bg-text-primary border-text-primary' : 'bg-background border-border'}`}
+          className={`w-2.5 h-2.5 rounded-full shrink-0 ${isLatest ? 'bg-text-primary' : 'bg-surface-alt border border-border-hairline'}`}
         />
         <div
-          className="w-px flex-1 mt-3"
-          style={{ background: 'var(--border-border)' }}
+          className="w-px flex-1 mt-3 bg-border-hairline"
         />
       </div>
 
-      {/* Flat Card */}
+      {/* Card */}
       <div className="flex-1 min-w-0 pb-12">
-        <button
-          onClick={() => setExpanded(v => !v)}
-          className="w-full text-left cursor-pointer group hover:bg-surface-alt p-4 -ml-4 rounded-lg transition-colors border border-transparent hover:border-border"
-        >
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[15px] font-bold text-text-primary tracking-tight">
-                {release.version}
-              </span>
-              <span className="text-[12px] font-medium text-text-secondary">
-                {release.codename}
-              </span>
-              <span className="text-[11px] px-2 py-0.5 rounded border border-border bg-surface text-text-muted">
-                {release.type.toUpperCase()}
-              </span>
-              {isLatest && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded border border-text-primary bg-text-primary text-background">
-                  LATEST
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0 pt-0.5 text-text-muted">
-              <span className="text-xs">{release.date}</span>
-              {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-            </div>
-          </div>
-          <h2 className="text-[16px] font-semibold text-text-primary leading-snug mb-1">
-            {release.headline}
-          </h2>
-          <p className="text-[13px] text-text-secondary leading-relaxed max-w-3xl">
-            {release.sub}
-          </p>
-        </button>
-
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="mt-2 pl-2 overflow-hidden border-l-2 border-border ml-2"
+        <Card padding="md" className="group transition-shadow">
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="w-full text-left cursor-pointer transition-colors"
           >
-            <div className="pl-4 pt-2">
-              {release.features.map((f, i) => (
-                <FeatureRow key={f.title} f={f} i={i} />
-              ))}
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[16px] font-bold text-text-primary tracking-tight">
+                  {release.version}
+                </span>
+                <span className="text-[13px] font-medium text-text-secondary">
+                  {release.codename}
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-alt text-text-muted font-medium">
+                  {release.type.toUpperCase()}
+                </span>
+                {isLatest && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-accent-highlight/10 text-accent-highlight">
+                    LATEST
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 shrink-0 pt-0.5 text-text-muted">
+                <span className="text-[12px]">{release.date}</span>
+                {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+              </div>
             </div>
-          </motion.div>
-        )}
+            <h2 className="text-[18px] font-semibold text-text-primary leading-snug mb-1">
+              {release.headline}
+            </h2>
+            <p className="text-[14px] text-text-secondary leading-relaxed max-w-3xl">
+              {release.sub}
+            </p>
+          </button>
+
+          {expanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="mt-4 pt-4 border-t border-border-hairline overflow-hidden"
+            >
+              <div className="flex flex-col gap-6">
+                {release.features.map((f, i) => (
+                  <FeatureRow key={f.title} f={f} i={i} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </Card>
       </div>
     </motion.div>
   );
@@ -512,31 +518,20 @@ export default function ChangelogModule() {
           </div>
         </div>
 
-        {/* Flat Stats Grid */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { value: RELEASES.length, label: 'Releases', Icon: IconStar },
             { value: RELEASES.filter(r => r.type === 'major').length, label: 'Major Updates', Icon: IconRocket },
             { value: RELEASES.reduce((a, r) => a + r.features.length, 0), label: 'Features Shipped', Icon: IconSparkles },
           ].map(s => (
-            <div
-              key={s.label}
-              className="flex items-center gap-4 p-4 rounded-lg border border-border bg-surface"
-            >
-              <div className="w-10 h-10 rounded border border-border bg-background flex items-center justify-center shrink-0">
-                <s.Icon size={18} className="text-text-secondary" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-text-primary leading-none tracking-tight">{s.value}</p>
-                <p className="text-xs text-text-secondary mt-1 tracking-wide">{s.label}</p>
-              </div>
-            </div>
+            <StatCard key={s.label} label={s.label} value={s.value} icon={<s.Icon size={20} />} />
           ))}
         </div>
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-8 border-b border-border pb-4 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center gap-2 mb-8 border-b border-border-hairline pb-4 overflow-x-auto scrollbar-hide">
         {[
           { id: 'all', label: 'All Changes' },
           { id: 'new', label: 'New Features' },
@@ -546,10 +541,10 @@ export default function ChangelogModule() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as TabFilter)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors whitespace-nowrap border ${
+            className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-text-primary text-background border-text-primary'
-                : 'bg-surface text-text-secondary border-border hover:bg-surface-alt hover:text-text-primary'
+                ? 'bg-text-primary text-surface'
+                : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/70 hover:text-text-primary'
             }`}
           >
             {tab.label}

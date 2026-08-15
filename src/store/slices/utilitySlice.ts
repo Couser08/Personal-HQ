@@ -782,8 +782,9 @@ export const createUtilitySlice: StateCreator<
   recordPomodoroSession: (minutes) =>
     set((state) => ({
       pomodoroStats: {
-        totalSessions: state.pomodoroStats.totalSessions + 1,
-        totalMinutes: state.pomodoroStats.totalMinutes + minutes,
+        totalSessions: (state.pomodoroStats?.totalSessions || 0) + 1,
+        totalMinutes: (state.pomodoroStats?.totalMinutes || 0) + minutes,
+        completedSessions: ((state.pomodoroStats as any)?.completedSessions || (state.pomodoroStats?.totalSessions || 0)) + 1,
       },
     })),
 

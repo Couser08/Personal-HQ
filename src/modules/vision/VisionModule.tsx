@@ -7,8 +7,8 @@ import { supabase } from '../../lib/supabase';
 import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
 import type { Vision, Habit } from '../../store/types';
 import {
-  IconTarget, IconPlus, IconX, IconCheck, IconPhoto, 
-  IconDots, IconTrash, IconCalendar, IconChevronLeft,
+  IconTarget, IconPlus, IconX, IconPhoto, 
+  IconTrash, IconCalendar, IconChevronLeft,
   IconLoader2
 } from '@tabler/icons-react';
 import { Modal } from '../../components/ui/Modal';
@@ -260,7 +260,7 @@ function VisionDetail({ vision, habits, onBack, onUpdate, onDelete }: {
     let totalScore = 0;
     linkedHabits.forEach(h => {
       const weeklyTarget = h.frequencyCount;
-      const score = Math.min((h.streak / (weeklyTarget * 4)) * 100, 100); // 4 weeks of perfect streaks = 100%
+      const score = Math.min(((h.streak || 0) / (weeklyTarget * 4)) * 100, 100); // 4 weeks of perfect streaks = 100%
       totalScore += score;
     });
     return Math.round(totalScore / linkedHabits.length);
@@ -538,7 +538,7 @@ function CreateVisionModal({ isOpen, onClose, onSave, userId }: { isOpen: boolea
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Plant a New Vision" width="600px">
+    <Modal isOpen={isOpen} onClose={onClose} title="Plant a New Vision" maxWidthClassName="max-w-xl">
       <div className="flex flex-col gap-5 pt-2">
         
         <div>

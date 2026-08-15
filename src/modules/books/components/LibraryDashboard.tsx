@@ -54,9 +54,9 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
       // 1. Search Query
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        book.title.toLowerCase().includes(query) ||
-        book.author.toLowerCase().includes(query) ||
-        book.category.toLowerCase().includes(query);
+        (book.title || '').toLowerCase().includes(query) ||
+        (book.author || '').toLowerCase().includes(query) ||
+        (book.category || '').toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
 
@@ -70,9 +70,9 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
 
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
-      if (sortBy === 'rating') return b.rating - a.rating;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
   }, [books, activeTab, selectedCategory, searchQuery, sortBy]);
 
@@ -366,7 +366,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     onClick={() => onSelectBook(book.id)}
                     className="relative cursor-pointer notebook-page-stack"
                   >
-                    <BookCover presetId={book.coverImage} title={book.title} author={book.author} className="rounded-xl" />
+                    <BookCover presetId={book.coverImage || 'cover-1'} title={book.title} author={book.author} className="rounded-xl" />
                     
                     {/* Hover read button */}
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity duration-200">
@@ -420,7 +420,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     >
                       <td className="p-3">
                         <div className="w-8 aspect-[3/4] rounded overflow-hidden shadow-subtle">
-                          <BookCover presetId={book.coverImage} title={book.title} showDetails={false} />
+                          <BookCover presetId={book.coverImage || 'cover-1'} title={book.title} showDetails={false} />
                         </div>
                       </td>
                       <td className="p-3">
@@ -434,7 +434,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                       </td>
                       <td className="p-3 text-text-secondary font-mono tabular-nums">{book.pagesCount}</td>
                       <td className="p-3 text-amber-500 flex items-center gap-0.5">
-                        {Array.from({ length: book.rating }).map((_, i) => (
+                        {Array.from({ length: book.rating || 0 }).map((_, i) => (
                           <IconStar key={i} size={10} fill="#F59E0B" color="#F59E0B" />
                         ))}
                       </td>

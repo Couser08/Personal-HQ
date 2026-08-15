@@ -7,6 +7,7 @@ import {
 } from '@tabler/icons-react';
 import { useToastStore } from '../../store/useToastStore';
 import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
+import { Card } from '../../components/ui/Card';
 
 export default function AdminModule() {
   const { user } = useAuthStore();
@@ -144,13 +145,13 @@ export default function AdminModule() {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8 text-center bg-surface border border-border rounded-3xl max-w-lg mx-auto mt-16 shadow-sm">
+      <Card padding="lg" className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8 text-center max-w-lg mx-auto mt-16">
         <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/10">
           <IconLock className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-text-primary">Access Denied</h2>
-        <p className="text-sm text-text-secondary max-w-sm">This section is restricted to administrators. Only authorized personnel can access these controls.</p>
-      </div>
+        <h2 className="text-[20px] font-semibold text-text-primary">Access Denied</h2>
+        <p className="text-[14px] text-text-secondary max-w-sm">This section is restricted to administrators. Only authorized personnel can access these controls.</p>
+      </Card>
     );
   }
 
@@ -173,13 +174,13 @@ export default function AdminModule() {
       <div className="flex flex-col gap-8 w-full">
         
         {/* Section 1: Dashboard Illustration */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full border-b border-border pb-8">
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full border-b border-border-hairline pb-8">
+          <Card padding="lg" className="flex flex-col gap-5">
             <div>
-              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <h3 className="text-[16px] font-semibold text-text-primary flex items-center gap-2">
                 <IconPhoto className="w-4 h-4 text-primary" /> Dashboard Illustration
               </h3>
-              <p className="text-xs text-text-secondary mt-1">Upload an image file (preferably transparent background) to replace the main hero illustration on the dashboard.</p>
+              <p className="text-[13px] text-text-secondary mt-1">Upload an image file (preferably transparent background) to replace the main hero illustration on the dashboard.</p>
             </div>
 
             <label className="border-2 border-dashed border-border/80 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-surface-alt/20 hover:bg-surface-alt/40 relative">
@@ -216,11 +217,11 @@ export default function AdminModule() {
                 <IconTrash className="w-4 h-4" /> Reset to Default Illustration
               </button>
             )}
-          </div>
+          </Card>
 
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-text-primary">Current Illustration Preview</h3>
-            <div className="flex-grow bg-surface-alt/30 border border-border/40 rounded-2xl p-6 flex items-center justify-center min-h-[220px]">
+          <Card padding="lg" className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-text-primary">Current Illustration Preview</h3>
+            <div className="flex-grow bg-surface-alt/30 border border-border-alt/40 rounded-2xl p-6 flex items-center justify-center min-h-[220px]">
               {dashPreview ? (
                 <img 
                   src={dashPreview} 
@@ -234,17 +235,17 @@ export default function AdminModule() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Section 2: Media Log Review Mascot */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full border-b border-border pb-8">
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full border-b border-border-hairline pb-8">
+          <Card padding="lg" className="flex flex-col gap-5">
             <div>
-              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <h3 className="text-[16px] font-semibold text-text-primary flex items-center gap-2">
                 <IconDeviceGamepad2 className="w-4 h-4 text-primary" /> Media Review Mascot
               </h3>
-              <p className="text-xs text-text-secondary mt-1">Upload a custom chibi mascot image to display next to the Review & Notes text area inside the Media Log.</p>
+              <p className="text-[13px] text-text-secondary mt-1">Upload a custom chibi mascot image to display next to the Review & Notes text area inside the Media Log.</p>
             </div>
 
             <label className="border-2 border-dashed border-border/80 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-surface-alt/20 hover:bg-surface-alt/40 relative">
@@ -281,11 +282,11 @@ export default function AdminModule() {
                 <IconTrash className="w-4 h-4" /> Reset to Default Mascot
               </button>
             )}
-          </div>
+          </Card>
 
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-text-primary">Current Mascot Preview</h3>
-            <div className="flex-grow bg-surface-alt/30 border border-border/40 rounded-2xl p-6 flex items-center justify-center min-h-[220px]">
+          <Card padding="lg" className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-text-primary">Current Mascot Preview</h3>
+            <div className="flex-grow bg-surface-alt/30 border border-border-alt/40 rounded-2xl p-6 flex items-center justify-center min-h-[220px]">
               {mascotPreview ? (
                 <img 
                   src={mascotPreview} 
@@ -299,17 +300,17 @@ export default function AdminModule() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Section 3: Anime Review Center Banner */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full pb-8">
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+          <Card padding="lg" className="flex flex-col gap-5">
             <div>
-              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <h3 className="text-[16px] font-semibold text-text-primary flex items-center gap-2">
                 <IconMovie className="w-4 h-4 text-primary" /> Anime Review Banner
               </h3>
-              <p className="text-xs text-text-secondary mt-1">Upload a widescreen banner image to style the header card of your new Anime Review Center page.</p>
+              <p className="text-[13px] text-text-secondary mt-1">Upload a widescreen banner image to style the header card of your new Anime Review Center page.</p>
             </div>
 
             <label className="border-2 border-dashed border-border/80 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-surface-alt/20 hover:bg-surface-alt/40 relative">
@@ -346,11 +347,11 @@ export default function AdminModule() {
                 <IconTrash className="w-4 h-4" /> Reset to Default Banner
               </button>
             )}
-          </div>
+          </Card>
 
-          <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-text-primary">Current Banner Preview</h3>
-            <div className="flex-grow bg-surface-alt/30 border border-border/40 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
+          <Card padding="lg" className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-text-primary">Current Banner Preview</h3>
+            <div className="flex-grow bg-surface-alt/30 border border-border-alt/40 rounded-2xl p-4 flex items-center justify-center min-h-[220px]">
               {bannerPreview ? (
                 <img 
                   src={bannerPreview} 
@@ -364,7 +365,7 @@ export default function AdminModule() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
       </div>

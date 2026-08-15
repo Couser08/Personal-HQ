@@ -117,7 +117,7 @@ const BigProgressRing = ({ pct, color, children }: { pct: number; color: string;
 
 // 1. DEFAULT (Horizontal)
 const TemplateDefault = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -155,7 +155,7 @@ const TemplateMinimal = ({ c: _c, t }: { c: Countdown; t: ReturnType<typeof getT
 
 // 3. GRADIENT STYLE
 const TemplateGradient = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const hex = COLOR_HEX[c.color] ?? '#f43f5e';
+  const hex = COLOR_HEX[c.color || 'rose'] ?? '#f43f5e';
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -181,17 +181,17 @@ const TemplateCircle = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLe
   if (t.isPast) return <CompletedBadge />;
   return (
     <div className="flex gap-3 mt-4 flex-wrap">
-      <ProgressRing value={t.days}    max={365} color={c.color} label="Days"    />
-      <ProgressRing value={t.hours}   max={24}  color={c.color} label="Hours"   />
-      <ProgressRing value={t.minutes} max={60}  color={c.color} label="Minutes" />
-      <ProgressRing value={t.seconds} max={60}  color={c.color} label="Seconds" />
+      <ProgressRing value={t.days}    max={365} color={c.color || 'rose'} label="Days"    />
+      <ProgressRing value={t.hours}   max={24}  color={c.color || 'rose'} label="Hours"   />
+      <ProgressRing value={t.minutes} max={60}  color={c.color || 'rose'} label="Minutes" />
+      <ProgressRing value={t.seconds} max={60}  color={c.color || 'rose'} label="Seconds" />
     </div>
   );
 };
 
 // 5. EVENT COUNTDOWN
 const TemplateEvent = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -219,7 +219,7 @@ const TemplateEvent = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLef
 
 // 6. SALE COUNTDOWN
 const TemplateSale = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -242,7 +242,7 @@ const TemplateSale = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft
       </div>
       <button
         className={`mt-4 w-full py-2.5 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90 mt-auto`}
-        style={{ background: `linear-gradient(90deg, ${COLOR_HEX[c.color]}cc, ${COLOR_HEX[c.color]}ff)` }}
+        style={{ background: `linear-gradient(90deg, ${COLOR_HEX[c.color || 'rose']}cc, ${COLOR_HEX[c.color || 'rose']}ff)` }}
         onClick={(e) => e.preventDefault()}
       >
         Shop Now
@@ -253,7 +253,7 @@ const TemplateSale = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft
 
 // 7. DARK STYLE (always dark regardless of theme)
 const TemplateDark = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -275,7 +275,7 @@ const TemplateDark = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft
 
 // 8. COMPACT CARD
 const TemplateCompact = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   return (
     <div className="flex items-center gap-3 mt-4 flex-wrap">
@@ -332,7 +332,7 @@ const TemplateProgress = ({ c, t, createdAt }: { c: Countdown; t: ReturnType<typ
   if (t.isPast) return <CompletedBadge />;
   return (
     <div className="flex flex-col sm:flex-row items-center gap-6 mt-4">
-      <BigProgressRing pct={pct} color={c.color}>
+      <BigProgressRing pct={pct} color={c.color || 'rose'}>
         <span className="text-2xl font-bold">{Math.round(pct * 100)}%</span>
         <span className="text-[10px] text-text-muted">Completed</span>
       </BigProgressRing>
@@ -341,7 +341,7 @@ const TemplateProgress = ({ c, t, createdAt }: { c: Countdown; t: ReturnType<typ
         <div className="h-2 rounded-full bg-surface-alt overflow-hidden w-full">
           <div
             className="h-full rounded-full"
-            style={{ width: `${pct * 100}%`, background: COLOR_HEX[c.color] }}
+            style={{ width: `${pct * 100}%`, background: COLOR_HEX[c.color || 'rose'] }}
           />
         </div>
         <p className="text-xs text-text-muted text-center sm:text-left">{daysElapsed} / {totalDays} days</p>
@@ -352,7 +352,7 @@ const TemplateProgress = ({ c, t, createdAt }: { c: Countdown; t: ReturnType<typ
 
 // 11. VERTICAL STYLE
 const TemplateVertical = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLeft> }) => {
-  const a = ACCENT[c.color] ?? ACCENT.rose;
+  const a = ACCENT[c.color || 'rose'] ?? ACCENT.rose;
   if (t.isPast) return <CompletedBadge />;
   const units = [{ v: t.days, l: 'Days' }, { v: t.hours, l: 'Hours' }, { v: t.minutes, l: 'Minutes' }, { v: t.seconds, l: 'Seconds' }];
   return (
@@ -377,7 +377,7 @@ const TemplateSplit = ({ c, t }: { c: Countdown; t: ReturnType<typeof getTimeLef
     <div className="flex items-center gap-3 mt-4">
       <div
         className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0"
-        style={{ background: COLOR_HEX[c.color] }}
+        style={{ background: COLOR_HEX[c.color || 'rose'] }}
       >
         {c.emoji}
       </div>
@@ -419,7 +419,7 @@ const CountdownCard = ({ c, template, onDelete }: { c: Countdown; template: Coun
     ? 'bg-surface border border-border rounded-xl p-6 flex flex-col relative group overflow-hidden border-l-4'
     : 'bg-surface border border-border rounded-xl p-6 flex flex-col relative group overflow-hidden';
 
-  const verticalBorderStyle = template === 'vertical' ? { borderLeftColor: COLOR_HEX[c.color] } : {};
+  const verticalBorderStyle = template === 'vertical' ? { borderLeftColor: COLOR_HEX[c.color || 'rose'] } : {};
   const isPast = t.isPast;
 
   return (
@@ -497,6 +497,7 @@ export default function CountdownModule() {
     if (!label.trim() || !date) return;
     addCountdown({
       id: crypto.randomUUID(),
+      title: label,
       label,
       targetDate: new Date(`${date}T${time}`).toISOString(),
       emoji,

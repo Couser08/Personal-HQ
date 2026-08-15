@@ -8,7 +8,17 @@ interface DownloadPdfModalProps {
   book: Book;
 }
 
-export const DownloadPdfModal: React.FC<DownloadPdfModalProps> = ({ isOpen, onClose, book }) => {
+export const DownloadPdfModal: React.FC<DownloadPdfModalProps> = ({ isOpen, onClose, book: rawBook }) => {
+  const book = {
+    ...rawBook,
+    pages: rawBook.pages || {},
+    topics: rawBook.topics || [],
+    stickyNotes: rawBook.stickyNotes || [],
+    bookmarks: rawBook.bookmarks || [],
+    pagesCount: rawBook.pagesCount || 20,
+    currentPage: rawBook.currentPage || 1,
+  };
+
   // Checklist states
   const [includeContent, setIncludeContent] = useState(true);
   const [includeTopics, setIncludeTopics] = useState(true);
