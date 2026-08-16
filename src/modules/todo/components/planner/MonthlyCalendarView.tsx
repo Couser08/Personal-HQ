@@ -220,7 +220,7 @@ export function MonthlyCalendarView() {
   }, [todoTasks, currentMonth]);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-6rem)] w-full bg-[#f8fafc] dark:bg-bg-primary rounded-[28px] border border-slate-100 dark:border-border shadow-sm overflow-hidden select-none font-sans text-left">
+    <div className="@container/calendar flex flex-col lg:flex-row min-h-[calc(100dvh-5rem)] w-full bg-[#f8fafc] dark:bg-bg-primary rounded-3xl sm:rounded-[28px] border border-slate-100 dark:border-border shadow-xs overflow-hidden select-none font-sans text-left">
       
       {/* ── CENTER PANEL: Main Interactive Work Area ── */}
       <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-surface/10">

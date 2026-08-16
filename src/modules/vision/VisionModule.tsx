@@ -367,7 +367,7 @@ function VisionDetail({
       className="max-w-4xl pb-20 mx-auto space-y-6"
     >
       {/* Header bar */}
-      <div className="sticky top-0 z-10 flex items-center justify-between py-3 mb-2 border-b bg-background/80 backdrop-blur-md border-border">
+      <div className="sticky top-14 md:top-0 z-10 flex items-center justify-between py-3 mb-2 border-b bg-background/80 backdrop-blur-md border-border">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface transition-colors cursor-pointer"

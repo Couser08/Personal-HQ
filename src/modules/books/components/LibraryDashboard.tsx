@@ -12,7 +12,7 @@ import {
   IconBooks,
   IconStar,
   IconMusic,
-  IconTag
+  IconTag,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { BookCover } from '../utils/presetCovers';
@@ -43,15 +43,12 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
   // Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-
-
   // Card Menu states
   const [activeMenuBookId, setActiveMenuBookId] = useState<string | null>(null);
 
   // Filter books list
   const filteredBooks = useMemo(() => {
     return books.filter((book) => {
-      // 1. Search Query
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
         (book.title || '').toLowerCase().includes(query) ||
@@ -60,12 +57,10 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
 
       if (!matchesSearch) return false;
 
-      // 2. Active Tab Filter
       if (activeTab === 'favorites' && !book.isFavorite) return false;
       if (activeTab === 'reading-list' && !book.readingList) return false;
       if (activeTab === 'audiobooks' && !book.audiobook) return false;
 
-      // 3. Category Filter
       if (selectedCategory && book.category !== selectedCategory) return false;
 
       return true;
@@ -76,14 +71,12 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
     });
   }, [books, activeTab, selectedCategory, searchQuery, sortBy]);
 
-
-
   return (
-    <div className="flex flex-col lg:flex-row gap-6 text-left min-h-full">
-      {/* ─── Library Module Left Navigation (Desktop) ─── */}
-      <div className="hidden lg:flex lg:w-60 flex-shrink-0 flex-col gap-6">
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col gap-5">
-          <div className="flex items-center gap-2.5 px-2 py-1.5 border-b border-border/40 pb-3">
+    <div className="@container/library flex flex-col lg:flex-row gap-5 text-left min-h-full">
+      {/* ─── Desktop Left Navigation Column ─── */}
+      <div className="hidden lg:flex lg:w-60 shrink-0 flex-col gap-5">
+        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col gap-4">
+          <div className="flex items-center gap-2.5 px-2 py-1 border-b border-border/40 pb-2.5">
             <span className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg">
               <IconBooks size={18} />
             </span>
@@ -108,9 +101,9 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     setActiveTab(item.id as any);
                     setSelectedCategory(null);
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border-none cursor-pointer transition-all active:scale-[0.97] transition-transform duration-100 ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border-none cursor-pointer transition-all active:scale-[0.97] ${
                     isActive
-                      ? 'bg-rose-500/10 text-rose-600'
+                      ? 'bg-rose-500/10 text-rose-600 font-bold'
                       : 'hover:bg-surface-hover text-text-secondary hover:text-text-primary'
                   }`}
                 >
@@ -133,7 +126,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(isActive ? null : cat)}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left border-none cursor-pointer transition-all active:scale-[0.97] transition-transform duration-100 ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left border-none cursor-pointer transition-all active:scale-[0.97] ${
                       isActive
                         ? 'bg-rose-500/10 text-rose-600 font-bold'
                         : 'hover:bg-surface-hover text-text-secondary hover:text-text-primary'
@@ -148,42 +141,50 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
           </div>
         </div>
 
-        {/* Upgrade Card */}
-        <div className="bg-gradient-to-br from-violet-500/10 to-rose-500/10 border border-rose-500/20 rounded-2xl p-5 flex flex-col gap-3.5 relative overflow-hidden">
-          <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl" />
+        {/* Upgrade / Stats Card */}
+        <div className="bg-gradient-to-br from-violet-500/10 to-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden">
           <IconSparkles size={20} className="text-rose-500" />
           <div>
-            <h4 className="text-xs font-extrabold text-text-primary">Upgrade to Premium</h4>
-            <p className="text-[10px] text-text-secondary mt-1 leading-relaxed">
-              Unlock unlimited notebooks, export formats, offline reading, and AI editing tools.
+            <h4 className="text-xs font-extrabold text-text-primary">Bookshelf Collection</h4>
+            <p className="text-[10.5px] text-text-secondary mt-0.5 leading-relaxed">
+              {books.length} notebooks saved across all categories.
             </p>
           </div>
-          <button className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-subtle active:scale-[0.97] transition-transform duration-100">
-            Upgrade Now
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-subtle active:scale-[0.97]"
+          >
+            + Create New Book
           </button>
         </div>
       </div>
 
       {/* ─── Main Content Area ─── */}
-      <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-w-0">
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
         
-        {/* Header greeting */}
+        {/* Header Greeting */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
           <div>
             <h1 className="text-xl sm:text-2xl font-serif font-bold text-text-primary tracking-tight">
               My Library 📚
             </h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Read, draft notes, and organize your knowledge.
+              Read, draft notes, and organize your digital books.
             </p>
+          </div>
+
+          {/* Quick Stats Pill */}
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-surface border border-border rounded-full text-xs font-bold text-text-secondary">
+              {filteredBooks.length} {filteredBooks.length === 1 ? 'Notebook' : 'Notebooks'}
+            </span>
           </div>
         </div>
 
-        {/* ─── Mobile Horizontal Tabs & Categories Strip (Visible only on mobile) ─── */}
+        {/* ─── Mobile Horizontal Tabs & Categories Strip ─── */}
         <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
           {[
-            { id: 'home', label: 'Home' },
-            { id: 'all', label: 'All' },
+            { id: 'home', label: 'All Books' },
             { id: 'favorites', label: '⭐ Favorites' },
             { id: 'reading-list', label: '🔖 Reading' },
             { id: 'audiobooks', label: '🎧 Audio' },
@@ -196,7 +197,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                   setActiveTab(tab.id as any);
                   setSelectedCategory(null);
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`px-3 py-1.5 min-h-[36px] rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
                     ? 'bg-rose-500 text-white shadow-xs'
                     : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
@@ -206,10 +207,29 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
               </button>
             );
           })}
+
+          <div className="h-4 w-px bg-border/80 mx-1 shrink-0" />
+
+          {['Fiction', 'Non-Fiction', 'Science', 'Biography', 'Self-Help'].map((cat) => {
+            const isActive = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(isActive ? null : cat)}
+                className={`px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-rose-500/20 text-rose-600 border border-rose-500/30 font-bold'
+                    : 'bg-surface-alt border border-border text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search bar & Add button */}
-        <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-2.5 w-full">
           <div className="relative flex-1">
             <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <Input
@@ -217,49 +237,49 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notebook name, author, categories..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-rose-500/20"
+              className="w-full pl-10 pr-4 py-2 text-xs focus:ring-1 focus:ring-rose-500/20"
             />
           </div>
           <Button
             onClick={() => setIsCreateModalOpen(true)}
             variant="primary"
-            className="px-4 py-2.5 shrink-0"
+            className="px-3.5 sm:px-4 py-2 min-h-[38px] shrink-0 text-xs font-bold"
           >
             <IconPlus size={16} />
-            Add Book
+            <span className="hidden sm:inline">Add Book</span>
           </Button>
         </div>
 
-
-
-        {/* ─── My Books Segment ─── */}
-        <div className="flex flex-col gap-4">
+        {/* ─── Books Display Segment ─── */}
+        <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-md font-bold text-text-primary">My Books</h2>
+              <h2 className="text-sm sm:text-md font-bold text-text-primary">Bookshelf</h2>
               <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 rounded-full text-[10px] font-bold">
-                {filteredBooks.length} {filteredBooks.length === 1 ? 'Book' : 'Books'}
+                {filteredBooks.length}
               </span>
             </div>
 
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-2">
               {/* Grid/List togglers */}
               <div className="flex items-center bg-surface border border-border rounded-xl p-0.5">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.97] transition-transform ${
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.97] ${
                     viewMode === 'grid' ? 'bg-rose-500/10 text-rose-600' : 'text-text-secondary hover:text-text-primary'
                   }`}
+                  title="Grid View"
                 >
-                  <IconLayoutGrid size={16} />
+                  <IconLayoutGrid size={15} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.97] transition-transform ${
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.97] ${
                     viewMode === 'list' ? 'bg-rose-500/10 text-rose-600' : 'text-text-secondary hover:text-text-primary'
                   }`}
+                  title="List View"
                 >
-                  <IconList size={16} />
+                  <IconList size={15} />
                 </button>
               </div>
 
@@ -267,14 +287,15 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
               <div className="relative">
                 <button
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                  className="px-3.5 py-1.5 bg-surface border border-border rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-2.5 sm:px-3.5 py-1.5 bg-surface border border-border rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  Sort by: {sortBy === 'title' ? 'Title' : sortBy === 'rating' ? 'Rating' : 'Date Created'}
-                  <IconChevronDown size={14} />
+                  <span className="hidden sm:inline">Sort: </span>
+                  <span>{sortBy === 'title' ? 'Title' : sortBy === 'rating' ? 'Rating' : 'Newest'}</span>
+                  <IconChevronDown size={13} />
                 </button>
 
                 {isSortDropdownOpen && (
-                  <div className="absolute right-0 mt-1.5 w-40 bg-surface border border-border rounded-xl shadow-lifted z-50 overflow-hidden">
+                  <div className="absolute right-0 mt-1.5 w-36 bg-surface border border-border rounded-xl shadow-high z-50 overflow-hidden animate-fadeIn">
                     {[
                       { id: 'createdAt', label: 'Date Created' },
                       { id: 'title', label: 'Title' },
@@ -286,8 +307,8 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                           setSortBy(opt.id as any);
                           setIsSortDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-xs font-semibold cursor-pointer hover:bg-surface-hover ${
-                          sortBy === opt.id ? 'text-rose-600 bg-rose-500/5' : 'text-text-secondary'
+                        className={`w-full text-left px-3.5 py-2 text-xs font-semibold cursor-pointer hover:bg-surface-hover ${
+                          sortBy === opt.id ? 'text-rose-600 bg-rose-500/5 font-bold' : 'text-text-secondary'
                         }`}
                       >
                         {opt.label}
@@ -312,37 +333,38 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
               }
             />
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4 @xl:grid-cols-5 gap-3 sm:gap-5">
               {filteredBooks.map((book) => (
                 <div
                   key={book.id}
-                  className="bg-surface border border-border rounded-2xl p-4 flex flex-col gap-4 relative group hover:shadow-lifted hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 ease-out"
+                  className="bg-surface border border-border rounded-2xl p-3 sm:p-4 flex flex-col gap-3 relative group hover:shadow-lifted hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  {/* Card Actions overlay / Bookmark top-left */}
+                  {/* Bookmark top-left */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       updateBook(book.id, { isFavorite: !book.isFavorite });
                     }}
-                    className={`absolute left-7 top-7 z-20 p-1.5 rounded-lg border border-white/20 transition-[transform,background-color] duration-150 cursor-pointer backdrop-blur-md active:scale-90 ${
+                    className={`absolute left-5 sm:left-6 top-5 sm:top-6 z-20 p-1.5 rounded-lg border border-white/20 transition-all cursor-pointer backdrop-blur-md active:scale-90 min-w-[28px] min-h-[28px] flex items-center justify-center ${
                       book.isFavorite
-                        ? 'bg-amber-500 text-white border-amber-600'
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                         : 'bg-black/35 hover:bg-black/55 text-white/80'
                     }`}
+                    title={book.isFavorite ? 'Remove Favorite' : 'Add to Favorites'}
                   >
-                    <IconBookmark size={14} fill={book.isFavorite ? 'white' : 'transparent'} />
+                    <IconBookmark size={13} fill={book.isFavorite ? 'white' : 'transparent'} />
                   </button>
 
                   {/* Three-dots menu */}
-                  <div className="absolute right-7 top-7 z-20">
+                  <div className="absolute right-5 sm:right-6 top-5 sm:top-6 z-20">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveMenuBookId(activeMenuBookId === book.id ? null : book.id);
                       }}
-                      className="p-1.5 bg-black/35 hover:bg-black/55 text-white/85 rounded-lg border border-white/20 cursor-pointer backdrop-blur-md transition-[background-color] duration-150 active:scale-90"
+                      className="p-1.5 bg-black/35 hover:bg-black/55 text-white/85 rounded-lg border border-white/20 cursor-pointer backdrop-blur-md transition-all active:scale-90 min-w-[28px] min-h-[28px] flex items-center justify-center"
                     >
-                      <IconDotsVertical size={14} />
+                      <IconDotsVertical size={13} />
                     </button>
 
                     {activeMenuBookId === book.id && (
@@ -375,7 +397,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                             }
                             setActiveMenuBookId(null);
                           }}
-                          className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-500 hover:bg-rose-500/5 cursor-pointer"
+                          className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                         >
                           Delete Notebook
                         </button>
@@ -383,7 +405,7 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     )}
                   </div>
 
-                  {/* Clickable cover design with stacked pages stack */}
+                  {/* Clickable cover design */}
                   <div
                     onClick={() => onSelectBook(book.id)}
                     className="relative cursor-pointer notebook-page-stack"
@@ -392,45 +414,45 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     
                     {/* Hover read button */}
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity duration-200">
-                      <span className="px-4 py-2 bg-white text-rose-600 text-xs font-bold rounded-xl shadow-high transform translate-y-1.5 group-hover:translate-y-0 transition-[transform,opacity] duration-200 ease-out">
+                      <span className="px-3.5 py-1.5 bg-white text-rose-600 text-xs font-bold rounded-xl shadow-high transform translate-y-1.5 group-hover:translate-y-0 transition-transform">
                         Open Editor
                       </span>
                     </div>
                   </div>
 
                   {/* Description Details */}
-                  <div className="text-left flex flex-col gap-1.5 px-1 mt-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 bg-rose-500/10 text-rose-600 rounded-full text-[9px] font-bold">
-                        {book.category}
+                  <div className="text-left flex flex-col gap-1 px-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 rounded-full text-[9px] font-bold truncate">
+                        {book.category || 'General'}
                       </span>
-                      <span className="text-[10px] text-text-muted font-bold font-mono tabular-nums">
-                        {book.pagesCount} pages
+                      <span className="text-[9.5px] text-text-muted font-bold font-mono tabular-nums shrink-0">
+                        {book.pagesCount}p
                       </span>
                     </div>
 
                     <h4
                       onClick={() => onSelectBook(book.id)}
-                      className="font-bold text-text-primary text-sm tracking-tight cursor-pointer hover:text-rose-600 transition-colors duration-150 truncate"
+                      className="font-bold text-text-primary text-xs sm:text-sm tracking-tight cursor-pointer hover:text-rose-600 transition-colors truncate"
                     >
                       {book.title}
                     </h4>
-                    <p className="text-[11px] text-text-secondary truncate">{book.author}</p>
+                    <p className="text-[10.5px] text-text-secondary truncate">{book.author}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-subtle">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="bg-surface border border-border rounded-2xl overflow-x-auto shadow-subtle custom-scrollbar">
+              <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                 <thead>
                   <tr className="bg-surface-alt border-b border-border text-text-muted font-bold">
-                    <th className="p-4 w-12">Cover</th>
-                    <th className="p-4">Title & Author</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Pages</th>
-                    <th className="p-4">Rating</th>
-                    <th className="p-4 w-16">Actions</th>
+                    <th className="p-3 w-12">Cover</th>
+                    <th className="p-3">Title & Author</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Pages</th>
+                    <th className="p-3">Rating</th>
+                    <th className="p-3 w-16">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -438,49 +460,34 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
                     <tr
                       key={book.id}
                       onClick={() => onSelectBook(book.id)}
-                      className="border-b border-border/50 hover:bg-surface-hover/30 cursor-pointer transition-colors duration-150 ease-out"
+                      className="border-b border-border/50 hover:bg-surface-hover/30 cursor-pointer transition-colors"
                     >
-                      <td className="p-3">
+                      <td className="p-2.5">
                         <div className="w-8 aspect-[3/4] rounded overflow-hidden shadow-subtle">
                           <BookCover presetId={book.coverImage || 'cover-1'} title={book.title} showDetails={false} />
                         </div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-2.5">
                         <div className="font-bold text-text-primary text-xs">{book.title}</div>
                         <div className="text-[10px] text-text-secondary mt-0.5">{book.author}</div>
                       </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 rounded-full text-[9px] font-semibold">
+                      <td className="p-2.5">
+                        <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 rounded-full text-[9px] font-bold">
                           {book.category}
                         </span>
                       </td>
-                      <td className="p-3 text-text-secondary font-mono tabular-nums">{book.pagesCount}</td>
-                      <td className="p-3 text-amber-500 flex items-center gap-0.5">
-                        {Array.from({ length: book.rating || 0 }).map((_, i) => (
-                          <IconStar key={i} size={10} fill="#F59E0B" color="#F59E0B" />
-                        ))}
-                      </td>
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => updateBook(book.id, { isFavorite: !book.isFavorite })}
-                            className={`p-1.5 rounded-lg border cursor-pointer transition-[background-color,transform] duration-150 active:scale-90 ${
-                              book.isFavorite ? 'bg-amber-500 text-white border-amber-600' : 'bg-surface hover:bg-surface-hover text-text-secondary border-border'
-                            }`}
-                          >
-                            <IconBookmark size={12} fill={book.isFavorite ? 'white' : 'transparent'} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete "${book.title}"?`)) deleteBook(book.id);
-                            }}
-                            className="p-1.5 bg-surface hover:bg-rose-500/10 text-text-secondary hover:text-rose-500 border border-border rounded-lg cursor-pointer transition-[background-color,color] duration-150 active:scale-90"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                      <td className="p-2.5 font-mono text-[10px] text-text-secondary">{book.pagesCount}</td>
+                      <td className="p-2.5 text-amber-500 font-bold text-[11px]">★ {book.rating || 5}</td>
+                      <td className="p-2.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectBook(book.id);
+                          }}
+                          className="px-2.5 py-1 bg-rose-500 text-white rounded-lg text-[10px] font-bold hover:bg-rose-600 cursor-pointer"
+                        >
+                          Open
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -489,14 +496,15 @@ export const LibraryDashboard: React.FC<LibraryDashboardProps> = ({ onSelectBook
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Creation Modal */}
-      <CreateNotebookModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
+      {/* Create Notebook Modal */}
+      {isCreateModalOpen && (
+        <CreateNotebookModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

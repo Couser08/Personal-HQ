@@ -93,9 +93,15 @@ export function BugReportModal() {
             <div className="flex-1 flex flex-col justify-between w-full overflow-hidden">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                    &lt;{capturedElement?.tag || 'element'}&gt;
-                  </span>
+                  {capturedElement?.isGroup ? (
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                      Group ({capturedElement.groupCount || capturedElement.groupElements?.length} items)
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                      &lt;{capturedElement?.tag || 'element'}&gt;
+                    </span>
+                  )}
                   {capturedElement?.id && (
                     <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                       #{capturedElement.id}
@@ -112,10 +118,24 @@ export function BugReportModal() {
                   {capturedElement?.selector || 'Custom Element'}
                 </p>
 
-                {capturedElement?.innerTextSnippet && (
-                  <p className="text-[11px] text-text-secondary italic line-clamp-1">
-                    "{capturedElement.innerTextSnippet}"
-                  </p>
+                {capturedElement?.isGroup && capturedElement.groupElements && capturedElement.groupElements.length > 0 ? (
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {capturedElement.groupElements.map((el, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10.5px] font-mono bg-surface px-2 py-0.5 rounded border border-border/40 text-text-secondary">
+                        <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[9px] shrink-0">
+                          {i + 1}
+                        </span>
+                        <span className="font-bold text-text-primary">&lt;{el.tag}&gt;</span>
+                        <span className="truncate flex-1">{el.selector}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  capturedElement?.innerTextSnippet && (
+                    <p className="text-[11px] text-text-secondary italic line-clamp-1">
+                      "{capturedElement.innerTextSnippet}"
+                    </p>
+                  )
                 )}
               </div>
 

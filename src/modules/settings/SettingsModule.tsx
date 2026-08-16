@@ -7,12 +7,14 @@ import {
   IconPalette, IconBell, IconHourglass,
   IconCheck, IconX, IconCompass, IconSparkles,
   IconChevronRight, IconClock, IconKey, IconEye, IconEyeOff, IconLoader2, IconExternalLink,
-  IconBug, IconFileText, IconDownload, IconHelp, IconCpu, IconInfoCircle
+  IconBug, IconFileText, IconDownload, IconHelp, IconCpu, IconInfoCircle,
+  IconGauge, IconRefresh, IconActivity
 } from '@tabler/icons-react';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { testGeminiApiKey } from '../../lib/gemini';
+import { subscribeAiUsage, resetAiUsageStats, type AiUsageStats, type RateLimitStatus } from '../../lib/ai-usage-tracker';
 import { useBugReportStore } from '../../store/useBugReportStore';
 import { type PerformanceMode } from '../../store/types';
 
@@ -76,6 +78,17 @@ export default function SettingsModule() {
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testStatus, setTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
   const [isPerformanceHelpOpen, setIsPerformanceHelpOpen] = useState(false);
+
+  const [usageStats, setUsageStats] = useState<AiUsageStats | null>(null);
+  const [rateStatus, setRateStatus] = useState<RateLimitStatus | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeAiUsage((stats, status) => {
+      setUsageStats(stats);
+      setRateStatus(status);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const currentPerfMode: PerformanceMode = settings.performanceMode || 'balanced';
 
@@ -593,6 +606,134 @@ export default function SettingsModule() {
                     { value: 'Strict', label: 'Strict & Direct' },
                   ]}
                 />
+              </div>
+            </div>
+
+            {/* ── AI Usage & Quota Meter ── */}
+            <div className="flex flex-col gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <IconGauge size={16} className="text-purple-600 dark:text-purple-400" />
+                  <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">AI Usage & Quota Meter</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Multi-Tab Synced
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetAiUsageStats();
+                      addToast('Reset Complete', 'Local AI usage statistics have been reset.', 'info');
+                    }}
+                    title="Reset Usage Counters"
+                    className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    <IconRefresh size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress Meters Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                
+                {/* 1. Daily Requests Quota */}
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/70 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <IconActivity size={14} className="text-purple-500" /> Daily Requests
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-purple-600 dark:text-purple-400">
+                      {usageStats?.requestsToday || 0} / {rateStatus?.dailyLimit || 1500}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) > 0.85
+                          ? 'bg-rose-500'
+                          : ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) > 0.65
+                            ? 'bg-amber-500'
+                            : 'bg-gradient-to-r from-purple-500 to-indigo-500'
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.max(2, (((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) * 100)))}%`
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                    <span>{Math.max(0, (rateStatus?.dailyLimit || 1500) - (usageStats?.requestsToday || 0))} requests remaining</span>
+                    <span>Resets at midnight</span>
+                  </div>
+                </div>
+
+                {/* 2. Sliding Window 60s RPM Rate */}
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/70 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <IconGauge size={14} className="text-blue-500" /> Live Rate (60s Window)
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                      {rateStatus?.requestsInLastMinute || 0} / 15 RPM
+                    </span>
+                  </div>
+
+                  {/* RPM Progress Bar */}
+                  <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        (rateStatus?.requestsInLastMinute || 0) >= 12
+                          ? 'bg-rose-500'
+                          : (rateStatus?.requestsInLastMinute || 0) >= 8
+                            ? 'bg-amber-500'
+                            : 'bg-gradient-to-r from-blue-500 to-teal-500'
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.max(2, (((rateStatus?.requestsInLastMinute || 0) / 15) * 100)))}%`
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                    <span>
+                      {(rateStatus?.requestsInLastMinute || 0) >= 12
+                        ? '⚠️ Nearing Rate Limit'
+                        : (rateStatus?.requestsInLastMinute || 0) > 0
+                          ? 'Active Session'
+                          : 'Idle (Safe)'}
+                    </span>
+                    {rateStatus?.cooldownSeconds ? (
+                      <span className="text-rose-500 font-semibold font-mono">Cooldown: {rateStatus.cooldownSeconds}s</span>
+                    ) : (
+                      <span>Max 15 calls/min</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Token Breakdown Metric Badges */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="p-2.5 rounded-xl bg-purple-500/5 border border-purple-500/15 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Prompt Tokens</span>
+                  <span className="text-xs font-bold font-mono text-purple-600 dark:text-purple-400 mt-0.5">
+                    {(usageStats?.promptTokensToday || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/15 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Response Tokens</span>
+                  <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    {(usageStats?.completionTokensToday || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/15 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Total Requests</span>
+                  <span className="text-xs font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+                    {(usageStats?.totalRequests || 0).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

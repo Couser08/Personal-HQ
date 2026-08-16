@@ -10,9 +10,10 @@ import { compressAndConvertToWebP } from '../../../utils/imageOptimizer';
 interface CreateNotebookModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (bookId: string) => void;
 }
 
-export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen, onClose }) => {
+export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen, onClose, onCreated }) => {
   const { addBook } = useAppStore();
   const [name, setName] = useState('');
   const [author, setAuthor] = useState('');
@@ -53,7 +54,11 @@ export const CreateNotebookModal: React.FC<CreateNotebookModalProps> = ({ isOpen
     };
 
     await addBook(newBook);
-    onClose();
+    if (onCreated) {
+      onCreated(newBook.id);
+    } else {
+      onClose();
+    }
     setName('');
     setAuthor('');
     setRating(0);

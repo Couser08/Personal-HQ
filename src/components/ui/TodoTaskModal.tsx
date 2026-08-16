@@ -91,7 +91,7 @@ export function TodoTaskModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 dark:bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-black/40 dark:bg-black/70 backdrop-blur-sm"
           onClick={closeTodoTaskModal}
         >
           <motion.div
@@ -101,7 +101,7 @@ export function TodoTaskModal() {
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: 'spring', damping: 26, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[440px] max-h-[90vh] overflow-y-auto bg-surface border border-border rounded-xl p-8 shadow-high flex flex-col gap-5 custom-scrollbar"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-surface border border-border rounded-2xl p-5 sm:p-7 shadow-high flex flex-col gap-5 custom-scrollbar"
           >
             {/* Header */}
             <div className="flex items-center justify-between">

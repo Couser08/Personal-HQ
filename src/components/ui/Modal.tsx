@@ -102,7 +102,7 @@ export const Modal = ({
           />
 
           {/* Modal Centering Wrapper */}
-          <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none p-4 sm:p-6">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none p-3 sm:p-6">
             <motion.div
               ref={modalRef}
               key="modal-content"
@@ -112,7 +112,7 @@ export const Modal = ({
               // Apple's custom snappy spring setup
               transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               style={{ willChange: 'transform, opacity' }}
-              className={`bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] w-[94vw] sm:w-full min-w-[320px] ${maxWidthClassName} max-h-[85vh] overflow-y-auto pointer-events-auto flex flex-col backdrop-blur-xl`}
+              className={`bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] w-full ${maxWidthClassName || 'max-w-2xl'} max-h-[88vh] overflow-y-auto pointer-events-auto flex flex-col backdrop-blur-xl`}
             >
               {/* Header Grid System */}
               <div className="flex items-center justify-between px-6 py-4.5 border-b border-zinc-100 dark:border-zinc-800/50 sticky top-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md z-10">

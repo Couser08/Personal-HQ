@@ -43,8 +43,8 @@ export const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className={`flex min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
-      {/* Dedicated Mobile Header (visible only on small screens) */}
+    <div className={`flex flex-col md:flex-row min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
+      {/* Dedicated Mobile Header (sticky top bar on mobile, hidden on md+) */}
       {!isFocusMode && (
         <MobileHeader
           onOpenDrawer={() => setIsMobileDrawerOpen(true)}
@@ -62,7 +62,7 @@ export const Layout = ({ children }: LayoutProps) => {
         onOpenAi={handleOpenAi}
       />
 
-      {/* Main Content Area with safe spacing for mobile top and bottom bars */}
+      {/* Main Content Area */}
       <main className="flex-1 w-full min-w-0 relative">
         {/* Focus Mode Exit Pill */}
         {isFocusMode && (
@@ -81,7 +81,7 @@ export const Layout = ({ children }: LayoutProps) => {
         )}
 
         <div
-          className={`main-content-area p-3 sm:p-6 lg:p-8 pt-14 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
+          className={`main-content-area p-3 sm:p-6 lg:p-8 pt-3 sm:pt-4 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
             isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''
           }`}
         >

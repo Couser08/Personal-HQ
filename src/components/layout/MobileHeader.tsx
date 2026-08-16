@@ -5,9 +5,11 @@ import {
   IconSparkles,
   IconSun,
   IconMoon,
+  IconBug,
 } from '@tabler/icons-react';
 import { AppLogo } from '../ui/AppLogo';
 import { useAppStore } from '../../store/useAppStore';
+import { useBugReportStore } from '../../store/useBugReportStore';
 import { useShallow } from 'zustand/react/shallow';
 
 interface MobileHeaderProps {
@@ -55,7 +57,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 md:hidden bg-surface/85 backdrop-blur-2xl border-b border-border/60 px-3.5 py-2.5 flex items-center justify-between shadow-xs select-none">
+    <header className="sticky top-0 left-0 right-0 z-40 md:hidden w-full shrink-0 bg-surface/90 backdrop-blur-2xl border-b border-border/60 px-3.5 py-2.5 flex items-center justify-between shadow-xs select-none">
       {/* Left: Drawer Trigger + App Logo */}
       <div className="flex items-center gap-2.5">
         <button
@@ -83,8 +85,19 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: AI Trigger Pill + Theme Switcher */}
-      <div className="flex items-center gap-2">
+      {/* Right: Bug Report + AI Trigger Pill + Theme Switcher */}
+      <div className="flex items-center gap-1.5">
+        {/* Report Bug button */}
+        <button
+          type="button"
+          onClick={() => useBugReportStore.getState().startInspection()}
+          className="w-8 h-8 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-secondary hover:text-rose-500 transition-colors cursor-pointer active:scale-95"
+          title="Report Bug / Inspect Element"
+          aria-label="Report Bug"
+        >
+          <IconBug size={16} />
+        </button>
+
         {/* Glowing Ask AI Pill */}
         <motion.button
           type="button"

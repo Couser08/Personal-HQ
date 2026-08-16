@@ -57,7 +57,7 @@ export function JournalEditor({
     if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
     titleDebounceRef.current = setTimeout(() => {
       parentSetTitle(val);
-    }, 400); // Debounce parent state updates
+    }, 400);
   };
 
   const handleContentChange = (val: string) => {
@@ -65,7 +65,7 @@ export function JournalEditor({
     if (contentDebounceRef.current) clearTimeout(contentDebounceRef.current);
     contentDebounceRef.current = setTimeout(() => {
       parentSetContent(val);
-    }, 400); // Debounce parent state updates
+    }, 400);
   };
 
   // Immediate save on blur to prevent data loss
@@ -74,26 +74,28 @@ export function JournalEditor({
     if (contentDebounceRef.current) clearTimeout(contentDebounceRef.current);
     parentSetTitle(localTitle);
     parentSetContent(localContent);
-    // Let the parent trigger its own auto-save immediately
     setTimeout(() => {
       forceSave();
     }, 50);
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="@container/paper flex min-h-0 flex-1 flex-col gap-3">
       {/* Immersive Paper Sheet */}
       <div
-        className="flex-1 flex flex-col rounded-[32px] border border-border/65 shadow-md min-h-[450px]"
+        className="flex-1 flex flex-col rounded-3xl sm:rounded-[32px] border border-border/65 shadow-md min-h-[420px]"
         style={{
           background: currentStyle.surface,
           boxShadow: `0 20px 45px -30px ${currentStyle.glow}, 0 2px 10px rgba(0,0,0,0.01)`,
         }}
       >
-        <div className="flex-1 flex flex-col p-3.5 sm:p-6 md:p-10 rounded-[32px] overflow-y-auto" style={editorPaperStyle}>
+        <div
+          className="flex-1 flex flex-col p-3.5 sm:p-6 md:p-8 rounded-3xl sm:rounded-[32px] overflow-y-auto custom-scrollbar"
+          style={editorPaperStyle}
+        >
           {/* Paper Meta indicators */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3 mb-5">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-text-muted">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/30 pb-2.5 mb-4 select-none">
+            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">
               <span>{formatDateTime(activeEntry.date)}</span>
               <span>•</span>
               <span>{wordCount(localContent)} words</span>
@@ -103,7 +105,7 @@ export function JournalEditor({
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-primary/5 text-primary px-2.5 py-0.5 text-[9px] font-bold">
+                  <span key={tag} className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[9px] font-bold">
                     #{tag}
                   </span>
                 ))}
@@ -120,11 +122,11 @@ export function JournalEditor({
             onChange={(event) => handleTitleChange(event.target.value)}
             onBlur={handleBlur}
             placeholder="Untitled Entry"
-            className="w-full border-none bg-transparent text-3xl font-extrabold tracking-tight text-text-primary outline-none placeholder:text-text-muted/20 mb-4"
+            className="w-full border-none bg-transparent text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary outline-none placeholder:text-text-muted/30 mb-3 leading-tight"
           />
 
-          {/* Divider */}
-          <div className="w-full h-px bg-border/20 mb-6" />
+          {/* Subtle divider */}
+          <div className="w-full h-px bg-border/20 mb-4" />
 
           {/* Content Editor inside Paper Sheet */}
           <div className="flex-1 flex flex-col min-h-0 journal-editor-container">
@@ -140,11 +142,11 @@ export function JournalEditor({
                 border-bottom: 1px solid var(--border-border-alt) !important;
                 padding-left: 0 !important;
                 padding-right: 0 !important;
-                margin-bottom: 16px !important;
-                opacity: 0.85;
+                margin-bottom: 14px !important;
+                opacity: 0.9;
               }
               .journal-editor-container .rich-editor {
-                min-height: 380px;
+                min-height: 340px;
                 padding: 0 !important;
                 font-size: 15px !important;
                 line-height: 28px !important;
@@ -161,7 +163,7 @@ export function JournalEditor({
               <article className="max-w-none text-text-primary">
                 <div
                   className="min-h-80 text-[15px] leading-7"
-                  dangerouslySetInnerHTML={{ __html: localContent || '<p class="text-text-muted">Nothing written yet.</p>' }}
+                  dangerouslySetInnerHTML={{ __html: localContent || '<p class="text-text-muted italic">Nothing written yet. Start typing your thoughts...</p>' }}
                 />
               </article>
             ) : (

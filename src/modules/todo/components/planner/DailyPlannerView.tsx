@@ -68,10 +68,10 @@ export function DailyPlannerView() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-2rem)] w-full bg-bg-primary overflow-hidden rounded-xl border border-border shadow-sm">
+    <div className="@container/planner flex min-h-[calc(100dvh-4rem)] w-full bg-bg-primary overflow-hidden rounded-2xl border border-border shadow-xs">
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-        <div className="p-3 sm:p-6 md:p-8 max-w-[1000px] w-full mx-auto">
+        <div className="p-3 sm:p-5 md:p-8 max-w-[1000px] w-full mx-auto">
           <PlannerHeader 
             selectedDate={selectedDate} 
             setSelectedDate={setSelectedDate} 

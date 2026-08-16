@@ -32,9 +32,11 @@ import {
   IconSettings,
   IconRocket,
   IconShieldLock,
+  IconBug,
 } from '@tabler/icons-react';
 import { AppLogo } from '../ui/AppLogo';
 import { useAppStore } from '../../store/useAppStore';
+import { useBugReportStore } from '../../store/useBugReportStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToastStore } from '../../store/useToastStore';
 import { exportData, importData } from '../../utils/exportImport';
@@ -366,29 +368,43 @@ export const MobileSlideDrawer: React.FC<MobileSlideDrawerProps> = ({
               </div>
 
               {/* ── Footer Data & Account Controls ── */}
-              <div className="pt-4 border-t border-border grid grid-cols-2 gap-2">
+              <div className="pt-4 border-t border-border flex flex-col gap-2">
                 <button
+                  type="button"
                   onClick={() => {
-                    const ok = exportData();
-                    addToast(ok ? 'Success' : 'Export Failed', ok ? 'Data exported!' : 'Sign in first.', ok ? 'success' : 'error');
+                    onClose();
+                    useBugReportStore.getState().startInspection();
                   }}
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-surface-alt border border-border text-[11px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[12px] font-bold cursor-pointer transition-colors"
                 >
-                  <IconDownload size={14} />
-                  <span>Backup</span>
+                  <IconBug size={16} />
+                  <span>Report Bug / Visual Feedback</span>
                 </button>
 
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-surface-alt border border-border text-[11px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
-                >
-                  <IconUpload size={14} />
-                  <span>Restore</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      const ok = exportData();
+                      addToast(ok ? 'Success' : 'Export Failed', ok ? 'Data exported!' : 'Sign in first.', ok ? 'success' : 'error');
+                    }}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-surface-alt border border-border text-[11px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
+                  >
+                    <IconDownload size={14} />
+                    <span>Backup</span>
+                  </button>
+
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-surface-alt border border-border text-[11px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
+                  >
+                    <IconUpload size={14} />
+                    <span>Restore</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={handleLogout}
-                  className="col-span-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 text-[11px] font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 text-[11px] font-bold cursor-pointer"
                 >
                   <IconLogout size={14} />
                   <span>Sign Out</span>

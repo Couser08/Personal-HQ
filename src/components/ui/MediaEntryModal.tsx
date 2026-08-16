@@ -173,14 +173,14 @@ export function MediaEntryModal() {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm select-none">
+      <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm select-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
           style={{ willChange: 'transform, opacity' }}
-          className="w-full max-w-[420px] bg-surface rounded-[32px] border border-border shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl bg-surface rounded-[28px] border border-border shadow-2xl overflow-hidden"
         >
           {/* Header */}
           <div className="flex justify-between items-center px-6 py-5 border-b border-border/40 bg-zinc-50/50 dark:bg-zinc-900/10">

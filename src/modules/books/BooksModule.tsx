@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import LibraryDashboard from './components/LibraryDashboard';
+import { LibraryDashboard } from './components/LibraryDashboard';
 import NotebookEditor from './components/NotebookEditor';
 
 const BooksModule: React.FC = () => {
@@ -16,7 +16,7 @@ const BooksModule: React.FC = () => {
 
   return (
     <LibraryDashboard
-      onSelectBook={(id) => setSelectedBookId(id)}
+      onSelectBook={(id: string) => setSelectedBookId(id)}
     />
   );
 };

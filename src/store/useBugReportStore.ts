@@ -28,12 +28,26 @@ export function formatReportMarkdown(report: BugReport): string {
   md += `#### Description\n${report.description}\n\n`;
 
   if (el) {
-    md += `#### Target Element Details\n`;
-    md += `- **Selector**: \`${el.selector}\`\n`;
-    md += `- **Tag**: \`<${el.tag}>\`\n`;
-    if (el.classes.length > 0) md += `- **Classes**: \`${el.classes.join(', ')}\`\n`;
-    md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
-    md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
+    if (el.isGroup && el.groupElements && el.groupElements.length > 0) {
+      md += `#### Target Group Details (${el.groupCount || el.groupElements.length} Elements Selected)\n`;
+      md += `- **Common Container / Parent**: \`${el.selector}\`\n`;
+      md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
+      md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
+      md += `| # | Tag | Selector | Text Snippet |\n`;
+      md += `| :--- | :--- | :--- | :--- |\n`;
+      el.groupElements.forEach((item, i) => {
+        const txt = (item.innerTextSnippet || '—').replace(/\|/g, '-').slice(0, 40);
+        md += `| ${i + 1} | \`<${item.tag}>\` | \`${item.selector}\` | ${txt} |\n`;
+      });
+      md += `\n`;
+    } else {
+      md += `#### Target Element Details\n`;
+      md += `- **Selector**: \`${el.selector}\`\n`;
+      md += `- **Tag**: \`<${el.tag}>\`\n`;
+      if (el.classes.length > 0) md += `- **Classes**: \`${el.classes.join(', ')}\`\n`;
+      md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
+      md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
+    }
   }
 
   if (report.screenshotData) {

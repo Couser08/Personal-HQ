@@ -55,9 +55,9 @@ export function TodoProjectModal() {
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: 'spring', damping: 28, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[340px] bg-white dark:bg-zinc-900 
+            className="relative w-full max-w-xl bg-white dark:bg-zinc-900 
                        border border-zinc-200/60 dark:border-zinc-800
-                       rounded-xl p-5 shadow-[0_16px_40px_rgba(0,0,0,0.15)] 
+                       rounded-2xl p-5 sm:p-6 shadow-[0_16px_40px_rgba(0,0,0,0.15)] 
                        flex flex-col gap-5 z-10"
           >
             {/* Header: Crisp typography and sub-spacing */}

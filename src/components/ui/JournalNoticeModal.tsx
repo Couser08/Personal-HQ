@@ -36,13 +36,13 @@ export const JournalNoticeModal = () => {
           />
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-5 pointer-events-none">
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-3 sm:p-5 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 20 }}
               transition={{ type: 'spring', damping: 28, stiffness: 340, mass: 0.9 }}
-              className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/50 dark:border-stone-800/60 rounded-[28px] p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-[360px] pointer-events-auto text-center backdrop-blur-2xl flex flex-col items-center gap-6 relative overflow-hidden antialiased"
+              className="bg-white/90 dark:bg-stone-900/90 border border-stone-200/50 dark:border-stone-800/60 rounded-[28px] p-6 sm:p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.35)] w-full max-w-lg pointer-events-auto text-center backdrop-blur-2xl flex flex-col items-center gap-6 relative overflow-hidden antialiased"
             >
               {/* Radial premium gradient bloom background */}
               <div className="absolute -top-16 -left-16 w-40 h-40 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />

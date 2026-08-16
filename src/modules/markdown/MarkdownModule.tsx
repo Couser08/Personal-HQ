@@ -599,7 +599,7 @@ export default function MarkdownModule() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      className="w-full h-full min-h-[calc(100vh-140px)] text-left"
+      className="@container/markdown-catalog w-full h-full min-h-[calc(100dvh-4rem)] text-left"
     >
       <style dangerouslySetInnerHTML={{ __html: `
         .md-preview h1 { font-size: 1.8rem; font-weight: 800; margin-top: 2rem; margin-bottom: 1rem; color: var(--color-text-primary); border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.6rem; font-family: system-ui, -apple-system, sans-serif; letter-spacing: -0.025em; }
@@ -785,13 +785,13 @@ export default function MarkdownModule() {
           )}
         </div>
       ) : (
-        <div className="w-full min-h-[calc(100vh-140px)] flex flex-col gap-2 p-1 sm:p-2 relative text-left">
+        <div className="@container/markdown-workspace w-full min-h-[calc(100dvh-4rem)] flex flex-col gap-2.5 p-1 sm:p-2 relative text-left">
           {/* Mobile Edit / Preview Segmented Switcher */}
-          <div className="lg:hidden flex items-center justify-between p-1.5 bg-surface rounded-2xl border border-border shrink-0">
+          <div className="lg:hidden flex items-center justify-between p-1.5 bg-surface rounded-2xl border border-border shrink-0 shadow-xs">
             <button
               type="button"
               onClick={() => setActiveDocId(null)}
-              className="px-3 py-1 text-[12px] font-bold text-text-secondary hover:text-text-primary rounded-xl cursor-pointer"
+              className="px-3 py-1.5 min-h-[36px] text-xs font-bold text-text-secondary hover:text-text-primary rounded-xl cursor-pointer"
             >
               ← All Docs
             </button>
@@ -800,7 +800,7 @@ export default function MarkdownModule() {
               <button
                 type="button"
                 onClick={() => setMobileTab('editor')}
-                className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   mobileTab === 'editor'
                     ? 'bg-surface text-text-primary shadow-xs font-black'
                     : 'text-text-secondary'
@@ -811,7 +811,7 @@ export default function MarkdownModule() {
               <button
                 type="button"
                 onClick={() => setMobileTab('preview')}
-                className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   mobileTab === 'preview'
                     ? 'bg-surface text-text-primary shadow-xs font-black'
                     : 'text-text-secondary'

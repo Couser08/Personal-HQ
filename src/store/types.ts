@@ -607,6 +607,15 @@ export interface AiChatMessage {
   resultCard?: any;
   pendingIntent?: string;
   originalPrompt?: string;
+  executedTools?: Array<{
+    stepId: string;
+    toolName: string;
+    label: string;
+    status: 'running' | 'success' | 'error';
+    entityId?: string;
+    details?: string;
+  }>;
+  confirmedEntities?: Array<{ type: string; id: string; title: string }>;
 }
 
 export interface PomodoroStats {
@@ -618,6 +627,22 @@ export interface PomodoroStats {
 export type BugReportSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
 export type BugReportStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
 export type BugReportCategory = 'UI Glitch' | 'Performance' | 'Data Sync' | 'Crash / Error' | 'Other';
+
+export interface BugReportElementItem {
+  tag: string;
+  id?: string;
+  classes: string[];
+  selector: string;
+  innerTextSnippet?: string;
+  boundingRect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+  };
+}
 
 export interface BugReportElementInfo {
   tag: string;
@@ -640,6 +665,9 @@ export interface BugReportElementInfo {
     scrollY: number;
   };
   innerTextSnippet?: string;
+  isGroup?: boolean;
+  groupCount?: number;
+  groupElements?: BugReportElementItem[];
 }
 
 export interface BugReport {

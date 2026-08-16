@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   IconArrowLeft,
   IconPencil,
@@ -22,7 +23,8 @@ import {
   IconStrikethrough,
   IconListNumbers,
   IconAlignLeft,
-  IconPhoto
+  IconPhoto,
+  IconX,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { type BookTopic, type BookStickyNote } from '../../../store/types';
@@ -435,10 +437,12 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
     }
   };
 
-  // Turn page action
+  // Turn page action with dynamic step for mobile (1 page) vs desktop spread (2 pages)
   const handlePageTurn = (direction: 'next' | 'prev') => {
     const totalPages = book.pagesCount;
-    let nextNum = book.currentPage + (direction === 'next' ? 2 : -2);
+    const isSinglePage = typeof window !== 'undefined' && window.innerWidth < 768;
+    const step = isSinglePage ? 1 : 2;
+    let nextNum = book.currentPage + (direction === 'next' ? step : -step);
     if (nextNum < 1) nextNum = 1;
     if (nextNum > totalPages) nextNum = totalPages;
 
@@ -447,7 +451,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
     if (!updatedPages[nextNum]) {
       updatedPages[nextNum] = `Ruled page ${nextNum}. Click edit mode to start writing here...`;
     }
-    if (!updatedPages[nextNum + 1] && nextNum + 1 <= totalPages) {
+    if (!isSinglePage && !updatedPages[nextNum + 1] && nextNum + 1 <= totalPages) {
       updatedPages[nextNum + 1] = `Ruled page ${nextNum + 1}. Click edit mode to start writing here...`;
     }
 
@@ -674,16 +678,16 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
   };
 
   return (
-    <div className="relative flex flex-col h-full gap-5 text-left">
+    <div className="@container/notebook flex flex-col gap-3 sm:gap-4 max-w-6xl mx-auto w-full text-left font-sans select-text min-h-[calc(100dvh-5rem)]">
       
-      {/* ─── Top Header Bar ─── */}
-      <div className="flex flex-col items-start justify-between gap-4 p-4 border bg-surface border-border rounded-xl sm:flex-row sm:items-center">
+      {/* ─── Top Navigation Bar ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-4 border bg-surface border-border rounded-2xl shadow-xs">
         
         {/* Left header group with Breadcrumbs */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 transition-colors border rounded-full cursor-pointer hover:bg-surface-hover border-border/40 text-text-secondary hover:text-text-primary"
+            className="p-2 transition-colors border rounded-xl cursor-pointer hover:bg-surface-hover border-border/40 text-text-secondary hover:text-text-primary shrink-0"
             title="Back to Library"
           >
             <IconArrowLeft size={16} />
@@ -701,7 +705,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
               <span>/</span>
               <span>{book.category || 'General'}</span>
             </div>
-            <h2 className="text-sm font-black text-text-primary flex items-center gap-1.5 truncate">
+            <h2 className="text-xs sm:text-sm font-black text-text-primary flex items-center gap-1.5 truncate">
               {book.title}
               <IconPencil size={12} className="transition-opacity opacity-0 text-text-muted group-hover:opacity-100" />
             </h2>
@@ -709,26 +713,26 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
         </div>
 
         {/* Right header actions */}
-        <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
           {/* Saved Status Indicator */}
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-secondary bg-surface-alt px-2.5 py-1.5 rounded-lg border border-border">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-text-secondary bg-surface-alt px-2 sm:px-2.5 py-1.5 rounded-lg border border-border">
             <span className={`w-1.5 h-1.5 rounded-full ${saveStatus === 'saved' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-            {saveStatus === 'saved' ? 'Saved' : 'Saving...'}
+            <span className="hidden sm:inline">{saveStatus === 'saved' ? 'Saved' : 'Saving...'}</span>
           </div>
 
           {/* Style selector - only visible in Read Mode */}
           {!isEditMode && (
-            <div className="flex items-center gap-1.5 bg-surface-alt border border-border rounded-xl px-2.5 py-1.5 text-xs text-text-primary">
-              <span className="font-bold select-none text-text-secondary">Theme:</span>
+            <div className="flex items-center gap-1 bg-surface-alt border border-border rounded-xl px-2 py-1 text-xs text-text-primary">
+              <span className="font-bold select-none text-text-secondary hidden sm:inline">Theme:</span>
               <select
                 value={readingStyle}
                 onChange={(e) => setReadingStyle(e.target.value as any)}
-                className="px-1 py-0 font-bold bg-transparent border-none cursor-pointer text-text-primary focus:outline-none"
+                className="px-1 py-0 font-bold bg-transparent border-none cursor-pointer text-text-primary focus:outline-none text-xs"
               >
-                <option value="warm" className="bg-surface text-text-primary">Warm Editorial</option>
-                <option value="minimal" className="bg-surface text-text-primary">Minimalist Clean</option>
-                <option value="scholar" className="bg-surface text-text-primary">Dark Scholar</option>
-                <option value="sage" className="bg-surface text-text-primary">Cozy Sage</option>
+                <option value="warm" className="bg-surface text-text-primary">Warm</option>
+                <option value="minimal" className="bg-surface text-text-primary">Minimal</option>
+                <option value="scholar" className="bg-surface text-text-primary">Scholar</option>
+                <option value="sage" className="bg-surface text-text-primary">Sage</option>
               </select>
             </div>
           )}
@@ -736,14 +740,14 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
           {/* Edit/Read Mode Toggler */}
           <button
             onClick={() => setIsEditMode(!isEditMode)}
-            className={`px-3 py-1.5 border border-border rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-[0.97] transition-transform duration-100 ${
+            className={`px-2.5 sm:px-3 py-1.5 border border-border rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-[0.97] ${
               isEditMode
                 ? 'bg-rose-500 border-rose-500 text-white hover:bg-rose-600'
                 : 'bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary'
             }`}
           >
             {isEditMode ? <IconPencil size={14} /> : <IconBook size={14} />}
-            {isEditMode ? 'Edit Mode' : 'Read Mode'}
+            <span>{isEditMode ? 'Edit' : 'Read'}</span>
           </button>
 
           {/* Options ... */}
@@ -1392,10 +1396,9 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
 
         </div>
 
-        {/* Right Sidebar: Topics & Notes Panels */}
+        {/* ─── Desktop Inline Right Sidebar: Topics & Notes Panels (xl+) ─── */}
         {(showTopicsPanel || showNotesPanel) && (
-          <div className="flex flex-col w-64 gap-4">
-            
+          <div className="hidden xl:flex xl:flex-col xl:w-72 xl:gap-4 shrink-0">
             {/* 1. Topics Panel */}
             {showTopicsPanel && (
               <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl text-left">
@@ -1406,7 +1409,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                   </span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-1.5 text-xs font-semibold pr-0.5">
+                <div className="flex-1 overflow-y-auto space-y-1.5 text-xs font-semibold pr-0.5 custom-scrollbar">
                   {book.topics.length === 0 ? (
                     <div className="py-6 italic text-center text-text-muted">No topics. Add chapters below.</div>
                   ) : (
@@ -1486,7 +1489,6 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                     })
                   )}
 
-                  {/* Persistent + New Topic Row at End of List (Serial Position fix) */}
                   <button
                     type="button"
                     onClick={openAddTopicModal}
@@ -1499,7 +1501,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
               </div>
             )}
 
-            {/* 2. Notes Panel (Sticky notes) */}
+            {/* 2. Notes Panel */}
             {showNotesPanel && (
               <div className="flex flex-col flex-1 gap-3 p-4 overflow-hidden border bg-surface border-border rounded-2xl text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40">
@@ -1520,7 +1522,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-2 overflow-y-auto pr-0.5">
+                <div className="flex-1 space-y-2 overflow-y-auto pr-0.5 custom-scrollbar">
                   {book.stickyNotes.length === 0 ? (
                     <div className="py-6 text-xs italic text-center text-text-muted">No anchored notes.</div>
                   ) : (
@@ -1536,11 +1538,135 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
                 </div>
               </div>
             )}
-
           </div>
         )}
 
       </div>
+
+      {/* ─── Mobile/Tablet Slide-in Drawer for Topics & Notes (< xl) ─── */}
+      <AnimatePresence>
+        {(showTopicsPanel || showNotesPanel) && (
+          <div className="xl:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowTopicsPanel(false);
+                setShowNotesPanel(false);
+              }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+            />
+
+            {/* Slide Sheet */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="relative ml-auto w-full max-w-[340px] h-full bg-surface border-l border-border p-4 shadow-lifted flex flex-col gap-3.5 z-10"
+            >
+              {/* Drawer Header with Close Button */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                <span className="font-extrabold text-sm text-text-primary">
+                  {showTopicsPanel ? '📚 Topics & Chapters' : '📌 Anchored Notes'}
+                </span>
+                <button
+                  onClick={() => {
+                    setShowTopicsPanel(false);
+                    setShowNotesPanel(false);
+                  }}
+                  className="p-1.5 rounded-lg bg-surface-alt hover:bg-surface border border-border text-text-secondary hover:text-text-primary cursor-pointer"
+                >
+                  <IconX size={16} />
+                </button>
+              </div>
+
+              {/* Topics Panel in Drawer */}
+              {showTopicsPanel && (
+                <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 custom-scrollbar">
+                  {book.topics.length === 0 ? (
+                    <div className="py-8 italic text-center text-text-muted text-xs">No topics found. Add one below.</div>
+                  ) : (
+                    book.topics.map((topic) => (
+                      <div
+                        key={topic.id}
+                        onClick={() => {
+                          updateBook(book.id, { currentPage: topic.pageNumber });
+                          setShowTopicsPanel(false);
+                        }}
+                        className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer hover:bg-surface-hover/60 transition-colors ${
+                          book.currentPage === topic.pageNumber
+                            ? 'bg-rose-500/10 text-rose-500 font-bold'
+                            : 'text-text-secondary'
+                        }`}
+                      >
+                        <span className="text-xs truncate">{topic.title}</span>
+                        <span className="text-[10px] text-text-muted font-mono shrink-0 ml-2">p. {topic.pageNumber}</span>
+                      </div>
+                    ))
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTopicsPanel(false);
+                      openAddTopicModal();
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 p-2.5 mt-3 rounded-xl border border-dashed border-border hover:border-rose-500/50 hover:bg-rose-500/5 text-rose-500 font-bold text-xs cursor-pointer"
+                  >
+                    <IconPlus size={14} />
+                    <span>+ New Topic</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Notes Panel in Drawer */}
+              {showNotesPanel && (
+                <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 custom-scrollbar">
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      onClick={() => {
+                        setShowNotesPanel(false);
+                        openAddStickyModal('yellow');
+                      }}
+                      className="flex-1 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-xs cursor-pointer text-center"
+                    >
+                      + Yellow Note
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNotesPanel(false);
+                        openAddStickyModal('pink');
+                      }}
+                      className="flex-1 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-900 rounded-lg font-bold text-xs cursor-pointer text-center"
+                    >
+                      + Pink Note
+                    </button>
+                  </div>
+
+                  {book.stickyNotes.length === 0 ? (
+                    <div className="py-8 text-xs italic text-center text-text-muted">No anchored notes on this notebook.</div>
+                  ) : (
+                    book.stickyNotes.map((note) => (
+                      <MarginNote
+                        key={note.id}
+                        note={note}
+                        onEdit={(n) => {
+                          setShowNotesPanel(false);
+                          openEditStickyModal(n);
+                        }}
+                        onDelete={(id) => triggerDeleteConfirm('sticky', id, 'Sticky Note')}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ─── Bottom Formatting Toolbar ─── */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-3 border bg-surface border-border rounded-2xl">

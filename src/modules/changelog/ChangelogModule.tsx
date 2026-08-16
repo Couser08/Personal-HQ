@@ -69,6 +69,33 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.6.1 (Beta)',
+    codename: 'Mobile Iteration',
+    date: 'August 16, 2026',
+    headline: 'Mobile layout improvements, massive AI tuning, and mobile Bug Reporter.',
+    sub: 'Continuing the mobile foundation rollout with refinements across several modules. Plus, significant improvements to the AI assistant and mobile bug reporting capabilities.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile Responsiveness Tweaks',
+        desc: 'Layout improvements across the Journal, Markdown Editor, Library, and Daily Planner to better support smaller screens. Still under active development.',
+        badge: 'Beta',
+      },
+      {
+        Icon: IconBrain,
+        title: 'Massive AI Tuning',
+        desc: 'Deep optimizations and tuning to the AI system for better context awareness and faster responses.',
+      },
+      {
+        Icon: IconBug,
+        title: 'Bug Reporter on Mobile',
+        desc: 'The interactive Bug Reporter is now functional on mobile devices (in beta), making it easier to capture UI layout issues directly from your phone.',
+        badge: 'Beta',
+      },
+    ],
+  },
+  {
     version: 'v4.6.0 (Beta)',
     codename: 'Mobile Foundation',
     date: 'August 15, 2026',

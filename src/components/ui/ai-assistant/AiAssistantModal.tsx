@@ -4,17 +4,17 @@ import { useShallow } from 'zustand/react/shallow';
 import { createPortal } from 'react-dom';
 import { 
   IconSparkles, IconX, IconPlus, IconKey, 
-  IconHistory, IconChevronRight, IconLoader2 
+  IconHistory, IconChevronRight, IconLoader2, IconAlertCircle 
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useToastStore } from '../../../store/useToastStore';
-import { type Habit, type AiHistoryItem, type AiChatMessage } from '../../../store/types';
+import { type AiHistoryItem, type AiChatMessage } from '../../../store/types';
 import { 
   generateRealAppContextSuggestions, 
-  analyzeAndClassifyUserPrompt, 
-  type AiMultiStepPlanOutput,
-  type AiIntent,
-  buildTaskFromClarificationAnswers,
+  runAgentTurn,
+  checkRateLimit,
+  type AgentStepUpdate,
+  type AgentMessageHistory
 } from '../../../lib/gemini';
 
 // Subcomponents
@@ -30,17 +30,15 @@ interface AiAssistantModalProps {
 }
 
 export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistantModalProps) => {
-  const { settings, addTodoTask, updateTodoTask, addNote, addHabit, setActiveModule, todoTasks, habits, journals } = useAppStore(
+  const { settings, addNote, setActiveModule, todoTasks, habits, journals, activeModule } = useAppStore(
     useShallow((state) => ({
       settings: state.settings,
-      addTodoTask: state.addTodoTask,
-      updateTodoTask: state.updateTodoTask,
       addNote: state.addNote,
-      addHabit: state.addHabit,
       setActiveModule: state.setActiveModule,
       todoTasks: state.todoTasks,
       habits: state.habits,
       journals: state.journals,
+      activeModule: state.activeModule,
     }))
   );
 
@@ -53,10 +51,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [activeView, setActiveView] = useState<'chat' | 'history'>('chat');
   const [showKeyInput, setShowKeyInput] = useState(false);
-  const [multiStepPlan, setMultiStepPlan] = useState<AiMultiStepPlanOutput | null>(null);
-  const [executionProgress, setExecutionProgress] = useState(0);
-  const [pendingIntent, setPendingIntent] = useState<AiIntent | null>(null);
-  const [originalPrompt, setOriginalPrompt] = useState<string | null>(null);
+  const [currentToolSteps, setCurrentToolSteps] = useState<AgentStepUpdate[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [historyItems, setHistoryItems] = useState<AiHistoryItem[]>(() => {
@@ -68,15 +63,15 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isGenerating]);
+  }, [messages, isGenerating, currentToolSteps]);
 
   // Handle Initial Quick Action from FAB
   useEffect(() => {
     if (!isOpen) return;
-    if (initialAction === 'add_task') setPrompt('Add a task: ');
+    if (initialAction === 'add_task') setPrompt('Add task: ');
     else if (initialAction === 'breakdown') handleChatSubmit('Break down a task');
     else if (initialAction === 'goal') setPrompt('Help me create a realistic 6-month goal plan');
-    else if (initialAction === 'suggest') setPrompt('Suggest tasks based on my current workload');
+    else if (initialAction === 'suggest') setPrompt('What should I focus on today based on my current workload?');
   }, [initialAction, isOpen]);
 
   const saveHistoryItem = (item: AiHistoryItem) => {
@@ -118,212 +113,43 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
 
   const stamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const applyClassifyResult = async (
-    result: Awaited<ReturnType<typeof analyzeAndClassifyUserPrompt>>,
-    userMsg: AiChatMessage,
-    sourcePrompt: string
-  ) => {
-    if (result.intent === 'ASK_CLARIFICATION' && result.clarificationFields?.length) {
-      const nextPending = (result.pendingIntent as AiIntent) || pendingIntent || 'MULTI_STEP_GOAL';
-      setPendingIntent(nextPending);
-      setOriginalPrompt(originalPrompt || sourcePrompt);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg_${Date.now()}_a`,
-          sender: 'ai',
-          text: result.replyText || 'I need a few details before I continue.',
-          timestamp: stamp(),
-          pendingIntent: nextPending,
-          originalPrompt: originalPrompt || sourcePrompt,
-          resultCard: { type: 'clarification', data: result.clarificationFields, submitted: false },
-        },
-      ]);
-      return;
-    }
-
-    // Successful action clears clarification context
-    setPendingIntent(null);
-    setOriginalPrompt(null);
-
-    if (result.intent === 'CREATE_TODO_TASK' && result.taskData) {
-      const td = result.taskData;
-      const newTask = {
-        id: `task_${Date.now()}`,
-        projectId: null,
-        title: td.title,
-        completed: false,
-        priority: td.priority || 'medium',
-        tags: td.tags || [],
-        dueDate: td.dueDate ?? null,
-        startTime: td.startTime ?? null,
-        endTime: td.endTime ?? null,
-        createdAt: new Date().toISOString(),
-        // Subtasks only when the model returned any (breakdown flow)
-        subtasks: (td.subtasks || []).map((s: any, i: number) => ({
-          id: `sub_${Date.now()}_${i}`,
-          title: typeof s === 'string' ? s : s.title,
-          completed: false,
-        })),
-      };
-      await addTodoTask(newTask);
-      const aiMsg: AiChatMessage = {
-        id: `msg_${Date.now()}_a`,
-        sender: 'ai',
-        text: result.replyText || `Added “${td.title}” to your to-do list.`,
-        timestamp: stamp(),
-        resultCard: { type: 'todo', data: td },
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-      saveHistoryItem({
-        id: `hist_${Date.now()}`,
-        title: `Task: ${td.title}`,
-        actionType: 'add_task',
-        summary: [
-          td.priority,
-          td.startTime && td.endTime ? `${td.startTime}–${td.endTime}` : null,
-          td.tags?.length ? `tags: ${td.tags.join(', ')}` : null,
-        ].filter(Boolean).join(' · ') || 'Task created',
-        createdAt: new Date().toISOString(),
-        messages: [userMsg, aiMsg],
-      });
-      return;
-    }
-
-    if (result.intent === 'BREAKDOWN_TASK') {
-      const pending = todoTasks.filter((t) => !t.completed && !t.deleted);
-      if (!result.taskData && pending.length > 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `msg_${Date.now()}_a`,
-            sender: 'ai',
-            text: 'Select the task to break down:',
-            timestamp: stamp(),
-            resultCard: { type: 'task_select', tasks: pending },
-          },
-        ]);
-        return;
-      }
-      if (result.taskData) {
-        const bdTask = result.taskData;
-        const subtasks = (bdTask.subtasks || []).map((s: any, i: number) => ({
-          id: `sub_${Date.now()}_${i}`,
-          title: typeof s === 'string' ? s : s.title,
-          completed: false,
-        }));
-        const existing = todoTasks.find(
-          (t) =>
-            t.title.toLowerCase() ===
-            (result.targetTaskTitle?.toLowerCase() || bdTask.title?.toLowerCase())
-        );
-        if (existing) await updateTodoTask(existing.id, { subtasks });
-        else
-          await addTodoTask({
-            id: `task_${Date.now()}`,
-            projectId: null,
-            title: bdTask.title,
-            completed: false,
-            priority: bdTask.priority || 'medium',
-            tags: bdTask.tags || [],
-            dueDate: null,
-            createdAt: new Date().toISOString(),
-            subtasks,
-          });
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `msg_${Date.now()}_a`,
-            sender: 'ai',
-            text: result.replyText || `Here’s a breakdown for “${bdTask.title}”.`,
-            timestamp: stamp(),
-            resultCard: { type: 'todo', data: bdTask },
-          },
-        ]);
-      }
-      return;
-    }
-
-    if (result.intent === 'CREATE_MARKDOWN_DOC' && result.markdownData) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg_${Date.now()}_a`,
-          sender: 'ai',
-          text: result.replyText || `Draft ready: “${result.markdownData!.title}”.`,
-          timestamp: stamp(),
-          resultCard: { type: 'markdown', data: result.markdownData },
-        },
-      ]);
-      return;
-    }
-
-    if (result.intent === 'CREATE_HABIT_ROUTINE' && result.habitData) {
-      const hData = result.habitData;
-      await addHabit({
-        id: `habit_${Date.now()}`,
-        name: hData.name,
-        description: hData.description || '',
-        frequencyType: hData.frequencyType || 'daily',
-        frequencyDays: hData.frequencyDays || [1, 2, 3, 4, 5],
-        frequencyCount: hData.frequencyCount || 3,
-        completedDates: [],
-        streak: 0,
-        bestStreak: 0,
-        createdAt: new Date().toISOString(),
-      });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg_${Date.now()}_a`,
-          sender: 'ai',
-          text: result.replyText || `Habit “${hData.name}” is set up.`,
-          timestamp: stamp(),
-          resultCard: { type: 'habit', data: hData },
-        },
-      ]);
-      return;
-    }
-
-    if (result.intent === 'MULTI_STEP_GOAL' && result.multiStepPlan) {
-      setMultiStepPlan(result.multiStepPlan);
-      const aiMsg: AiChatMessage = {
-        id: `msg_${Date.now()}_a`,
-        sender: 'ai',
-        text: result.replyText || `Plan ready for “${result.multiStepPlan.taskTitle}”.`,
-        timestamp: stamp(),
-        resultCard: { type: 'multistep_plan', data: result.multiStepPlan },
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-      saveHistoryItem({
-        id: `hist_${Date.now()}`,
-        title: `Multi-Step: ${result.multiStepPlan.taskTitle}`,
-        actionType: 'multistep',
-        summary: 'Ready to execute task + notes + habit',
-        createdAt: new Date().toISOString(),
-        messages: [userMsg, aiMsg],
-      });
-      return;
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `msg_${Date.now()}_a`,
-        sender: 'ai',
-        text: result.replyText || 'Here’s what I can help with.',
-        blocks: result.blocks,
-        timestamp: stamp(),
-      },
-    ]);
-  };
-
   const handleChatSubmit = async (customPrompt?: string) => {
     const textToSubmit = (customPrompt ?? prompt).trim();
     if (!textToSubmit) return;
     if (!apiKey) {
       addToast('Key Required', 'Set your Gemini API Key in Settings.', 'warning');
+      setShowKeyInput(true);
       return;
+    }
+
+    // Active Pre-flight Rate Limiter Check
+    const rateStatus = checkRateLimit();
+    if (!rateStatus.allowed) {
+      addToast('Rate Limit Reached', rateStatus.warningMessage || 'Please wait a moment before sending another request.', 'warning');
+      return;
+    }
+
+    // Breakdown edge case: if user says "break down a task" without specifying which one
+    if (['break down a task', 'breakdown task', 'break it down'].includes(textToSubmit.toLowerCase())) {
+      const pending = todoTasks.filter((t) => !t.completed && !t.deleted);
+      if (pending.length > 0) {
+        const userMsg: AiChatMessage = {
+          id: `msg_${Date.now()}_u`,
+          sender: 'user',
+          text: textToSubmit,
+          timestamp: stamp(),
+        };
+        const aiMsg: AiChatMessage = {
+          id: `msg_${Date.now()}_a`,
+          sender: 'ai',
+          text: 'Which task would you like to break down into subtasks?',
+          timestamp: stamp(),
+          resultCard: { type: 'task_select', tasks: pending },
+        };
+        setMessages((prev) => [...prev, userMsg, aiMsg]);
+        if (!customPrompt) setPrompt('');
+        return;
+      }
     }
 
     const userMsg: AiChatMessage = {
@@ -332,137 +158,69 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
       text: textToSubmit,
       timestamp: stamp(),
     };
+
     setMessages((prev) => [...prev, userMsg]);
     if (!customPrompt) setPrompt('');
     setIsGenerating(true);
+    setCurrentToolSteps([]);
+
+    // Format conversation history for multi-turn Gemini calling
+    const conversationHistory: AgentMessageHistory[] = messages.slice(-6).map((m) => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }],
+    }));
 
     try {
-      if (['break down a task', 'breakdown task', 'break it down'].includes(textToSubmit.toLowerCase())) {
-        const pending = todoTasks.filter((t) => !t.completed && !t.deleted);
-        if (pending.length > 0) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `msg_${Date.now()}_a`,
-              sender: 'ai',
-              text: 'Which task should I break into subtasks?',
-              timestamp: stamp(),
-              resultCard: { type: 'task_select', tasks: pending },
-            },
-          ]);
-          setIsGenerating(false);
-          return;
-        }
-      }
-
-      if (!originalPrompt) setOriginalPrompt(textToSubmit);
-
-      const result = await analyzeAndClassifyUserPrompt(
-        apiKey,
-        textToSubmit,
+      const turnResult = await runAgentTurn(apiKey, textToSubmit, conversationHistory, {
         model,
-        settings.aiPersona,
+        activeModule,
+        onStepUpdate: (stepUpdate) => {
+          setCurrentToolSteps((prev) => {
+            const index = prev.findIndex((s) => s.stepId === stepUpdate.stepId);
+            if (index >= 0) {
+              const updated = [...prev];
+              updated[index] = stepUpdate;
+              return updated;
+            }
+            return [...prev, stepUpdate];
+          });
+        },
+      });
+
+      const aiMsg: AiChatMessage = {
+        id: `msg_${Date.now()}_a`,
+        sender: 'ai',
+        text: turnResult.replyText,
+        timestamp: stamp(),
+        executedTools: turnResult.executedTools,
+        confirmedEntities: turnResult.confirmedEntities,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+
+      // Save History
+      saveHistoryItem({
+        id: `hist_${Date.now()}`,
+        title: textToSubmit.slice(0, 40),
+        actionType: 'add_task',
+        summary: turnResult.executedTools.map((t) => t.label).join(' · ') || 'Chat response',
+        createdAt: new Date().toISOString(),
+        messages: [userMsg, aiMsg],
+      });
+    } catch (err: any) {
+      addToast('AI Agent Error', err.message || 'Failed to complete AI action', 'error');
+      setMessages((prev) => [
+        ...prev,
         {
-          originalPrompt: originalPrompt || textToSubmit,
-          pendingIntent,
-        }
-      );
-
-      await applyClassifyResult(result, userMsg, textToSubmit);
-    } catch (err: any) {
-      addToast('AI Error', err.message || 'Failed to generate response', 'error');
+          id: `msg_${Date.now()}_err`,
+          sender: 'ai',
+          text: `Action failed: ${err.message || 'Could not reach Gemini service.'}`,
+          timestamp: stamp(),
+        },
+      ]);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleClarificationSubmit = async (
-    msg: AiChatMessage,
-    answers: Record<string, string | string[]>,
-    summary: string
-  ) => {
-    if (!apiKey) {
-      addToast('Key Required', 'Set your Gemini API Key in Settings.', 'warning');
-      return;
-    }
-
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === msg.id
-          ? { ...m, resultCard: { ...m.resultCard, submitted: true } }
-          : m
-      )
-    );
-
-    const userMsg: AiChatMessage = {
-      id: `msg_${Date.now()}_u`,
-      sender: 'user',
-      text: summary,
-      timestamp: stamp(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsGenerating(true);
-
-    const intent = (msg.pendingIntent as AiIntent) || pendingIntent;
-    const source = msg.originalPrompt || originalPrompt || summary;
-
-    try {
-      // Fast path: build task directly from form — no subtasks, no AI inventing fields
-      if (intent === 'CREATE_TODO_TASK') {
-        const taskData = buildTaskFromClarificationAnswers(answers, source);
-        // If title still empty-ish from "Add a task", keep what user typed in form
-        await applyClassifyResult(
-          {
-            intent: 'CREATE_TODO_TASK',
-            taskData,
-            replyText: `Added “${taskData.title}” to your to-do list.`,
-          },
-          userMsg,
-          source
-        );
-        return;
-      }
-
-      const result = await analyzeAndClassifyUserPrompt(
-        apiKey,
-        summary,
-        model,
-        settings.aiPersona,
-        {
-          originalPrompt: source,
-          pendingIntent: intent,
-          clarificationAnswers: summary,
-          clarificationAnswerMap: answers,
-        }
-      );
-      await applyClassifyResult(result, userMsg, source);
-    } catch (err: any) {
-      addToast('AI Error', err.message || 'Failed to continue after answers', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleExecuteInChatPlan = async (msgId: string) => {
-    if (!multiStepPlan) return;
-    setIsGenerating(true); setExecutionProgress(10);
-    try {
-      await new Promise(r => setTimeout(r, 400));
-      await addTodoTask({ id: `task_${Date.now()}`, projectId: null, title: multiStepPlan.taskTitle, completed: false, priority: multiStepPlan.priority, tags: multiStepPlan.tags, dueDate: null, createdAt: new Date().toISOString(), subtasks: multiStepPlan.subtasks.map((s: { title: string }, i: number) => ({ id: `sub_${Date.now()}_${i}`, title: s.title, completed: false })) });
-      setExecutionProgress(50);
-      await new Promise(r => setTimeout(r, 400));
-      await addNote({ id: `note_${Date.now()}`, title: multiStepPlan.markdownTitle, content: multiStepPlan.markdownContent, tags: ['ai-plan'], pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-      setExecutionProgress(85);
-      await new Promise(r => setTimeout(r, 400));
-      const newHabit: Habit = { id: `habit_${Date.now()}`, name: multiStepPlan.habitName, description: `AI routine: ${multiStepPlan.targetDaysPerWeek} days/week`, frequencyType: 'daily', frequencyDays: [0,1,2,3,4,5,6], frequencyCount: multiStepPlan.targetDaysPerWeek, completedDates: [], streak: 0, bestStreak: 0, createdAt: new Date().toISOString() };
-      await addHabit(newHabit);
-      setExecutionProgress(100);
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, text: `Done — task, ${multiStepPlan.subtasks.length} subtasks, notes, and habit are in your workspace.`, resultCard: { type: 'multistep_completed', data: multiStepPlan } } : m));
-      addToast('Success', 'Multi-step plan executed!', 'success');
-    } catch (err: any) {
-      addToast('Execution Failed', err.message || 'Could not complete plan', 'error');
-    } finally {
-      setIsGenerating(false);
+      setCurrentToolSteps([]);
     }
   };
 
@@ -485,7 +243,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 cursor-pointer bg-black/40"
+          className="absolute inset-0 cursor-pointer bg-black/40 backdrop-blur-xs"
         />
 
         {/* Modal Window */}
@@ -494,7 +252,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 100, scale: 0.95 }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-          className="relative w-full max-w-4xl h-[90vh] sm:h-[600px] bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-border"
+          className="relative w-full max-w-4xl h-[90vh] sm:h-[620px] bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-border"
         >
           {/* ─── HEADER ─── */}
           <div className="z-10 flex items-center justify-between px-5 py-3 border-b border-border bg-surface shrink-0">
@@ -503,7 +261,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
                 <IconSparkles size={16} className="text-white" stroke={2} />
               </div>
               <div>
-                <span className="text-sm font-extrabold tracking-tight text-text-primary">Antigravity AI</span>
+                <span className="text-sm font-extrabold tracking-tight text-text-primary">Personal HQ Agent</span>
                 <span className="ml-2 text-[10px] font-mono px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 font-bold align-middle">{model}</span>
               </div>
             </div>
@@ -526,7 +284,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
               </button>
 
               <button
-                onClick={() => { setMessages([]); setMultiStepPlan(null); setPendingIntent(null); setOriginalPrompt(null); }}
+                onClick={() => { setMessages([]); setCurrentToolSteps([]); }}
                 className="px-3 py-1.5 rounded-lg bg-primary text-text-on-accent text-xs font-bold border border-primary cursor-pointer hover:opacity-90 transition-opacity hidden sm:flex items-center gap-1"
               >
                 <IconPlus size={14} /> New Chat
@@ -568,73 +326,69 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
 
                 {/* Empty state / Greeting */}
                 {messages.length === 0 && (
-  <div className="flex flex-col items-start gap-3.5 max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-    {/* AI Greeting Card */}
-    <div className="flex items-start max-w-2xl gap-3">
-      {/* Subtle Avatar with Ring Accent */}
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-blue-500 flex items-center justify-center shadow-md shadow-indigo-500/10 ring-2 ring-purple-500/20 shrink-0 mt-0.5">
-        <IconSparkles size={15} className="text-white" stroke={2.2} />
-      </div>
+                  <div className="flex flex-col items-start gap-3.5 max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-start max-w-2xl gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-blue-500 flex items-center justify-center shadow-md shadow-indigo-500/10 ring-2 ring-purple-500/20 shrink-0 mt-0.5">
+                        <IconSparkles size={15} className="text-white" stroke={2.2} />
+                      </div>
 
-      {/* Main Card Bubble */}
-      <div className="relative bg-surface-alt/80 backdrop-blur-md border border-border/80 rounded-2xl rounded-tl-sm p-4 shadow-sm space-y-2.5 max-w-2xl">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-text-primary flex items-center gap-1.5">
-            <span>Hi Rahul!</span>
-            <span className="text-sm">{timeGreeting.emoji}</span>
-          </p>
-          <span className="text-[10px] font-medium text-text-muted/80 tracking-tight">
-            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
+                      <div className="relative bg-surface-alt/80 backdrop-blur-md border border-border/80 rounded-2xl rounded-tl-sm p-4 shadow-sm space-y-2.5 max-w-2xl">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                            <span>Hi Rahul!</span>
+                            <span className="text-sm">{timeGreeting.emoji}</span>
+                          </p>
+                          <span className="text-[10px] font-medium text-text-muted/80 tracking-tight">
+                            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
 
-        <p className="text-xs font-normal leading-relaxed text-text-secondary">
-          <strong className="block mb-1 font-semibold text-text-primary">
-            {timeGreeting.text}, let's build your best day!
-          </strong>
-          What are you working on right now? Any game plans for today?
-        </p>
-      </div>
-    </div>
+                        <p className="text-xs font-normal leading-relaxed text-text-secondary">
+                          <strong className="block mb-1 font-semibold text-text-primary">
+                            {timeGreeting.text}, how can I help you today?
+                          </strong>
+                          I can manage your tasks, habits, notes, journals, links, and study exams across Personal HQ.
+                        </p>
+                      </div>
+                    </div>
 
-    {/* Context Suggestion Chips/Strips */}
-    <div className="flex flex-col max-w-2xl gap-2 pl-11">
-      {contextSuggestions.map((sug) => (
-        <button
-          key={sug.id}
-          onClick={() =>
-            handleChatSubmit(
-              sug.actionLabel === 'Break Down Task'
-                ? 'Break down a task'
-                : sug.title
-            )
-          }
-          className="group relative flex items-center justify-between max-w-2xl px-3.5 py-2.5 rounded-md bg-surface border border-border/60 hover:border-primary/50 hover:bg-surface-hover hover:shadow-sm transition-all duration-200 cursor-pointer overflow-hidden text-left"
-        >
-          {/* Subtle Accent Left Pillar */}
-          <div className="absolute top-0 bottom-0 left-0 w-1 transition-colors bg-primary/40 group-hover:bg-primary" />
+                    {/* Context Suggestion Chips */}
+                    <div className="flex flex-col max-w-2xl gap-2 pl-11 w-full">
+                      {contextSuggestions.map((sug) => (
+                        <button
+                          key={sug.id}
+                          onClick={() =>
+                            handleChatSubmit(
+                              sug.actionLabel === 'Break into subtasks'
+                                ? `Break down task "${(sug.targetData as any)?.title || 'my task'}"`
+                                : sug.title
+                            )
+                          }
+                          className="group relative flex items-center justify-between max-w-2xl px-3.5 py-2.5 rounded-lg bg-surface border border-border/60 hover:border-primary/50 hover:bg-surface-hover hover:shadow-sm transition-all duration-200 cursor-pointer overflow-hidden text-left"
+                        >
+                          <div className="absolute top-0 bottom-0 left-0 w-1 transition-colors bg-primary/40 group-hover:bg-primary" />
 
-          <div className="flex flex-col gap-0.5 pl-1.5 pr-2 max-w-2xl">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
-              {sug.contextTag}
-            </span>
-            <p className="text-xs font-medium transition-colors text-text-primary group-hover:text-primary line-clamp-1">
-              {sug.title}
-            </p>
-          </div>
+                          <div className="flex flex-col gap-0.5 pl-1.5 pr-2 max-w-2xl">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
+                              {sug.contextTag}
+                            </span>
+                            <p className="text-xs font-medium transition-colors text-text-primary group-hover:text-primary line-clamp-1">
+                              {sug.title}
+                            </p>
+                          </div>
 
-          <div className="flex items-center gap-1 max-w-2xl text-[11px] font-medium text-text-muted group-hover:text-primary transition-colors shrink-0">
-            <span>{sug.actionLabel}</span>
-            <IconChevronRight
-              size={12}
-              className="group-hover:translate-x-0.5 transition-transform"
-            />
-          </div>
-        </button>
-      ))}
-    </div>
-  </div>
-)}
+                          <div className="flex items-center gap-1 max-w-2xl text-[11px] font-medium text-text-muted group-hover:text-primary transition-colors shrink-0">
+                            <span>{sug.actionLabel}</span>
+                            <IconChevronRight
+                              size={12}
+                              className="group-hover:translate-x-0.5 transition-transform"
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* History view inside chat panel */}
                 {activeView === 'history' && (
@@ -654,10 +408,8 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
                     key={msg.id}
                     msg={msg}
                     isGenerating={isGenerating}
-                    executionProgress={executionProgress}
+                    executionProgress={100}
                     handleChatSubmit={handleChatSubmit}
-                    handleClarificationSubmit={handleClarificationSubmit}
-                    handleExecuteInChatPlan={handleExecuteInChatPlan}
                     setActiveModule={setActiveModule}
                     onClose={onClose}
                     addNote={addNote}
@@ -665,15 +417,33 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
                   />
                 ))}
 
-                {/* Generating indicator */}
+                {/* Live Tool Execution & Generating indicator */}
                 {isGenerating && activeView === 'chat' && (
-                  <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center rounded-lg w-7 h-7 bg-gradient-to-tr from-purple-600 to-indigo-500 shrink-0">
-                      <IconSparkles size={14} className="text-white" stroke={2} />
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-3 text-xs border rounded-tl-none rounded-2xl bg-surface-alt border-border text-text-muted">
-                      <IconLoader2 size={13} className="animate-spin text-primary" />
-                      <span>Thinking...</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center rounded-xl w-7 h-7 bg-gradient-to-tr from-purple-600 to-indigo-500 shrink-0">
+                        <IconSparkles size={14} className="text-white" stroke={2} />
+                      </div>
+                      <div className="flex flex-col gap-2 px-4 py-3 text-xs border rounded-tl-none rounded-2xl bg-surface-alt border-border text-text-muted">
+                        <div className="flex items-center gap-2">
+                          <IconLoader2 size={13} className="animate-spin text-primary" />
+                          <span className="font-medium text-text-primary">Executing agent loop...</span>
+                        </div>
+
+                        {/* Live Step Pills */}
+                        {currentToolSteps.length > 0 && (
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            {currentToolSteps.map((step) => (
+                              <div key={step.stepId} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                                {step.status === 'running' && <IconLoader2 size={11} className="animate-spin text-primary shrink-0" />}
+                                {step.status === 'success' && <span className="text-emerald-500">✓</span>}
+                                {step.status === 'error' && <IconAlertCircle size={11} className="text-rose-500 shrink-0" />}
+                                <span>{step.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

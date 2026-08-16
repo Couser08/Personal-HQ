@@ -12,7 +12,7 @@ export function StickyNotes({
   addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
   updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
   deleteJournalStickyNote: (id: string) => Promise<void>;
-  isDark: boolean;
+  isDark?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -40,9 +40,9 @@ export function StickyNotes({
   };
 
   return (
-    <div className="bg-surface border border-border/70 rounded-3xl p-5 shadow-subtle flex flex-col gap-4 text-left">
+    <div className="@container bg-surface border border-border/70 rounded-3xl p-3.5 sm:p-5 shadow-subtle flex flex-col gap-3.5 text-left">
       {/* List Header */}
-      <div className="flex items-center justify-between border-b border-border/40 pb-3">
+      <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
         <div className="flex items-center gap-2">
           <span className="text-xs font-black uppercase tracking-wider text-text-primary">Sticky Notes</span>
           <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-[10px] font-bold">
@@ -60,16 +60,16 @@ export function StickyNotes({
               createdAt: new Date().toISOString(),
             });
           }}
-          className="p-1 rounded-lg text-amber-600 hover:bg-amber-500/10 cursor-pointer flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider border-none bg-transparent"
+          className="min-h-[32px] px-2.5 py-1 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider border border-amber-500/20 bg-amber-500/5 transition-colors"
         >
           <IconPlus className="w-3.5 h-3.5" /> Add Note
         </button>
       </div>
 
       {/* List Container */}
-      <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-1">
+      <div className="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
         {journalStickyNotes.length === 0 ? (
-          <div className="py-8 text-center text-xs text-text-muted italic border border-dashed border-border/40 rounded-2xl">
+          <div className="py-6 text-center text-xs text-text-muted italic border border-dashed border-border/40 rounded-2xl">
             No sticky notes yet. Add one to capture quick thoughts!
           </div>
         ) : (
@@ -80,7 +80,7 @@ export function StickyNotes({
             return (
               <div
                 key={note.id}
-                className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-surface-alt transition-colors group"
+                className="flex items-center justify-between gap-2.5 p-2 sm:p-2.5 rounded-xl hover:bg-surface-alt transition-colors group border border-border/20 bg-surface-alt/20"
               >
                 {/* Pin Color Indicator */}
                 <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-4 ${dotColor}`} />
@@ -103,12 +103,12 @@ export function StickyNotes({
                       />
                       <button
                         onMouseDown={(e) => {
-                          e.preventDefault(); // prevent blur before click
+                          e.preventDefault();
                           handleSaveEdit(note.id);
                         }}
                         className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 cursor-pointer border-none"
                       >
-                        <IconCheck className="w-3 h-3" />
+                        <IconCheck className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : (
@@ -122,10 +122,10 @@ export function StickyNotes({
                   )}
                 </div>
 
-                {/* Action Trigger (styled as a small pill button like "View" in holidays) */}
+                {/* Action Trigger */}
                 <button
                   onClick={() => deleteJournalStickyNote(note.id)}
-                  className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 transition-colors border-none cursor-pointer shrink-0"
+                  className="px-2.5 py-1 min-h-[28px] rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 transition-colors border border-rose-200/30 dark:border-rose-900/30 cursor-pointer shrink-0"
                 >
                   Delete
                 </button>

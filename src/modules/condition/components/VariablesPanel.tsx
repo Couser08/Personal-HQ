@@ -24,7 +24,7 @@ export function VariablesPanel({
   };
 
   return (
-    <div className="bg-surface border border-border rounded-3xl p-5 flex flex-col gap-4 shadow-sm text-left sticky top-4">
+    <div className="bg-surface border border-border rounded-3xl p-5 flex flex-col gap-4 shadow-sm text-left static md:sticky md:top-4">
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-primary/10 text-primary rounded-xl">
