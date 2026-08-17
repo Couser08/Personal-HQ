@@ -8,6 +8,7 @@ import { createHabitSlice } from './slices/habitSlice';
 import { createBooksSlice } from './slices/booksSlice';
 import { createStudyExamSlice } from './slices/studyExamSlice';
 import { createVisionSlice } from './slices/visionSlice';
+import { createProjectStructureSlice } from './slices/projectStructureSlice';
 import { useAuthStore } from './useAuthStore';
 import {
   createUtilitySlice,
@@ -31,6 +32,7 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createBooksSlice(...a),
   ...createStudyExamSlice(...a),
   ...createVisionSlice(...a),
+  ...createProjectStructureSlice(...a),
 }));
 
 if (typeof window !== 'undefined') {
@@ -110,6 +112,7 @@ if (typeof window !== 'undefined') {
     if (state.examAttempts !== prevState.examAttempts) safeSetItem('phq_exam_attempts', JSON.stringify(state.examAttempts));
     if (state.studyMaterials !== prevState.studyMaterials) safeSetItem('phq_study_materials', JSON.stringify(state.studyMaterials));
     if (state.dailyReflections !== prevState.dailyReflections) safeSetItem('phq_daily_reflections', JSON.stringify(state.dailyReflections));
+    if (state.projectStructures !== prevState.projectStructures) safeSetItem('phq_project_structures', JSON.stringify(state.projectStructures));
     
     prevState = state;
   });

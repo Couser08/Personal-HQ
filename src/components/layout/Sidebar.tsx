@@ -6,7 +6,8 @@ import {
   IconChevronLeft, IconChevronRight, IconChevronDown, IconLayoutGrid, IconPencil,
   IconFileText, IconFlame, IconShieldLock, IconBulb,
   IconTag, IconChartBar, IconLink, IconPlus, IconCalendar,
-  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket, IconTarget
+  IconWriting, IconListCheck, IconTrendingUp, IconTool, IconRefresh, IconBrain, IconRocket, IconTarget,
+  IconFolders
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -67,6 +68,7 @@ const NAV_GROUPS = [
     color: 'var(--text-primary)',
     desc: 'Canvas, diagrams, media and utilities.',
     items: [
+      { id: 'structure', label: 'Project Architect',     icon: IconFolders,        desc: 'Project structure maintainer' },
       { id: 'mindmap',   label: 'Mindmap',               icon: IconSitemap,        desc: 'Visual mind maps' },
       { id: 'drawing',   label: 'Drawing',               icon: IconPencil,         desc: 'Freeform whiteboard' },
       { id: 'media',     label: 'Media Log',             icon: IconDeviceGamepad2, desc: 'Movies, games, shows' },

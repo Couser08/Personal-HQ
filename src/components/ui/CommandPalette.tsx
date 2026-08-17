@@ -6,7 +6,7 @@ import {
   IconSearch, IconLayout, IconChecklist, IconBook,
   IconCode, IconClockPlay, IconSitemap, IconSettings, IconSun, 
   IconMoon, IconEye, IconCornerDownLeft,
-  IconPencil, IconLink, IconFlame, IconNotebook, IconBook2
+  IconPencil, IconLink, IconFlame, IconNotebook, IconBook2, IconFolders
 } from '@tabler/icons-react';
 import { triggerDynamicIsland } from './DynamicIsland';
 import { Input } from './Input';
@@ -90,6 +90,7 @@ export function CommandPalette() {
     },
     // ── Navigation ────────────────────────────────────────────────────────
     { id: 'dashboard', label: 'Go to Home', category: 'Navigation', icon: IconLayout, action: () => setActiveModule('dashboard') },
+    { id: 'structure', label: 'Go to Project Architect', category: 'Navigation', icon: IconFolders, action: () => setActiveModule('structure') },
     { id: 'todo', label: 'Go to To-Do List', category: 'Navigation', icon: IconChecklist, action: () => setActiveModule('todo') },
     { id: 'study', label: 'Go to Study Tracker', category: 'Navigation', icon: IconBook, action: () => setActiveModule('study') },
     { id: 'snippets', label: 'Go to Snippets Vault', category: 'Navigation', icon: IconCode, action: () => setActiveModule('snippets') },

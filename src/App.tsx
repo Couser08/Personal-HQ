@@ -31,6 +31,7 @@ const TilModule = lazy(() => import('./modules/til/TilModule'));
 const BooksModule = lazy(() => import('./modules/books/BooksModule'));
 const VisionModule = lazy(() => import('./modules/vision/VisionModule'));
 const ChangelogModule = lazy(() => import('./modules/changelog/ChangelogModule'));
+const ProjectStructureModule = lazy(() => import('./modules/structure/ProjectStructureModule'));
 const DesignLabPage = lazy(() => import('./pages/design-lab/DesignLabPage'));
 const MinimalPremiumTest = lazy(() => import('./pages/MinimalPremiumTest'));
 
@@ -279,6 +280,7 @@ function AppContent() {
       case 'drawing': return <DrawingModule />;
       case 'markdown': return <MarkdownModule />;
       case 'condition': return <ConditionModule />;
+      case 'structure': return <ProjectStructureModule />;
       case 'admin': return isAdmin ? <AdminModule /> : <DashboardModule />;
       case 'changelog': return <ChangelogModule />;
       default: return <DashboardModule />;

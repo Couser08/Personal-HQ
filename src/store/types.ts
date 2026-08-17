@@ -693,6 +693,34 @@ export interface BugReport {
   updatedAt: string;
 }
 
+export type ProjectNodeType = 'file' | 'folder';
+
+export interface ProjectNode {
+  id: string;
+  name: string;
+  type: ProjectNodeType;
+  path: string;
+  parentId: string | null;
+  content?: string;
+  extension?: string;
+  isExpanded?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProjectStructure {
+  id: string;
+  userId?: string;
+  name: string;
+  description?: string;
+  rootName: string;
+  nodes: ProjectNode[];
+  tags: string[];
+  templateType?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppStore {
   activeModule: string;
   setActiveModule: (module: string) => void;
@@ -901,6 +929,19 @@ export interface AppStore {
   addVisionTask: (visionId: string, taskTitle: string, dueDate?: string, priority?: 'none' | 'low' | 'medium' | 'high' | 'urgent') => Promise<void>;
   toggleVisionTask: (visionId: string, taskId: string) => Promise<void>;
   deleteVisionTask: (visionId: string, taskId: string) => Promise<void>;
+
+  // Project Structures / Maintainer
+  projectStructures: ProjectStructure[];
+  activeProjectId: string | null;
+  setActiveProjectId: (id: string | null) => void;
+  addProjectStructure: (project: ProjectStructure, userId?: string) => Promise<void>;
+  updateProjectStructure: (id: string, data: Partial<ProjectStructure>) => Promise<void>;
+  deleteProjectStructure: (id: string) => Promise<void>;
+  addNodeToProject: (projectId: string, node: Partial<ProjectNode>) => void;
+  updateNodeInProject: (projectId: string, nodeId: string, updates: Partial<ProjectNode>) => void;
+  deleteNodeFromProject: (projectId: string, nodeId: string) => void;
+  setProjectNodes: (projectId: string, nodes: ProjectNode[]) => void;
+  applyTemplateToProject: (projectId: string, templateKey: string) => void;
 
   importData: (data: any) => void;
 }

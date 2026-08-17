@@ -28,7 +28,8 @@ import {
   examService,
   examAttemptService,
   reflectionService,
-  visionService
+  visionService,
+  projectStructureService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
@@ -185,7 +186,8 @@ export const createCoreSlice: StateCreator<
         examService.fetchAll(userId),
         examAttemptService.fetchAll(userId),
         reflectionService.fetchAll(userId),
-        visionService.fetchAll(userId)
+        visionService.fetchAll(userId),
+        projectStructureService.fetchAll(userId)
       ]);
 
       const serviceNames = [
@@ -193,7 +195,8 @@ export const createCoreSlice: StateCreator<
         'countdowns', 'code snippets', 'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
         'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
         'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
-        'study materials', 'exams', 'exam attempts', 'daily reflections', 'visions'
+        'study materials', 'exams', 'exam attempts', 'daily reflections', 'visions',
+        'project structures'
       ];
 
       const failedServices = results
@@ -228,6 +231,9 @@ export const createCoreSlice: StateCreator<
       const examAttempts = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
       const dailyReflections = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
       const visions = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
+      const projectStructures = results[28].status === 'fulfilled' && (results[28].value as any[]).length > 0
+        ? results[28].value as any[]
+        : get().projectStructures;
 
       if (failedServices.length > 0) {
         console.warn('Supabase sync skipped some modules:', failedServices);
@@ -292,7 +298,7 @@ export const createCoreSlice: StateCreator<
         notes, links, stocks, interestHistory, mediaLogs, countdowns, snippets,
         todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
         sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions,
+        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions, projectStructures,
         theme: dbTheme,
         settings: dbSettings,
         activeFocusItem: dbActiveFocusItem,

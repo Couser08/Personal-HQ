@@ -69,6 +69,27 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.7.0 (Beta)',
+    codename: 'Project Architect',
+    date: 'August 17, 2026',
+    headline: 'Introducing the Project Architect module to plan your complex structures.',
+    sub: 'A brand new module designed to help you outline, manage, and template project folder structures and architectures.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconSitemap,
+        title: 'Project Structure Module',
+        desc: 'New "Project Architect" view added to the Command Palette. Outline files, folders, and architecture before writing a single line of code.',
+        badge: 'New',
+      },
+      {
+        Icon: IconPuzzle,
+        title: 'Vision & Core Types Restored',
+        desc: 'Fixed underlying store typing issues and restored the Vision Board spatial positioning data structures.',
+      },
+    ],
+  },
+  {
     version: 'v4.6.2 (Beta)',
     codename: 'Engine & Diagnostics',
     date: 'August 17, 2026',

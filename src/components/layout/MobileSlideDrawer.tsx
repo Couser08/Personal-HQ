@@ -33,6 +33,7 @@ import {
   IconRocket,
   IconShieldLock,
   IconBug,
+  IconFolders,
 } from '@tabler/icons-react';
 import { AppLogo } from '../ui/AppLogo';
 import { useAppStore } from '../../store/useAppStore';
@@ -87,6 +88,7 @@ const NAV_GROUPS = [
     label: 'Tools & Canvas',
     emoji: '🛠️',
     items: [
+      { id: 'structure', label: 'Project Architect', icon: IconFolders, desc: 'Project structure & CLI maintainer' },
       { id: 'mindmap', label: 'Mindmap', icon: IconSitemap, desc: 'Visual mind maps' },
       { id: 'drawing', label: 'Drawing', icon: IconPencil, desc: 'Freeform whiteboard' },
       { id: 'media', label: 'Media Log', icon: IconDeviceGamepad2, desc: 'Movies, games, shows' },
