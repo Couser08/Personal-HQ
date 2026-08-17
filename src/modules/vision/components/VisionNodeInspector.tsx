@@ -13,6 +13,7 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
+import { useToastStore } from '../../../store/useToastStore';
 import type { VisionNodeMapPin } from '../../../store/types';
 
 interface VisionNodeInspectorProps {
@@ -52,9 +53,10 @@ export const VisionNodeInspector: React.FC<VisionNodeInspectorProps> = ({
     activeBoardId,
     updateVisionNode,
     deleteVisionNode,
-    addToast,
     showConfirm,
   } = useAppStore();
+
+  const addToast = useToastStore((s) => s.addToast);
 
   const activeBoard = visionBoards.find((b) => b.id === activeBoardId) || visionBoards[0];
   const node = activeBoard?.nodes.find((n) => n.id === nodeId);

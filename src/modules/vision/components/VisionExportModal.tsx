@@ -10,7 +10,7 @@ import {
   IconLoader2,
 } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
-import { useAppStore } from '../../../store/useAppStore';
+import { useToastStore } from '../../../store/useToastStore';
 import type { VisionBoard } from '../../../store/types';
 
 interface VisionExportModalProps {
@@ -26,7 +26,7 @@ export const VisionExportModal: React.FC<VisionExportModalProps> = ({
   onClose,
   canvasContainerRef,
 }) => {
-  const addToast = useAppStore((s) => s.addToast);
+  const addToast = useToastStore((s) => s.addToast);
   const [isExporting, setIsExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 

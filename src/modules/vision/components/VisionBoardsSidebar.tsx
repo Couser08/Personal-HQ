@@ -12,7 +12,6 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
-import type { VisionBoard } from '../../../store/types';
 
 interface VisionBoardsSidebarProps {
   isOpen: boolean;

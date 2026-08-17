@@ -1,5 +1,6 @@
-import React, { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { useToastStore } from '../../store/useToastStore';
 import type { VisionNodeType } from '../../store/types';
 import { VisionHeader } from './components/VisionHeader';
 import { VisionBoardsSidebar } from './components/VisionBoardsSidebar';
@@ -24,9 +25,9 @@ export default function VisionModule() {
     canvasZoom,
     setCanvasZoom,
     setCanvasPan,
-    addToast,
   } = useAppStore();
 
+  const addToast = useToastStore((s) => s.addToast);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Layout Drawers State (Responsive)

@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
 import type { AppStore } from '../useAppStore';
-import type { Vision, VisionTask, VisionBoard, VisionNode, VisionNodeType } from '../types';
+import type { Vision, VisionTask, VisionBoard, VisionNode } from '../types';
 import { visionService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 

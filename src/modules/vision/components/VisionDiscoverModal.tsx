@@ -10,7 +10,7 @@ import {
   IconCheck,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
-import type { VisionNode } from '../../../store/types';
+import { useToastStore } from '../../../store/useToastStore';
 
 interface VisionDiscoverModalProps {
   isOpen: boolean;
@@ -80,7 +80,8 @@ export const VisionDiscoverModal: React.FC<VisionDiscoverModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { addVisionNode, addToast } = useAppStore();
+  const addVisionNode = useAppStore((s) => s.addVisionNode);
+  const addToast = useToastStore((s) => s.addToast);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');

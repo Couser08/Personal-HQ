@@ -39,8 +39,10 @@ const AFFIRMATION_PRESETS: AffirmationItem[] = [
   { id: 'aff-7', quote: 'Calm mind, tectonic focus, unstoppable momentum.', author: 'Self', category: 'Mindset' },
 ];
 
+import { useToastStore } from '../../../store/useToastStore';
+
 export const VisionInsightsPanel: React.FC<VisionInsightsPanelProps> = ({
-  board,
+  board: _board,
   isOpen,
   onClose,
 }) => {
@@ -50,8 +52,9 @@ export const VisionInsightsPanel: React.FC<VisionInsightsPanelProps> = ({
     canvasTheme,
     setCanvasTheme,
     addVisionNode,
-    addToast,
   } = useAppStore();
+
+  const addToast = useToastStore((s) => s.addToast);
 
   const [activeAffirmationIndex, setActiveAffirmationIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');

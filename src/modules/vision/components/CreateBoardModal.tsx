@@ -4,6 +4,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
+import { useToastStore } from '../../../store/useToastStore';
 import type { VisionBoardCategory } from '../../../store/types';
 
 interface CreateBoardModalProps {
@@ -17,13 +18,14 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { createBoard, addToast } = useAppStore();
+  const createBoard = useAppStore((s) => s.createBoard);
+  const addToast = useToastStore((s) => s.addToast);
 
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [category, setCategory] = useState<VisionBoardCategory>('PERSONAL');
   const [icon, setIcon] = useState('✨');
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite] = useState(false);
   const [theme, setTheme] = useState<'dots' | 'grid' | 'blank'>('dots');
 
   if (!isOpen) return null;
