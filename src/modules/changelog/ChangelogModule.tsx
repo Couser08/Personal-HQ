@@ -69,12 +69,34 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    version: 'v4.7.0 (Beta)',
+    version: 'v4.6.4 (Beta)',
+    codename: 'Vision Overhaul',
+    date: 'August 17, 2026',
+    headline: 'Complete redesign of the Vision Board with major new features.',
+    sub: 'The Vision Board has been rebuilt from scratch! Enjoy a fully redesigned canvas with exciting new features and a fresh aesthetic. (Note: Mobile responsiveness is still in Beta).',
+    type: 'major',
+    features: [
+      {
+        Icon: IconEye,
+        title: 'Vision Board — Redesigned',
+        desc: 'Rebuilt from the ground up! A vastly improved visual canvas with major architectural changes and cool new features for mapping out your goals.',
+        badge: 'Redesigned',
+      },
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile UI (Beta)',
+        desc: 'Mobile responsiveness rollout continues, but is still in active beta. Please report any layout issues using the Bug Reporter.',
+        badge: 'Beta',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.3 (Beta)',
     codename: 'Project Architect',
     date: 'August 17, 2026',
     headline: 'Introducing the Project Architect module to plan your complex structures.',
     sub: 'A brand new module designed to help you outline, manage, and template project folder structures and architectures.',
-    type: 'major',
+    type: 'minor',
     features: [
       {
         Icon: IconSitemap,

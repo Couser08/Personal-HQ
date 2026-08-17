@@ -297,7 +297,11 @@ function AppContent() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="w-full"
+            className={
+              activeModule === 'vision' || activeModule === 'mindmap' || activeModule === 'drawing'
+                ? 'w-full h-full flex flex-col flex-1 overflow-hidden'
+                : 'w-full'
+            }
             style={{ willChange: 'transform, opacity' }}
           >
             <Suspense fallback={<ModuleFallback />}>{renderModule()}</Suspense>

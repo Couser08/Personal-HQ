@@ -28,6 +28,9 @@ export const Layout = ({ children }: LayoutProps) => {
   const [aiInitialAction, setAiInitialAction] = useState<string | undefined>(undefined);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const geminiApiKey = useAppStore(state => state.settings?.geminiApiKey);
+  const activeModule = useAppStore(state => state.activeModule);
+
+  const isFullBleed = activeModule === 'vision' || activeModule === 'mindmap' || activeModule === 'drawing';
 
   useEffect(() => {
     const checkFocusMode = () => {
@@ -43,7 +46,7 @@ export const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className={`flex flex-col md:flex-row min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''}`}>
+    <div className={`flex flex-col md:flex-row min-h-screen bg-background text-text-primary ${isFocusMode ? 'focus-mode' : ''} ${isFullBleed ? 'h-screen overflow-hidden' : ''}`}>
       {/* Dedicated Mobile Header (sticky top bar on mobile, hidden on md+) */}
       {!isFocusMode && (
         <MobileHeader
@@ -63,7 +66,7 @@ export const Layout = ({ children }: LayoutProps) => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full min-w-0 relative">
+      <main className={`flex-1 w-full min-w-0 relative ${isFullBleed ? 'h-screen overflow-hidden flex flex-col' : ''}`}>
         {/* Focus Mode Exit Pill */}
         {isFocusMode && (
           <div className="fixed bottom-4 right-4 z-9997">
@@ -81,9 +84,13 @@ export const Layout = ({ children }: LayoutProps) => {
         )}
 
         <div
-          className={`main-content-area p-3 sm:p-6 lg:p-8 pt-3 sm:pt-4 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
-            isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''
-          }`}
+          className={
+            isFullBleed
+              ? 'w-full h-full p-0 m-0 overflow-hidden flex flex-col flex-1'
+              : `main-content-area p-3 sm:p-6 lg:p-8 pt-3 sm:pt-4 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
+                  isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''
+                }`
+          }
         >
           {children}
         </div>

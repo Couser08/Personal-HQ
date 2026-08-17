@@ -1,114 +1,182 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-  IconZoomIn,
-  IconZoomOut,
-  IconFocusCentered,
-  IconPlus,
-  IconSparkles,
-  IconArrowsSort,
-} from '@tabler/icons-react';
-import type { Vision, Habit } from '../../../store/types';
-import { VisionCardWidget } from './VisionCardWidget';
-import { VisionMiniMap } from './VisionMiniMap';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
+import type { VisionBoard, VisionNode } from '../../../store/types';
+import { VisionNodeCard } from './VisionNodes';
 
 interface VisionCanvasProps {
-  visions: Vision[];
-  habits: Habit[];
-  onOpenDetail: (vision: Vision) => void;
-  onOpenAssignTasks: (vision: Vision) => void;
-  onDeleteVision: (id: string) => void;
-  onOpenCreate: () => void;
+  board: VisionBoard;
+  onInspectNode: (nodeId: string) => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const ROPE_TIER_HEIGHTS = [160, 720, 1280, 1840, 2400];
-const CARD_WIDTH = 360;
-const CARD_GAP = 60;
-
 export const VisionCanvas: React.FC<VisionCanvasProps> = ({
-  visions,
-  habits,
-  onOpenDetail,
-  onOpenAssignTasks,
-  onDeleteVision,
-  onOpenCreate,
+  board,
+  onInspectNode,
+  containerRef,
 }) => {
-  const updateVisionPosition = useAppStore((s) => s.updateVisionPosition);
+  const {
+    activeTool,
+    canvasTheme,
+    canvasZoom,
+    setCanvasZoom,
+    canvasPan,
+    setCanvasPan,
+    selectedNodeId,
+    setSelectedNodeId,
+    updateVisionNodePosition,
+    updateVisionNodeSize,
+    updateVisionNode,
+    deleteVisionNode,
+    duplicateVisionNode,
+  } = useAppStore();
 
-  // Viewport transformation
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 80, y: 40 });
-  const [zoom, setZoom] = useState<number>(0.9);
-  const [isPanning, setIsPanning] = useState<boolean>(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
-  const [isMiniMapOpen, setIsMiniMapOpen] = useState<boolean>(true);
+  // Dragging state
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const [resizingState, setResizingState] = useState<{
+    nodeId: string;
+    handle: string;
+    startX: number;
+    startY: number;
+    initW: number;
+    initH: number;
+    initX: number;
+    initY: number;
+  } | null>(null);
 
-  // Dragging card state
-  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const dragRef = useRef<{
     startX: number;
     startY: number;
-    initialCardX: number;
-    initialCardY: number;
-  }>({ startX: 0, startY: 0, initialCardX: 0, initialCardY: 0 });
+    initNodeX: number;
+    initNodeY: number;
+  }>({ startX: 0, startY: 0, initNodeX: 0, initNodeY: 0 });
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
-    width: 1200,
-    height: 800,
+  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+
+  // Touch gesture state
+  const touchStateRef = useRef<{
+    startX: number;
+    startY: number;
+    initPanX: number;
+    initPanY: number;
+    initDist: number;
+    initZoom: number;
+  }>({
+    startX: 0,
+    startY: 0,
+    initPanX: 0,
+    initPanY: 0,
+    initDist: 0,
+    initZoom: 1,
   });
 
-  // Track container dimensions
+  // ── FIX AUTO ZOOM: Native non-passive wheel listener attached to container DOM ──
+  // This explicitly prevents browser from zooming the webpage on trackpad pinch or Ctrl+wheel!
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheelNative = (e: WheelEvent) => {
+      // Intercept wheel to zoom/pan ONLY the canvas, never the browser document!
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.ctrlKey || e.metaKey) {
+        // Precise Pinch-to-zoom or Ctrl+Scroll
+        const zoomDelta = e.deltaY < 0 ? 1.09 : 0.91;
+        setCanvasZoom((prevZoom) => {
+          const nextZoom = Math.min(Math.max(prevZoom * zoomDelta, 0.25), 2.5);
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          setCanvasPan((prevPan) => ({
+            x: mouseX - (mouseX - prevPan.x) * (nextZoom / prevZoom),
+            y: mouseY - (mouseY - prevPan.y) * (nextZoom / prevZoom),
+          }));
+          return nextZoom;
         });
+      } else {
+        // Smooth Canvas Pan
+        setCanvasPan((prev) => ({
+          x: prev.x - e.deltaX * 0.9,
+          y: prev.y - e.deltaY * 0.9,
+        }));
       }
     };
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
 
-  // Compute computed positions for visions that don't have position yet
-  const positionedVisions = useMemo(() => {
-    const cardsPerRow = 4;
-    return visions.map((v, index) => {
-      if (v.position) return v;
+    container.addEventListener('wheel', onWheelNative, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheelNative);
+    };
+  }, [containerRef, setCanvasZoom, setCanvasPan]);
 
-      // Auto assign to rope tiers
-      const rowIndex = Math.floor(index / cardsPerRow);
-      const colIndex = index % cardsPerRow;
-      const ropeY = ROPE_TIER_HEIGHTS[rowIndex] || 160 + rowIndex * 560;
-
-      // Add a slight natural tilt (-2.5 to +2.5 deg) based on index
-      const naturalRotation = ((index % 5) - 2) * 1.2;
-
-      return {
-        ...v,
-        position: {
-          x: 100 + colIndex * (CARD_WIDTH + CARD_GAP),
-          y: ropeY + 40,
-        },
-        rotation: v.rotation !== undefined ? v.rotation : naturalRotation,
-        ropeTier: rowIndex,
-      };
-    });
-  }, [visions]);
-
-  // Keybindings for Space+Drag and Shortcuts
+  // ── LAPTOP KEYBOARD SHORTCUTS FOR ZOOM & PAN ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+      const isInput = ['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName);
+      if (isInput) return;
+
+      // Spacebar for Pan mode
+      if (e.code === 'Space') {
         setIsSpacePressed(true);
       }
-      if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+
+      // Deselect
+      if (e.key === 'Escape') {
+        setSelectedNodeId(null);
+      }
+
+      // Delete selected
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
+        deleteVisionNode(selectedNodeId);
+      }
+
+      // Duplicate
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedNodeId) {
         e.preventDefault();
-        setZoom(1.0);
-        setPan({ x: 80, y: 40 });
+        duplicateVisionNode(selectedNodeId);
+      }
+
+      // Zoom IN on laptop: '+' or '=' or ']' or Ctrl/Cmd + '='
+      if (
+        e.key === '+' ||
+        e.key === '=' ||
+        e.key === ']' ||
+        ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+'))
+      ) {
+        e.preventDefault();
+        setCanvasZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)));
+      }
+
+      // Zoom OUT on laptop: '-' or '_' or '[' or Ctrl/Cmd + '-'
+      if (
+        e.key === '-' ||
+        e.key === '_' ||
+        e.key === '[' ||
+        ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_'))
+      ) {
+        e.preventDefault();
+        setCanvasZoom((z) => Math.max(0.25, +(z - 0.15).toFixed(2)));
+      }
+
+      // Reset Zoom to 100%: '0' or Ctrl/Cmd + '0'
+      if (e.key === '0' || ((e.ctrlKey || e.metaKey) && e.key === '0')) {
+        e.preventDefault();
+        setCanvasZoom(1.0);
+        setCanvasPan({ x: 60, y: 30 });
+      }
+
+      // Arrow Keys to Pan
+      if (e.key === 'ArrowLeft') {
+        setCanvasPan((p) => ({ ...p, x: p.x + 50 }));
+      } else if (e.key === 'ArrowRight') {
+        setCanvasPan((p) => ({ ...p, x: p.x - 50 }));
+      } else if (e.key === 'ArrowUp') {
+        setCanvasPan((p) => ({ ...p, y: p.y + 50 }));
+      } else if (e.key === 'ArrowDown') {
+        setCanvasPan((p) => ({ ...p, y: p.y - 50 }));
       }
     };
 
@@ -124,106 +192,98 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [selectedNodeId, deleteVisionNode, duplicateVisionNode, setCanvasZoom, setCanvasPan, setSelectedNodeId]);
 
-  // Wheel handling for zoom & pan
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      // Zoom centered on cursor
-      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      setZoom((prevZoom) => {
-        const nextZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.25), 2.0);
-        if (containerRef.current) {
-          const rect = containerRef.current.getBoundingClientRect();
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
-
-          setPan((prevPan) => ({
-            x: mouseX - (mouseX - prevPan.x) * (nextZoom / prevZoom),
-            y: mouseY - (mouseY - prevPan.y) * (nextZoom / prevZoom),
-          }));
-        }
-        return nextZoom;
-      });
-    } else {
-      // Smooth Pan
-      setPan((prev) => ({
-        x: prev.x - e.deltaX * 0.8,
-        y: prev.y - e.deltaY * 0.8,
-      }));
-    }
-  }, []);
-
-  // Canvas Pan Handlers
+  // Pan Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only pan if clicking canvas background or holding space / middle click
-    if (
+    const isBackground =
       e.target === containerRef.current ||
-      (e.target as HTMLElement).dataset.canvasSurface ||
-      isSpacePressed ||
-      e.button === 1
-    ) {
+      (e.target as HTMLElement).dataset.canvasBackground === 'true';
+
+    if (isBackground) {
+      setSelectedNodeId(null);
+    }
+
+    if (isBackground || isSpacePressed || activeTool === 'pan' || e.button === 1) {
       setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      panStartRef.current = { x: e.clientX - canvasPan.x, y: e.clientY - canvasPan.y };
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isPanning) {
-      setPan({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
+      setCanvasPan({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
       });
-    } else if (draggedCardId) {
-      const deltaX = (e.clientX - dragRef.current.startX) / zoom;
-      const deltaY = (e.clientY - dragRef.current.startY) / zoom;
+    } else if (draggedNodeId) {
+      const deltaX = (e.clientX - dragRef.current.startX) / canvasZoom;
+      const deltaY = (e.clientY - dragRef.current.startY) / canvasZoom;
 
-      const newX = Math.round(dragRef.current.initialCardX + deltaX);
-      const newY = Math.round(dragRef.current.initialCardY + deltaY);
+      const newX = Math.round(dragRef.current.initNodeX + deltaX);
+      const newY = Math.round(dragRef.current.initNodeY + deltaY);
 
-      // Local optimistic update in store
-      updateVisionPosition(draggedCardId, { x: newX, y: newY });
+      updateVisionNodePosition(draggedNodeId, { x: newX, y: newY });
+    } else if (resizingState) {
+      const deltaX = (e.clientX - resizingState.startX) / canvasZoom;
+      const deltaY = (e.clientY - resizingState.startY) / canvasZoom;
+      const handle = resizingState.handle;
+
+      let newW = resizingState.initW;
+      let newH = resizingState.initH;
+      let newX = resizingState.initX;
+      let newY = resizingState.initY;
+
+      if (handle.includes('e')) newW = Math.max(180, resizingState.initW + deltaX);
+      if (handle.includes('s')) newH = Math.max(140, resizingState.initH + deltaY);
+      if (handle.includes('w')) {
+        const potentialW = resizingState.initW - deltaX;
+        if (potentialW >= 180) {
+          newW = potentialW;
+          newX = resizingState.initX + deltaX;
+        }
+      }
+      if (handle.includes('n')) {
+        const potentialH = resizingState.initH - deltaY;
+        if (potentialH >= 140) {
+          newH = potentialH;
+          newY = resizingState.initY + deltaY;
+        }
+      }
+
+      updateVisionNodeSize(resizingState.nodeId, {
+        width: Math.round(newW),
+        height: Math.round(newH),
+      });
+      updateVisionNodePosition(resizingState.nodeId, {
+        x: Math.round(newX),
+        y: Math.round(newY),
+      });
     }
   };
 
   const handleMouseUp = () => {
     setIsPanning(false);
-    setDraggedCardId(null);
+    setDraggedNodeId(null);
+    setResizingState(null);
   };
 
-  // Touch Gesture Handling for Mobile (Pan & Pinch-to-zoom)
-  const touchStateRef = useRef<{
-    startX: number;
-    startY: number;
-    initialPanX: number;
-    initialPanY: number;
-    initialDistance: number;
-    initialZoom: number;
-  }>({
-    startX: 0,
-    startY: 0,
-    initialPanX: 0,
-    initialPanY: 0,
-    initialDistance: 0,
-    initialZoom: 1,
-  });
-
+  // Touch Gesture Handling for mobile/touchpads
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
-      // Single finger pan
       const touch = e.touches[0];
       touchStateRef.current = {
         startX: touch.clientX,
         startY: touch.clientY,
-        initialPanX: pan.x,
-        initialPanY: pan.y,
-        initialDistance: 0,
-        initialZoom: zoom,
+        initPanX: canvasPan.x,
+        initPanY: canvasPan.y,
+        initDist: 0,
+        initZoom: canvasZoom,
       };
-      setIsPanning(true);
+      if (activeTool === 'pan' || (e.target as HTMLElement).dataset.canvasBackground === 'true') {
+        setIsPanning(true);
+      }
     } else if (e.touches.length === 2) {
-      // Two finger pinch zoom
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.hypot(dx, dy);
@@ -231,25 +291,24 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
       touchStateRef.current = {
         startX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
         startY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-        initialPanX: pan.x,
-        initialPanY: pan.y,
-        initialDistance: dist,
-        initialZoom: zoom,
+        initPanX: canvasPan.x,
+        initPanY: canvasPan.y,
+        initDist: dist,
+        initZoom: canvasZoom,
       };
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (draggedCardId) {
-      // Card drag via touch
+    if (draggedNodeId) {
       const touch = e.touches[0];
-      const deltaX = (touch.clientX - dragRef.current.startX) / zoom;
-      const deltaY = (touch.clientY - dragRef.current.startY) / zoom;
+      const deltaX = (touch.clientX - dragRef.current.startX) / canvasZoom;
+      const deltaY = (touch.clientY - dragRef.current.startY) / canvasZoom;
 
-      const newX = Math.round(dragRef.current.initialCardX + deltaX);
-      const newY = Math.round(dragRef.current.initialCardY + deltaY);
+      const newX = Math.round(dragRef.current.initNodeX + deltaX);
+      const newY = Math.round(dragRef.current.initNodeY + deltaY);
 
-      updateVisionPosition(draggedCardId, { x: newX, y: newY });
+      updateVisionNodePosition(draggedNodeId, { x: newX, y: newY });
       return;
     }
 
@@ -258,35 +317,27 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
       const deltaX = touch.clientX - touchStateRef.current.startX;
       const deltaY = touch.clientY - touchStateRef.current.startY;
 
-      setPan({
-        x: touchStateRef.current.initialPanX + deltaX,
-        y: touchStateRef.current.initialPanY + deltaY,
+      setCanvasPan({
+        x: touchStateRef.current.initPanX + deltaX,
+        y: touchStateRef.current.initPanY + deltaY,
       });
-    } else if (e.touches.length === 2 && touchStateRef.current.initialDistance > 0) {
+    } else if (e.touches.length === 2 && touchStateRef.current.initDist > 0) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.hypot(dx, dy);
 
-      const ratio = dist / touchStateRef.current.initialDistance;
-      const nextZoom = Math.min(
-        Math.max(touchStateRef.current.initialZoom * ratio, 0.25),
-        2.0
-      );
-      setZoom(nextZoom);
+      const ratio = dist / touchStateRef.current.initDist;
+      setCanvasZoom(Math.min(Math.max(touchStateRef.current.initZoom * ratio, 0.25), 2.5));
     }
   };
 
   const handleTouchEnd = () => {
     setIsPanning(false);
-    setDraggedCardId(null);
+    setDraggedNodeId(null);
+    setResizingState(null);
   };
 
-  // Start dragging a specific card
-  const handleCardDragStart = (
-    cardId: string,
-    currentPos: { x: number; y: number },
-    e: React.MouseEvent | React.TouchEvent
-  ) => {
+  const handleNodeDragStart = (node: VisionNode, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -294,368 +345,94 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
     dragRef.current = {
       startX: clientX,
       startY: clientY,
-      initialCardX: currentPos.x,
-      initialCardY: currentPos.y,
+      initNodeX: node.position.x,
+      initNodeY: node.position.y,
     };
-    setDraggedCardId(cardId);
+    setDraggedNodeId(node.id);
   };
 
-  // Zoom controls
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.15, 2.0));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.25));
-  const handleResetZoom = () => {
-    setZoom(1.0);
-    setPan({ x: 80, y: 40 });
-  };
+  const handleNodeResizeStart = (
+    node: VisionNode,
+    handle: string,
+    e: React.MouseEvent | React.TouchEvent
+  ) => {
+    e.stopPropagation();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-  // Fit all cards in view
-  const handleFitView = () => {
-    if (positionedVisions.length === 0) {
-      handleResetZoom();
-      return;
-    }
-
-    let minX = Infinity,
-      maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
-
-    positionedVisions.forEach((v) => {
-      const x = v.position?.x || 0;
-      const y = v.position?.y || 0;
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x + CARD_WIDTH);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y + 420);
-    });
-
-    const padding = 120;
-    const contentW = maxX - minX + padding * 2;
-    const contentH = maxY - minY + padding * 2;
-
-    const scaleX = dimensions.width / contentW;
-    const scaleY = dimensions.height / contentH;
-    const fitZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.35), 1.2);
-
-    const fitPanX = (dimensions.width - contentW * fitZoom) / 2 - (minX - padding) * fitZoom;
-    const fitPanY = (dimensions.height - contentH * fitZoom) / 2 - (minY - padding) * fitZoom;
-
-    setZoom(fitZoom);
-    setPan({ x: fitPanX, y: fitPanY });
-  };
-
-  // Auto-Tidy Ropes Layout
-  const handleTidyRopes = () => {
-    const cardsPerRow = 4;
-    positionedVisions.forEach((v, idx) => {
-      const rowIndex = Math.floor(idx / cardsPerRow);
-      const colIndex = idx % cardsPerRow;
-      const ropeY = ROPE_TIER_HEIGHTS[rowIndex] || 160 + rowIndex * 560;
-      const targetX = 100 + colIndex * (CARD_WIDTH + CARD_GAP);
-      const targetY = ropeY + 40;
-      const naturalRotation = ((idx % 5) - 2) * 1.2;
-
-      updateVisionPosition(v.id, { x: targetX, y: targetY }, naturalRotation);
+    setResizingState({
+      nodeId: node.id,
+      handle,
+      startX: clientX,
+      startY: clientY,
+      initW: node.size?.width || 300,
+      initH: node.size?.height || 200,
+      initX: node.position.x,
+      initY: node.position.y,
     });
   };
-
-  // Calculate World Canvas bounds for Ropes
-  const minWorldX = -1000;
-  const maxWorldX = Math.max(
-    ...positionedVisions.map((v) => (v.position?.x || 0) + CARD_WIDTH + 800),
-    3200
-  );
 
   return (
     <div
-      ref={containerRef}
-      onWheel={handleWheel}
+      ref={containerRef as React.RefObject<HTMLDivElement>}
+      data-canvas-background="true"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      data-canvas-surface="true"
-      className={`relative w-full h-full min-h-[600px] overflow-hidden select-none bg-background ${
-        isPanning || isSpacePressed ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+      className={`relative w-full h-full overflow-hidden select-none touch-none ${
+        activeTool === 'pan' || isSpacePressed
+          ? 'cursor-grab active:cursor-grabbing'
+          : 'cursor-default'
       }`}
       style={{
-        touchAction: 'none',
-        // Infinite dynamic dot grid pattern synced with pan & zoom
-        backgroundImage: `radial-gradient(var(--border-border-alt) 1.2px, transparent 1.2px)`,
-        backgroundSize: `${28 * zoom}px ${28 * zoom}px`,
-        backgroundPosition: `${pan.x}px ${pan.y}px`,
+        backgroundColor: 'var(--color-background, #f8fafc)',
       }}
     >
-      {/* ── TRANSFORM CONTAINER (World Space) ── */}
+      {/* ── BACKGROUND GRID PATTERN LAYER ── */}
+      <div
+        data-canvas-background="true"
+        className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+        style={{
+          backgroundPosition: `${canvasPan.x}px ${canvasPan.y}px`,
+          backgroundSize: `${32 * canvasZoom}px ${32 * canvasZoom}px`,
+          backgroundImage:
+            canvasTheme === 'dots'
+              ? `radial-gradient(circle, var(--color-border, #cbd5e1) ${1.5 * canvasZoom}px, transparent ${1.5 * canvasZoom}px)`
+              : canvasTheme === 'grid'
+              ? `linear-gradient(to right, var(--color-border, #e2e8f0) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border, #e2e8f0) 1px, transparent 1px)`
+              : 'none',
+        }}
+      />
+
+      {/* ── TRANSFORMABLE WORLD LAYER ── */}
       <div
         style={{
-          transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+          transform: `translate3d(${canvasPan.x}px, ${canvasPan.y}px, 0) scale(${canvasZoom})`,
           transformOrigin: '0 0',
           willChange: 'transform',
         }}
-        data-canvas-surface="true"
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-auto"
       >
-        {/* ── HANGING ROPES & CABLES LAYER ── */}
-        <svg
-          className="absolute inset-0 overflow-visible pointer-events-none"
-          style={{ width: '100%', height: '100%' }}
-        >
-          <defs>
-            {/* Natural Twine Rope Gradient */}
-            <linearGradient id="twineRope" x1="0" y1="0" x2="100%" y2="0">
-              <stop offset="0%" stopColor="#b45309" />
-              <stop offset="25%" stopColor="#d97706" />
-              <stop offset="50%" stopColor="#92400e" />
-              <stop offset="75%" stopColor="#d97706" />
-              <stop offset="100%" stopColor="#b45309" />
-            </linearGradient>
-
-            <filter id="ropeShadow" x="-5%" y="-20%" width="110%" height="150%">
-              <feDropShadow dx="0" dy="4" stdDeviation="3" floodOpacity="0.3" />
-            </filter>
-          </defs>
-
-          {/* Main Horizontal Rope Lines */}
-          {ROPE_TIER_HEIGHTS.map((ropeY, idx) => {
-            // Find all cards on this tier
-            const tierCards = positionedVisions.filter(
-              (v) => Math.abs((v.position?.y || 0) - ropeY) < 280
-            );
-
-            // Generate saggy curve control points
-            const startX = minWorldX;
-            const endX = maxWorldX;
-            const midX = (startX + endX) / 2;
-            const sagAmount = 24 + tierCards.length * 4;
-
-            return (
-              <g key={`rope-${idx}`} filter="url(#ropeShadow)">
-                {/* Left and Right Wall Wooden Anchors */}
-                <rect
-                  x={startX - 15}
-                  y={ropeY - 14}
-                  width="30"
-                  height="28"
-                  rx="6"
-                  fill="#78350f"
-                  stroke="#451a03"
-                  strokeWidth="2"
-                />
-                <circle cx={startX} cy={ropeY} r="5" fill="#fef3c7" />
-
-                <rect
-                  x={endX - 15}
-                  y={ropeY - 14}
-                  width="30"
-                  height="28"
-                  rx="6"
-                  fill="#78350f"
-                  stroke="#451a03"
-                  strokeWidth="2"
-                />
-                <circle cx={endX} cy={ropeY} r="5" fill="#fef3c7" />
-
-                {/* Sagging Natural Rope Bézier Path */}
-                <path
-                  d={`M ${startX} ${ropeY} Q ${midX} ${ropeY + sagAmount} ${endX} ${ropeY}`}
-                  fill="none"
-                  stroke="url(#twineRope)"
-                  strokeWidth="4"
-                  strokeDasharray="6 2"
-                  strokeLinecap="round"
-                />
-
-                {/* Secondary highlight string */}
-                <path
-                  d={`M ${startX} ${ropeY - 1} Q ${midX} ${ropeY + sagAmount - 1} ${endX} ${ropeY - 1}`}
-                  fill="none"
-                  stroke="#fef3c7"
-                  strokeWidth="1"
-                  strokeOpacity="0.4"
-                />
-              </g>
-            );
-          })}
-
-          {/* Vertical Strings connecting Clothespins to Cards when pulled down */}
-          {positionedVisions.map((v) => {
-            const posX = v.position?.x || 0;
-            const posY = v.position?.y || 0;
-            const cardCenterTopX = posX + CARD_WIDTH / 2;
-            const cardTopY = posY;
-
-            // Find closest rope
-            const closestRopeY =
-              ROPE_TIER_HEIGHTS.reduce((prev, curr) =>
-                Math.abs(curr - cardTopY) < Math.abs(prev - cardTopY) ? curr : prev
-              ) || 160;
-
-            // If card is noticeably below or above rope, draw a realistic tether string
-            const isOffset = Math.abs(closestRopeY - cardTopY) > 20;
-
-            if (isOffset) {
-              return (
-                <g key={`tether-${v.id}`}>
-                  {/* Pin anchor at rope */}
-                  <circle
-                    cx={cardCenterTopX}
-                    cy={closestRopeY}
-                    r="4"
-                    fill="#92400e"
-                    stroke="#fef3c7"
-                    strokeWidth="1.5"
-                  />
-                  {/* Tension string */}
-                  <line
-                    x1={cardCenterTopX}
-                    y1={closestRopeY}
-                    x2={cardCenterTopX}
-                    y2={cardTopY}
-                    stroke="#d97706"
-                    strokeWidth="2"
-                    strokeDasharray="3 2"
-                  />
-                </g>
-              );
-            }
-            return null;
-          })}
-        </svg>
-
-        {/* ── VISION CARDS LAYER ── */}
-        <div className="absolute inset-0 pointer-events-none">
-          {positionedVisions.map((vision) => {
-            const posX = vision.position?.x || 0;
-            const posY = vision.position?.y || 0;
-
-            return (
-              <div
-                key={vision.id}
-                style={{
-                  position: 'absolute',
-                  left: `${posX}px`,
-                  top: `${posY}px`,
-                }}
-                className="pointer-events-auto"
-              >
-                <VisionCardWidget
-                  vision={vision}
-                  habits={habits}
-                  onOpenDetail={() => onOpenDetail(vision)}
-                  onOpenAssignTasks={() => onOpenAssignTasks(vision)}
-                  onDelete={() => onDeleteVision(vision.id)}
-                  isDragging={draggedCardId === vision.id}
-                  onDragStart={(e) =>
-                    handleCardDragStart(
-                      vision.id,
-                      vision.position || { x: posX, y: posY },
-                      e
-                    )
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── FLOATING TOP STATS & QUICK ACTIONS ── */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-20">
-        <div className="flex items-center gap-2 pointer-events-auto bg-surface/90 backdrop-blur-xl border border-border px-3.5 py-2 rounded-2xl shadow-lg">
-          <span className="text-[12px] font-extrabold text-text-primary flex items-center gap-1.5">
-            <IconSparkles size={16} className="text-primary" />
-            <span>Vision Canvas</span>
-          </span>
-          <span className="text-text-muted">·</span>
-          <span className="text-[12px] font-semibold text-text-secondary">
-            {positionedVisions.length} Visions
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Auto Tidy Ropes */}
-          <button
-            onClick={handleTidyRopes}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface/90 backdrop-blur-xl border border-border shadow-md text-[12px] font-bold text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-all cursor-pointer"
-            title="Auto-arrange cards neatly along ropes"
-          >
-            <IconArrowsSort size={15} />
-            <span className="hidden sm:inline">Tidy Board</span>
-          </button>
-
-          {/* Plant a Seed / Add Vision */}
-          <button
-            onClick={onOpenCreate}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-text-on-accent shadow-lg text-[13px] font-bold hover:opacity-90 transition-transform active:scale-95 cursor-pointer"
-          >
-            <IconPlus size={16} />
-            <span>Plant Vision</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── FLOATING BOTTOM CANVAS CONTROLS ── */}
-      <div className="absolute bottom-4 left-4 flex items-center gap-2 z-20 pointer-events-auto">
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-surface/90 backdrop-blur-xl border border-border shadow-xl">
-          <button
-            onClick={handleZoomOut}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
-            title="Zoom Out (-)"
-          >
-            <IconZoomOut size={16} />
-          </button>
-
-          <button
-            onClick={handleResetZoom}
-            className="px-2 py-1 text-[11px] font-bold text-text-primary hover:bg-surface-alt rounded-lg transition-colors cursor-pointer"
-            title="Reset Zoom (100%)"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-
-          <button
-            onClick={handleZoomIn}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
-            title="Zoom In (+)"
-          >
-            <IconZoomIn size={16} />
-          </button>
-
-          <div className="w-px h-4 bg-border my-auto mx-0.5" />
-
-          <button
-            onClick={handleFitView}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
-            title="Fit all visions into view"
-          >
-            <IconFocusCentered size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── FLOATING RADAR MINIMAP ── */}
-      <div className="absolute bottom-4 right-4 z-20 pointer-events-auto">
-        <VisionMiniMap
-          visions={positionedVisions}
-          viewport={{
-            x: pan.x,
-            y: pan.y,
-            zoom,
-            width: dimensions.width,
-            height: dimensions.height,
-          }}
-          onCenterAt={(worldX, worldY) => {
-            setPan({
-              x: dimensions.width / 2 - worldX * zoom,
-              y: dimensions.height / 2 - worldY * zoom,
-            });
-          }}
-          isOpen={isMiniMapOpen}
-          onToggle={() => setIsMiniMapOpen(!isMiniMapOpen)}
-        />
+        {board.nodes.map((node) => (
+          <VisionNodeCard
+            key={node.id}
+            node={node}
+            isSelected={selectedNodeId === node.id}
+            onSelect={(e) => {
+              e.stopPropagation();
+              setSelectedNodeId(node.id);
+            }}
+            onInspect={() => onInspectNode(node.id)}
+            onDuplicate={() => duplicateVisionNode(node.id)}
+            onDelete={() => deleteVisionNode(node.id)}
+            onUpdate={(updates) => updateVisionNode(node.id, updates)}
+            onStartDrag={(e) => handleNodeDragStart(node, e)}
+            onStartResize={(e, handle) => handleNodeResizeStart(node, handle, e)}
+          />
+        ))}
       </div>
     </div>
   );

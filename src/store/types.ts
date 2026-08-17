@@ -490,6 +490,77 @@ export interface VisionTask {
   priority?: 'none' | 'low' | 'medium' | 'high' | 'urgent';
 }
 
+export type VisionNodeType =
+  | 'image'
+  | 'text'
+  | 'goal'
+  | 'quote'
+  | 'map'
+  | 'audio'
+  | 'skill'
+  | 'embed'
+  | 'shape';
+
+export type VisionBoardCategory = 'FAVORITES' | 'PERSONAL' | 'CAREER' | 'LIFESTYLE' | 'OTHER';
+
+export interface VisionNodeMapPin {
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  note?: string;
+  imageUrl?: string;
+}
+
+export interface VisionNode {
+  id: string;
+  boardId: string;
+  type: VisionNodeType;
+  title: string;
+  subtitle?: string;
+  content?: string;
+  imageUrl?: string;
+  accentColor?: string;
+  tags?: string[];
+  position: { x: number; y: number };
+  size?: { width: number; height: number };
+  rotation?: number;
+  cornerRadius?: number;
+  hasShadow?: boolean;
+  hasBorder?: boolean;
+  linkUrl?: string;
+  linkedHabitIds?: string[];
+  linkedTaskIds?: string[];
+  tasks?: VisionTask[];
+  progress?: number;
+  goalTarget?: number;
+  goalCurrent?: number;
+  goalUnit?: string;
+  mapPins?: VisionNodeMapPin[];
+  audioUrl?: string;
+  audioDuration?: string;
+  quoteAuthor?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  textAlign?: 'left' | 'center' | 'right';
+  isFavorite?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VisionBoard {
+  id: string;
+  title: string;
+  subtitle?: string;
+  category: VisionBoardCategory;
+  icon?: string;
+  isFavorite?: boolean;
+  theme?: 'dots' | 'grid' | 'blank';
+  nodes: VisionNode[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Vision {
   id: string;
   title: string;
@@ -920,6 +991,36 @@ export interface AppStore {
 
   // Vision Board
   visions: Vision[];
+  visionBoards: VisionBoard[];
+  activeBoardId: string;
+  selectedNodeId: string | null;
+  focusMode: boolean;
+  canvasTheme: 'dots' | 'grid' | 'blank';
+  canvasZoom: number;
+  canvasPan: { x: number; y: number };
+  activeTool: 'select' | 'pan' | 'create';
+
+  createBoard: (board: Partial<VisionBoard>) => Promise<string>;
+  updateBoard: (id: string, updates: Partial<VisionBoard>) => Promise<void>;
+  deleteBoard: (id: string) => Promise<void>;
+  setActiveBoard: (id: string) => void;
+  toggleFavoriteBoard: (id: string) => void;
+
+  addVisionNode: (node: Partial<VisionNode>) => Promise<string>;
+  updateVisionNode: (id: string, updates: Partial<VisionNode>) => Promise<void>;
+  deleteVisionNode: (id: string) => Promise<void>;
+  duplicateVisionNode: (id: string) => Promise<void>;
+  updateVisionNodePosition: (id: string, position: { x: number; y: number }) => void;
+  updateVisionNodeSize: (id: string, size: { width: number; height: number }) => void;
+  setSelectedNodeId: (id: string | null) => void;
+
+  setFocusMode: (enabled: boolean) => void;
+  setCanvasTheme: (theme: 'dots' | 'grid' | 'blank') => void;
+  setCanvasZoom: (zoom: number | ((prev: number) => number)) => void;
+  setCanvasPan: (pan: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
+  setActiveTool: (tool: 'select' | 'pan' | 'create') => void;
+  resetCanvasView: () => void;
+
   addVision: (vision: Vision, userId?: string) => Promise<void>;
   updateVision: (id: string, updates: Partial<Vision>) => Promise<void>;
   deleteVision: (id: string) => Promise<void>;
