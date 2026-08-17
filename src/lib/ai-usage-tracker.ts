@@ -32,7 +32,7 @@ const SLIDING_WINDOW_KEY = 'phq_ai_recent_calls';
 // Gemini 2.5 Flash Free Tier Defaults
 export const FREE_TIER_MAX_RPM = 15;
 export const RPM_SAFETY_THRESHOLD = 12; // Pre-flight warning threshold
-export const FREE_TIER_MAX_RPD = 1500;
+export const FREE_TIER_MAX_RPD = 500;
 
 function getTodayString(): string {
   return new Date().toISOString().split('T')[0];

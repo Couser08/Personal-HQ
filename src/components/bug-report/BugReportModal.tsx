@@ -121,11 +121,16 @@ export function BugReportModal() {
                 {capturedElement?.isGroup && capturedElement.groupElements && capturedElement.groupElements.length > 0 ? (
                   <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                     {capturedElement.groupElements.map((el, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[10.5px] font-mono bg-surface px-2 py-0.5 rounded border border-border/40 text-text-secondary">
+                      <div key={i} className="flex items-center gap-2 text-[10.5px] font-mono bg-surface px-2 py-1 rounded border border-border/40 text-text-secondary">
                         <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[9px] shrink-0">
                           {i + 1}
                         </span>
-                        <span className="font-bold text-text-primary">&lt;{el.tag}&gt;</span>
+                        {(el.pageTitle || el.pageModule) && (
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[9px] font-sans font-bold text-text-primary shrink-0">
+                            {el.pageTitle || el.pageModule}
+                          </span>
+                        )}
+                        <span className="font-bold text-text-primary shrink-0">&lt;{el.tag}&gt;</span>
                         <span className="truncate flex-1">{el.selector}</span>
                       </div>
                     ))}

@@ -21,6 +21,8 @@ export interface AppSettings {
   wavyEffectEnabled?: boolean;
   wavyEffectMode?: 'minimal' | 'premium';
   todoCompletionAnimation?: string | boolean;
+  devMotionOverride?: boolean;
+  showFpsTelemetry?: boolean;
   geminiApiKey?: string;
   geminiModel?: string;
   aiPersona?: 'Professional' | 'Friendly/Coaching' | 'Strict';
@@ -634,6 +636,9 @@ export interface BugReportElementItem {
   classes: string[];
   selector: string;
   innerTextSnippet?: string;
+  pageModule?: string;
+  pageTitle?: string;
+  screenshotSnippet?: string;
   boundingRect: {
     x: number;
     y: number;

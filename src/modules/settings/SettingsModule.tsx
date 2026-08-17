@@ -17,6 +17,7 @@ import { testGeminiApiKey } from '../../lib/gemini';
 import { subscribeAiUsage, resetAiUsageStats, type AiUsageStats, type RateLimitStatus } from '../../lib/ai-usage-tracker';
 import { useBugReportStore } from '../../store/useBugReportStore';
 import { type PerformanceMode } from '../../store/types';
+import { usePerformanceTelemetry, getEffectiveReducedMotion } from '../../lib/performanceEngine';
 
 const COUNTDOWN_TEMPLATES = [
   { value: 'default',  label: 'Default Cards' },
@@ -90,7 +91,10 @@ export default function SettingsModule() {
     return () => unsubscribe();
   }, []);
 
+  const { fps: liveFps, frameTime: liveFrameTime } = usePerformanceTelemetry(true);
   const currentPerfMode: PerformanceMode = settings.performanceMode || 'balanced';
+  const effectiveReducedMotion = getEffectiveReducedMotion(settings);
+  const isDev = Boolean(import.meta.env.DEV);
 
   const handleSetPerformanceMode = (newMode: PerformanceMode) => {
     updateSettings({
@@ -644,7 +648,7 @@ export default function SettingsModule() {
                       <IconActivity size={14} className="text-purple-500" /> Daily Requests
                     </span>
                     <span className="text-[11px] font-mono font-bold text-purple-600 dark:text-purple-400">
-                      {usageStats?.requestsToday || 0} / {rateStatus?.dailyLimit || 1500}
+                      {usageStats?.requestsToday || 0} / {rateStatus?.dailyLimit || 500}
                     </span>
                   </div>
 
@@ -652,20 +656,20 @@ export default function SettingsModule() {
                   <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
-                        ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) > 0.85
+                        ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 500)) > 0.85
                           ? 'bg-rose-500'
-                          : ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) > 0.65
+                          : ((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 500)) > 0.65
                             ? 'bg-amber-500'
                             : 'bg-gradient-to-r from-purple-500 to-indigo-500'
                       }`}
                       style={{
-                        width: `${Math.min(100, Math.max(2, (((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 1500)) * 100)))}%`
+                        width: `${Math.min(100, Math.max(2, (((usageStats?.requestsToday || 0) / (rateStatus?.dailyLimit || 500)) * 100)))}%`
                       }}
                     />
                   </div>
 
                   <div className="flex items-center justify-between text-[10px] text-zinc-500">
-                    <span>{Math.max(0, (rateStatus?.dailyLimit || 1500) - (usageStats?.requestsToday || 0))} requests remaining</span>
+                    <span>{Math.max(0, (rateStatus?.dailyLimit || 500) - (usageStats?.requestsToday || 0))} requests remaining</span>
                     <span>Resets at midnight</span>
                   </div>
                 </div>
@@ -911,7 +915,7 @@ export default function SettingsModule() {
 
         <Card padding="lg" className="flex flex-col gap-5">
           
-          {/* Header & Help Trigger */}
+          {/* Header & Live Telemetry Badge */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
             <div className="flex items-start sm:items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shrink-0">
@@ -929,17 +933,27 @@ export default function SettingsModule() {
                   </button>
                 </div>
                 <p className="text-[13px] text-text-secondary mt-0.5">
-                  Select your device profile to tune frame rates, backdrop blurs, and animation physics.
+                  Select your hardware profile to tune frame rates, backdrop blurs, and animation physics.
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsPerformanceHelpOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-secondary hover:text-text-primary text-xs font-bold border border-border transition-all cursor-pointer shrink-0"
-            >
-              <IconHelp size={15} /> Mode Breakdown
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-surface-alt/80 border border-border rounded-xl px-3 py-1.5 font-mono text-xs">
+                <IconActivity size={14} className={liveFps >= 55 ? 'text-emerald-500 animate-pulse' : liveFps >= 30 ? 'text-amber-500' : 'text-rose-500'} />
+                <span className={`font-bold ${liveFps >= 55 ? 'text-emerald-500' : liveFps >= 30 ? 'text-amber-500' : 'text-rose-500'}`}>
+                  {liveFps} FPS
+                </span>
+                <span className="text-text-muted/40">•</span>
+                <span className="text-text-secondary">{liveFrameTime}ms</span>
+              </div>
+              <button
+                onClick={() => setIsPerformanceHelpOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-secondary hover:text-text-primary text-xs font-bold border border-border transition-all cursor-pointer shrink-0"
+              >
+                <IconHelp size={14} /> Breakdown
+              </button>
+            </div>
           </div>
 
           {/* 3-Mode Segmented Controller */}
@@ -949,7 +963,7 @@ export default function SettingsModule() {
                 id: 'performance' as PerformanceMode,
                 label: 'Performance',
                 emoji: '⚡',
-                sub: '120 FPS GPU Only',
+                sub: '120 FPS GPU Composited',
                 desc: 'Snappy composite transforms, zero blur, max throughput.',
                 badge: '120 FPS',
                 badgeColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20'
@@ -1000,18 +1014,115 @@ export default function SettingsModule() {
             })}
           </div>
 
-          {/* Active Mode Summary Status Bar */}
+          {/* Active Mode Summary & Reduced Motion Telemetry */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 rounded-xl bg-surface-alt/50 border border-border text-xs gap-3">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-text-secondary">Current Engine Status:</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-text-secondary">Engine Status:</span>
               <span className="font-mono font-bold text-text-primary uppercase bg-surface px-2 py-0.5 rounded border border-border">
-                {currentPerfMode} mode
+                {currentPerfMode}
+              </span>
+              <span className="text-text-muted/40">•</span>
+              <span className="text-text-secondary">
+                Motion Policy:{' '}
+                <strong className={effectiveReducedMotion === 'never' ? 'text-blue-500' : effectiveReducedMotion === 'always' ? 'text-amber-500' : 'text-emerald-500'}>
+                  {effectiveReducedMotion === 'never' ? '⚡ Dev Override (Animations Active)' : effectiveReducedMotion === 'always' ? '🥔 Reduced Motion Enforced' : '♿ OS Respect Mode'}
+                </strong>
               </span>
             </div>
             <div className="flex items-center gap-3 text-text-muted text-[11px]">
-              <span>Blur: <strong>{currentPerfMode === 'balanced' ? 'Enabled' : 'Disabled'}</strong></span>
+              <span>Blur: <strong>{currentPerfMode === 'balanced' && !settings.reduceBlur ? 'Active' : 'Disabled'}</strong></span>
               <span>•</span>
-              <span>Transitions: <strong>{currentPerfMode === 'potato' ? 'Instant Snap' : 'Spring Physics'}</strong></span>
+              <span>Physics: <strong>{currentPerfMode === 'potato' || settings.reduceAnimations ? 'Instant Snap (0ms)' : currentPerfMode === 'performance' ? 'Snappy 120Hz' : 'Fluid 60Hz'}</strong></span>
+            </div>
+          </div>
+
+          {/* Granular Performance Overrides */}
+          <div className="flex flex-col gap-3 pt-1">
+            <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Granular Engine Controls</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              
+              {/* Dev Motion Override */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
+                <div className="flex flex-col pr-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-text-primary">Dev Motion Bypass</span>
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                      {isDev ? 'DEV MODE' : 'DEV TOOL'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-text-muted mt-0.5">
+                    Allow animations in dev mode even if OS has Reduced Motion enabled.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  checked={settings.devMotionOverride !== false}
+                  onChange={() => {
+                    const next = settings.devMotionOverride === false;
+                    updateSettings({ devMotionOverride: next });
+                    addToast(
+                      next ? 'Dev Motion Bypass Enabled' : 'OS Reduced Motion Enforced',
+                      next ? 'Animations will now render in local development.' : 'Respecting OS-level reduced motion flag.',
+                      'info'
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Disable Glassmorphism / Blurs */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
+                <div className="flex flex-col pr-2">
+                  <span className="text-xs font-bold text-text-primary">Disable Backdrop Blurs</span>
+                  <span className="text-[11px] text-text-muted mt-0.5">
+                    Switches frosted glass to solid backgrounds for max GPU throughput.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  checked={Boolean(settings.reduceBlur)}
+                  onChange={() => {
+                    const next = !settings.reduceBlur;
+                    updateSettings({ reduceBlur: next });
+                    addToast(next ? 'Backdrop Blurs Disabled' : 'Backdrop Blurs Enabled', next ? 'Solid backgrounds active' : 'Glassmorphism active', 'info');
+                  }}
+                />
+              </div>
+
+              {/* Force Zero Motion */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
+                <div className="flex flex-col pr-2">
+                  <span className="text-xs font-bold text-text-primary">Zero Animations Mode</span>
+                  <span className="text-[11px] text-text-muted mt-0.5">
+                    Enforces instant transitions (0ms) across all components.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  checked={Boolean(settings.reduceAnimations)}
+                  onChange={() => {
+                    const next = !settings.reduceAnimations;
+                    updateSettings({ reduceAnimations: next });
+                    addToast(next ? 'Zero Animations Active' : 'Spring Animations Active', next ? 'All transitions set to 0ms' : 'Spring physics restored', 'info');
+                  }}
+                />
+              </div>
+
+              {/* Ambient Waves */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
+                <div className="flex flex-col pr-2">
+                  <span className="text-xs font-bold text-text-primary">Background Ambient Waves</span>
+                  <span className="text-[11px] text-text-muted mt-0.5">
+                    Subtle background wave rendering in header and cards.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  checked={settings.wavyEffectEnabled !== false}
+                  onChange={() => {
+                    const next = settings.wavyEffectEnabled === false;
+                    updateSettings({ wavyEffectEnabled: next });
+                    addToast(next ? 'Ambient Waves Enabled' : 'Ambient Waves Disabled', '', 'info');
+                  }}
+                />
+              </div>
+
             </div>
           </div>
 
@@ -1092,13 +1203,25 @@ export default function SettingsModule() {
       >
         <div className="flex flex-col gap-6 py-2">
           
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-alt border border-border">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-              <IconInfoCircle size={22} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-alt border border-border">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                <IconInfoCircle size={20} />
+              </div>
+              <div className="text-xs text-text-secondary leading-relaxed">
+                <p className="font-bold text-text-primary text-sm mb-0.5">3 Adaptive Rendering Tiers</p>
+                Personal HQ is engineered to deliver 120 FPS high-refresh rate speed on gaming rigs while remaining battery-friendly on laptops and ultra-lightweight on low-power devices.
+              </div>
             </div>
-            <div className="text-xs text-text-secondary leading-relaxed">
-              <p className="font-bold text-text-primary text-sm mb-0.5">Why does Personal HQ have 3 rendering modes?</p>
-              Personal HQ is engineered to deliver 120 FPS high-refresh rate speed on gaming rigs while remaining battery-friendly on laptops and ultra-lightweight on low-power devices. Switch modes at any time without reloading.
+
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-alt border border-border">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
+                <IconSparkles size={20} />
+              </div>
+              <div className="text-xs text-text-secondary leading-relaxed">
+                <p className="font-bold text-text-primary text-sm mb-0.5">Reduced Motion & WCAG 2.2</p>
+                In production, Personal HQ strictly honors your OS accessibility preference. In local development, the Dev Motion Bypass prevents OS flags from blocking animation previews.
+              </div>
             </div>
           </div>
 

@@ -4,9 +4,13 @@ import { useMotionTestStore } from './useMotionTestStore';
 import { type MotionMode, MOTION_PRESETS } from './types';
 import { IconBolt, IconSparkles, IconActivity } from '@tabler/icons-react';
 import { useToastStore } from '../../store/useToastStore';
+import { useAppStore } from '../../store/useAppStore';
 
 export function MotionModeSwitcher() {
-  const { mode, fps, avgFrameTime, setMode, updateMetrics } = useMotionTestStore();
+  const { fps, avgFrameTime, setMode, updateMetrics } = useMotionTestStore();
+  const appMode = useAppStore((s) => s.settings.performanceMode);
+  const storeMode = useMotionTestStore((s) => s.mode);
+  const mode = (appMode || storeMode || 'balanced') as MotionMode;
   const addToast = useToastStore((s) => s.addToast);
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());

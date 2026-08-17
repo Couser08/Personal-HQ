@@ -33,11 +33,12 @@ export function formatReportMarkdown(report: BugReport): string {
       md += `- **Common Container / Parent**: \`${el.selector}\`\n`;
       md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
       md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
-      md += `| # | Tag | Selector | Text Snippet |\n`;
-      md += `| :--- | :--- | :--- | :--- |\n`;
+      md += `| # | Page / Module | Tag | Selector | Text Snippet |\n`;
+      md += `| :--- | :--- | :--- | :--- | :--- |\n`;
       el.groupElements.forEach((item, i) => {
+        const page = item.pageTitle || item.pageModule || report.route;
         const txt = (item.innerTextSnippet || '—').replace(/\|/g, '-').slice(0, 40);
-        md += `| ${i + 1} | \`<${item.tag}>\` | \`${item.selector}\` | ${txt} |\n`;
+        md += `| ${i + 1} | \`${page}\` | \`<${item.tag}>\` | \`${item.selector}\` | ${txt} |\n`;
       });
       md += `\n`;
     } else {

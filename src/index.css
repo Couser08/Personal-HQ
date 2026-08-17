@@ -320,9 +320,11 @@
 }
 
 /* ─── Reduce Motion (OS Level) ──────────────────────────────────────── */
-/* Respects user's OS-level "Reduce Motion" accessibility setting */
+/* Respects user's OS-level "Reduce Motion" accessibility setting when not bypassed by dev motion override */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  :root:not([data-reduced-motion="never"]) *,
+  :root:not([data-reduced-motion="never"]) *::before,
+  :root:not([data-reduced-motion="never"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

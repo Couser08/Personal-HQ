@@ -69,6 +69,32 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.6.2 (Beta)',
+    codename: 'Engine & Diagnostics',
+    date: 'August 17, 2026',
+    headline: 'Performance engine refinement, fully released Bug Reporter, and AI limits.',
+    sub: 'Deep refinements to the new Performance Modes from the ground up. The Bug Reporter is now fully released with multi-element group reporting and cross-page navigation.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconCpu,
+        title: 'Performance Engine Refinement',
+        desc: 'Ground-up refinements to the performance modes (Potato/Balanced/Performance) to ensure absolute stability and correct CSS application.',
+      },
+      {
+        Icon: IconBug,
+        title: 'Bug Reporter v1.0',
+        desc: 'Fully released! You can now report a "group report" of multiple elements and seamlessly navigate between different pages while in bug reporter mode.',
+        badge: 'Released',
+      },
+      {
+        Icon: IconBrain,
+        title: 'AI Usage Limit Adjusted',
+        desc: 'Daily AI usage limit has been reduced from 1500 to 500 requests to maintain service stability and speed.',
+      },
+    ],
+  },
+  {
     version: 'v4.6.1 (Beta)',
     codename: 'Mobile Iteration',
     date: 'August 16, 2026',

@@ -15,6 +15,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   wavyEffectEnabled: true,
   wavyEffectMode: 'premium',
   todoCompletionAnimation: 'circle-fill-confetti',
+  devMotionOverride: true,
+  showFpsTelemetry: false,
   geminiApiKey: '',
   geminiModel: 'gemini-2.5-flash',
   aiPersona: 'Professional',

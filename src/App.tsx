@@ -8,6 +8,7 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { BugReportProvider } from './components/bug-report/BugReportProvider';
+import { getEffectiveReducedMotion, applyPerformanceDOMState, pageModuleVariants } from './lib/performanceEngine';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
@@ -172,17 +173,8 @@ function App() {
   }, [initialize]);
 
   useEffect(() => {
-    const mode = settings?.performanceMode || 'balanced';
-    document.documentElement.classList.remove('mode-performance', 'mode-balanced', 'mode-potato', 'reduce-blur', 'reduce-motion');
-    document.documentElement.classList.add(`mode-${mode}`);
-
-    if (mode === 'potato' || settings?.reduceAnimations) {
-      document.documentElement.classList.add('reduce-motion');
-    }
-    if (mode === 'potato' || mode === 'performance' || settings?.reduceBlur) {
-      document.documentElement.classList.add('reduce-blur');
-    }
-  }, [settings?.performanceMode, settings?.reduceBlur, settings?.reduceAnimations]);
+    applyPerformanceDOMState(settings);
+  }, [settings]);
 
   useEffect(() => {
     const applyTheme = () => {
@@ -241,7 +233,7 @@ function App() {
 
   return (
     <BugReportProvider>
-      <MotionConfig reducedMotion={settings?.performanceMode === 'potato' || settings?.reduceAnimations ? "always" : "user"}>
+      <MotionConfig reducedMotion={getEffectiveReducedMotion(settings)}>
         <AnimatePresence mode="wait">
           {!user ? (
             <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}>
@@ -299,15 +291,10 @@ function AppContent() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={activeModule}
-            initial={{ opacity: 0, y: 12, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.985 }}
-            transition={{
-              type: 'spring',
-              stiffness: 420,
-              damping: 30,
-              mass: 0.8
-            }}
+            variants={pageModuleVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="w-full"
             style={{ willChange: 'transform, opacity' }}
           >
