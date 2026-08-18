@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { IconTarget } from '@tabler/icons-react';
 import { type Habit } from '../../../store/types';
 import { Card } from '../../../components/ui/Card';
+import { useAppStore } from '../../../store/useAppStore';
 
 interface HabitChecklistProps {
   dueHabits: Habit[];
@@ -16,6 +17,7 @@ interface HabitChecklistProps {
 // Web Audio Tone Synthesis
 const playCheckSound = () => {
   try {
+    if (useAppStore.getState().settings.soundEnabled === false) return;
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();

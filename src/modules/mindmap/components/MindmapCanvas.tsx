@@ -296,31 +296,37 @@ export function MindmapCanvas({
     setDraggingNodeId(null);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-    const zoomFactor = 1.08;
-    let nextZoom = zoom;
-    if (e.deltaY < 0) {
-      nextZoom = Math.min(zoom * zoomFactor, 2.5);
-    } else {
-      nextZoom = Math.max(zoom / zoomFactor, 0.4);
-    }
+      const zoomFactor = 1.08;
+      let nextZoom = zoom;
+      if (e.deltaY < 0) {
+        nextZoom = Math.min(zoom * zoomFactor, 2.5);
+      } else {
+        nextZoom = Math.max(zoom / zoomFactor, 0.4);
+      }
 
-    const dx = mouseX - pan.x;
-    const dy = mouseY - pan.y;
+      const dx = mouseX - pan.x;
+      const dy = mouseY - pan.y;
 
-    setPan({
-      x: mouseX - dx * (nextZoom / zoom),
-      y: mouseY - dy * (nextZoom / zoom),
-    });
-    setZoom(nextZoom);
-  };
+      setPan({
+        x: mouseX - dx * (nextZoom / zoom),
+        y: mouseY - dy * (nextZoom / zoom),
+      });
+      setZoom(nextZoom);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [zoom, pan]);
 
   const handleDoubleClickCanvas = (e: React.MouseEvent) => {
     if (e.target !== e.currentTarget) return;
@@ -844,14 +850,13 @@ export function MindmapCanvas({
   }, [mindmap.nodes]);
 
   return (
-    <div className="flex-1 w-full h-full flex relative overflow-hidden">
+    <div className="flex-1 w-full h-full flex relative overflow-hidden touch-none">
       {/* Infinite Canvas */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onWheel={handleWheel}
         onDoubleClick={handleDoubleClickCanvas}
         className="flex-1 h-full select-none cursor-grab active:cursor-grabbing relative overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1.2px,transparent_1.2px)]"
         style={{
@@ -1204,7 +1209,7 @@ export function MindmapCanvas({
         </div>
 
         {/* Floating Canvas UI Indicators (Zoom state & Node search) */}
-        <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+        <div className="absolute top-4 left-4 flex items-center gap-1.5 sm:gap-2 z-30 flex-wrap sm:flex-nowrap max-w-[calc(100%-2rem)]">
           {/* Sidebar Toggle Button on top left */}
           <button
             type="button"
@@ -1217,7 +1222,7 @@ export function MindmapCanvas({
             {isLeftSidebarOpen ? <IconChevronLeft className="w-4 h-4" /> : <IconChevronRight className="w-4 h-4" />}
           </button>
 
-          <div className="bg-surface/80 border border-border/50 px-3 py-1.5 rounded-2xl text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
+          <div className="hidden sm:block bg-surface/80 border border-border/50 px-3 py-1.5 rounded-2xl text-[10px] font-black text-text-secondary uppercase tracking-widest backdrop-blur shadow-sm select-none">
             {zoom === 1 ? '100% Zoom' : `${Math.round(zoom * 100)}% Zoom`}
           </div>
 
@@ -1228,7 +1233,7 @@ export function MindmapCanvas({
               placeholder="Find node..."
               value={canvasSearchQuery}
               onChange={(e) => setCanvasSearchQuery(e.target.value)}
-              className="bg-transparent border-none pl-8 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-0 text-text-primary placeholder:text-text-muted w-28 focus:w-44 transition-all duration-300 rounded-2xl"
+              className="bg-transparent border-none pl-8 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-0 text-text-primary placeholder:text-text-muted w-24 sm:w-28 focus:w-40 transition-all duration-300 rounded-2xl"
             />
             {canvasSearchQuery && (
               <button
@@ -1243,7 +1248,7 @@ export function MindmapCanvas({
         </div>
 
         {/* Zoom and layout controls vertical popover menu */}
-        <div className="absolute bottom-4 left-4 z-20 flex flex-col items-center gap-2.5">
+        <div className="absolute bottom-24 md:bottom-4 left-4 z-30 flex flex-col items-center gap-2.5">
           {/* Expanded Zoom Popover Items */}
           {isZoomMenuOpen && (
             <div className="flex flex-col gap-2 animate-fade-in-up">
@@ -1379,7 +1384,7 @@ export function MindmapCanvas({
         </div>
 
         {/* Floating Apple-Style Toolbar at Top Center */}
-        <div className="absolute top-16 md:top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-3 bg-surface/90 border border-border/60 p-1.5 sm:p-2 rounded-2xl shadow-xl backdrop-blur-md max-w-[95vw] md:max-w-2xl w-fit z-20 overflow-x-auto no-scrollbar flex-nowrap shrink-0">
+        <div className="absolute top-16 md:top-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 sm:gap-3 bg-surface/90 border border-border/60 p-1.5 sm:p-2 rounded-2xl shadow-xl backdrop-blur-md w-[95vw] md:max-w-2xl md:w-fit z-20 flex-wrap shrink-0">
           <button
             onClick={() => setIsFullScreen(!isFullScreen)}
             className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all border-none bg-transparent cursor-pointer shrink-0 ${

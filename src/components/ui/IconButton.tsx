@@ -14,6 +14,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         variant={variant}
         size={size}
         isSquare
+        data-bug-target={(props as any)['data-bug-target'] || 'icon-button'}
         className={className}
         {...props}
       >

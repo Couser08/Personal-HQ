@@ -11,6 +11,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        data-bug-target={(props as any)['data-bug-target'] || `button-${variant}`}
         className={`btn btn-${variant} btn-${size} ${isSquare ? 'btn-square' : ''} ${className}`}
         {...props}
       >

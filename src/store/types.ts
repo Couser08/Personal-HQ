@@ -704,13 +704,25 @@ export interface PomodoroStats {
 }
 
 export type BugReportSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
-export type BugReportStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+export type BugReportStatus =
+  | 'open'
+  | 'in_review'
+  | 'fixed_pending_verification'
+  | 'verified_done'
+  | 'reopened'
+  // Backward compatibility legacy values
+  | 'Open'
+  | 'In Progress'
+  | 'Resolved'
+  | 'Closed';
 export type BugReportCategory = 'UI Glitch' | 'Performance' | 'Data Sync' | 'Crash / Error' | 'Other';
 
 export interface BugReportElementItem {
   tag: string;
   id?: string;
   classes: string[];
+  ancestorPath?: string;
+  dataAttributes?: Record<string, string>;
   selector: string;
   innerTextSnippet?: string;
   pageModule?: string;
@@ -730,6 +742,10 @@ export interface BugReportElementInfo {
   tag: string;
   id?: string;
   classes: string[];
+  ancestorPath?: string;
+  dataAttributes?: Record<string, string>;
+  sectionName?: string;
+  pageRoute?: string;
   selector: string;
   xpath?: string;
   boundingRect: {
@@ -745,6 +761,7 @@ export interface BugReportElementInfo {
     height: number;
     scrollX: number;
     scrollY: number;
+    devicePixelRatio?: number;
   };
   innerTextSnippet?: string;
   isGroup?: boolean;
@@ -756,6 +773,7 @@ export interface BugReport {
   id: string;
   userId?: string;
   userEmail?: string;
+  reporter?: string;
   title: string;
   description: string;
   category: BugReportCategory;
@@ -763,9 +781,16 @@ export interface BugReport {
   status: BugReportStatus;
   elementInfo?: BugReportElementInfo;
   route: string;
+  pageRoute?: string;
+  sectionName?: string;
   screenshotData?: string;
   markdownContent?: string;
   userAgent?: string;
+  fixedInFiles?: string[] | string;
+  fixNotes?: string;
+  verificationNotes?: string;
+  fixedAt?: string;
+  verifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

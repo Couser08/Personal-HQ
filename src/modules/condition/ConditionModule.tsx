@@ -299,8 +299,8 @@ export default function ConditionModule() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.93, y: 24 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="relative bg-surface border border-border rounded-[28px] shadow-2xl z-10 flex flex-col overflow-hidden"
-              style={{ maxWidth: `${logicalWidth + 48}px`, width: '100%' }}
+              className="relative bg-surface border border-border rounded-[28px] shadow-2xl z-10 flex flex-col overflow-y-auto max-h-[85vh]"
+              style={{ maxWidth: `${logicalWidth + 48}px`, width: '100%', maxHeight: '85vh' }}
             >
               <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/40">
                 <div>

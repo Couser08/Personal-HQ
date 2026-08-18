@@ -93,6 +93,16 @@ export function BugReportModal() {
             <div className="flex-1 flex flex-col justify-between w-full overflow-hidden">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
+                  {capturedElement?.sectionName && (
+                    <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      📍 {capturedElement.sectionName}
+                    </span>
+                  )}
+                  {capturedElement?.pageRoute && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-surface text-text-secondary border border-border">
+                      {capturedElement.pageRoute}
+                    </span>
+                  )}
                   {capturedElement?.isGroup ? (
                     <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
                       Group ({capturedElement.groupCount || capturedElement.groupElements?.length} items)
@@ -114,9 +124,18 @@ export function BugReportModal() {
                   )}
                 </div>
 
-                <p className="text-[11px] font-mono text-text-secondary truncate bg-surface px-2.5 py-1 rounded-lg border border-border/60">
-                  {capturedElement?.selector || 'Custom Element'}
-                </p>
+                <div className="bg-surface px-2.5 py-1.5 rounded-lg border border-border/60">
+                  <span className="text-[9.5px] uppercase font-bold text-text-muted block mb-0.5">Ancestor Path</span>
+                  <p className="text-[11px] font-mono text-text-primary break-all">
+                    {capturedElement?.ancestorPath || capturedElement?.selector || 'Custom Element'}
+                  </p>
+                </div>
+
+                {capturedElement?.classes && capturedElement.classes.length > 0 && (
+                  <div className="text-[10px] font-mono text-text-muted truncate">
+                    <span className="font-bold text-text-secondary">Classes ({capturedElement.classes.length}):</span> {capturedElement.classes.slice(0, 5).join(', ')}{capturedElement.classes.length > 5 ? '...' : ''}
+                  </div>
+                )}
 
                 {capturedElement?.isGroup && capturedElement.groupElements && capturedElement.groupElements.length > 0 ? (
                   <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
@@ -131,7 +150,7 @@ export function BugReportModal() {
                           </span>
                         )}
                         <span className="font-bold text-text-primary shrink-0">&lt;{el.tag}&gt;</span>
-                        <span className="truncate flex-1">{el.selector}</span>
+                        <span className="truncate flex-1">{el.ancestorPath || el.selector}</span>
                       </div>
                     ))}
                   </div>
@@ -145,7 +164,7 @@ export function BugReportModal() {
               </div>
 
               <span className="text-[10px] text-text-muted mt-2 block">
-                Metadata, viewport & coordinates will be attached automatically to the report.
+                Fingerprint, viewport & coordinates will be attached automatically to the report.
               </span>
             </div>
           </div>

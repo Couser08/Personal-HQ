@@ -72,12 +72,8 @@ export const createJournalSlice: StateCreator<
     try {
       await journalService.update(id, data, uid);
       if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.journals.all(uid) });
-      useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
     } catch (error) {
-      localStorage.setItem('phq_journals', JSON.stringify(previous));
-      set({ journals: previous });
-      useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update journal entry'), 'error');
-      throw error;
+      console.warn('Journal background sync warning:', error);
     }
   },
   deleteJournalEntry: async (id) => {

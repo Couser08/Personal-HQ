@@ -85,6 +85,29 @@ For a personal productivity app, the user notices friction on WRITE actions (add
 
 ---
 
+## 6. Bug-Pull Workflow (when asked to "pull bugs from the reporter")
+
+Do NOT jump straight to fixing individual bugs. Always follow this exact 6-step sequence:
+
+1. **REVIEW ALL**: Pull every open/reopened bug from `bug_reports` (via Supabase or `useBugReportStore`), read title, description, element fingerprint (ancestor path, classList, data attributes), section name, and visual screenshot before touching any code.
+2. **EVALUATE**: For each bug, cross-check against the app's rule files (`rules/ui-ux-rules.md`, `rules/behavior-rules.md`, `rules/motion-animation-rules.md`, `rules/performance-tuning-rules.md`, `rules/responsiveness-rules.md`, `rules/caching-rules.md`) to determine category and violated rule.
+3. **GROUP**: Cluster bugs that share a systemic root cause into grouped fixes.
+4. **PLAN**: Produce a written fix plan before writing code (which bugs, which root cause, which files/components affected, order of execution).
+5. **FIX**: Implement fixes according to the plan.
+6. **HAND OFF FOR VERIFICATION**: Do NOT mark a bug "done" directly. Call `bugReportService.handOffForVerification(bugId, changedFiles, fixNotes)` or set status to `fixed_pending_verification`, surfacing it to the Admin Panel with: what was fixed, which files changed, before/after note.
+
+---
+
+## 7. Admin Verification Loop
+
+- Admin panel displays all bugs categorized by status: `open`, `in_review`, `fixed_pending_verification`, `verified_done`, `reopened`.
+- For bugs in `fixed_pending_verification`:
+  - **Verify as Fixed**: Admin marks bug as `verified_done` (archived, counts toward release fixed count).
+  - **Not Fixed / Reopen**: Admin marks bug as `reopened` with explanatory notes, returning it to the next bug-pull cycle.
+- Only bugs in `verified_done` count toward the release's fixed-bug tally.
+
+---
+
 ## Build/Fix Priority Order
 
 If asked to "make this app better" without more specific direction, work in this order:

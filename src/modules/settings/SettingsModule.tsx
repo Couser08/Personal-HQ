@@ -1105,6 +1105,24 @@ export default function SettingsModule() {
                 />
               </div>
 
+              {/* Sound Effects */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
+                <div className="flex flex-col pr-2">
+                  <span className="text-xs font-bold text-text-primary">Sound Effects</span>
+                  <span className="text-[11px] text-text-muted mt-0.5">
+                    Haptic audio feedback for tasks and interactions.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  checked={settings.soundEnabled !== false}
+                  onChange={() => {
+                    const next = settings.soundEnabled === false;
+                    updateSettings({ soundEnabled: next });
+                    addToast(next ? 'Sound Effects Enabled' : 'Sound Effects Disabled', next ? 'Web audio haptics active' : 'Audio feedback muted', 'info');
+                  }}
+                />
+              </div>
+
               {/* Ambient Waves */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-surface-alt/40 border border-border/80">
                 <div className="flex flex-col pr-2">

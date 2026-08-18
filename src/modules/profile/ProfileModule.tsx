@@ -224,14 +224,14 @@ export default function ProfileModule() {
         <div className="h-px w-full bg-border-hairline my-8" />
 
         {/* About & Stats */}
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex-1 space-y-3">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
+          <div className="flex-1 space-y-3 min-w-0">
             <h3 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-text-tertiary">About Me</h3>
             <p className="text-[14px] leading-relaxed text-text-secondary whitespace-pre-wrap">
               {userAbout}
             </p>
           </div>
-          <div className="flex gap-4 md:flex-col md:w-32 shrink-0">
+          <div className="flex flex-wrap gap-4 md:flex-col md:w-32 shrink-0">
             <StatCard icon={<IconNotes size={20} stroke={1.75} />} value={totalNotes} label="Notes" />
             <StatCard icon={<IconLink size={20} stroke={1.75} />} value={totalLinks} label="Links" />
           </div>
@@ -311,21 +311,22 @@ export default function ProfileModule() {
       </div>
 
       {/* ── Danger Zone ── */}
-      <section className="flex flex-col gap-3 mt-4">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-accent-danger ml-2">Danger Zone</h2>
-        <Card padding="none" className="bg-transparent shadow-none border border-accent-danger/20">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 gap-6">
-            <div>
-              <p className="text-[16px] font-semibold text-accent-danger">Delete Account</p>
-              <p className="text-[14px] text-text-secondary mt-1 max-w-sm leading-relaxed">
-                Permanently remove your account and all associated data. This action cannot be undone.
+      <section className="flex flex-col gap-3 mt-4 w-full">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-rose-500 ml-2">Danger Zone</h2>
+        <Card padding="none" className="border border-rose-500/30 rounded-2xl shadow-sm overflow-hidden w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-4">
+            <div className="flex-1 min-w-0 pr-2">
+              <p className="text-[15px] font-bold text-rose-500 truncate">Delete Account</p>
+              <p className="text-[13px] text-text-secondary mt-1">
+                Permanently remove your account and data.
               </p>
             </div>
             <button 
-              onClick={handleDeleteAccount} 
-              className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-accent-danger text-accent-danger hover:bg-accent-danger hover:text-white text-[14px] font-semibold flex items-center justify-center gap-2 transition-colors shrink-0 cursor-pointer"
+              onClick={handleDeleteAccount}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl border border-rose-500/40 text-rose-500 hover:bg-rose-500 hover:text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
             >
-              <IconTrash size={18} stroke={1.75} /> Delete Account
+              <IconTrash size={16} stroke={1.75} />
+              <span>Delete</span>
             </button>
           </div>
         </Card>

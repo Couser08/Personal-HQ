@@ -170,8 +170,8 @@ export default function DrawingModule() {
 
   // Seed default drawing sketch note if list is loaded but no sketches exist
   useEffect(() => {
-    const list = notes.filter(n => n.tags && n.tags.includes('sketch'));
-    if (list.length === 0) {
+    const hasExistingSketch = notes.some(n => n.id === DEFAULT_SKETCH_ID || (n.tags && n.tags.includes('sketch')));
+    if (!hasExistingSketch && notes.length > 0) {
       addNote({
         id: DEFAULT_SKETCH_ID,
         title: 'First Sketch',

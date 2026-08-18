@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   IconSparkles,
   IconShare,
-  IconBell,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLayoutSidebarRightCollapse,
@@ -11,7 +10,6 @@ import {
   IconEdit,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../../store/useAppStore';
-import { useAuthStore } from '../../../store/useAuthStore';
 import type { VisionBoard } from '../../../store/types';
 
 interface VisionHeaderProps {
@@ -22,8 +20,8 @@ interface VisionHeaderProps {
   setLeftSidebarOpen: (v: boolean | ((prev: boolean) => boolean)) => void;
   rightSidebarOpen: boolean;
   setRightSidebarOpen: (v: boolean | ((prev: boolean) => boolean)) => void;
-  viewTab: 'DASHBOARD' | 'MY BOARDS';
-  setViewTab: (tab: 'DASHBOARD' | 'MY BOARDS') => void;
+  viewTab?: 'DASHBOARD' | 'MY BOARDS';
+  setViewTab?: (tab: 'DASHBOARD' | 'MY BOARDS') => void;
 }
 
 export const VisionHeader: React.FC<VisionHeaderProps> = ({
@@ -34,11 +32,8 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
   setLeftSidebarOpen,
   rightSidebarOpen,
   setRightSidebarOpen,
-  viewTab,
-  setViewTab,
 }) => {
   const { focusMode, setFocusMode, updateBoard } = useAppStore();
-  const user = useAuthStore((s) => s.user);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(board.title);
@@ -88,49 +83,15 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
           </div>
         </div>
 
-        {/* MIDDLE ZONE: Tabs & Active Board Title */}
+        {/* MIDDLE ZONE: Active Board Title & Inline Editing */}
         <div className="flex flex-col items-center justify-center min-w-0 flex-1 px-1 sm:px-4">
-          {/* Top Tabs */}
-          <div className="flex items-center gap-6 text-[11px] sm:text-[12px] font-bold tracking-wider uppercase mb-1">
-            <button
-              type="button"
-              onClick={() => setViewTab('DASHBOARD')}
-              className={`pb-1 relative transition-colors cursor-pointer ${
-                viewTab === 'DASHBOARD'
-                  ? 'text-text-primary font-black'
-                  : 'text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              Dashboard
-              {viewTab === 'DASHBOARD' && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-text-primary rounded-full" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewTab('MY BOARDS')}
-              className={`pb-1 relative transition-colors cursor-pointer ${
-                viewTab === 'MY BOARDS'
-                  ? 'text-text-primary font-black'
-                  : 'text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              My Boards
-              {viewTab === 'MY BOARDS' && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-text-primary rounded-full" />
-              )}
-            </button>
-          </div>
-
-          {/* Board Title & Subtitle */}
           {isEditingTitle ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-w-full">
               <input
                 type="text"
                 value={titleInput}
                 onChange={(e) => setTitleInput(e.target.value)}
-                className="px-2.5 py-1 text-[13px] sm:text-[15px] font-black uppercase tracking-wider rounded-lg bg-surface border border-primary text-text-primary focus:outline-none"
+                className="px-2.5 py-1 text-[13px] sm:text-[15px] font-black uppercase tracking-wider rounded-lg bg-surface border border-primary text-text-primary focus:outline-none max-w-[140px] sm:max-w-[200px]"
                 autoFocus
               />
               <input
@@ -138,7 +99,7 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
                 value={subtitleInput}
                 onChange={(e) => setSubtitleInput(e.target.value)}
                 placeholder="Subtitle"
-                className="hidden sm:block px-2 py-1 text-[11px] rounded-lg bg-surface border border-border text-text-secondary focus:outline-none"
+                className="hidden sm:block px-2 py-1 text-[11px] rounded-lg bg-surface border border-border text-text-secondary focus:outline-none max-w-[150px]"
               />
               <button
                 type="button"
@@ -170,7 +131,7 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
                 />
               </div>
               {board.subtitle && (
-                <span className="text-[10px] sm:text-[11.5px] font-medium text-text-tertiary">
+                <span className="hidden sm:inline text-[10px] sm:text-[11.5px] font-medium text-text-tertiary truncate">
                   {board.subtitle}
                 </span>
               )}
@@ -178,7 +139,7 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
           )}
         </div>
 
-        {/* RIGHT ZONE: Focus Mode, Share, Discover, Notifications, Profile, Affirmations Toggle */}
+        {/* RIGHT ZONE: Focus Mode, Share, Discover, Affirmations Toggle */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Focus Mode Switch */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-alt border border-border">
@@ -223,28 +184,6 @@ export const VisionHeader: React.FC<VisionHeaderProps> = ({
             <IconSparkles size={15} className="text-primary" />
             <span className="hidden md:inline">Discover</span>
           </button>
-
-          {/* Notification Bell */}
-          <div className="relative">
-            <button
-              type="button"
-              className="w-10 h-10 rounded-xl bg-surface-alt hover:bg-surface border border-border text-text-secondary hover:text-text-primary flex items-center justify-center transition-all cursor-pointer shadow-xs"
-              title="Notifications"
-            >
-              <IconBell size={18} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface" />
-            </button>
-          </div>
-
-          {/* User Profile Pill */}
-          <div className="flex items-center gap-2 pl-1">
-            <div className="w-9 h-9 rounded-full bg-text-primary text-text-on-accent font-black text-[12px] flex items-center justify-center shadow-xs select-none ring-2 ring-surface">
-              {user?.email ? user.email.slice(0, 2).toUpperCase() : 'AR'}
-            </div>
-            <span className="hidden xl:inline text-[12.5px] font-bold text-text-primary">
-              {user?.email?.split('@')[0] || 'Anushka Rao'}
-            </span>
-          </div>
 
           {/* RIGHT SIDEBAR (Affirmations) Toggle */}
           <button

@@ -90,7 +90,7 @@ export function StudyMaterialFlashcards({ material, onBack }: Props) {
             <IconWand size={32} />
           </div>
           <h3 className="text-2xl font-black text-text-primary mb-2">No Flashcards Yet</h3>
-          <p className="text-text-secondary max-w-sm mb-8 text-sm">
+          <p className="text-text-secondary w-full max-w-2xl mb-8 text-sm">
             Generate AI flashcards unit-by-unit based on your study material for rapid review.
           </p>
           <button 

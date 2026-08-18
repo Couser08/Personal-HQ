@@ -264,15 +264,16 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
     setActiveModal('edit-book-details');
   };
 
-  const getStickyPositionClasses = (position?: string) => {
+  const getStickyPositionClasses = (position?: string, idx: number = 0) => {
+    const offset = (idx % 3) * 26;
     switch (position) {
       case 'middle-left':
-        return 'absolute left-[-20px] sm:left-[-40px] top-[40%] -translate-y-1/2 pointer-events-auto z-20';
+        return `absolute left-[-15px] sm:left-[-35px] top-[calc(35%+${offset}px)] -translate-y-1/2 pointer-events-auto z-20`;
       case 'top-right':
-        return 'absolute right-[-20px] sm:right-[-45px] top-6 pointer-events-auto z-20';
+        return `absolute right-[-15px] sm:right-[-35px] top-[calc(20px+${offset}px)] pointer-events-auto z-20`;
       case 'bottom-right':
       default:
-        return 'absolute right-[-20px] sm:right-[-45px] bottom-12 pointer-events-auto z-20';
+        return `absolute right-[-15px] sm:right-[-35px] bottom-[calc(40px+${offset}px)] pointer-events-auto z-20`;
     }
   };
 
@@ -1079,14 +1080,14 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
         {/* Centered Ruled Notebook Area */}
         <div className={`flex-1 rounded-2xl p-3.5 sm:p-8 flex flex-col justify-between relative transition-shadow duration-300 shadow-high ${
           isEditMode 
-            ? 'bg-vellum border-l-[14px] border-l-amber-800 dark:border-l-zinc-900 border border-border' 
+            ? 'bg-vellum md:border-l-[14px] border-l-0 border-l-amber-800 dark:border-l-zinc-900 border border-border' 
             : readingStyle === 'warm'
-            ? 'bg-vellum border-l-[14px] border-l-amber-800 border border-[#D4C4A0]'
+            ? 'bg-vellum md:border-l-[14px] border-l-0 border-l-amber-800 border border-[#D4C4A0]'
             : readingStyle === 'minimal'
             ? 'bg-white border border-slate-200'
             : readingStyle === 'scholar'
-            ? 'bg-[#0f172a] border-l-[14px] border-l-zinc-900 border border-slate-800'
-            : 'bg-vellum border-l-[14px] border-l-[#5c7a61] border border-[#B5CDB8]'
+            ? 'bg-[#0f172a] md:border-l-[14px] border-l-0 border-l-zinc-900 border border-slate-800'
+            : 'bg-vellum md:border-l-[14px] border-l-0 border-l-[#5c7a61] border border-[#B5CDB8]'
         }`}
         style={!isEditMode && readingStyle !== 'scholar' && readingStyle !== 'minimal' ? {
           background: readingStyle === 'warm'
@@ -1095,8 +1096,8 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
         } : undefined}>
           
           {/* Fold/Crease effect down the middle simulating binding shadows */}
-          <div className="absolute top-0 bottom-0 w-6 -translate-x-1/2 pointer-events-none left-1/2 bg-gradient-to-r from-black/0 via-black/8 dark:via-black/35 to-black/0 z-20" />
-          <div className="absolute top-0 bottom-0 w-[1px] -translate-x-1/2 pointer-events-none left-1/2 bg-black/10 dark:bg-white/5 z-20" />
+          <div className="hidden md:block absolute top-0 bottom-0 w-6 -translate-x-1/2 pointer-events-none left-1/2 bg-gradient-to-r from-black/0 via-black/8 dark:via-black/35 to-black/0 z-20" />
+          <div className="hidden md:block absolute top-0 bottom-0 w-[1px] -translate-x-1/2 pointer-events-none left-1/2 bg-black/10 dark:bg-white/5 z-20" />
 
           {/* Book Sheets Spread layout */}
           <div className="relative z-10 grid flex-1 grid-cols-1 gap-8 md:grid-cols-2">
@@ -1218,7 +1219,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
               {book.stickyNotes
                 .filter((n) => n.pageNumber === book.currentPage)
                 .map((note, idx) => (
-                  <div key={note.id} className={getStickyPositionClasses(note.position)}>
+                  <div key={note.id} className={getStickyPositionClasses(note.position, idx)}>
                     {renderStickyNoteCard(note, idx)}
                   </div>
                 ))}
@@ -1338,7 +1339,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
               {book.stickyNotes
                 .filter((n) => n.pageNumber === book.currentPage + 1)
                 .map((note, idx) => (
-                  <div key={note.id} className={getStickyPositionClasses(note.position)}>
+                  <div key={note.id} className={getStickyPositionClasses(note.position, idx)}>
                     {renderStickyNoteCard(note, idx)}
                   </div>
                 ))}
@@ -1669,7 +1670,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
       </AnimatePresence>
 
       {/* ─── Bottom Formatting Toolbar ─── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-3 border bg-surface border-border rounded-2xl">
+      <div className="flex items-center justify-between gap-3 p-2.5 sm:p-3 border bg-surface border-border rounded-2xl overflow-x-auto custom-scrollbar no-scrollbar flex-nowrap md:flex-wrap">
         
         {/* Zoom & Font selection */}
         <div className="flex items-center gap-3">
@@ -1952,7 +1953,7 @@ export const NotebookEditor: React.FC<NotebookEditorProps> = ({ bookId, onBack }
       {/* Custom Modals Overlay */}
       {activeModal && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-9999 bg-black/50 backdrop-blur-[3px] animate-fadeIn">
-          <div className="bg-surface border border-border w-full max-w-[30%] rounded-2xl shadow-2xl flex flex-col text-left overflow-hidden" style={{ maxHeight: '85vh' }}>
+          <div className="bg-surface border border-border w-full max-w-lg min-w-0 mx-4 rounded-2xl shadow-2xl flex flex-col text-left overflow-hidden" style={{ maxHeight: '85vh' }}>
             
             {/* Modal 1 & 2: Topic Modals */}
             {(activeModal === 'add-topic' || activeModal === 'edit-topic') && (

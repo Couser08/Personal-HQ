@@ -179,6 +179,7 @@ export default function PomodoroModule() {
 
   return (
     <motion.div
+      data-component="PomodoroModule"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
@@ -355,7 +356,7 @@ export default function PomodoroModule() {
       </div>
 
       {/* Main Clock Card */}
-      <Card padding="lg" className="flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 relative overflow-hidden">
+      <Card padding="lg" className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-12 relative overflow-hidden p-5 sm:p-8">
         {/* Left pane: digital clock & controls */}
         <div className="flex-1 flex flex-col justify-center gap-6 text-center md:text-left w-full">
           <div>

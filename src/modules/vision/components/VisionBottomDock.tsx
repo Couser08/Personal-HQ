@@ -95,7 +95,7 @@ export const VisionBottomDock: React.FC<VisionBottomDockProps> = ({ onFitView })
           <button
             type="button"
             onClick={() => setCanvasZoom((z) => Math.max(0.25, +(z - 0.15).toFixed(2)))}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt flex items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+            className="hidden sm:flex w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
             title="Zoom Out (Press - or [ )"
             aria-label="Zoom Out"
           >
@@ -107,7 +107,7 @@ export const VisionBottomDock: React.FC<VisionBottomDockProps> = ({ onFitView })
             <button
               type="button"
               onClick={() => setShowZoomMenu((prev) => !prev)}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl sm:rounded-2xl text-[12.5px] font-black text-text-primary hover:bg-surface-alt transition-all cursor-pointer min-w-[70px] justify-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+              className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl sm:rounded-2xl text-[11.5px] sm:text-[12.5px] font-black text-text-primary hover:bg-surface-alt transition-all cursor-pointer min-w-[55px] sm:min-w-[70px] justify-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
               title="Zoom Presets"
               aria-label={`Current Zoom: ${zoomPercent}%`}
             >
@@ -168,20 +168,20 @@ export const VisionBottomDock: React.FC<VisionBottomDockProps> = ({ onFitView })
           <button
             type="button"
             onClick={() => setCanvasZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt flex items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+            className="hidden sm:flex w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
             title="Zoom In (Press + or = or ] )"
             aria-label="Zoom In"
           >
             <IconZoomIn size={18} />
           </button>
 
-          <div className="w-[1px] h-7 bg-border mx-1" />
+          <div className="hidden sm:block w-[1px] h-7 bg-border mx-1" />
 
           {/* Reset / Center View Button */}
           <button
             type="button"
             onClick={resetCanvasView}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt flex items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+            className="hidden sm:flex w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-alt items-center justify-center transition-all cursor-pointer focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
             title="Reset 100% (Press 0)"
             aria-label="Reset View to 100%"
           >

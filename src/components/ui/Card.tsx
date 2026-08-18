@@ -23,6 +23,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
+        data-bug-target={(props as any)['data-bug-target'] || 'card'}
         className={`bg-surface rounded-[var(--radius-card)] border-none ${shadowClass} ${paddingClass} ${className}`}
         {...props}
       >

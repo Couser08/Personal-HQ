@@ -40,6 +40,8 @@ export const VisionExportModal: React.FC<VisionExportModalProps> = ({
         cacheBust: true,
         quality: 0.95,
         backgroundColor: '#f8fafc',
+        skipFonts: true,
+        fontEmbedCSS: '',
       });
       const link = document.createElement('a');
       link.download = `${board.title.toLowerCase().replace(/\s+/g, '-')}-vision-board.png`;

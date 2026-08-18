@@ -391,7 +391,7 @@ export default function TilModule() {
                   </div>
 
                   {/* Main feed Card content */}
-                  <div className="flex-grow bg-surface border border-border/55 rounded-[28px] p-6 shadow-sm flex flex-col gap-3 relative hover:shadow-md hover:border-border transition-all">
+                  <div className="flex-grow min-w-0 max-w-full bg-surface border border-border/55 rounded-[28px] p-4 sm:p-6 shadow-sm flex flex-col gap-3 relative hover:shadow-md hover:border-border transition-all">
                     
                     {/* Top Row Title / Actions */}
                     <div className="flex items-start justify-between gap-4">

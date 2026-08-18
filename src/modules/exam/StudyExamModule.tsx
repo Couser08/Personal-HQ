@@ -130,19 +130,19 @@ export default function StudyExamModule() {
 function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSelect, onDelete }: any) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-text-primary flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-text-primary flex items-center gap-3">
             <IconBrain size={32} className="text-primary" />
             AI Exam Prep
           </h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-text-secondary mt-1">
             Turn your study notes into challenging exams and get conceptually graded.
           </p>
         </div>
         <button
           onClick={onAdd}
-          className="bg-primary hover:opacity-90 text-text-on-accent px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+          className="bg-primary hover:opacity-90 text-text-on-accent px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shrink-0"
         >
           <IconPlus size={18} /> Ingest Content
         </button>
@@ -150,10 +150,10 @@ function MaterialLibrary({ materials, exams, onAdd, onRead, onFlashcards, onSele
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {materials.length === 0 ? (
-          <div className="col-span-full py-16 text-center border-2 border-dashed border-border rounded-2xl bg-surface/50">
+          <div className="col-span-full py-16 px-4 text-center border-2 border-dashed border-border rounded-2xl bg-surface/50">
             <IconBook className="mx-auto text-text-secondary/50 mb-3" size={40} />
             <h3 className="text-lg font-bold text-text-secondary mb-1">No Study Materials</h3>
-            <p className="text-sm text-text-tertiary max-w-sm mx-auto mb-4">
+            <p className="text-sm text-text-tertiary w-full max-w-md mx-auto mb-4">
               Upload or paste your notes, textbook chapters, or PDFs to generate exams.
             </p>
             <button onClick={onAdd} className="bg-surface border border-primary/20 text-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary hover:text-text-on-accent transition-colors cursor-pointer">

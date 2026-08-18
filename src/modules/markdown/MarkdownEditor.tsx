@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   IconDownload, IconCopy, IconFileText, IconCheck, IconChevronRight, IconChevronLeft,
   IconBold, IconItalic, IconH1, IconH2, IconListCheck, IconQuote, IconTable,
-  IconEye, IconMinimize
+  IconSparkles, IconMinimize
 } from '@tabler/icons-react';
 
 interface SlashCommand {
@@ -109,7 +109,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           {!isFocusMode && (
             <button
               onClick={() => setActiveDocId(null)}
-              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer font-sans shrink-0"
+              className="hidden lg:flex px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary text-[11px] sm:text-xs font-bold transition-all items-center gap-1 cursor-pointer font-sans shrink-0"
             >
               ← Docs
             </button>
@@ -174,9 +174,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                   ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 hover:bg-amber-500/20' 
                   : 'border-border bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary'
               }`}
-              title={isFocusMode ? "Exit Zen Mode" : "Enter Zen Focus Mode"}
+              title={isFocusMode ? "Exit Focus Mode" : "Focus Mode"}
             >
-              {isFocusMode ? <IconMinimize size={14} /> : <IconEye size={14} />}
+              {isFocusMode ? <IconMinimize size={14} /> : <IconSparkles size={14} />}
             </button>
           )}
 
@@ -205,7 +205,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       </div>
 
       {/* Format Toolbar */}
-      <div className="flex items-center gap-1 bg-surface-alt p-1.5 rounded-xl border border-border/50 select-none overflow-x-auto custom-scrollbar shrink-0">
+      <div className="sticky top-0 z-20 flex items-center gap-1 bg-surface-alt p-1.5 rounded-xl border border-border/50 select-none overflow-x-auto custom-scrollbar shrink-0 backdrop-blur-md">
         <button onClick={() => insertSyntax('**Bold**', 2)} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary hover:text-text-primary border-none cursor-pointer shrink-0" title="Bold"><IconBold size={15} /></button>
         <button onClick={() => insertSyntax('*Italic*', 1)} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary hover:text-text-primary border-none cursor-pointer shrink-0" title="Italic"><IconItalic size={15} /></button>
         <button onClick={() => insertSyntax('# ', 0)} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary hover:text-text-primary border-none cursor-pointer shrink-0" title="Heading 1"><IconH1 size={15} /></button>

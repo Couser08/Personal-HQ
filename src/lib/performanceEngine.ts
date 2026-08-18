@@ -50,17 +50,21 @@ export function applyPerformanceDOMState(settings?: Partial<AppSettings>): void 
 
   // Clear previous mode classes
   root.classList.remove('mode-performance', 'mode-balanced', 'mode-potato', 'reduce-blur', 'reduce-motion');
+  document.body?.classList.remove('mode-performance', 'mode-balanced', 'mode-potato', 'reduce-blur', 'reduce-motion');
 
   // Add active mode class
   root.classList.add(`mode-${mode}`);
+  document.body?.classList.add(`mode-${mode}`);
 
   // Apply conditional flags
   if (reduceAnimations || mode === 'potato') {
     root.classList.add('reduce-motion');
+    document.body?.classList.add('reduce-motion');
   }
 
   if (reduceBlur || mode === 'performance' || mode === 'potato') {
     root.classList.add('reduce-blur');
+    document.body?.classList.add('reduce-blur');
   }
 }
 

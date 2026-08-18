@@ -57,11 +57,12 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 left-0 right-0 z-40 md:hidden w-full shrink-0 bg-surface/90 backdrop-blur-2xl border-b border-border/60 px-3.5 py-2.5 flex items-center justify-between shadow-xs select-none">
+    <header data-component="MobileHeader" className="sticky top-0 left-0 right-0 z-40 md:hidden w-full shrink-0 bg-surface/90 backdrop-blur-2xl border-b border-border/60 px-3.5 py-2.5 flex items-center justify-between shadow-xs select-none">
       {/* Left: Drawer Trigger + App Logo */}
       <div className="flex items-center gap-2.5">
         <button
           type="button"
+          data-bug-target="mobile-menu-btn"
           onClick={onOpenDrawer}
           className="w-9 h-9 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-primary active:scale-95 transition-transform cursor-pointer"
           aria-label="Open Navigation Menu"

@@ -39,13 +39,37 @@ export function MonthlyCalendarView() {
 
   const selectedDateStr = useMemo(() => selectedDate.toLocaleDateString('en-CA'), [selectedDate]);
 
-  // Navigate months
-  const handlePrevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  // Navigate months, weeks, or days depending on activeViewTab
+  const handlePrev = () => {
+    if (activeViewTab === 'day') {
+      const prev = new Date(selectedDate);
+      prev.setDate(prev.getDate() - 1);
+      setSelectedDate(prev);
+      setCurrentMonth(prev);
+    } else if (activeViewTab === 'week') {
+      const prev = new Date(selectedDate);
+      prev.setDate(prev.getDate() - 7);
+      setSelectedDate(prev);
+      setCurrentMonth(prev);
+    } else {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    }
   };
 
-  const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const handleNext = () => {
+    if (activeViewTab === 'day') {
+      const next = new Date(selectedDate);
+      next.setDate(next.getDate() + 1);
+      setSelectedDate(next);
+      setCurrentMonth(next);
+    } else if (activeViewTab === 'week') {
+      const next = new Date(selectedDate);
+      next.setDate(next.getDate() + 7);
+      setSelectedDate(next);
+      setCurrentMonth(next);
+    } else {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    }
   };
 
   const handleToday = () => {
@@ -234,13 +258,13 @@ export function MonthlyCalendarView() {
             </h2>
             
             <div className="flex items-center bg-slate-50 dark:bg-surface border border-slate-200/60 dark:border-border/50 rounded-xl p-0.5 shadow-sm">
-              <button onClick={handlePrevMonth} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-white dark:hover:bg-surface-hover cursor-pointer border-none bg-transparent transition-all">
+              <button onClick={handlePrev} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-white dark:hover:bg-surface-hover cursor-pointer border-none bg-transparent transition-all">
                 <IconChevronLeft size={15} strokeWidth={2.5} />
               </button>
               <button onClick={handleToday} className="px-3.5 text-xs font-bold text-text-secondary hover:text-text-primary cursor-pointer border-none bg-transparent">
                 Today
               </button>
-              <button onClick={handleNextMonth} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-white dark:hover:bg-surface-hover cursor-pointer border-none bg-transparent transition-all">
+              <button onClick={handleNext} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-white dark:hover:bg-surface-hover cursor-pointer border-none bg-transparent transition-all">
                 <IconChevronRight size={15} strokeWidth={2.5} />
               </button>
             </div>
@@ -280,7 +304,7 @@ export function MonthlyCalendarView() {
         
         {/* Tab 1: Month View Grid */}
         {activeViewTab === 'month' && (
-          <div className="flex-grow grid grid-cols-7 grid-rows-[auto_repeat(6,_1fr)] min-h-[550px] bg-white dark:bg-surface/20">
+          <div className="flex-grow grid grid-cols-7 grid-rows-[auto_repeat(6,_1fr)] min-h-[360px] sm:min-h-[550px] bg-white dark:bg-surface/20">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
               <div key={i} className="border-b border-r border-slate-100 dark:border-border/50 py-3 text-center text-[10px] font-black text-text-muted uppercase tracking-widest bg-slate-50/50 dark:bg-surface-alt/20 last:border-r-0">
                 {d}

@@ -89,9 +89,14 @@ export function PlannerHeader({
             </motion.button>
             <button
               onClick={handleToday}
-              className="px-2.5 sm:px-3 text-[12px] font-extrabold text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              className={`px-2.5 sm:px-3 text-[12px] font-extrabold transition-colors cursor-pointer ${
+                isToday(currentDate)
+                  ? 'text-indigo-600 dark:text-indigo-400 font-black'
+                  : 'text-text-primary hover:text-indigo-600'
+              }`}
+              title={isToday(currentDate) ? 'Today' : 'Click to jump to Today'}
             >
-              Today
+              {isToday(currentDate) ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </button>
             <motion.button
               whileTap={{ scale: 0.92 }}

@@ -184,6 +184,7 @@ export const Sidebar = () => {
 
   return (
     <aside
+      data-component="Sidebar"
       className="sidebar-desktop select-none"
       style={{
         width: sidebarWidth,
@@ -214,6 +215,7 @@ export const Sidebar = () => {
             onClick={toggleCollapse}
             aria-label="Collapse Sidebar"
             aria-expanded={true}
+            data-bug-target="sidebar-toggle-btn"
             className="w-6 h-6 rounded-md hover:bg-surface-alt text-text-secondary hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors"
           >
             <IconChevronLeft size={14} />
@@ -224,6 +226,7 @@ export const Sidebar = () => {
             onClick={toggleCollapse}
             aria-label="Expand Sidebar"
             aria-expanded={false}
+            data-bug-target="sidebar-toggle-btn"
             className="w-6 h-6 rounded-md hover:bg-surface-alt text-text-secondary hover:text-text-primary flex items-center justify-center cursor-pointer transition-colors"
           >
             <IconChevronRight size={14} />
@@ -239,6 +242,7 @@ export const Sidebar = () => {
         {/* Home – always pinned */}
         <motion.button
           id="tour-dashboard"
+          data-bug-target="nav-item-dashboard"
           whileTap={{ scale: 0.98 }}
           onClick={() => setActiveModule('dashboard')}
           title={isCollapsed ? 'Home' : undefined}
@@ -417,6 +421,7 @@ export const Sidebar = () => {
                         return (
                           <motion.button
                             key={item.id}
+                            data-bug-target={`nav-item-${item.id}`}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setActiveModule(item.id)}
                             style={{

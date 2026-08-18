@@ -4,16 +4,22 @@ import { supabase } from '../../lib/supabase';
 import { 
   IconUpload, IconPhoto, IconTrash, IconLock, 
   IconShieldCheck, IconDeviceGamepad2, IconMovie,
-  IconBug, IconDownload, IconClipboardCopy, IconRefresh,
-  IconSearch, IconX, IconZoomIn, IconClock, IconCode
+  IconBug
 } from '@tabler/icons-react';
 import { useToastStore } from '../../store/useToastStore';
 import { useBugReportStore } from '../../store/useBugReportStore';
 import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
 import { Card } from '../../components/ui/Card';
-import { Modal } from '../../components/ui/Modal';
-import { type BugReport, type BugReportStatus } from '../../store/types';
+import { type BugReport, type BugReportSeverity } from '../../store/types';
 import { useBugReportsQuery } from '../../hooks/queries/useAdminBugReportsQuery';
+import { BugReportCard } from './components/BugReportCard';
+import { BugReportListItem } from './components/BugReportListItem';
+import { BugReportKanban } from './components/BugReportKanban';
+import { BugReportModuleMap } from './components/BugReportModuleMap';
+import { BugReportStats } from './components/BugReportStats';
+import { BugReportToolbar, type AdminViewMode } from './components/BugReportToolbar';
+import { BugReportDetailModal } from './components/BugReportDetailModal';
+import { isBugResolved } from './utils/bugReportHelpers';
 
 export default function AdminModule() {
   const { user } = useAuthStore();
@@ -34,19 +40,23 @@ export default function AdminModule() {
   const [mascotUploading, setMascotUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
 
-  // Bug reports filter state
+  // Bug reports filter & view state
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [severityFilter, setSeverityFilter] = useState<string>('All');
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [routeFilter, setRouteFilter] = useState<string>('All');
+  const [hasScreenshotFilter, setHasScreenshotFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'severity' | 'status'>('newest');
+  const [viewMode, setViewMode] = useState<AdminViewMode>('grid');
+
   const [selectedReport, setSelectedReport] = useState<BugReport | null>(null);
-  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
 
   const { data: queryReports, refetch: refetchReports } = useBugReportsQuery(isAdmin, user?.id);
   const activeReports = queryReports ?? reports;
-
 
   const loadAssets = (bustCache = false) => {
     const dashUrl = supabase.storage.from('avatars').getPublicUrl('global/dashboard_illustration.png').data.publicUrl;
@@ -69,36 +79,131 @@ export default function AdminModule() {
     setIsRefreshing(true);
     await refetchReports();
     setIsRefreshing(false);
-    addToast('Refreshed', 'Bug reports updated.', 'success');
+    addToast('Refreshed', 'Bug reports synced with database.', 'success');
   };
 
+  // Available unique routes
+  const availableRoutes = useMemo(() => {
+    const set = new Set<string>();
+    activeReports.forEach((r) => {
+      if (r.route) set.add(r.route.replace(/^\//, '').toLowerCase());
+    });
+    return Array.from(set).sort();
+  }, [activeReports]);
 
-  // Filtered bug reports
+  // Filtered and sorted bug reports
   const filteredReports = useMemo(() => {
-    return activeReports.filter(r => {
-      if (statusFilter !== 'All' && r.status !== statusFilter) return false;
+    const result = activeReports.filter(r => {
+      if (statusFilter !== 'All') {
+        const normStatus = String(r.status).toLowerCase();
+        const normFilter = statusFilter.toLowerCase();
+        if (normFilter === 'open' && normStatus !== 'open') return false;
+        if (normFilter === 'in_review' && normStatus !== 'in_review' && (normStatus as string) !== 'in progress') return false;
+        if (normFilter === 'fixed_pending_verification' && normStatus !== 'fixed_pending_verification' && (normStatus as string) !== 'pending_verification') return false;
+        if (normFilter === 'verified_done' && !isBugResolved(r.status)) return false;
+        if (normFilter === 'reopened' && normStatus !== 'reopened') return false;
+      }
+
       if (severityFilter !== 'All' && r.severity !== severityFilter) return false;
+      if (categoryFilter !== 'All' && r.category !== categoryFilter) return false;
+
+      if (routeFilter !== 'All') {
+        const cleanRoute = (r.route || '').replace(/^\//, '').toLowerCase();
+        if (cleanRoute !== routeFilter.toLowerCase()) return false;
+      }
+
+      if (hasScreenshotFilter === 'with_screenshot' && !r.screenshotData) return false;
+      if (hasScreenshotFilter === 'no_screenshot' && !!r.screenshotData) return false;
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = r.title.toLowerCase().includes(q);
         const matchDesc = r.description.toLowerCase().includes(q);
         const matchRoute = r.route.toLowerCase().includes(q);
         const matchSelector = r.elementInfo?.selector?.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchRoute && !matchSelector) return false;
+        const matchEmail = (r.userEmail || r.reporter || '').toLowerCase().includes(q);
+        const matchId = (r.id || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchRoute && !matchSelector && !matchEmail && !matchId) return false;
       }
       return true;
     });
-  }, [activeReports, statusFilter, severityFilter, searchQuery]);
+
+    const severityOrder: Record<BugReportSeverity, number> = {
+      Critical: 4,
+      High: 3,
+      Medium: 2,
+      Low: 1,
+    };
+
+    const statusOrder: Record<string, number> = {
+      open: 1,
+      Open: 1,
+      in_review: 2,
+      'In Progress': 2,
+      fixed_pending_verification: 3,
+      verified_done: 4,
+      Resolved: 4,
+      Closed: 4,
+      reopened: 0,
+    };
+
+    return result.sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (sortBy === 'oldest') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === 'severity') {
+        return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+      }
+      if (sortBy === 'status') {
+        return (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+      }
+      return 0;
+    });
+  }, [activeReports, statusFilter, severityFilter, categoryFilter, routeFilter, hasScreenshotFilter, searchQuery, sortBy]);
 
   // Bug KPI stats
   const stats = useMemo(() => {
     const total = activeReports.length;
-    const open = activeReports.filter(r => r.status === 'Open').length;
-    const inProgress = activeReports.filter(r => r.status === 'In Progress').length;
-    const resolved = activeReports.filter(r => r.status === 'Resolved' || r.status === 'Closed').length;
-    const critical = activeReports.filter(r => r.severity === 'Critical' && r.status === 'Open').length;
-    return { total, open, inProgress, resolved, critical };
+    const open = activeReports.filter(r => r.status === 'open' || r.status === 'Open').length;
+    const inReview = activeReports.filter(r => r.status === 'in_review' || r.status === 'In Progress').length;
+    const pendingVerification = activeReports.filter(r => r.status === 'fixed_pending_verification').length;
+    const verifiedDone = activeReports.filter(r => isBugResolved(r.status)).length;
+    const reopened = activeReports.filter(r => r.status === 'reopened').length;
+    return { total, open, inReview, pendingVerification, verifiedDone, reopened };
   }, [activeReports]);
+
+  // Quick KPI card filter switch
+  const handleKpiFilterChange = (filter: string) => {
+    if (filter === 'All') {
+      setStatusFilter('All');
+      setSeverityFilter('All');
+    } else {
+      setStatusFilter(filter);
+      setSeverityFilter('All');
+    }
+  };
+
+  // Batch resolve all currently filtered open reports
+  const handleBatchResolveFiltered = async () => {
+    const openInFilter = filteredReports.filter(r => !isBugResolved(r.status));
+    if (openInFilter.length === 0) {
+      addToast('No Open Reports', 'All matching reports are already resolved.', 'info');
+      return;
+    }
+
+    if (window.confirm(`Mark ${openInFilter.length} filtered bug reports as Verified & Done?`)) {
+      for (const r of openInFilter) {
+        await updateReportStatus(r.id, 'verified_done', {
+          verificationNotes: 'Batch verified by administrator.',
+          verifiedAt: new Date().toISOString()
+        });
+      }
+      addToast('Batch Complete', `${openInFilter.length} reports marked as Verified & Done.`, 'success');
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, path: string) => {
     const file = e.target.files?.[0];
@@ -203,33 +308,38 @@ export default function AdminModule() {
   }
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto pb-24 px-4 md:px-8 text-left antialiased font-sans">
-      {/* Header */}
+    <div data-component="AdminModule" className="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-24 px-4 md:px-8 text-left antialiased font-sans">
+      
+      {/* ── COMMAND HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/15">
-            <IconShieldCheck className="w-5 h-5" />
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shadow-xs">
+            <IconShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-text-primary tracking-tight">Admin Control Center</h1>
-            <p className="text-xs text-text-secondary">Bug reporting management, visual inspection logs & global assets</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-text-primary tracking-tight flex items-center gap-2">
+              Admin Command Center
+            </h1>
+            <p className="text-xs text-text-secondary mt-0.5">
+              High-resolution visual telemetry, QA issue resolution ledger & branding hub
+            </p>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center bg-surface-alt/60 p-1 rounded-2xl border border-border shrink-0">
+        {/* Top-Level Navigation Tabs */}
+        <div className="flex items-center bg-surface-alt/70 p-1.5 rounded-2xl border border-border/80 shrink-0 shadow-xs">
           <button
             onClick={() => setActiveTab('bugs')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'bugs'
-                ? 'bg-surface text-text-primary shadow-sm'
+                ? 'bg-surface text-primary shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <IconBug size={16} className={stats.open > 0 ? 'text-rose-500' : ''} />
-            Bug Reports
+            <IconBug size={16} className={stats.open > 0 ? 'text-amber-500' : ''} />
+            QA & Bug Ledger
             {stats.open > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">
+              <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black">
                 {stats.open}
               </span>
             )}
@@ -239,7 +349,7 @@ export default function AdminModule() {
             onClick={() => setActiveTab('assets')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'assets'
-                ? 'bg-surface text-text-primary shadow-sm'
+                ? 'bg-surface text-primary shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -254,169 +364,97 @@ export default function AdminModule() {
       {activeTab === 'bugs' && (
         <div className="space-y-6">
           
-          {/* KPI Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-surface border border-border p-4 rounded-2xl">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Total Reports</span>
-              <p className="text-2xl font-black text-text-primary mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-surface border border-border p-4 rounded-2xl">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500">Open / Active</span>
-              <p className="text-2xl font-black text-amber-500 mt-1">{stats.open}</p>
-            </div>
-            <div className="bg-surface border border-border p-4 rounded-2xl">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-500">In Progress</span>
-              <p className="text-2xl font-black text-blue-500 mt-1">{stats.inProgress}</p>
-            </div>
-            <div className="bg-surface border border-border p-4 rounded-2xl">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-500">Resolved</span>
-              <p className="text-2xl font-black text-emerald-500 mt-1">{stats.resolved}</p>
-            </div>
-          </div>
+          {/* Interactive KPI Bar */}
+          <BugReportStats
+            stats={stats}
+            activeFilter={severityFilter === 'Critical' ? 'Critical' : statusFilter}
+            onFilterChange={handleKpiFilterChange}
+          />
 
-          {/* Filter & Toolbar */}
-          <Card padding="md" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <IconSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-              <input
-                type="text"
-                placeholder="Search by title, description, selector, route..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-text-primary focus:outline-none focus:border-primary"
-              />
-            </div>
+          {/* Faceted Filter & Action Toolbar */}
+          <BugReportToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            severityFilter={severityFilter}
+            onSeverityFilterChange={setSeverityFilter}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            routeFilter={routeFilter}
+            onRouteChange={setRouteFilter}
+            hasScreenshotFilter={hasScreenshotFilter}
+            onHasScreenshotChange={setHasScreenshotFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            availableRoutes={availableRoutes}
+            isRefreshing={isRefreshing}
+            onRefresh={handleRefreshReports}
+            onDownloadMarkdown={downloadMarkdownFile}
+            onCopyMarkdown={copyMarkdownToClipboard}
+            filteredCount={filteredReports.length}
+            totalCount={activeReports.length}
+            onBatchResolveFiltered={handleBatchResolveFiltered}
+          />
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-primary focus:outline-none focus:border-primary"
-              >
-                <option value="All">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Closed">Closed</option>
-              </select>
-
-              <select
-                value={severityFilter}
-                onChange={(e) => setSeverityFilter(e.target.value)}
-                className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-primary focus:outline-none focus:border-primary"
-              >
-                <option value="All">All Severities</option>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
-              </select>
-
-              <button
-                onClick={handleRefreshReports}
-                disabled={isRefreshing}
-                className="p-2 rounded-xl bg-surface hover:bg-surface-alt border border-border text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-                title="Refresh Reports"
-              >
-                <IconRefresh size={16} className={isRefreshing ? 'animate-spin' : ''} />
-              </button>
-
-              <button
-                onClick={downloadMarkdownFile}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-primary hover:opacity-90 text-text-on-accent text-xs font-bold shadow-sm transition-all cursor-pointer shrink-0"
-              >
-                <IconDownload size={14} /> reports.md
-              </button>
-
-              <button
-                onClick={copyMarkdownToClipboard}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface hover:bg-surface-alt border border-border text-text-primary text-xs font-bold transition-all cursor-pointer shrink-0"
-              >
-                <IconClipboardCopy size={14} /> Copy MD
-              </button>
-            </div>
-          </Card>
-
-          {/* Reports Table / List */}
+          {/* Bug Reports Views */}
           {filteredReports.length === 0 ? (
-            <div className="text-center py-16 bg-surface/50 border border-dashed border-border rounded-3xl p-8">
-              <IconBug size={40} className="mx-auto text-text-muted mb-2 opacity-50" />
-              <h3 className="text-base font-bold text-text-primary">No Bug Reports Found</h3>
-              <p className="text-xs text-text-secondary mt-1">No reports match the current filters.</p>
+            <div className="text-center py-20 bg-surface/60 border border-dashed border-border/80 rounded-4xl p-8 backdrop-blur-sm">
+              <div className="w-14 h-14 rounded-3xl bg-surface-alt/70 text-text-muted flex items-center justify-center mx-auto mb-3 border border-border/60">
+                <IconBug size={28} className="opacity-60" />
+              </div>
+              <h3 className="text-base font-extrabold text-text-primary">No Bug Reports Found</h3>
+              <p className="text-xs text-text-secondary mt-1 max-w-sm mx-auto">
+                No reports match your current filter parameters. Try clearing your search query or selecting a different status.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
+          ) : viewMode === 'grid' ? (
+            /* 🎴 View 1: Visual Cards Matrix */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredReports.map((report) => (
-                <div
+                <BugReportCard
                   key={report.id}
-                  onClick={() => setSelectedReport(report)}
-                  className="bg-surface hover:bg-surface-alt/60 border border-border rounded-2xl p-4 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 group"
-                >
-                  <div className="flex items-start gap-4 overflow-hidden">
-                    {/* Thumbnail */}
-                    {report.screenshotData ? (
-                      <div className="w-16 h-12 rounded-xl overflow-hidden bg-background border border-border shrink-0 flex items-center justify-center">
-                        <img src={report.screenshotData} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-16 h-12 rounded-xl bg-surface-alt border border-border flex items-center justify-center text-text-muted shrink-0">
-                        <IconCode size={18} />
-                      </div>
-                    )}
-
-                    <div className="space-y-1 overflow-hidden">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                          report.severity === 'Critical' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                          report.severity === 'High' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                          report.severity === 'Medium' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                          'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                        }`}>
-                          {report.severity}
-                        </span>
-
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-surface-alt text-text-secondary border border-border">
-                          {report.category}
-                        </span>
-
-                        <span className="text-[11px] font-mono text-text-muted">
-                          in <code className="text-text-primary font-bold">/{report.route}</code>
-                        </span>
-                      </div>
-
-                      <h4 className="text-sm font-bold text-text-primary truncate group-hover:text-primary transition-colors">
-                        {report.title}
-                      </h4>
-
-                      {report.elementInfo?.selector && (
-                        <p className="text-[11px] font-mono text-text-muted truncate">
-                          Target: {report.elementInfo.selector}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Trailing Info & Status */}
-                  <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                    <span className="text-[11px] text-text-muted flex items-center gap-1">
-                      <IconClock size={12} />
-                      {new Date(report.createdAt).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-
-                    <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
-                      report.status === 'Resolved' || report.status === 'Closed' ? 'bg-emerald-500/10 text-emerald-500' :
-                      report.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                      'bg-amber-500/10 text-amber-500'
-                    }`}>
-                      {report.status}
-                    </span>
-                  </div>
-                </div>
+                  report={report}
+                  onSelect={setSelectedReport}
+                  onZoomScreenshot={(r) => setSelectedReport(r)}
+                  onUpdateStatus={updateReportStatus}
+                  onDelete={deleteReport}
+                />
               ))}
             </div>
+          ) : viewMode === 'list' ? (
+            /* 📋 View 2: Compact Audit List */
+            <div className="flex flex-col gap-2.5">
+              {filteredReports.map((report) => (
+                <BugReportListItem
+                  key={report.id}
+                  report={report}
+                  onSelect={setSelectedReport}
+                  onZoomScreenshot={(r) => setSelectedReport(r)}
+                  onUpdateStatus={updateReportStatus}
+                  onDelete={deleteReport}
+                />
+              ))}
+            </div>
+          ) : viewMode === 'kanban' ? (
+            /* 📊 View 3: Kanban Pipeline Triage */
+            <BugReportKanban
+              reports={filteredReports}
+              onSelect={setSelectedReport}
+              onZoomScreenshot={(r) => setSelectedReport(r)}
+              onUpdateStatus={updateReportStatus}
+            />
+          ) : (
+            /* 🗺️ View 4: Organized by App Subsystem / Module */
+            <BugReportModuleMap
+              reports={filteredReports}
+              onSelect={setSelectedReport}
+              onZoomScreenshot={(r) => setSelectedReport(r)}
+            />
           )}
+
         </div>
       )}
 
@@ -622,184 +660,14 @@ export default function AdminModule() {
         </div>
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────────────── */}
-      {/* BUG REPORT DETAIL INSPECTION MODAL */}
-      {/* ───────────────────────────────────────────────────────────────────────────── */}
-      {selectedReport && (
-        <Modal 
-          isOpen={!!selectedReport} 
-          onClose={() => setSelectedReport(null)} 
-          title="Bug Report Diagnostics"
-          maxWidthClassName="max-w-3xl"
-        >
-          <div className="space-y-6 pt-2 font-sans">
-            
-            {/* Header & Status Controller */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-alt/40 p-4 rounded-2xl border border-border">
-              <div>
-                <span className="text-[11px] font-mono text-text-muted">
-                  Report ID: <span className="text-text-secondary">{selectedReport.id}</span>
-                </span>
-                <h3 className="text-lg font-bold text-text-primary mt-0.5">{selectedReport.title}</h3>
-                <p className="text-xs text-text-secondary mt-1">
-                  Reported by {selectedReport.userEmail || 'Anonymous'} on {new Date(selectedReport.createdAt).toLocaleString()}
-                </p>
-              </div>
-
-              {/* Status Selector */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-bold text-text-secondary">Status:</span>
-                <select
-                  value={selectedReport.status}
-                  onChange={(e) => {
-                    const nextStatus = e.target.value as BugReportStatus;
-                    updateReportStatus(selectedReport.id, nextStatus);
-                    setSelectedReport(prev => prev ? { ...prev, status: nextStatus } : null);
-                  }}
-                  className="bg-surface border border-border rounded-xl px-3 py-2 text-xs font-bold text-text-primary focus:border-primary focus:outline-none"
-                >
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Visual Screenshot (if available) */}
-            {selectedReport.screenshotData && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">High-Res Visual Snapshot</h4>
-                  <button 
-                    onClick={() => setIsZoomModalOpen(true)}
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <IconZoomIn size={14} /> Enlarge View
-                  </button>
-                </div>
-                <div 
-                  onClick={() => setIsZoomModalOpen(true)}
-                  className="bg-surface rounded-2xl border border-border p-2 max-h-72 overflow-hidden flex items-center justify-center cursor-zoom-in group shadow-inner"
-                >
-                  <img 
-                    src={selectedReport.screenshotData} 
-                    alt="Captured Element" 
-                    className="max-h-64 object-contain rounded-xl group-hover:scale-102 transition-transform" 
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Target Element Diagnostics */}
-            {selectedReport.elementInfo && (
-              <div className="bg-surface p-4 rounded-2xl border border-border space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">DOM Target & Geometry</h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-                  <div className="bg-surface-alt/60 p-2.5 rounded-xl border border-border/60">
-                    <span className="text-text-muted block text-[10px] uppercase font-bold">Element Tag & ID</span>
-                    <span className="text-text-primary font-bold">
-                      &lt;{selectedReport.elementInfo.tag}&gt; {selectedReport.elementInfo.id ? `#${selectedReport.elementInfo.id}` : ''}
-                    </span>
-                  </div>
-
-                  <div className="bg-surface-alt/60 p-2.5 rounded-xl border border-border/60">
-                    <span className="text-text-muted block text-[10px] uppercase font-bold">Dimensions & Position</span>
-                    <span className="text-text-primary">
-                      {selectedReport.elementInfo.boundingRect.width}×{selectedReport.elementInfo.boundingRect.height}px (x: {selectedReport.elementInfo.boundingRect.x}, y: {selectedReport.elementInfo.boundingRect.y})
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-surface-alt/60 p-2.5 rounded-xl border border-border/60 text-xs font-mono">
-                  <span className="text-text-muted block text-[10px] uppercase font-bold mb-1">CSS Selector Path</span>
-                  <span className="text-text-primary break-all">{selectedReport.elementInfo.selector}</span>
-                </div>
-
-                {selectedReport.elementInfo.classes && selectedReport.elementInfo.classes.length > 0 && (
-                  <div className="bg-surface-alt/60 p-2.5 rounded-xl border border-border/60 text-xs font-mono">
-                    <span className="text-text-muted block text-[10px] uppercase font-bold mb-1">Classes</span>
-                    <span className="text-text-secondary break-all">{selectedReport.elementInfo.classes.join(' ')}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Description */}
-            <div className="bg-surface p-4 rounded-2xl border border-border space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">Explanation</h4>
-              <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-                {selectedReport.description || 'No description provided.'}
-              </p>
-            </div>
-
-            {/* Environment & Metadata */}
-            <div className="bg-surface p-4 rounded-2xl border border-border text-xs text-text-secondary space-y-1">
-              <p><strong className="text-text-primary">Active Route:</strong> /{selectedReport.route}</p>
-              {selectedReport.userAgent && (
-                <p className="truncate"><strong className="text-text-primary">User Agent:</strong> {selectedReport.userAgent}</p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <button
-                onClick={() => {
-                  deleteReport(selectedReport.id);
-                  setSelectedReport(null);
-                }}
-                className="flex items-center gap-1.5 text-xs font-bold text-rose-500 hover:bg-rose-500/10 px-4 py-2 rounded-xl transition-colors cursor-pointer"
-              >
-                <IconTrash size={16} /> Delete Report
-              </button>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={async () => {
-                    const text = selectedReport.markdownContent || `# Bug Report: ${selectedReport.title}\n\n${selectedReport.description}`;
-                    await navigator.clipboard.writeText(text);
-                    addToast('Copied', 'Report markdown copied.', 'success');
-                  }}
-                  className="flex items-center gap-1.5 text-xs font-bold text-text-primary bg-surface hover:bg-surface-alt border border-border px-4 py-2 rounded-xl transition-colors cursor-pointer"
-                >
-                  <IconClipboardCopy size={16} /> Copy Report Markdown
-                </button>
-
-                <button
-                  onClick={() => setSelectedReport(null)}
-                  className="bg-primary hover:opacity-90 text-text-on-accent text-xs font-bold px-5 py-2 rounded-xl transition-colors cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </Modal>
-      )}
-
-      {/* Enlarge Image Modal */}
-      {isZoomModalOpen && selectedReport?.screenshotData && (
-        <div 
-          onClick={() => setIsZoomModalOpen(false)}
-          className="fixed inset-0 z-[100000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
-        >
-          <div className="relative max-w-5xl max-h-[90vh] bg-surface rounded-2xl overflow-hidden border border-border p-2 shadow-2xl">
-            <img 
-              src={selectedReport.screenshotData} 
-              alt="Zoomed" 
-              className="max-h-[80vh] w-auto object-contain rounded-xl" 
-            />
-            <button
-              onClick={() => setIsZoomModalOpen(false)}
-              className="absolute top-4 right-4 bg-black/60 text-white p-2 rounded-full hover:bg-black transition-colors"
-            >
-              <IconX size={18} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── BUG REPORT DETAIL INSPECTION MODAL ── */}
+      <BugReportDetailModal
+        report={selectedReport}
+        isOpen={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        onUpdateStatus={updateReportStatus}
+        onDelete={deleteReport}
+      />
     </div>
   );
 }

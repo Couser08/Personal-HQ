@@ -16,6 +16,7 @@ import {
   IconAlignRight,
 } from '@tabler/icons-react';
 import type { VisionNode } from '../../../store/types';
+import { useAppStore } from '../../../store/useAppStore';
 
 interface VisionNodeProps {
   node: VisionNode;
@@ -61,6 +62,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
   const toggleAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isPlayingAudio) {
+      if (useAppStore.getState().settings.soundEnabled === false) return;
       try {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         const ctx = new AudioCtx();

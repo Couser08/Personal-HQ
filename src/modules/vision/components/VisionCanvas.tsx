@@ -397,12 +397,12 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
         className="absolute inset-0 pointer-events-none transition-opacity duration-300"
         style={{
           backgroundPosition: `${canvasPan.x}px ${canvasPan.y}px`,
-          backgroundSize: `${32 * canvasZoom}px ${32 * canvasZoom}px`,
+          backgroundSize: `${24 * canvasZoom}px ${24 * canvasZoom}px`,
           backgroundImage:
             canvasTheme === 'dots'
-              ? `radial-gradient(circle, var(--canvas-dot-color, rgba(0,0,0,0.22)) ${1.8 * canvasZoom}px, transparent ${1.8 * canvasZoom}px)`
+              ? `radial-gradient(circle, var(--canvas-dot-color, rgba(0,0,0,0.18)) ${1.2 * canvasZoom}px, transparent ${1.2 * canvasZoom}px)`
               : canvasTheme === 'grid'
-              ? `linear-gradient(to right, var(--canvas-grid-color, rgba(0,0,0,0.12)) 1px, transparent 1px), linear-gradient(to bottom, var(--canvas-grid-color, rgba(0,0,0,0.12)) 1px, transparent 1px)`
+              ? `linear-gradient(to right, var(--canvas-grid-color, rgba(0,0,0,0.08)) 1px, transparent 1px), linear-gradient(to bottom, var(--canvas-grid-color, rgba(0,0,0,0.08)) 1px, transparent 1px)`
               : 'none',
         }}
       />

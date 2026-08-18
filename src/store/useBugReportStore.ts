@@ -5,6 +5,7 @@ import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
 import { safeSetItem, setIDBItem } from '../utils/storage';
 import { queryClient } from '../lib/queryClient';
+import { detectSectionAndRoute } from '../components/bug-report/utils/elementFingerprint';
 
 function persistBugReports(reportsList: BugReport[]) {
   void setIDBItem('phq_bug_reports_full', reportsList);
@@ -22,8 +23,9 @@ export function formatReportMarkdown(report: BugReport): string {
   let md = `### 🐛 [${report.severity.toUpperCase()}] ${report.title}\n\n`;
   md += `- **Status**: \`${report.status}\`\n`;
   md += `- **Category**: \`${report.category}\`\n`;
-  md += `- **Module / Route**: \`${report.route}\`\n`;
-  md += `- **Reported By**: ${report.userEmail || 'Anonymous'} (${dateStr})\n`;
+  md += `- **Section / Module**: \`${report.sectionName || el?.sectionName || 'General'}\`\n`;
+  md += `- **Page Route**: \`${report.pageRoute || report.route}\`\n`;
+  md += `- **Reported By**: ${report.reporter || report.userEmail || 'User'} (${dateStr})\n`;
   md += `- **User Agent**: \`${report.userAgent || 'Unknown'}\`\n\n`;
 
   md += `#### Description\n${report.description}\n\n`;
@@ -32,6 +34,7 @@ export function formatReportMarkdown(report: BugReport): string {
     if (el.isGroup && el.groupElements && el.groupElements.length > 0) {
       md += `#### Target Group Details (${el.groupCount || el.groupElements.length} Elements Selected)\n`;
       md += `- **Common Container / Parent**: \`${el.selector}\`\n`;
+      if (el.ancestorPath) md += `- **Ancestor Path**: \`${el.ancestorPath}\`\n`;
       md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
       md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
       md += `| # | Page / Module | Tag | Selector | Text Snippet |\n`;
@@ -39,14 +42,18 @@ export function formatReportMarkdown(report: BugReport): string {
       el.groupElements.forEach((item, i) => {
         const page = item.pageTitle || item.pageModule || report.route;
         const txt = (item.innerTextSnippet || '—').replace(/\|/g, '-').slice(0, 40);
-        md += `| ${i + 1} | \`${page}\` | \`<${item.tag}>\` | \`${item.selector}\` | ${txt} |\n`;
+        md += `| ${i + 1} | \`${page}\` | \`<${item.tag}>\` | \`${item.ancestorPath || item.selector}\` | ${txt} |\n`;
       });
       md += `\n`;
     } else {
-      md += `#### Target Element Details\n`;
-      md += `- **Selector**: \`${el.selector}\`\n`;
+      md += `#### Target Element Fingerprint\n`;
+      if (el.ancestorPath) md += `- **Ancestor Path**: \`${el.ancestorPath}\`\n`;
+      md += `- **CSS Selector**: \`${el.selector}\`\n`;
       md += `- **Tag**: \`<${el.tag}>\`\n`;
-      if (el.classes.length > 0) md += `- **Classes**: \`${el.classes.join(', ')}\`\n`;
+      if (el.classes && el.classes.length > 0) md += `- **Classes**: \`${el.classes.join(', ')}\`\n`;
+      if (el.dataAttributes && Object.keys(el.dataAttributes).length > 0) {
+        md += `- **Data Attributes**: \`${JSON.stringify(el.dataAttributes)}\`\n`;
+      }
       md += `- **Bounding Box**: \`x: ${Math.round(el.boundingRect.x)}, y: ${Math.round(el.boundingRect.y)}, w: ${Math.round(el.boundingRect.width)}px, h: ${Math.round(el.boundingRect.height)}px\`\n`;
       md += `- **Viewport**: \`${el.viewport.width}x${el.viewport.height}\` (Scroll: \`${el.viewport.scrollX}, ${el.viewport.scrollY}\`)\n\n`;
     }
@@ -55,6 +62,16 @@ export function formatReportMarkdown(report: BugReport): string {
   if (report.screenshotData) {
     md += `#### Visual Snapshot\n`;
     md += `![Screenshot](${report.screenshotData})\n\n`;
+  }
+
+  if (report.fixedInFiles || report.fixNotes) {
+    md += `#### 🛠️ Fix Verification Data\n`;
+    if (report.fixedInFiles) md += `- **Files Changed**: \`${Array.isArray(report.fixedInFiles) ? report.fixedInFiles.join(', ') : report.fixedInFiles}\`\n`;
+    if (report.fixNotes) md += `- **Fix Notes**: ${report.fixNotes}\n`;
+    if (report.fixedAt) md += `- **Fixed At**: ${new Date(report.fixedAt).toLocaleString()}\n`;
+    if (report.verificationNotes) md += `- **Verification Notes**: ${report.verificationNotes}\n`;
+    if (report.verifiedAt) md += `- **Verified At**: ${new Date(report.verifiedAt).toLocaleString()}\n`;
+    md += `\n`;
   }
 
   md += `---\n\n`;
@@ -67,13 +84,15 @@ export function generateAllReportsMarkdown(reports: BugReport[]): string {
   md += `> Last Updated: ${new Date().toLocaleString()}\n\n`;
 
   md += `## 📊 Reports Summary Table\n\n`;
-  md += `| ID | Time | Severity | Status | Category | Page / Module | Target Element | Title |\n`;
-  md += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+  md += `| ID | Time | Severity | Status | Section / Module | Target Element | Title |\n`;
+  md += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`;
 
   reports.forEach((r, idx) => {
     const time = new Date(r.createdAt).toLocaleDateString('en-CA') + ' ' + new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const sel = r.elementInfo?.selector ? `\`${r.elementInfo.selector.slice(0, 30)}${r.elementInfo.selector.length > 30 ? '...' : ''}\`` : '—';
-    md += `| #${idx + 1} | ${time} | **${r.severity}** | \`${r.status}\` | ${r.category} | \`${r.route}\` | ${sel} | ${r.title.replace(/\|/g, '-')} |\n`;
+    const targetPath = r.elementInfo?.ancestorPath || r.elementInfo?.selector || '—';
+    const sel = `\`${targetPath.slice(0, 35)}${targetPath.length > 35 ? '...' : ''}\``;
+    const sec = r.sectionName || r.elementInfo?.sectionName || r.route;
+    md += `| #${idx + 1} | ${time} | **${r.severity}** | \`${r.status}\` | \`${sec}\` | ${sel} | ${r.title.replace(/\|/g, '-')} |\n`;
   });
 
   md += `\n\n---\n\n## 📝 Detailed Reports Log\n\n`;
@@ -104,7 +123,9 @@ interface BugReportStore {
     severity: BugReportSeverity;
   }) => Promise<BugReport>;
   
-  updateReportStatus: (id: string, status: BugReportStatus) => Promise<void>;
+  updateReportStatus: (id: string, status: BugReportStatus, extra?: Partial<BugReport>) => Promise<void>;
+  handOffForVerification: (id: string, fixedInFiles: string[] | string, fixNotes: string) => Promise<void>;
+  verifyReport: (id: string, verified: boolean, notes?: string) => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
   loadAllReports: () => Promise<void>;
   downloadMarkdownFile: () => void;
@@ -154,33 +175,25 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     const user = useAuthStore.getState().user;
     const { capturedElement, capturedScreenshot, reports } = get();
 
-    // Determine current route or module
-    let currentRoute = 'dashboard';
-    try {
-      const activeModule = localStorage.getItem('activeModule');
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('test_layout')) {
-        currentRoute = 'test_layout';
-      } else if (urlParams.get('design_lab')) {
-        currentRoute = 'design_lab';
-      } else if (activeModule) {
-        currentRoute = activeModule;
-      }
-    } catch {
-      // ignore
-    }
+    // Auto-detect section and route
+    const { sectionName, pageRoute } = detectSectionAndRoute(null);
+    const resolvedSection = capturedElement?.sectionName || sectionName;
+    const resolvedRoute = capturedElement?.pageRoute || pageRoute;
 
     const newReport: BugReport = {
       id: crypto.randomUUID(),
       userId: user?.id,
       userEmail: user?.email || undefined,
+      reporter: user?.email || (user?.id ? 'user' : 'self'),
       title: title.trim(),
       description: description.trim(),
       category,
       severity,
-      status: 'Open',
+      status: 'open',
       elementInfo: capturedElement || undefined,
-      route: currentRoute,
+      route: resolvedRoute,
+      pageRoute: resolvedRoute,
+      sectionName: resolvedSection,
       screenshotData: capturedScreenshot || undefined,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       createdAt: new Date().toISOString(),
@@ -197,7 +210,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     try {
       await bugReportService.create(newReport);
       queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
-      useToastStore.getState().addToast('Bug Reported', 'Report saved and synced to database.', 'success');
+      useToastStore.getState().addToast('Bug Reported', 'Report saved with full element fingerprint.', 'success');
     } catch (err: any) {
       console.error('Failed to sync bug report to Supabase:', err);
       useToastStore.getState().addToast('Saved Locally', 'Bug report saved locally in reports.md.', 'info');
@@ -206,18 +219,76 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     return newReport;
   },
 
-  updateReportStatus: async (id, status) => {
+  updateReportStatus: async (id, status, extra) => {
     const prev = get().reports;
-    const next = prev.map((r) => (r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r));
+    const next = prev.map((r) =>
+      r.id === id ? { ...r, ...extra, status, updatedAt: new Date().toISOString() } : r
+    );
     set({ reports: next });
     persistBugReports(next);
 
     try {
-      await bugReportService.updateStatus(id, status);
+      await bugReportService.updateStatus(id, status, extra);
       queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
       useToastStore.getState().addToast('Updated', `Bug status set to ${status}.`, 'success');
     } catch (err: any) {
       console.error('Failed to update bug status in db:', err);
+    }
+  },
+
+  handOffForVerification: async (id, fixedInFiles, fixNotes) => {
+    const prev = get().reports;
+    const next = prev.map((r) =>
+      r.id === id
+        ? {
+            ...r,
+            status: 'fixed_pending_verification' as BugReportStatus,
+            fixedInFiles,
+            fixNotes,
+            fixedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        : r
+    );
+    set({ reports: next });
+    persistBugReports(next);
+
+    try {
+      await bugReportService.handOffForVerification(id, fixedInFiles, fixNotes);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
+      useToastStore.getState().addToast('Handed Off', 'Bug marked as fixed pending verification.', 'success');
+    } catch (err: any) {
+      console.error('Failed to hand off bug for verification:', err);
+    }
+  },
+
+  verifyReport: async (id, verified, notes) => {
+    const newStatus: BugReportStatus = verified ? 'verified_done' : 'reopened';
+    const prev = get().reports;
+    const next = prev.map((r) =>
+      r.id === id
+        ? {
+            ...r,
+            status: newStatus,
+            verificationNotes: notes || (verified ? 'Verified as fixed' : 'Reopened during review'),
+            verifiedAt: verified ? new Date().toISOString() : undefined,
+            updatedAt: new Date().toISOString(),
+          }
+        : r
+    );
+    set({ reports: next });
+    persistBugReports(next);
+
+    try {
+      await bugReportService.verifyBug(id, verified, notes);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
+      if (verified) {
+        useToastStore.getState().addToast('Verified Done', 'Bug verified and archived for release!', 'success');
+      } else {
+        useToastStore.getState().addToast('Bug Reopened', 'Bug returned to open queue with verification note.', 'warning');
+      }
+    } catch (err: any) {
+      console.error('Failed to verify bug in db:', err);
     }
   },
 
@@ -235,7 +306,6 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
       console.error('Failed to delete bug report from db:', err);
     }
   },
-
 
   loadAllReports: async () => {
     const user = useAuthStore.getState().user;

@@ -17,6 +17,7 @@ import { isHabitDueToday } from './utils';
 // Programmatic chime synthesis for completing all tasks
 const playCelebratoryChime = () => {
   try {
+    if (useAppStore.getState().settings.soundEnabled === false) return;
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
@@ -294,6 +295,7 @@ export default function HabitTrackerModule() {
 
   return (
     <motion.div
+      data-component="HabitsModule"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}

@@ -5,7 +5,7 @@ import type {
   TodoProject, TodoTask, JournalEntry, Mindmap, StandardCalculation, Habit,
   Sprint, DsaProblem, TilLog, LearningRoadmap, ResourceBookmark, DevGoal,
   StudyMaterial, Exam, ExamAttempt, DailyReflection, Vision, VisionBoard, VisionNode,
-  BudgetCategory, BudgetTransaction, BugReport,
+  BudgetCategory, BudgetTransaction, BugReport, BugReportStatus, BugReportElementInfo,
   ProjectStructure, ProjectNode
 } from '../store/types';
 
@@ -368,14 +368,23 @@ export const mediaService = {
   },
 
   async update(id: string, data: Partial<MediaLog>) {
-    const { error } = await supabase.from('media_logs').update({
-      ...(data.title !== undefined && { title: data.title }),
-      ...(data.status !== undefined && { status: data.status }),
-      ...(data.rating !== undefined && { rating: data.rating }),
-      ...(data.episodes !== undefined && { episodes: data.episodes }),
-      ...(data.notes !== undefined && { notes: data.notes }),
-    }).eq('id', id);
-    if (error) throw error;
+    try {
+      const payload: Record<string, unknown> = {};
+      if (data.title !== undefined) payload.title = data.title;
+      if (data.status !== undefined) payload.status = data.status;
+      if (data.rating !== undefined) payload.rating = data.rating;
+      if (data.episodes !== undefined) payload.episodes = data.episodes;
+      if (data.notes !== undefined) payload.notes = data.notes;
+
+      if (Object.keys(payload).length === 0) return;
+
+      const { error } = await supabase.from('media_logs').update(payload).eq('id', id);
+      if (error) {
+        console.warn('MediaLog Update warning:', error.message || error);
+      }
+    } catch (e) {
+      console.warn('MediaLog Update exception:', e);
+    }
   },
 
   async delete(id: string) {
@@ -1108,17 +1117,7 @@ export const standardCalcService = {
   }
 };
 
-const SETTINGS_OPTIONAL_COLUMNS = ['media_quote', 'reduce_blur', 'reduce_animations', 'active_focus_item', 'gemini_api_key', 'gemini_model', 'ai_persona'];
 
-const isMissingSettingsColumnError = (error: unknown) => {
-  const text = [
-    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message ?? '') : '',
-    typeof error === 'object' && error !== null && 'details' in error ? String((error as { details?: unknown }).details ?? '') : '',
-    typeof error === 'object' && error !== null && 'hint' in error ? String((error as { hint?: unknown }).hint ?? '') : '',
-  ].join(' ').toLowerCase();
-
-  return SETTINGS_OPTIONAL_COLUMNS.some((column) => text.includes(column));
-};
 
 export const settingsService = {
   async fetch(userId: string): Promise<any> {
@@ -1132,26 +1131,61 @@ export const settingsService = {
   },
 
   async upsert(userId: string, settings: any) {
-    const payload = {
-      user_id: userId,
-      ...settings,
-      updated_at: new Date().toISOString(),
-    };
-    let { error } = await supabase.from('user_settings').upsert(payload);
-
-    if (error && isMissingSettingsColumnError(error)) {
-      const baseSettings = { ...settings };
-      for (const col of SETTINGS_OPTIONAL_COLUMNS) {
-        delete baseSettings[col];
-      }
-      ({ error } = await supabase.from('user_settings').upsert({
+    try {
+      const payload: Record<string, any> = {
         user_id: userId,
-        ...baseSettings,
         updated_at: new Date().toISOString(),
-      }));
-    }
+      };
 
-    if (error) throw error;
+      // Theme
+      let dbTheme = settings.theme;
+      if (dbTheme !== undefined) {
+        payload.theme = ['light', 'dark', 'system'].includes(dbTheme) ? dbTheme : 'dark';
+      }
+
+      // Map valid columns (checking snake_case first, then camelCase fallback)
+      const mapCol = (snake: string, camel: string) => {
+        if (settings[snake] !== undefined) payload[snake] = settings[snake];
+        else if (settings[camel] !== undefined) payload[snake] = settings[camel];
+      };
+
+      mapCol('countdown_template', 'countdownTemplate');
+      mapCol('accent_color', 'accentColor');
+      mapCol('animation_speed', 'animationSpeed');
+      mapCol('compact_mode', 'compactMode');
+      mapCol('sound_enabled', 'soundEnabled');
+      mapCol('initial_bank_balance', 'initialBankBalance');
+      mapCol('initial_cash_balance', 'initialCashBalance');
+      mapCol('currency_symbol', 'currencySymbol');
+      mapCol('media_quote', 'mediaQuote');
+      mapCol('reduce_blur', 'reduceBlur');
+      mapCol('reduce_animations', 'reduceAnimations');
+      mapCol('gemini_api_key', 'geminiApiKey');
+      mapCol('gemini_model', 'geminiModel');
+      mapCol('ai_persona', 'aiPersona');
+      mapCol('active_focus_item', 'activeFocusItem');
+      mapCol('performance_mode', 'performanceMode');
+      mapCol('wavy_effect_enabled', 'wavyEffectEnabled');
+      mapCol('clock_style', 'clockStyle');
+
+      let { error } = await supabase.from('user_settings').upsert(payload);
+
+      if (error) {
+        const basePayload = { 
+          user_id: payload.user_id,
+          updated_at: payload.updated_at,
+          ...(payload.theme && { theme: payload.theme })
+        };
+        const res = await supabase.from('user_settings').upsert(basePayload);
+        error = res.error;
+      }
+
+      if (error) {
+        console.warn('Settings sync warning (operating in local fallback):', error.message || error);
+      }
+    } catch (e) {
+      console.warn('Settings upsert exception:', e);
+    }
   }
 };
 
@@ -2083,6 +2117,79 @@ export const visionBoardService = {
 
 // ─── Bug Reports ─────────────────────────────────────────────────────────────
 
+function normalizeBugStatus(status: any): BugReportStatus {
+  if (!status) return 'open';
+  const s = String(status).trim().toLowerCase();
+  if (s === 'open') return 'open';
+  if (s === 'in progress' || s === 'in_progress' || s === 'in_review') return 'in_review';
+  if (s === 'fixed_pending_verification' || s === 'pending_verification') return 'fixed_pending_verification';
+  if (s === 'resolved' || s === 'closed' || s === 'verified_done' || s === 'done') return 'verified_done';
+  if (s === 'reopened' || s === 'reopen') return 'reopened';
+  return 'open';
+}
+
+function parseClasses(raw: any): string[] {
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      // split by whitespace
+    }
+    return raw.split(/\s+/).filter(Boolean);
+  }
+  return [];
+}
+
+function mapBugReportFromRow(r: any): BugReport {
+  const classes = parseClasses(r.element_classes);
+  const dataAttributes = r.element_data_attributes || {};
+  const ancestorPath = r.element_ancestor_path || r.element_selector || undefined;
+  const boundingRect = r.element_position || { x: 0, y: 0, width: 0, height: 0, top: 0, left: 0 };
+  const viewport = r.viewport_size || r.viewport || { width: 0, height: 0, scrollX: 0, scrollY: 0 };
+
+  const elementInfo: BugReportElementInfo | undefined = (r.element_tag || r.element_position || r.element_selector || r.element_ancestor_path) ? {
+    tag: r.element_tag || 'element',
+    id: dataAttributes['id'] || undefined,
+    classes,
+    ancestorPath,
+    dataAttributes,
+    sectionName: r.section_name || undefined,
+    pageRoute: r.page_route || r.route || undefined,
+    selector: r.element_selector || ancestorPath || r.element_tag || 'element',
+    boundingRect,
+    viewport,
+    innerTextSnippet: undefined,
+  } : undefined;
+
+  return {
+    id: r.id,
+    userId: r.user_id,
+    userEmail: r.user_email,
+    reporter: r.reporter || r.user_email || 'user',
+    title: r.title,
+    description: r.description,
+    category: r.category,
+    severity: r.severity,
+    status: normalizeBugStatus(r.status),
+    elementInfo,
+    route: r.page_route || r.route || '/dashboard',
+    pageRoute: r.page_route || r.route || '/dashboard',
+    sectionName: r.section_name || 'General',
+    screenshotData: r.screenshot_data,
+    markdownContent: r.markdown_content,
+    userAgent: r.user_agent,
+    fixedInFiles: r.fixed_in_files,
+    fixNotes: r.fix_notes,
+    verificationNotes: r.verification_notes,
+    fixedAt: r.fixed_at,
+    verifiedAt: r.verified_at,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at
+  };
+}
+
 export const bugReportService = {
   async fetchForAdmin(): Promise<BugReport[]> {
     const { data, error } = await supabase
@@ -2090,29 +2197,7 @@ export const bugReportService = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
-      id: r.id,
-      userId: r.user_id,
-      userEmail: r.user_email,
-      title: r.title,
-      description: r.description,
-      category: r.category,
-      severity: r.severity,
-      status: r.status,
-      elementInfo: r.element_position ? {
-        tag: r.element_tag,
-        classes: (r.element_classes || '').split(' ').filter(Boolean),
-        selector: r.element_selector,
-        boundingRect: r.element_position,
-        viewport: r.viewport || {}
-      } : undefined,
-      route: r.route,
-      screenshotData: r.screenshot_data,
-      markdownContent: r.markdown_content,
-      userAgent: r.user_agent,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at
-    }));
+    return (data ?? []).map(mapBugReportFromRow);
   },
 
   async fetchAll(userId?: string): Promise<BugReport[]> {
@@ -2122,29 +2207,7 @@ export const bugReportService = {
     }
     const { data, error } = await query;
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
-      id: r.id,
-      userId: r.user_id,
-      userEmail: r.user_email,
-      title: r.title,
-      description: r.description,
-      category: r.category,
-      severity: r.severity,
-      status: r.status,
-      elementInfo: r.element_position ? {
-        tag: r.element_tag,
-        classes: (r.element_classes || '').split(' ').filter(Boolean),
-        selector: r.element_selector,
-        boundingRect: r.element_position,
-        viewport: r.viewport || {}
-      } : undefined,
-      route: r.route,
-      screenshotData: r.screenshot_data,
-      markdownContent: r.markdown_content,
-      userAgent: r.user_agent,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at
-    }));
+    return (data ?? []).map(mapBugReportFromRow);
   },
 
   async create(report: BugReport): Promise<void> {
@@ -2152,29 +2215,70 @@ export const bugReportService = {
       id: report.id,
       user_id: report.userId || null,
       user_email: report.userEmail || null,
+      reporter: report.reporter || report.userEmail || 'user',
       title: report.title,
       description: report.description,
       category: report.category,
       severity: report.severity,
-      status: report.status || 'Open',
-      element_selector: report.elementInfo?.selector || null,
+      status: normalizeBugStatus(report.status || 'open'),
+      element_selector: report.elementInfo?.selector || report.elementInfo?.ancestorPath || null,
       element_tag: report.elementInfo?.tag || null,
-      element_classes: report.elementInfo?.classes?.join(' ') || null,
+      element_classes: report.elementInfo?.classes ? JSON.stringify(report.elementInfo.classes) : null,
+      element_ancestor_path: report.elementInfo?.ancestorPath || null,
+      element_data_attributes: report.elementInfo?.dataAttributes || {},
       element_position: report.elementInfo?.boundingRect || {},
       viewport: report.elementInfo?.viewport || {},
-      route: report.route,
+      viewport_size: report.elementInfo?.viewport || {},
+      route: report.route || report.pageRoute || '/dashboard',
+      page_route: report.pageRoute || report.route || '/dashboard',
+      section_name: report.sectionName || report.elementInfo?.sectionName || 'General',
       screenshot_data: report.screenshotData || null,
       markdown_content: report.markdownContent || null,
       user_agent: report.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : null),
+      fixed_in_files: Array.isArray(report.fixedInFiles) ? report.fixedInFiles.join(', ') : (report.fixedInFiles || null),
+      fix_notes: report.fixNotes || null,
+      verification_notes: report.verificationNotes || null,
+      fixed_at: report.fixedAt || null,
+      verified_at: report.verifiedAt || null,
       created_at: report.createdAt || new Date().toISOString(),
       updated_at: report.updatedAt || new Date().toISOString()
     });
     if (error) throw error;
   },
 
-  async updateStatus(id: string, status: BugReport['status']): Promise<void> {
+  async updateStatus(id: string, status: BugReportStatus, extra?: Partial<BugReport>): Promise<void> {
+    const payload: Record<string, any> = {
+      status: normalizeBugStatus(status),
+      updated_at: new Date().toISOString()
+    };
+    if (extra?.fixedInFiles) {
+      payload.fixed_in_files = Array.isArray(extra.fixedInFiles) ? extra.fixedInFiles.join(', ') : extra.fixedInFiles;
+    }
+    if (extra?.fixNotes !== undefined) payload.fix_notes = extra.fixNotes;
+    if (extra?.verificationNotes !== undefined) payload.verification_notes = extra.verificationNotes;
+    if (extra?.fixedAt !== undefined) payload.fixed_at = extra.fixedAt;
+    if (extra?.verifiedAt !== undefined) payload.verified_at = extra.verifiedAt;
+
+    const { error } = await supabase.from('bug_reports').update(payload).eq('id', id);
+    if (error) throw error;
+  },
+
+  async handOffForVerification(id: string, fixedInFiles: string[] | string, fixNotes: string): Promise<void> {
     const { error } = await supabase.from('bug_reports').update({
-      status,
+      status: 'fixed_pending_verification',
+      fixed_in_files: Array.isArray(fixedInFiles) ? fixedInFiles.join(', ') : fixedInFiles,
+      fix_notes: fixNotes,
+      fixed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async verifyBug(id: string, verified: boolean, notes?: string): Promise<void> {
+    const { error } = await supabase.from('bug_reports').update({
+      status: verified ? 'verified_done' : 'reopened',
+      verification_notes: notes || (verified ? 'Verified as fixed' : 'Reopened during verification'),
+      verified_at: verified ? new Date().toISOString() : null,
       updated_at: new Date().toISOString()
     }).eq('id', id);
     if (error) throw error;

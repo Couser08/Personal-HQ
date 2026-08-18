@@ -36,26 +36,28 @@ export function HabitCalendar({
         </div>
       </div>
 
-      <div className="flex items-center gap-6 flex-wrap md:flex-nowrap">
-        <div className="grid grid-flow-col grid-rows-7 gap-1.5 flex-shrink-0">
-          {globalHeatmap.map((cell, idx) => (
-            <div
-              key={idx}
-              title={`${cell.dateStr}: ${Math.round(cell.completionRatio * 100)}% complete`}
-              className={`w-4 h-4 rounded-full transition-colors cursor-default ${
-                cell.isCompleted
-                  ? 'bg-[#22C55E]'
-                  : cell.completionRatio > 0
-                    ? 'bg-[#22C55E]/30'
-                    : cell.isToday
-                      ? 'border-2 border-[#FF7A45] bg-transparent'
-                      : 'bg-surface-alt'
-              }`}
-            />
-          ))}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+        <div className="w-full overflow-x-auto custom-scrollbar pb-2 min-w-0">
+          <div className="grid grid-flow-col grid-rows-7 gap-1.5 min-w-max">
+            {globalHeatmap.map((cell, idx) => (
+              <div
+                key={idx}
+                title={`${cell.dateStr}: ${Math.round(cell.completionRatio * 100)}% complete`}
+                className={`w-4 h-4 rounded-full transition-colors cursor-default ${
+                  cell.isCompleted
+                    ? 'bg-[#22C55E]'
+                    : cell.completionRatio > 0
+                      ? 'bg-[#22C55E]/30'
+                      : cell.isToday
+                        ? 'border-2 border-[#FF7A45] bg-transparent'
+                        : 'bg-surface-alt'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="flex gap-8 border-l border-border-hairline pl-6 py-2">
+        <div className="flex gap-8 border-t lg:border-t-0 lg:border-l border-border-hairline pt-4 lg:pt-0 lg:pl-6 py-2 shrink-0">
           <div className="flex flex-col">
             <span className="text-3xl font-semibold text-text-primary leading-none">{perfectDaysCount}</span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary mt-2">

@@ -5,6 +5,12 @@ import { useBugReportStore } from '../../store/useBugReportStore';
 import { useAppStore } from '../../store/useAppStore';
 import { type BugReportElementInfo, type BugReportElementItem } from '../../store/types';
 import {
+  getElementClasses,
+  getDataAttributes,
+  getAncestorPath,
+  getElementFingerprint,
+} from './utils/elementFingerprint';
+import {
   IconBug,
   IconX,
   IconLoader2,
@@ -23,6 +29,7 @@ interface HoverBox {
   tag: string;
   id?: string;
   classes: string[];
+  ancestorPath: string;
   selector: string;
 }
 
@@ -32,6 +39,8 @@ interface SelectedItem {
   tag: string;
   idAttr?: string;
   classes: string[];
+  ancestorPath?: string;
+  dataAttributes?: Record<string, string>;
   selector: string;
   textSnippet: string;
   pageModule: string;
@@ -243,30 +252,6 @@ export function BugReportInspector() {
   const selectedItemsRef = useRef(selectedItems);
   selectedItemsRef.current = selectedItems;
 
-  // Compute CSS selector path
-  const computeSelector = (el: HTMLElement): string => {
-    if (el.id) return `#${el.id}`;
-    const path: string[] = [];
-    let curr: HTMLElement | null = el;
-    let depth = 0;
-    while (curr && curr !== document.body && depth < 4) {
-      let segment = curr.tagName.toLowerCase();
-      if (curr.id) {
-        segment += `#${curr.id}`;
-        path.unshift(segment);
-        break;
-      }
-      if (curr.className && typeof curr.className === 'string') {
-        const cls = curr.className.split(/\s+/).filter(c => c && !c.includes(':') && !c.includes('[') && !c.includes('/'))[0];
-        if (cls) segment += `.${cls}`;
-      }
-      path.unshift(segment);
-      curr = curr.parentElement;
-      depth++;
-    }
-    return path.join(' > ');
-  };
-
   const updateHoverFromPoint = useCallback((clientX: number, clientY: number) => {
     if (isCapturingRef.current) return;
 
@@ -277,9 +262,8 @@ export function BugReportInspector() {
 
     hoveredElementRef.current = el;
     const rect = el.getBoundingClientRect();
-    const classes = el.className && typeof el.className === 'string'
-      ? el.className.split(/\s+/).filter(Boolean).slice(0, 4)
-      : [];
+    const classes = getElementClasses(el);
+    const ancestorPath = getAncestorPath(el);
 
     setHoverBox({
       x: rect.left,
@@ -289,7 +273,8 @@ export function BugReportInspector() {
       tag: el.tagName.toLowerCase(),
       id: el.id || undefined,
       classes,
-      selector: computeSelector(el),
+      ancestorPath,
+      selector: ancestorPath,
     });
   }, []);
 
@@ -321,36 +306,11 @@ export function BugReportInspector() {
     }
   }, [updateHoverFromPoint]);
 
-  // Capture single element
+  // Capture single element with full fingerprint
   const captureSingleElement = useCallback(async (targetEl: HTMLElement) => {
     setIsCapturing(true);
     try {
-      const rect = targetEl.getBoundingClientRect();
-
-      const elementInfo: BugReportElementInfo = {
-        tag: targetEl.tagName.toLowerCase(),
-        id: targetEl.id || undefined,
-        classes: targetEl.className && typeof targetEl.className === 'string'
-          ? targetEl.className.split(/\s+/).filter(Boolean)
-          : [],
-        selector: computeSelector(targetEl),
-        boundingRect: {
-          x: rect.left + window.scrollX,
-          y: rect.top + window.scrollY,
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          top: Math.round(rect.top),
-          left: Math.round(rect.left),
-        },
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight,
-          scrollX: Math.round(window.scrollX),
-          scrollY: Math.round(window.scrollY),
-        },
-        innerTextSnippet: (targetEl.innerText || '').trim().slice(0, 120),
-        isGroup: false,
-      };
+      const elementInfo = getElementFingerprint(targetEl);
 
       let screenshotData: string | null = null;
       try {
@@ -424,7 +384,9 @@ export function BugReportInspector() {
           tag: item.tag,
           id: item.idAttr,
           classes: item.classes,
-          selector: item.selector,
+          ancestorPath: item.ancestorPath,
+          dataAttributes: item.dataAttributes,
+          selector: item.ancestorPath || item.selector,
           innerTextSnippet: item.textSnippet,
           pageModule: item.pageModule,
           pageTitle: item.pageTitle,
@@ -459,6 +421,7 @@ export function BugReportInspector() {
           height: window.innerHeight,
           scrollX: Math.round(window.scrollX),
           scrollY: Math.round(window.scrollY),
+          devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
         },
         innerTextSnippet: items.map((i) => i.textSnippet).filter(Boolean).slice(0, 3).join(' | '),
         isGroup: true,
@@ -511,16 +474,16 @@ export function BugReportInspector() {
             label: currentMod,
           };
 
+          const ancestorPath = getAncestorPath(targetEl);
           const newItem: SelectedItem = {
             id: `sel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             element: targetEl,
             tag: targetEl.tagName.toLowerCase(),
             idAttr: targetEl.id || undefined,
-            classes:
-              targetEl.className && typeof targetEl.className === 'string'
-                ? targetEl.className.split(/\s+/).filter(Boolean)
-                : [],
-            selector: computeSelector(targetEl),
+            classes: getElementClasses(targetEl),
+            ancestorPath,
+            dataAttributes: getDataAttributes(targetEl),
+            selector: ancestorPath || targetEl.tagName.toLowerCase(),
             textSnippet: (targetEl.innerText || '').trim().slice(0, 60),
             pageModule: currentMod,
             pageTitle: currentModInfo.label,

@@ -5,19 +5,19 @@ import NotebookEditor from './components/NotebookEditor';
 const BooksModule: React.FC = () => {
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
-  if (selectedBookId) {
-    return (
-      <NotebookEditor
-        bookId={selectedBookId}
-        onBack={() => setSelectedBookId(null)}
-      />
-    );
-  }
-
   return (
-    <LibraryDashboard
-      onSelectBook={(id: string) => setSelectedBookId(id)}
-    />
+    <div data-component="BooksModule" className="w-full">
+      {selectedBookId ? (
+        <NotebookEditor
+          bookId={selectedBookId}
+          onBack={() => setSelectedBookId(null)}
+        />
+      ) : (
+        <LibraryDashboard
+          onSelectBook={(id: string) => setSelectedBookId(id)}
+        />
+      )}
+    </div>
   );
 };
 

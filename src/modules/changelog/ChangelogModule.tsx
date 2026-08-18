@@ -96,6 +96,22 @@ const RELEASES: Release[] = [
         Icon: IconCpu,
         title: 'CPU & Bandwidth Optimization',
         desc: 'Daily Supabase egress reduced by ~75-90% (only fetching stale/mutated data). Main-thread CPU on mutations dropped to near zero, unlocking a smooth 60 FPS experience.',
+      },
+      {
+        Icon: IconBug,
+        title: 'Bug Reporter Refactored',
+        desc: 'Rewritten to be robust and accurate. Now properly interacts with the dev team for issue resolution and displays bug status (solved or unresolved) to the user.',
+        badge: 'Refactored',
+      },
+      {
+        Icon: IconShieldLock,
+        title: 'Admin UI Updates',
+        desc: 'Admin panel UI/UX redesigned to adapt to the new Bug Reporter data structures and workflows.',
+      },
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile Responsiveness',
+        desc: 'Continued layout refinements and adaptations across the app for mobile devices.',
       }
     ],
   },
@@ -715,13 +731,13 @@ export default function ChangelogModule() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {[
             { value: RELEASES.length, label: 'Releases', Icon: IconStar },
             { value: RELEASES.filter(r => r.type === 'major').length, label: 'Major Updates', Icon: IconRocket },
             { value: RELEASES.reduce((a, r) => a + r.features.length, 0), label: 'Features Shipped', Icon: IconSparkles },
           ].map(s => (
-            <StatCard key={s.label} label={s.label} value={s.value} icon={<s.Icon size={20} />} />
+            <StatCard key={s.label} label={s.label} value={s.value} icon={<s.Icon size={18} />} />
           ))}
         </div>
       </motion.div>

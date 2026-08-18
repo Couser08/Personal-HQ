@@ -244,6 +244,7 @@ export default function DashboardModule() {
 
   return (
     <motion.div
+      data-component="DashboardModule"
       variants={containerVariants}
       initial="hidden"
       animate="show"
