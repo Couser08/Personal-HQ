@@ -69,7 +69,7 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    version: 'v4.6.5',
+    version: 'v4.6.5 (Beta)',
     codename: 'Velocity Caching',
     date: 'August 18, 2026',
     headline: 'Massive caching improvements and Vision Board refinements.',
