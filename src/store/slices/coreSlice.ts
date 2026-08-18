@@ -29,11 +29,13 @@ import {
   examAttemptService,
   reflectionService,
   visionService,
+  visionBoardService,
   projectStructureService
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
 import { clearRestCache } from '../../lib/supabase';
+import { queryClient } from '../../lib/queryClient';
 import { safeSetItem } from '../../utils/storage';
 
 export interface CoreSlice {
@@ -187,7 +189,8 @@ export const createCoreSlice: StateCreator<
         examAttemptService.fetchAll(userId),
         reflectionService.fetchAll(userId),
         visionService.fetchAll(userId),
-        projectStructureService.fetchAll(userId)
+        projectStructureService.fetchAll(userId),
+        visionBoardService.fetchAll(userId)
       ]);
 
       const serviceNames = [
@@ -196,7 +199,7 @@ export const createCoreSlice: StateCreator<
         'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
         'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
         'study materials', 'exams', 'exam attempts', 'daily reflections', 'visions',
-        'project structures'
+        'project structures', 'vision boards'
       ];
 
       const failedServices = results
@@ -234,6 +237,10 @@ export const createCoreSlice: StateCreator<
       const projectStructures = results[28].status === 'fulfilled' && (results[28].value as any[]).length > 0
         ? results[28].value as any[]
         : get().projectStructures;
+      const visionBoards = results[29].status === 'fulfilled' && (results[29].value as any[]).length > 0
+        ? results[29].value as any[]
+        : (get() as any).visionBoards;
+
 
       if (failedServices.length > 0) {
         console.warn('Supabase sync skipped some modules:', failedServices);
@@ -298,13 +305,14 @@ export const createCoreSlice: StateCreator<
         notes, links, stocks, interestHistory, mediaLogs, countdowns, snippets,
         todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
         sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions, projectStructures,
+        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions, projectStructures, visionBoards,
         theme: dbTheme,
         settings: dbSettings,
         activeFocusItem: dbActiveFocusItem,
         dataLoaded: true,
         isSyncing: false
       } as any);
+
     } catch (err) {
       console.error('Error loading data:', err);
       set({ isSyncing: false });
@@ -319,16 +327,18 @@ export const createCoreSlice: StateCreator<
   clearAllData: () => {
     localStorage.removeItem('phq_active_focus_item');
     clearRestCache().catch((e) => console.error('[Cache] Failed to clear rest cache:', e));
+    queryClient.clear();
     set({
       notes: [], links: [], stocks: [], interestHistory: [], mediaLogs: [], countdowns: [], snippets: [],
       todoProjects: [], todoTasks: [],
       journals: [], mindmaps: [], standardHistory: [], habits: [],
       sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [], journalStickyNotes: [],
-      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [], dailyReflections: [], visions: [],
+      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [], dailyReflections: [], visions: [], projectStructures: [], visionBoards: [],
       dataLoaded: false,
       isSyncing: false
     } as any);
   },
+
 
   drawingElements: [],
   drawingAppState: {},

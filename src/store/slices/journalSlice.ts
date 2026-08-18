@@ -4,6 +4,8 @@ import { journalService, journalStickyNoteService, type JournalStickyNote } from
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { getStoreErrorMessage, normalizeJournalEntry } from '../helpers';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface JournalSlice {
   journals: JournalEntry[];
@@ -55,6 +57,7 @@ export const createJournalSlice: StateCreator<
 
     try {
       await journalService.create(uid, entry);
+      queryClient.invalidateQueries({ queryKey: queryKeys.journals.all(uid) });
       useToastStore.getState().addToast('Success', 'Journal entry saved', 'success');
     } catch (error) {
       useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
@@ -65,9 +68,10 @@ export const createJournalSlice: StateCreator<
     const next = previous.map((j) => (j.id === id ? { ...j, ...data } : j));
     localStorage.setItem('phq_journals', JSON.stringify(next));
     set({ journals: next });
+    const uid = useAuthStore.getState().user?.id;
     try {
-      const uid = useAuthStore.getState().user?.id;
       await journalService.update(id, data, uid);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.journals.all(uid) });
       useToastStore.getState().addToast('Success', 'Journal entry updated', 'success');
     } catch (error) {
       localStorage.setItem('phq_journals', JSON.stringify(previous));
@@ -81,8 +85,10 @@ export const createJournalSlice: StateCreator<
     const next = previous.filter((j) => j.id !== id);
     localStorage.setItem('phq_journals', JSON.stringify(next));
     set({ journals: next });
+    const uid = useAuthStore.getState().user?.id;
     try {
       await journalService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.journals.all(uid) });
       useToastStore.getState().addToast('Success', 'Journal entry deleted', 'success');
     } catch (error) {
       localStorage.setItem('phq_journals', JSON.stringify(previous));
@@ -101,6 +107,7 @@ export const createJournalSlice: StateCreator<
     set({ journalStickyNotes: next });
     try {
       await journalStickyNoteService.create(uid, note);
+      queryClient.invalidateQueries({ queryKey: queryKeys.journals.stickyNotes(uid) });
     } catch (error) {
       localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
       set({ journalStickyNotes: previous });
@@ -109,12 +116,14 @@ export const createJournalSlice: StateCreator<
     }
   },
   updateJournalStickyNote: async (id, data) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().journalStickyNotes;
     const next = previous.map((n) => (n.id === id ? { ...n, ...data } : n));
     localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(next));
     set({ journalStickyNotes: next });
     try {
       await journalStickyNoteService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.journals.stickyNotes(uid) });
     } catch (error) {
       localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
       set({ journalStickyNotes: previous });
@@ -123,12 +132,14 @@ export const createJournalSlice: StateCreator<
     }
   },
   deleteJournalStickyNote: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().journalStickyNotes;
     const next = previous.filter((n) => n.id !== id);
     localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(next));
     set({ journalStickyNotes: next });
     try {
       await journalStickyNoteService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.journals.stickyNotes(uid) });
     } catch (error) {
       localStorage.setItem('phq_journal_sticky_notes', JSON.stringify(previous));
       set({ journalStickyNotes: previous });
@@ -136,4 +147,5 @@ export const createJournalSlice: StateCreator<
       throw error;
     }
   },
+
 });

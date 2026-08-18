@@ -79,7 +79,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
         oscillatorRef.current = osc;
         gainNodeRef.current = gain;
         setIsPlayingAudio(true);
-      } catch (err) {
+      } catch {
         setIsPlayingAudio(true);
       }
     } else {
@@ -101,6 +101,50 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
   const width = node.size?.width || 320;
   const height = node.size?.height || 220;
   const cornerRadius = node.cornerRadius !== undefined ? node.cornerRadius : 20;
+
+  // Typography helper classes
+  const getFontFamilyClass = (family?: string) => {
+    if (family === 'serif') return 'font-serif';
+    if (family === 'mono') return 'font-mono-code';
+    if (family === 'caveat' || family === 'cursive') return 'font-caveat';
+    if (family === 'syne' || family === 'display') return 'font-syne';
+    return 'font-sans';
+  };
+
+  const getFontWeightClass = (weight?: string) => {
+    if (weight === 'normal') return 'font-normal';
+    if (weight === 'medium') return 'font-medium';
+    if (weight === 'bold') return 'font-bold';
+    if (weight === 'black') return 'font-black';
+    return 'font-bold';
+  };
+
+  const getLetterSpacingClass = (spacing?: string) => {
+    if (spacing === 'tight') return 'tracking-tight';
+    if (spacing === 'normal') return 'tracking-normal';
+    if (spacing === 'wide') return 'tracking-wide';
+    if (spacing === 'widest') return 'tracking-widest';
+    return 'tracking-tight';
+  };
+
+  // Card Background Calculation
+  const isQuoteOrAffirmation = node.type === 'quote';
+  const isText = node.type === 'text';
+
+  const cardBgColor = (() => {
+    if (isQuoteOrAffirmation) {
+      return node.accentColor || '#fef08a';
+    }
+    if (isText) {
+      if (node.bgStyle === 'solid' || (!node.bgStyle && node.accentColor && node.accentColor !== '#3b82f6')) {
+        return node.accentColor || 'var(--color-surface, #ffffff)';
+      }
+      if (node.bgStyle === 'pastel' && node.accentColor) {
+        return node.accentColor;
+      }
+    }
+    return 'var(--color-surface, #ffffff)';
+  })();
 
   return (
     <div
@@ -204,17 +248,18 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
 
       {/* NODE CARD CONTAINER */}
       <div
-        className={`w-full h-full relative overflow-hidden transition-shadow duration-200 flex flex-col group ${
+        className={`w-full h-full relative overflow-hidden transition-all duration-200 flex flex-col group ${
           node.hasShadow
             ? 'shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_16px_40px_rgb(0,0,0,0.12)]'
             : ''
-        } ${node.hasBorder ? 'border border-border' : 'border border-border/60'}`}
+        } ${
+          node.hasBorder
+            ? 'border-[1.5px] border-border-alt ring-1 ring-border-alt/70'
+            : 'border border-border/40'
+        }`}
         style={{
           borderRadius: `${cornerRadius}px`,
-          backgroundColor:
-            node.type === 'quote'
-              ? (node.accentColor || '#fef08a')
-              : 'var(--color-surface, #ffffff)',
+          backgroundColor: cardBgColor,
         }}
       >
         {/* ── 1. IMAGE NODE ── */}
@@ -253,7 +298,18 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
 
         {/* ── 2. TEXT / TYPOGRAPHY NODE ── */}
         {node.type === 'text' && (
-          <div className="w-full h-full p-6 flex flex-col justify-between relative bg-gradient-to-br from-rose-100/60 via-purple-100/50 to-teal-100/60 dark:from-rose-950/40 dark:via-purple-950/30 dark:to-teal-950/40 text-text-primary">
+          <div
+            className={`w-full h-full p-6 flex flex-col justify-between relative text-text-primary ${
+              node.bgStyle === 'gradient'
+                ? 'bg-gradient-to-br from-rose-100/70 via-purple-100/60 to-teal-100/70 dark:from-rose-950/40 dark:via-purple-950/30 dark:to-teal-950/40'
+                : node.bgStyle === 'glass'
+                ? 'bg-surface/80 backdrop-blur-xl'
+                : ''
+            }`}
+            style={{
+              color: node.textColor || undefined,
+            }}
+          >
             <div className="absolute top-3 right-3 z-20">
               <button
                 type="button"
@@ -261,7 +317,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                   e.stopPropagation();
                   setShowMenu((p) => !p);
                 }}
-                className="w-7 h-7 rounded-full bg-surface-alt/80 text-text-secondary hover:text-text-primary flex items-center justify-center cursor-pointer"
+                className="w-7 h-7 rounded-full bg-surface-alt/80 text-text-secondary hover:text-text-primary flex items-center justify-center cursor-pointer shadow-2xs"
               >
                 <IconDots size={15} />
               </button>
@@ -277,13 +333,11 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
               }`}
             >
               <h2
-                className={`font-black tracking-tight uppercase leading-tight ${
-                  node.fontFamily === 'serif'
-                    ? 'font-serif'
-                    : node.fontFamily === 'mono'
-                    ? 'font-mono'
-                    : 'font-sans'
-                }`}
+                className={`leading-tight ${getFontFamilyClass(node.fontFamily)} ${getFontWeightClass(
+                  node.fontWeight
+                )} ${getLetterSpacingClass(node.letterSpacing)} ${
+                  node.isUppercase !== false ? 'uppercase' : ''
+                } ${node.fontStyle === 'italic' ? 'italic' : ''}`}
                 style={{ fontSize: `${node.fontSize || 22}px` }}
               >
                 {node.title}
@@ -294,7 +348,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                 </span>
               )}
               {node.content && (
-                <p className="text-[12.5px] text-text-secondary mt-2 line-clamp-2">
+                <p className="text-[12.5px] text-text-secondary mt-2 line-clamp-3 leading-relaxed">
                   {node.content}
                 </p>
               )}
@@ -308,7 +362,9 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                   e.stopPropagation();
                   onUpdate({ textAlign: 'left' });
                 }}
-                className="hover:text-text-primary p-1 cursor-pointer"
+                className={`p-1 cursor-pointer transition-colors ${
+                  node.textAlign === 'left' ? 'text-primary font-bold' : 'hover:text-text-primary'
+                }`}
                 title="Align Left"
               >
                 <IconAlignLeft size={15} />
@@ -319,7 +375,9 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                   e.stopPropagation();
                   onUpdate({ textAlign: 'center' });
                 }}
-                className="hover:text-text-primary p-1 cursor-pointer"
+                className={`p-1 cursor-pointer transition-colors ${
+                  node.textAlign === 'center' ? 'text-primary font-bold' : 'hover:text-text-primary'
+                }`}
                 title="Align Center"
               >
                 <IconAlignCenter size={15} />
@@ -330,7 +388,9 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                   e.stopPropagation();
                   onUpdate({ textAlign: 'right' });
                 }}
-                className="hover:text-text-primary p-1 cursor-pointer"
+                className={`p-1 cursor-pointer transition-colors ${
+                  node.textAlign === 'right' ? 'text-primary font-bold' : 'hover:text-text-primary'
+                }`}
                 title="Align Right"
               >
                 <IconAlignRight size={15} />
@@ -342,7 +402,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
                   onInspect();
                 }}
                 className="hover:text-text-primary p-1 cursor-pointer"
-                title="Edit Properties"
+                title="Customize Typography & Background"
               >
                 <IconLink size={15} />
               </button>
@@ -420,9 +480,14 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
           </div>
         )}
 
-        {/* ── 4. QUOTE / STICKY NOTE NODE ── */}
+        {/* ── 4. QUOTE / AFFIRMATION STICKY NODE ── */}
         {node.type === 'quote' && (
-          <div className="w-full h-full p-5 flex flex-col justify-between relative text-amber-950 dark:text-amber-100">
+          <div
+            className="w-full h-full p-5 flex flex-col justify-between relative text-text-primary"
+            style={{
+              color: node.textColor || undefined,
+            }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-3xl font-serif leading-none opacity-60">
                 &ldquo;
@@ -430,7 +495,7 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
               <button
                 type="button"
                 onClick={handleHeartClick}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-amber-900/60 hover:text-rose-500 transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-text-secondary hover:text-rose-500 transition-colors cursor-pointer"
               >
                 {isLiked ? (
                   <IconHeartFilled size={16} className="text-rose-500" />
@@ -440,12 +505,18 @@ export const VisionNodeCard: React.FC<VisionNodeProps> = ({
               </button>
             </div>
 
-            <p className="text-[14px] sm:text-[15px] font-bold leading-snug my-auto">
+            <p
+              className={`text-[14px] sm:text-[15.5px] leading-snug my-auto ${getFontFamilyClass(
+                node.fontFamily || 'serif'
+              )} ${getFontWeightClass(node.fontWeight || 'bold')} ${
+                node.fontStyle === 'italic' ? 'italic' : ''
+              }`}
+            >
               {node.content || 'Discipline today freedom tomorrow.'}
             </p>
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-[11px] font-semibold opacity-70 italic">
+              <span className="text-[11px] font-semibold opacity-75 italic">
                 {node.quoteAuthor ? `— ${node.quoteAuthor}` : '— Unknown'}
               </span>
               <button

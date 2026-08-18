@@ -1,8 +1,10 @@
 import { type StateCreator } from 'zustand';
 import type { AppStore } from '../useAppStore';
 import type { Vision, VisionTask, VisionBoard, VisionNode } from '../types';
-import { visionService } from '../../lib/db';
+import { visionService, visionBoardService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface VisionSlice {
   // Boards & Nodes
@@ -93,10 +95,15 @@ export const DEFAULT_SEEDED_BOARDS: VisionBoard[] = [
         size: { width: 280, height: 180 },
         cornerRadius: 20,
         hasShadow: true,
-        hasBorder: false,
-        accentColor: '#ec4899',
-        fontFamily: 'serif',
-        fontSize: 20,
+        hasBorder: true,
+        accentColor: '#111111',
+        bgStyle: 'solid',
+        textColor: '#FFFFFF',
+        fontFamily: 'syne',
+        fontSize: 22,
+        fontWeight: 'black',
+        isUppercase: true,
+        letterSpacing: 'wide',
         textAlign: 'center',
         tags: ['Design', 'Studio', 'Aesthetics'],
         createdAt: new Date().toISOString(),
@@ -285,6 +292,13 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
     const nextBoards = [newBoard, ...get().visionBoards];
     set({ visionBoards: nextBoards, activeBoardId: id, selectedNodeId: null });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      visionBoardService.upsertBoard(uid, newBoard)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to sync vision board to Supabase:', e));
+    }
     return id;
   },
 
@@ -294,6 +308,14 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
     );
     set({ visionBoards: nextBoards });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    const updatedBoard = nextBoards.find((b) => b.id === id);
+    if (uid && updatedBoard) {
+      visionBoardService.upsertBoard(uid, updatedBoard)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to sync vision board update:', e));
+    }
   },
 
   deleteBoard: async (id) => {
@@ -308,6 +330,13 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       selectedNodeId: null,
     });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      visionBoardService.deleteBoard(id)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to delete vision board from db:', e));
+    }
   },
 
   setActiveBoard: (id) => {
@@ -320,6 +349,14 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
     );
     set({ visionBoards: nextBoards });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    const updatedBoard = nextBoards.find((b) => b.id === id);
+    if (uid && updatedBoard) {
+      visionBoardService.upsertBoard(uid, updatedBoard)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to toggle board favorite in db:', e));
+    }
   },
 
   // Node CRUD
@@ -360,8 +397,14 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       audioDuration: nodeData.audioDuration,
       quoteAuthor: nodeData.quoteAuthor,
       fontFamily: nodeData.fontFamily || 'sans',
-      fontSize: nodeData.fontSize || 16,
+      fontSize: nodeData.fontSize || 20,
+      fontWeight: nodeData.fontWeight || 'bold',
+      fontStyle: nodeData.fontStyle || 'normal',
+      isUppercase: nodeData.isUppercase !== false,
+      letterSpacing: nodeData.letterSpacing || 'tight',
       textAlign: nodeData.textAlign || 'left',
+      bgStyle: nodeData.bgStyle || 'solid',
+      textColor: nodeData.textColor,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -383,18 +426,30 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       selectedNodeId: id,
     });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      visionBoardService.upsertNode(uid, newNode)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to sync vision node:', e));
+    }
     return id;
   },
 
   updateVisionNode: async (id, updates) => {
     const activeId = get().activeBoardId;
+    let targetNode: VisionNode | null = null;
     const nextBoards = get().visionBoards.map((b) => {
       if (b.id === activeId) {
         return {
           ...b,
-          nodes: b.nodes.map((n) =>
-            n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
-          ),
+          nodes: b.nodes.map((n) => {
+            if (n.id === id) {
+              targetNode = { ...n, ...updates, updatedAt: new Date().toISOString() };
+              return targetNode;
+            }
+            return n;
+          }),
           updatedAt: new Date().toISOString(),
         };
       }
@@ -403,6 +458,13 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
 
     set({ visionBoards: nextBoards });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid && targetNode) {
+      visionBoardService.upsertNode(uid, targetNode)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to sync vision node update:', e));
+    }
   },
 
   deleteVisionNode: async (id) => {
@@ -423,6 +485,13 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
     });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      visionBoardService.deleteNode(id)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to delete vision node in db:', e));
+    }
   },
 
   duplicateVisionNode: async (id) => {
@@ -457,7 +526,15 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
 
     set({ visionBoards: nextBoards, selectedNodeId: newId });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      visionBoardService.upsertNode(uid, duplicated)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.vision.boards(uid) }))
+        .catch((e) => console.error('Failed to sync duplicated vision node:', e));
+    }
   },
+
 
   updateVisionNodePosition: (id, position) => {
     const activeId = get().activeBoardId;

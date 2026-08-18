@@ -4,6 +4,8 @@ import { mindmapService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { getStoreErrorMessage } from '../helpers';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface MindmapSlice {
   mindmaps: Mindmap[];
@@ -36,6 +38,7 @@ export const createMindmapSlice: StateCreator<
     set({ mindmaps: next });
     try {
       await mindmapService.create(uid, mindmap);
+      queryClient.invalidateQueries({ queryKey: queryKeys.mindmaps.all(uid) });
       useToastStore.getState().addToast('Success', 'Mindmap created', 'success');
     } catch (error) {
       localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
@@ -45,12 +48,14 @@ export const createMindmapSlice: StateCreator<
     }
   },
   updateMindmap: async (id, data) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().mindmaps;
     const next = previous.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
     localStorage.setItem('phq_mindmaps', JSON.stringify(next));
     set({ mindmaps: next });
     try {
       await mindmapService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.mindmaps.all(uid) });
     } catch (error) {
       localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
       set({ mindmaps: previous });
@@ -59,12 +64,14 @@ export const createMindmapSlice: StateCreator<
     }
   },
   deleteMindmap: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().mindmaps;
     const next = previous.filter((m) => m.id !== id);
     localStorage.setItem('phq_mindmaps', JSON.stringify(next));
     set({ mindmaps: next });
     try {
       await mindmapService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.mindmaps.all(uid) });
       useToastStore.getState().addToast('Success', 'Mindmap deleted', 'success');
     } catch (error) {
       localStorage.setItem('phq_mindmaps', JSON.stringify(previous));
@@ -74,3 +81,4 @@ export const createMindmapSlice: StateCreator<
     }
   },
 });
+

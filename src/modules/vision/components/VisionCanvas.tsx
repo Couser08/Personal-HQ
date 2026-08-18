@@ -400,9 +400,9 @@ export const VisionCanvas: React.FC<VisionCanvasProps> = ({
           backgroundSize: `${32 * canvasZoom}px ${32 * canvasZoom}px`,
           backgroundImage:
             canvasTheme === 'dots'
-              ? `radial-gradient(circle, var(--color-border, #cbd5e1) ${1.5 * canvasZoom}px, transparent ${1.5 * canvasZoom}px)`
+              ? `radial-gradient(circle, var(--canvas-dot-color, rgba(0,0,0,0.22)) ${1.8 * canvasZoom}px, transparent ${1.8 * canvasZoom}px)`
               : canvasTheme === 'grid'
-              ? `linear-gradient(to right, var(--color-border, #e2e8f0) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border, #e2e8f0) 1px, transparent 1px)`
+              ? `linear-gradient(to right, var(--canvas-grid-color, rgba(0,0,0,0.12)) 1px, transparent 1px), linear-gradient(to bottom, var(--canvas-grid-color, rgba(0,0,0,0.12)) 1px, transparent 1px)`
               : 'none',
         }}
       />

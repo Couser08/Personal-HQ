@@ -4,6 +4,7 @@ import { bugReportService } from '../lib/db';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
 import { safeSetItem, setIDBItem } from '../utils/storage';
+import { queryClient } from '../lib/queryClient';
 
 function persistBugReports(reportsList: BugReport[]) {
   void setIDBItem('phq_bug_reports_full', reportsList);
@@ -195,6 +196,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     // Sync to Supabase
     try {
       await bugReportService.create(newReport);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
       useToastStore.getState().addToast('Bug Reported', 'Report saved and synced to database.', 'success');
     } catch (err: any) {
       console.error('Failed to sync bug report to Supabase:', err);
@@ -212,6 +214,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
 
     try {
       await bugReportService.updateStatus(id, status);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
       useToastStore.getState().addToast('Updated', `Bug status set to ${status}.`, 'success');
     } catch (err: any) {
       console.error('Failed to update bug status in db:', err);
@@ -226,11 +229,13 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
 
     try {
       await bugReportService.delete(id);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bugReports'] });
       useToastStore.getState().addToast('Deleted', 'Bug report removed.', 'success');
     } catch (err: any) {
       console.error('Failed to delete bug report from db:', err);
     }
   },
+
 
   loadAllReports: async () => {
     const user = useAuthStore.getState().user;

@@ -4,6 +4,8 @@ import { todoProjectService, todoTaskService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { shouldThrottle, getStoreErrorMessage } from '../helpers';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface TodoSlice {
   todoTasks: TodoTask[];
@@ -51,6 +53,7 @@ export const createTodoSlice: StateCreator<
     set({ todoProjects: next });
     try {
       const savedInDb = await todoProjectService.create(uid, project);
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.projects(uid) });
       const location = savedInDb ? 'Database' : 'Local Storage';
       useToastStore.getState().addToast('Success', `Project saved to ${location}`, 'success');
     } catch (error) {
@@ -62,6 +65,7 @@ export const createTodoSlice: StateCreator<
   },
   
   deleteTodoProject: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previousProjects = get().todoProjects;
     const previousTasks = get().todoTasks;
     const nextProjects = previousProjects.filter(p => p.id !== id);
@@ -71,6 +75,9 @@ export const createTodoSlice: StateCreator<
     set({ todoProjects: nextProjects, todoTasks: nextTasks });
     try {
       await todoProjectService.delete(id);
+      if (uid) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
+      }
       useToastStore.getState().addToast('Success', 'Project deleted', 'success');
     } catch (error) {
       localStorage.setItem('phq_todo_projects', JSON.stringify(previousProjects));
@@ -96,6 +103,7 @@ export const createTodoSlice: StateCreator<
 
     try {
       const savedInDb = await todoTaskService.create(uid, task);
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
       const location = savedInDb ? 'Database' : 'Local Storage';
       useToastStore.getState().addToast('Success', `Task saved to ${location}`, 'success');
     } catch (error) {
@@ -107,6 +115,7 @@ export const createTodoSlice: StateCreator<
   },
   
   updateTodoTask: async (id, data) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().todoTasks;
     const next = previous.map(t => t.id === id ? { ...t, ...data } : t);
     localStorage.setItem('phq_todo_tasks', JSON.stringify(next));
@@ -121,6 +130,7 @@ export const createTodoSlice: StateCreator<
 
     try {
       await todoTaskService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
     } catch (error) {
       localStorage.setItem('phq_todo_tasks', JSON.stringify(previous));
       set({ todoTasks: previous });
@@ -129,6 +139,7 @@ export const createTodoSlice: StateCreator<
   },
   
   deleteTodoTask: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const task = get().todoTasks.find(t => t.id === id);
     if (!task) return;
     const previous = get().todoTasks;
@@ -144,6 +155,7 @@ export const createTodoSlice: StateCreator<
       set({ todoTasks: next });
       try {
         await todoTaskService.delete(id);
+        if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
         useToastStore.getState().addToast('Success', 'Task deleted permanently', 'success');
       } catch (error) {
         localStorage.setItem('phq_todo_tasks', JSON.stringify(previous));
@@ -156,6 +168,7 @@ export const createTodoSlice: StateCreator<
       set({ todoTasks: next });
       try {
         await todoTaskService.update(id, { deleted: true });
+        if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
         useToastStore.getState().addToast('Success', 'Task moved to Trash', 'success');
       } catch (error) {
         localStorage.setItem('phq_todo_tasks', JSON.stringify(previous));
@@ -166,12 +179,14 @@ export const createTodoSlice: StateCreator<
   },
 
   restoreTodoTask: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().todoTasks;
     const next = previous.map(t => t.id === id ? { ...t, deleted: false } : t);
     localStorage.setItem('phq_todo_tasks', JSON.stringify(next));
     set({ todoTasks: next });
     try {
       await todoTaskService.update(id, { deleted: false });
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
       useToastStore.getState().addToast('Success', 'Task restored', 'success');
     } catch (error) {
       localStorage.setItem('phq_todo_tasks', JSON.stringify(previous));
@@ -181,6 +196,7 @@ export const createTodoSlice: StateCreator<
   },
 
   emptyTodoTrash: async () => {
+    const uid = useAuthStore.getState().user?.id;
     const trashTasks = get().todoTasks.filter(t => t.deleted);
     if (trashTasks.length === 0) return;
 
@@ -191,6 +207,7 @@ export const createTodoSlice: StateCreator<
 
     try {
       await Promise.all(trashTasks.map(t => todoTaskService.delete(t.id)));
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.todos.all(uid) });
       useToastStore.getState().addToast('Success', 'Trash emptied', 'success');
     } catch (error) {
       localStorage.setItem('phq_todo_tasks', JSON.stringify(previous));
@@ -199,3 +216,4 @@ export const createTodoSlice: StateCreator<
     }
   },
 });
+

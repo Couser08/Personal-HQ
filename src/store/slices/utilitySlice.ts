@@ -34,6 +34,8 @@ import {
   type PomodoroCompletionNotification
 } from '../../utils/pomodoroNotifications';
 import { safeSetItem } from '../../utils/storage';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface UtilitySlice {
   notes: Note[];
@@ -386,6 +388,7 @@ export const createUtilitySlice: StateCreator<
 
     try {
       await noteService.create(uid, note);
+      queryClient.invalidateQueries({ queryKey: queryKeys.notes.all(uid) });
       useToastStore.getState().addToast('Success', 'Note saved to cloud', 'success');
     } catch (error) {
       useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
@@ -393,11 +396,13 @@ export const createUtilitySlice: StateCreator<
   },
   updateNote: async (id, data, silent = false) => {
     const previous = get().notes;
+    const uid = useAuthStore.getState().user?.id;
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
     }));
     try {
       await noteService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.notes.all(uid) });
       if (!silent) {
         useToastStore.getState().addToast('Success', 'Note updated', 'success');
       }
@@ -416,9 +421,11 @@ export const createUtilitySlice: StateCreator<
   },
   deleteNote: async (id) => {
     const previous = get().notes;
+    const uid = useAuthStore.getState().user?.id;
     set((state) => ({ notes: state.notes.filter((n) => n.id !== id) }));
     try {
       await noteService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.notes.all(uid) });
       useToastStore.getState().addToast('Success', 'Note deleted', 'success');
     } catch (error) {
       set({ notes: previous });
@@ -444,6 +451,7 @@ export const createUtilitySlice: StateCreator<
     set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
     try {
       await linkService.create(uid, link);
+      queryClient.invalidateQueries({ queryKey: queryKeys.links.all(uid) });
       useToastStore.getState().addToast('Success', 'Link saved', 'success');
     } catch (error) {
       set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
@@ -452,11 +460,13 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteLink: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().links;
     const updated = previous.filter((l) => l.id !== id);
     set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
     try {
       await linkService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.links.all(uid) });
       useToastStore.getState().addToast('Success', 'Link deleted', 'success');
     } catch (error) {
       set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
@@ -465,11 +475,13 @@ export const createUtilitySlice: StateCreator<
     }
   },
   updateLink: async (id: string, data: Partial<Link>) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().links;
     const updated = previous.map((l) => (l.id === id ? { ...l, ...data } : l));
     set({ links: updated, savedLinks: updated as any[] as SavedLink[] });
     try {
       await linkService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.links.all(uid) });
       useToastStore.getState().addToast('Success', 'Link updated', 'success');
     } catch (error) {
       set({ links: previous, savedLinks: previous as any[] as SavedLink[] });
@@ -509,6 +521,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ appTags: [...state.appTags, tag] }));
     try {
       await tagService.create(uid, tag);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.all(uid) });
       useToastStore.getState().addToast('Success', 'Tag created in database', 'success');
     } catch (error) {
       set({ appTags: previous });
@@ -517,12 +530,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
   updateAppTag: async (id: string, updates: Partial<Omit<AppTag, 'id' | 'createdAt'>>) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().appTags;
     set((state) => ({
       appTags: state.appTags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
     }));
     try {
       await tagService.update(id, updates);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.tags.all(uid) });
       useToastStore.getState().addToast('Success', 'Tag updated', 'success');
     } catch (error) {
       set({ appTags: previous });
@@ -531,10 +546,12 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteAppTag: async (id: string) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().appTags;
     set((state) => ({ appTags: state.appTags.filter((t) => t.id !== id) }));
     try {
       await tagService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.tags.all(uid) });
       useToastStore.getState().addToast('Success', 'Tag deleted', 'success');
     } catch (error) {
       set({ appTags: previous });
@@ -552,6 +569,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ stocks: [entry, ...state.stocks] }));
     try {
       await stockService.create(uid, entry);
+      queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all(uid) });
       useToastStore.getState().addToast('Success', 'Stock entry saved', 'success');
     } catch (error) {
       set({ stocks: previous });
@@ -560,10 +578,12 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteStock: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().stocks;
     set((state) => ({ stocks: state.stocks.filter((s) => s.id !== id) }));
     try {
       await stockService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.stocks.all(uid) });
       useToastStore.getState().addToast('Success', 'Stock entry deleted', 'success');
     } catch (error) {
       set({ stocks: previous });
@@ -581,6 +601,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ interestHistory: [record, ...state.interestHistory] }));
     try {
       await interestService.create(uid, record);
+      queryClient.invalidateQueries({ queryKey: queryKeys.interest.all(uid) });
       useToastStore.getState().addToast('Success', 'Record saved', 'success');
     } catch (error) {
       set({ interestHistory: previous });
@@ -589,12 +610,14 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteInterestRecord: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().interestHistory;
     set((state) => ({
       interestHistory: state.interestHistory.filter((r) => r.id !== id),
     }));
     try {
       await interestService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.interest.all(uid) });
       useToastStore.getState().addToast('Success', 'Record deleted', 'success');
     } catch (error) {
       set({ interestHistory: previous });
@@ -612,6 +635,7 @@ export const createUtilitySlice: StateCreator<
     set({ standardHistory: next });
     try {
       await standardCalcService.create(uid, record);
+      queryClient.invalidateQueries({ queryKey: queryKeys.standardCalc.all(uid) });
     } catch (error) {
       set({ standardHistory: previous });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not save calculation'), 'error');
@@ -625,6 +649,7 @@ export const createUtilitySlice: StateCreator<
     set({ standardHistory: [] });
     try {
       await standardCalcService.clearAll(uid);
+      queryClient.invalidateQueries({ queryKey: queryKeys.standardCalc.all(uid) });
     } catch (error) {
       set({ standardHistory: previous });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not clear history'), 'error');
@@ -648,6 +673,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ mediaLogs: [log, ...state.mediaLogs] }));
     try {
       await mediaService.create(uid, log);
+      queryClient.invalidateQueries({ queryKey: queryKeys.media.all(uid) });
       useToastStore.getState().addToast('Success', 'Media log added', 'success');
     } catch (error) {
       set({ mediaLogs: previous });
@@ -656,15 +682,19 @@ export const createUtilitySlice: StateCreator<
     }
   },
   updateMediaLog: async (id, data) => {
+    const uid = useAuthStore.getState().user?.id;
     set((state) => ({
       mediaLogs: state.mediaLogs.map((m) => (m.id === id ? { ...m, ...data } : m)),
     }));
     await mediaService.update(id, data);
+    if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.media.all(uid) });
     useToastStore.getState().addToast('Success', 'Media log updated', 'success');
   },
   deleteMediaLog: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     set((state) => ({ mediaLogs: state.mediaLogs.filter((m) => m.id !== id) }));
     await mediaService.delete(id);
+    if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.media.all(uid) });
     useToastStore.getState().addToast('Success', 'Media log deleted', 'success');
   },
 
@@ -684,6 +714,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ countdowns: [countdown, ...state.countdowns] }));
     try {
       await countdownService.create(uid, countdown);
+      queryClient.invalidateQueries({ queryKey: queryKeys.countdowns.all(uid) });
       useToastStore.getState().addToast('Success', 'Countdown created', 'success');
     } catch (error) {
       set({ countdowns: previous });
@@ -692,8 +723,10 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteCountdown: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     set((state) => ({ countdowns: state.countdowns.filter((c) => c.id !== id) }));
     await countdownService.delete(id);
+    if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.countdowns.all(uid) });
     useToastStore.getState().addToast('Success', 'Countdown deleted', 'success');
   },
 
@@ -706,6 +739,7 @@ export const createUtilitySlice: StateCreator<
     set((state) => ({ snippets: [snippet, ...state.snippets] }));
     try {
       await snippetService.create(uid, snippet);
+      queryClient.invalidateQueries({ queryKey: queryKeys.snippets.all(uid) });
       useToastStore.getState().addToast('Success', 'Snippet added', 'success');
     } catch (error) {
       set({ snippets: previous });
@@ -714,6 +748,7 @@ export const createUtilitySlice: StateCreator<
     }
   },
   updateSnippet: async (id, data) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().snippets;
     const nextData = { ...data, updatedAt: data.updatedAt ?? new Date().toISOString() };
     set((state) => ({
@@ -721,6 +756,7 @@ export const createUtilitySlice: StateCreator<
     }));
     try {
       await snippetService.update(id, nextData);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.snippets.all(uid) });
       useToastStore.getState().addToast('Success', 'Snippet updated', 'success');
     } catch (error) {
       set({ snippets: previous });
@@ -729,10 +765,12 @@ export const createUtilitySlice: StateCreator<
     }
   },
   deleteSnippet: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const previous = get().snippets;
     set((state) => ({ snippets: state.snippets.filter((s) => s.id !== id) }));
     try {
       await snippetService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.snippets.all(uid) });
       useToastStore.getState().addToast('Success', 'Snippet deleted', 'success');
     } catch (error) {
       set({ snippets: previous });
@@ -740,6 +778,7 @@ export const createUtilitySlice: StateCreator<
       throw error;
     }
   },
+
 
   // ── Pomodoro ──────────────────────────────────────────────────────────────
   pomodoroStats: { totalSessions: 0, totalMinutes: 0 },

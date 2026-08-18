@@ -4,6 +4,8 @@ import { habitService, reflectionService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { shouldThrottle, getStoreErrorMessage } from '../helpers';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface HabitSlice {
   habits: Habit[];
@@ -57,6 +59,7 @@ export const createHabitSlice: StateCreator<
 
     try {
       await habitService.create(uid, habit);
+      queryClient.invalidateQueries({ queryKey: queryKeys.habits.all(uid) });
       useToastStore.getState().addToast('Success', 'Habit created', 'success');
     } catch (error) {
       useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
@@ -67,8 +70,10 @@ export const createHabitSlice: StateCreator<
     const updated = previous.map((h) => (h.id === id ? { ...h, ...data } : h));
     set({ habits: updated });
     localStorage.setItem('phq_habits', JSON.stringify(updated));
+    const uid = useAuthStore.getState().user?.id;
     try {
       await habitService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.habits.all(uid) });
     } catch (error) {
       set({ habits: previous });
       localStorage.setItem('phq_habits', JSON.stringify(previous));
@@ -87,8 +92,10 @@ export const createHabitSlice: StateCreator<
       get().setActiveFocusItem(null);
     }
 
+    const uid = useAuthStore.getState().user?.id;
     try {
       await habitService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.habits.all(uid) });
       useToastStore.getState().addToast('Success', 'Habit deleted', 'success');
     } catch (error) {
       set({ habits: previous });
@@ -98,6 +105,7 @@ export const createHabitSlice: StateCreator<
     }
   },
   toggleHabitCompletion: async (id, dateStr) => {
+
     const previous = get().habits;
     const updated = previous.map((h) => {
       if (h.id !== id) return h;
@@ -189,7 +197,7 @@ export const createHabitSlice: StateCreator<
     });
     
     set({ habits: updated });
-    localStorage.setItem('phq_habits', JSON.stringify(updated));
+    const uid = useAuthStore.getState().user?.id;
     try {
       const target = updated.find((h) => h.id === id);
       if (target) {
@@ -199,6 +207,7 @@ export const createHabitSlice: StateCreator<
           bestStreak: target.bestStreak,
           completionDetails: target.completionDetails,
         });
+        if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.habits.all(uid) });
       }
     } catch (error) {
       set({ habits: previous });
@@ -221,6 +230,7 @@ export const createHabitSlice: StateCreator<
     }
     try {
       await reflectionService.create(uid, ref);
+      queryClient.invalidateQueries({ queryKey: queryKeys.habits.reflections(uid) });
       useToastStore.getState().addToast('Success', 'Reflection saved', 'success');
     } catch (error) {
       useToastStore.getState().addToast('Saved Locally', 'Saved locally in workspace', 'info');
@@ -231,8 +241,10 @@ export const createHabitSlice: StateCreator<
     const updated = previous.map((r) => (r.id === id ? { ...r, ...data } : r));
     set({ dailyReflections: updated });
     localStorage.setItem('phq_daily_reflections', JSON.stringify(updated));
+    const uid = useAuthStore.getState().user?.id;
     try {
       await reflectionService.update(id, data);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.habits.reflections(uid) });
     } catch (error) {
       set({ dailyReflections: previous });
       localStorage.setItem('phq_daily_reflections', JSON.stringify(previous));
@@ -245,8 +257,10 @@ export const createHabitSlice: StateCreator<
     const updated = previous.filter((r) => r.id !== id);
     set({ dailyReflections: updated });
     localStorage.setItem('phq_daily_reflections', JSON.stringify(updated));
+    const uid = useAuthStore.getState().user?.id;
     try {
       await reflectionService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.habits.reflections(uid) });
       useToastStore.getState().addToast('Success', 'Reflection deleted', 'success');
     } catch (error) {
       set({ dailyReflections: previous });
@@ -255,4 +269,5 @@ export const createHabitSlice: StateCreator<
       throw error;
     }
   },
+
 });

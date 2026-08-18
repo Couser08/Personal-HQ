@@ -3,6 +3,8 @@ import { type AppStore, type ProjectStructure, type ProjectNode } from '../types
 import { projectStructureService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { safeSetItem } from '../../utils/storage';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface ProjectStructureSlice {
   projectStructures: ProjectStructure[];
@@ -87,6 +89,7 @@ export const createProjectStructureSlice: StateCreator<
       if (uid) {
         try {
           await projectStructureService.create(uid, project);
+          queryClient.invalidateQueries({ queryKey: queryKeys.projectStructure.all(uid) });
         } catch (e) {
           console.error('Failed to sync new project to Supabase:', e);
         }
@@ -105,6 +108,7 @@ export const createProjectStructureSlice: StateCreator<
       if (uid) {
         try {
           await projectStructureService.update(id, data);
+          queryClient.invalidateQueries({ queryKey: queryKeys.projectStructure.all(uid) });
         } catch (e) {
           console.error('Failed to update project in Supabase:', e);
         }
@@ -122,11 +126,13 @@ export const createProjectStructureSlice: StateCreator<
       if (uid) {
         try {
           await projectStructureService.delete(id);
+          queryClient.invalidateQueries({ queryKey: queryKeys.projectStructure.all(uid) });
         } catch (e) {
           console.error('Failed to delete project in Supabase:', e);
         }
       }
     },
+
 
     addNodeToProject: (projectId, nodeData) => {
       const project = get().projectStructures.find((p) => p.id === projectId);

@@ -732,6 +732,18 @@ export const todoProjectService = {
     }
   },
 
+  async update(id: string, updates: Partial<TodoProject>) {
+    try {
+      const payload: Record<string, any> = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.color !== undefined) payload.color = updates.color;
+      const { error } = await supabase.from('todo_projects').update(payload).eq('id', id);
+      if (error) console.warn('TodoProject Update Error:', error);
+    } catch (e) {
+      console.warn('TodoProject Update Exception:', e);
+    }
+  },
+
   async delete(id: string) {
     try {
       const { error: taskError } = await supabase
@@ -751,6 +763,7 @@ export const todoProjectService = {
     }
   },
 };
+
 
 const TODO_OPTIONAL_COLUMNS = ['subtasks', 'deleted', 'start_time', 'end_time', 'pomodoro_count'];
 
@@ -1968,7 +1981,13 @@ export const visionBoardService = {
         quoteAuthor: n.quote_author,
         fontFamily: n.font_family ?? 'sans',
         fontSize: n.font_size ?? 16,
+        fontWeight: n.font_weight ?? 'bold',
+        fontStyle: n.font_style ?? 'normal',
+        isUppercase: n.is_uppercase !== false,
+        letterSpacing: n.letter_spacing ?? 'tight',
         textAlign: n.text_align ?? 'left',
+        bgStyle: n.bg_style ?? 'solid',
+        textColor: n.text_color,
         isFavorite: !!n.is_favorite,
         createdAt: n.created_at,
         updatedAt: n.updated_at,
@@ -2043,7 +2062,13 @@ export const visionBoardService = {
       quote_author: node.quoteAuthor,
       font_family: node.fontFamily,
       font_size: node.fontSize,
+      font_weight: node.fontWeight,
+      font_style: node.fontStyle,
+      is_uppercase: node.isUppercase,
+      letter_spacing: node.letterSpacing,
       text_align: node.textAlign,
+      bg_style: node.bgStyle,
+      text_color: node.textColor,
       is_favorite: node.isFavorite,
       updated_at: new Date().toISOString(),
     });

@@ -542,7 +542,13 @@ export interface VisionNode {
   quoteAuthor?: string;
   fontFamily?: string;
   fontSize?: number;
+  fontWeight?: 'normal' | 'medium' | 'bold' | 'black';
+  fontStyle?: 'normal' | 'italic';
+  isUppercase?: boolean;
+  letterSpacing?: 'tight' | 'normal' | 'wide' | 'widest';
   textAlign?: 'left' | 'center' | 'right';
+  bgStyle?: 'solid' | 'gradient' | 'glass' | 'pastel';
+  textColor?: string;
   isFavorite?: boolean;
   createdAt: string;
   updatedAt: string;

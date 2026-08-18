@@ -69,6 +69,37 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.6.5',
+    codename: 'Velocity Caching',
+    date: 'August 18, 2026',
+    headline: 'Massive caching improvements and Vision Board refinements.',
+    sub: 'Completely overhauled the data layer with brand new caching features resulting in a 96% reduction in API calls and 0ms navigation delays.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconEye,
+        title: 'Vision Board Refinements',
+        desc: 'Continued refinements to the Vision Board visual canvas and interaction model.',
+      },
+      {
+        Icon: IconDatabase,
+        title: 'Zero-Delay Navigation',
+        desc: 'Module navigation delay reduced from 400ms to 0ms (Instant memory cache). Window Focus API calls dropped by ~96% (from 28 queries to 0/1 per tab switch).',
+        badge: 'New',
+      },
+      {
+        Icon: IconWifiOff,
+        title: 'Offline & Storage Safety',
+        desc: 'Cleanly split storage (IndexedDB for books/reports) eliminating the risk of localStorage overflow. Robust and scalable.',
+      },
+      {
+        Icon: IconCpu,
+        title: 'CPU & Bandwidth Optimization',
+        desc: 'Daily Supabase egress reduced by ~75-90% (only fetching stale/mutated data). Main-thread CPU on mutations dropped to near zero, unlocking a smooth 60 FPS experience.',
+      }
+    ],
+  },
+  {
     version: 'v4.6.4 (Beta)',
     codename: 'Vision Overhaul',
     date: 'August 17, 2026',

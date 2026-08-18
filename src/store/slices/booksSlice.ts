@@ -5,6 +5,8 @@ import { type StateCreator } from 'zustand';
 import { type AppStore, type Book } from '../types';
 import { useToastStore } from '../useToastStore';
 import { getIDBItem, setIDBItem } from '../../lib/indexedDB';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface BooksSlice {
   books: Book[];
@@ -182,6 +184,7 @@ export const createBooksSlice: StateCreator<
     try {
       await setIDBItem('phq_books', next);
       set({ books: next });
+      queryClient.invalidateQueries({ queryKey: queryKeys.books.all() });
       useToastStore.getState().addToast('Book Created', `"${book.title}" was added to your library.`, 'success');
     } catch (error) {
       console.error('Failed to add book to IndexedDB:', error);
@@ -195,6 +198,7 @@ export const createBooksSlice: StateCreator<
     try {
       await setIDBItem('phq_books', next);
       set({ books: next });
+      queryClient.invalidateQueries({ queryKey: queryKeys.books.all() });
     } catch (error) {
       console.error('Failed to update book in IndexedDB:', error);
     }
@@ -207,6 +211,7 @@ export const createBooksSlice: StateCreator<
     try {
       await setIDBItem('phq_books', next);
       set({ books: next });
+      queryClient.invalidateQueries({ queryKey: queryKeys.books.all() });
       if (bookToDelete) {
         useToastStore.getState().addToast('Book Deleted', `"${bookToDelete.title}" was deleted.`, 'info');
       }
@@ -215,3 +220,4 @@ export const createBooksSlice: StateCreator<
     }
   }
 });
+

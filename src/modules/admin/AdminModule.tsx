@@ -13,13 +13,13 @@ import { compressAndConvertToWebP } from '../../utils/imageOptimizer';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { type BugReport, type BugReportStatus } from '../../store/types';
+import { useBugReportsQuery } from '../../hooks/queries/useAdminBugReportsQuery';
 
 export default function AdminModule() {
   const { user } = useAuthStore();
   const addToast = useToastStore(s => s.addToast);
   const { 
     reports, 
-    loadAllReports, 
     updateReportStatus, 
     deleteReport, 
     downloadMarkdownFile, 
@@ -44,33 +44,38 @@ export default function AdminModule() {
 
   const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
 
-  const loadAssets = () => {
+  const { data: queryReports, refetch: refetchReports } = useBugReportsQuery(isAdmin, user?.id);
+  const activeReports = queryReports ?? reports;
+
+
+  const loadAssets = (bustCache = false) => {
     const dashUrl = supabase.storage.from('avatars').getPublicUrl('global/dashboard_illustration.png').data.publicUrl;
     const mascotUrl = supabase.storage.from('avatars').getPublicUrl('global/media_chibi_mascot.png').data.publicUrl;
     const bannerUrl = supabase.storage.from('avatars').getPublicUrl('global/anime_review_banner.png').data.publicUrl;
     
-    setDashPreview(`${dashUrl}?t=${Date.now()}`);
-    setMascotPreview(`${mascotUrl}?t=${Date.now()}`);
-    setBannerPreview(`${bannerUrl}?t=${Date.now()}`);
+    const query = bustCache ? `?t=${Date.now()}` : '';
+    setDashPreview(`${dashUrl}${query}`);
+    setMascotPreview(`${mascotUrl}${query}`);
+    setBannerPreview(`${bannerUrl}${query}`);
   };
 
   useEffect(() => {
     if (isAdmin) {
-      loadAssets();
-      loadAllReports();
+      loadAssets(false);
     }
-  }, [isAdmin, loadAllReports]);
+  }, [isAdmin]);
 
   const handleRefreshReports = async () => {
     setIsRefreshing(true);
-    await loadAllReports();
+    await refetchReports();
     setIsRefreshing(false);
     addToast('Refreshed', 'Bug reports updated.', 'success');
   };
 
+
   // Filtered bug reports
   const filteredReports = useMemo(() => {
-    return reports.filter(r => {
+    return activeReports.filter(r => {
       if (statusFilter !== 'All' && r.status !== statusFilter) return false;
       if (severityFilter !== 'All' && r.severity !== severityFilter) return false;
       if (searchQuery.trim()) {
@@ -83,17 +88,17 @@ export default function AdminModule() {
       }
       return true;
     });
-  }, [reports, statusFilter, severityFilter, searchQuery]);
+  }, [activeReports, statusFilter, severityFilter, searchQuery]);
 
   // Bug KPI stats
   const stats = useMemo(() => {
-    const total = reports.length;
-    const open = reports.filter(r => r.status === 'Open').length;
-    const inProgress = reports.filter(r => r.status === 'In Progress').length;
-    const resolved = reports.filter(r => r.status === 'Resolved' || r.status === 'Closed').length;
-    const critical = reports.filter(r => r.severity === 'Critical' && r.status === 'Open').length;
+    const total = activeReports.length;
+    const open = activeReports.filter(r => r.status === 'Open').length;
+    const inProgress = activeReports.filter(r => r.status === 'In Progress').length;
+    const resolved = activeReports.filter(r => r.status === 'Resolved' || r.status === 'Closed').length;
+    const critical = activeReports.filter(r => r.severity === 'Critical' && r.status === 'Open').length;
     return { total, open, inProgress, resolved, critical };
-  }, [reports]);
+  }, [activeReports]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, path: string) => {
     const file = e.target.files?.[0];
@@ -137,7 +142,7 @@ export default function AdminModule() {
       else if (isBanner) assetName = 'Anime Review Banner';
 
       addToast('Upload Success', `${assetName} updated successfully.`, 'success');
-      loadAssets();
+      loadAssets(true);
       
       if (isDash) {
         window.dispatchEvent(new CustomEvent('dashboard-illustration-updated'));

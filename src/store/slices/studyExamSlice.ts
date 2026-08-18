@@ -3,6 +3,8 @@ import { type AppStore, type StudyMaterial, type Exam, type ExamAttempt } from '
 import { studyMaterialService, examService, examAttemptService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
+import { queryClient } from '../../lib/queryClient';
+import { queryKeys } from '../../lib/queryKeys';
 
 export interface StudyExamSlice {
   studyMaterials: StudyMaterial[];
@@ -51,6 +53,7 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     set({ studyMaterials: next });
     try {
       await studyMaterialService.create(uid, mat);
+      queryClient.invalidateQueries({ queryKey: queryKeys.study.materials(uid) });
     } catch (e: any) {
       set({ studyMaterials: previous });
       useToastStore.getState().addToast('Error', e.message || 'Failed to save material to cloud', 'error');
@@ -66,6 +69,7 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     set({ studyMaterials: next });
     try {
       await studyMaterialService.update(uid, id, updates);
+      queryClient.invalidateQueries({ queryKey: queryKeys.study.materials(uid) });
     } catch (e: any) {
       set({ studyMaterials: previous });
       useToastStore.getState().addToast('Error', e.message || 'Failed to update material', 'error');
@@ -81,7 +85,11 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     const nextExams = prevExams.filter((e) => e.materialId !== id);
     set({ studyMaterials: nextMaterials, exams: nextExams });
     try {
-      if (uid) await studyMaterialService.delete(uid, id);
+      if (uid) {
+        await studyMaterialService.delete(uid, id);
+        queryClient.invalidateQueries({ queryKey: queryKeys.study.materials(uid) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.study.exams(uid) });
+      }
     } catch (e: any) {
       set({ studyMaterials: prevMaterials, exams: prevExams });
       useToastStore.getState().addToast('Error', e.message || 'Failed to delete material', 'error');
@@ -97,6 +105,7 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     set({ exams: next });
     try {
       await examService.create(uid, exam);
+      queryClient.invalidateQueries({ queryKey: queryKeys.study.exams(uid) });
     } catch (e: any) {
       set({ exams: previous });
       useToastStore.getState().addToast('Error', e.message || 'Failed to save exam', 'error');
@@ -105,6 +114,7 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
   },
 
   deleteExam: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const prevExams = get().exams;
     const prevAttempts = get().examAttempts;
     const nextExams = prevExams.filter((e) => e.id !== id);
@@ -112,6 +122,10 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     set({ exams: nextExams, examAttempts: nextAttempts });
     try {
       await examService.delete(id);
+      if (uid) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.study.exams(uid) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.study.attempts(uid) });
+      }
     } catch (e: any) {
       set({ exams: prevExams, examAttempts: prevAttempts });
       useToastStore.getState().addToast('Error', e.message || 'Failed to delete exam', 'error');
@@ -127,6 +141,7 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     set({ examAttempts: next });
     try {
       await examAttemptService.create(uid, attempt);
+      queryClient.invalidateQueries({ queryKey: queryKeys.study.attempts(uid) });
     } catch (e: any) {
       set({ examAttempts: previous });
       useToastStore.getState().addToast('Error', e.message || 'Failed to save exam attempt', 'error');
@@ -135,11 +150,13 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
   },
 
   deleteExamAttempt: async (id) => {
+    const uid = useAuthStore.getState().user?.id;
     const prevAttempts = get().examAttempts;
     const nextAttempts = prevAttempts.filter((a) => a.id !== id);
     set({ examAttempts: nextAttempts });
     try {
       await examAttemptService.delete(id);
+      if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.study.attempts(uid) });
     } catch (e: any) {
       set({ examAttempts: prevAttempts });
       useToastStore.getState().addToast('Error', e.message || 'Failed to delete exam attempt', 'error');
@@ -147,3 +164,5 @@ export const createStudyExamSlice: StateCreator<AppStore, [], [], StudyExamSlice
     }
   },
 });
+
+
