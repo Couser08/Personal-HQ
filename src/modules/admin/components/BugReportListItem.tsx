@@ -34,10 +34,10 @@ export const BugReportListItem: React.FC<BugReportListItemProps> = ({
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const routeMeta = getRouteMeta(report.route);
-  const severityStyle = SEVERITY_CONFIG[report.severity] || SEVERITY_CONFIG.Medium;
+  const routeMeta = getRouteMetadata(report.pageRoute || report.route);
+  const severityStyle = getSeverityStyle(report.severity);
   const statusStyle = getStatusStyle(report.status);
-  const categoryIcon = CATEGORY_ICONS[report.category] || '📌';
+  const categoryIcon = getCategoryIcon(report.category);
 
   const handleCopyMarkdown = async (e: React.MouseEvent) => {
     e.stopPropagation();

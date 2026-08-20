@@ -947,11 +947,12 @@ export interface AppStore {
   addTodoProject: (project: TodoProject) => Promise<void>;
   deleteTodoProject: (id: string) => Promise<void>;
   
-  // Journal Tracker
+  // Journal Slice
   journals: JournalEntry[];
   addJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateJournalEntry: (id: string, data: Partial<JournalEntry>) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
+  fetchJournalDetail: (id: string) => Promise<void>;
   
   journalStickyNotes: JournalStickyNote[];
   addJournalStickyNote: (note: any) => Promise<void>;
