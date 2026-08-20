@@ -78,25 +78,27 @@ const RELEASES: Release[] = [
     features: [
       {
         Icon: IconDatabase,
-        title: 'Lightweight List Queries',
-        desc: 'Implemented strict .limit(50) bounds and metadata-first scanning across 30+ tables. Heavy JSON and base64 blobs are now fetched entirely on-demand, reducing Media List load egress by 99.7%.',
-        badge: 'Optimised',
-      },
-      {
-        Icon: IconWifiOff,
-        title: 'Mock Supabase Dev Mode',
-        desc: 'New local in-memory engine mimicking the Supabase API. Allows for 100% offline UI development, 0 cloud egress during hot-reloads, and 1-click mock data seeding.',
-        badge: 'New',
-      },
-      {
-        Icon: IconBolt,
-        title: '7-Minute Cache StaleTime',
-        desc: 'Disabled auto-refetching on window focus and implemented a 7-minute StaleTime. Tab-switching egress spikes (previously ~25 MB/day) are now completely eliminated.',
+        title: '↓ 99.7% Egress on Lists',
+        desc: 'Implemented strict .limit(50) bounds and metadata-first scanning across 30+ tables. Heavy JSON and base64 blobs are now fetched entirely on-demand.',
+        badge: '4.9 MB → 12 KB',
       },
       {
         Icon: IconCpu,
-        title: 'IndexedDB Delta Sync',
-        desc: 'Admin panel now fetches 50-byte lightweight signatures to diff against local IndexedDB caches. Admin panel refresh egress reduced by 99.9% (from 1.8 MB to 0.5 KB).',
+        title: '↓ 99.9% Egress on Refresh',
+        desc: 'Admin panel now fetches 50-byte lightweight signatures to diff against local IndexedDB caches. Admin panel refresh egress reduced from 1.8 MB to 0.5 KB.',
+        badge: 'Delta Sync',
+      },
+      {
+        Icon: IconBolt,
+        title: '0 MB Tab-Switching Cost',
+        desc: 'Disabled auto-refetching on window focus and implemented a 7-minute StaleTime. Background egress spikes are now completely eliminated.',
+        badge: '-25 MB / Day',
+      },
+      {
+        Icon: IconWifiOff,
+        title: '100% Offline Dev Mode',
+        desc: 'New local in-memory engine mimicking the Supabase API. Allows for zero cloud egress during hot-reloads and 1-click mock data seeding.',
+        badge: '0 Egress',
       }
     ],
   },
