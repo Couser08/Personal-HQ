@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { getIDBItem, setIDBItem } from '../../lib/indexedDB';
 import type { Book } from '../../store/types';
@@ -16,7 +16,7 @@ export function useBooksQuery() {
       }
       return [];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 

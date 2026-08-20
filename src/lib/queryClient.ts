@@ -1,13 +1,15 @@
 import { QueryClient } from '@tanstack/react-query';
 
+export const SEVEN_MINUTES_MS = 7 * 60 * 1000; // 7 minutes fresh window for zero unnecessary egress
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute fresh window by default
-      gcTime: 5 * 60 * 1000, // 5 minutes garbage collection window
-      refetchOnWindowFocus: true, // Auto background revalidate when user returns to tab
+      staleTime: SEVEN_MINUTES_MS, // 7 minutes fresh window by default
+      gcTime: 15 * 60 * 1000, // 15 minutes garbage collection window
+      refetchOnWindowFocus: false, // Prevent aggressive re-fetching on tab switch
       refetchOnReconnect: true,
-      retry: 1, // Fail fast on network/auth errors, don't spam 3 retries
+      retry: 1, // Fail fast on network/auth errors, don't spam retries
     },
     mutations: {
       retry: 0,

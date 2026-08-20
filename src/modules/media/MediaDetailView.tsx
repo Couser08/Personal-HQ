@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { 
   IconMovie, IconPlus, IconArrowLeft, IconStarFilled, IconDeviceTv, IconTicket 
 } from '@tabler/icons-react';
-
 import { type MediaLog } from '../../store/useAppStore';
+import { mediaService } from '../../lib/db';
 
 interface MediaDetailViewProps {
   selectedAnime: MediaLog;
@@ -35,6 +35,14 @@ export const MediaDetailView: React.FC<MediaDetailViewProps> = ({
 
   useEffect(() => {
     setVisibleEpisodes(25);
+    setIsEditingQuote(false);
+    if (selectedAnime.id && !selectedAnime.notes) {
+      void mediaService.fetchDetail(selectedAnime.id).then((detail) => {
+        if (detail && detail.notes) {
+          updateMediaLog(selectedAnime.id, { notes: detail.notes });
+        }
+      });
+    }
   }, [selectedAnime.id]);
 
   const isAnime = selectedAnime.type === 'ANIME';

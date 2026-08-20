@@ -4,6 +4,10 @@ const STORE_NAME = 'keyval';
 
 export function getIDBItem<T>(key: string): Promise<T | null> {
   return new Promise((resolve) => {
+    if (typeof indexedDB === 'undefined') {
+      resolve(null);
+      return;
+    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       request.result.createObjectStore(STORE_NAME);
@@ -32,6 +36,10 @@ export function getIDBItem<T>(key: string): Promise<T | null> {
 
 export function setIDBItem<T>(key: string, value: T): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      resolve();
+      return;
+    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       request.result.createObjectStore(STORE_NAME);
@@ -56,6 +64,10 @@ export function setIDBItem<T>(key: string, value: T): Promise<void> {
 
 export function removeIDBItem(key: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      resolve();
+      return;
+    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onsuccess = () => {
       const db = request.result;

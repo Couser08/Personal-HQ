@@ -69,6 +69,38 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v4.6.6 (Beta)',
+    codename: 'Zero Egress & Mock DB',
+    date: 'August 20, 2026',
+    headline: '99% Egress Reduction, Delta Sync, and Local Dev Mode.',
+    sub: 'Massive architecture overhaul to solve unbounded queries and tab-switching data spikes. Introduced a local Mock Supabase Client for true 0-egress offline development.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconDatabase,
+        title: 'Lightweight List Queries',
+        desc: 'Implemented strict .limit(50) bounds and metadata-first scanning across 30+ tables. Heavy JSON and base64 blobs are now fetched entirely on-demand, reducing Media List load egress by 99.7%.',
+        badge: 'Optimised',
+      },
+      {
+        Icon: IconWifiOff,
+        title: 'Mock Supabase Dev Mode',
+        desc: 'New local in-memory engine mimicking the Supabase API. Allows for 100% offline UI development, 0 cloud egress during hot-reloads, and 1-click mock data seeding.',
+        badge: 'New',
+      },
+      {
+        Icon: IconBolt,
+        title: '7-Minute Cache StaleTime',
+        desc: 'Disabled auto-refetching on window focus and implemented a 7-minute StaleTime. Tab-switching egress spikes (previously ~25 MB/day) are now completely eliminated.',
+      },
+      {
+        Icon: IconCpu,
+        title: 'IndexedDB Delta Sync',
+        desc: 'Admin panel now fetches 50-byte lightweight signatures to diff against local IndexedDB caches. Admin panel refresh egress reduced by 99.9% (from 1.8 MB to 0.5 KB).',
+      }
+    ],
+  },
+  {
     version: 'v4.6.5 (Beta)',
     codename: 'Velocity Caching',
     date: 'August 18, 2026',

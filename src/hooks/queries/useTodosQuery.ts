@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { todoProjectService, todoTaskService } from '../../lib/db';
 import type { TodoProject, TodoTask } from '../../store/types';
@@ -12,7 +12,7 @@ export function useTodoProjectsQuery(userId: string | undefined) {
       return todoProjectService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -24,7 +24,7 @@ export function useTodoTasksQuery(userId: string | undefined, filters?: Record<s
       return todoTaskService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { linkService, linkSaverService, tagService } from '../../lib/db';
 import type { Link, SavedLink, AppTag } from '../../store/types';
@@ -19,7 +19,7 @@ export function useLinksQuery(userId: string | undefined, filters?: Record<strin
       });
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -31,7 +31,7 @@ export function useSavedLinksQuery(userId: string | undefined) {
       return linkSaverService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -43,7 +43,7 @@ export function useTagsQuery(userId: string | undefined) {
       return tagService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 

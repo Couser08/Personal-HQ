@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   IconSearch, IconRefresh, IconDownload, IconClipboardCopy,
   IconLayoutGrid, IconLayoutList, IconLayoutKanban, IconFolders,
-  IconX, IconFilter, IconArrowsSort, IconChecks
+  IconX, IconFilter, IconArrowsSort, IconChecks, IconTerminal
 } from '@tabler/icons-react';
 
 export type AdminViewMode = 'grid' | 'list' | 'kanban' | 'modules';
@@ -29,6 +29,7 @@ interface BugReportToolbarProps {
   onRefresh: () => void;
   onDownloadMarkdown: () => void;
   onCopyMarkdown: () => void;
+  onCopyFixCommand?: () => void;
   filteredCount: number;
   totalCount: number;
   onBatchResolveFiltered?: () => void;
@@ -56,6 +57,7 @@ export const BugReportToolbar: React.FC<BugReportToolbarProps> = ({
   onRefresh,
   onDownloadMarkdown,
   onCopyMarkdown,
+  onCopyFixCommand,
   filteredCount,
   totalCount,
   onBatchResolveFiltered,
@@ -80,7 +82,7 @@ export const BugReportToolbar: React.FC<BugReportToolbarProps> = ({
   return (
     <div className="flex flex-col gap-3.5 p-4 sm:p-5 rounded-3xl bg-surface/90 border border-border/70 shadow-xs backdrop-blur-md">
       
-      {/* ── TOP ROW: SEARCH & ACTION BUTTONS ── */}
+      {/* ─── TOP ROW: SEARCH & ACTION BUTTONS ─── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         
         {/* Search Bar */}
@@ -177,6 +179,19 @@ export const BugReportToolbar: React.FC<BugReportToolbarProps> = ({
             <IconRefresh size={16} className={isRefreshing ? 'animate-spin' : ''} />
           </button>
 
+          {/* Generate Fix Command for Antigravity */}
+          {onCopyFixCommand && (
+            <button
+              type="button"
+              onClick={onCopyFixCommand}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs hover:scale-102"
+              title="Generate complete Antigravity instruction block for fixing pending bugs"
+            >
+              <IconTerminal size={14} />
+              <span>Generate Fix Command</span>
+            </button>
+          )}
+
           {/* Export to Markdown */}
           <button
             type="button"
@@ -201,7 +216,7 @@ export const BugReportToolbar: React.FC<BugReportToolbarProps> = ({
         </div>
       </div>
 
-      {/* ── BOTTOM ROW: FACETED FILTER DROPDOWNS & SORT ── */}
+      {/* ─── BOTTOM ROW: FACETED FILTER DROPDOWNS & SORT ─── */}
       <div className="flex items-center justify-between gap-2.5 flex-wrap pt-2 border-t border-border/40 text-xs">
         
         {/* Filter Dropdowns */}

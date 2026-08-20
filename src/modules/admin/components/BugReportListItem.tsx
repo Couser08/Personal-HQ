@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { 
-  IconZoomIn, IconCode, IconCopy, IconCheck, IconTrash, 
-  IconChevronDown, IconClock, IconLayersIntersect,
-  IconArrowUpRight, IconFileCode
+  IconCopy, IconCheck, IconTrash, 
+  IconArrowUpRight, IconClock, IconLayersIntersect, IconFileCode,
+  IconChevronDown
 } from '@tabler/icons-react';
 import { type BugReport, type BugReportStatus } from '../../../store/types';
 import { 
-  getRouteMeta, 
-  formatRelativeTime, 
-  SEVERITY_CONFIG, 
+  getSeverityStyle, 
   getStatusStyle, 
-  CATEGORY_ICONS,
+  getCategoryIcon, 
+  getRouteMetadata, 
+  formatRelativeTime,
   LIFECYCLE_STATUSES 
 } from '../utils/bugReportHelpers';
 import { useToastStore } from '../../../store/useToastStore';
@@ -18,15 +18,14 @@ import { useToastStore } from '../../../store/useToastStore';
 interface BugReportListItemProps {
   report: BugReport;
   onSelect: (report: BugReport) => void;
-  onZoomScreenshot: (report: BugReport) => void;
-  onUpdateStatus: (id: string, status: BugReportStatus) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onUpdateStatus: (id: string, status: BugReportStatus) => void;
+  onDelete: (id: string) => void;
+  onZoomScreenshot?: (report: BugReport) => void;
 }
 
 export const BugReportListItem: React.FC<BugReportListItemProps> = ({
   report,
   onSelect,
-  onZoomScreenshot,
   onUpdateStatus,
   onDelete,
 }) => {
@@ -81,48 +80,40 @@ export const BugReportListItem: React.FC<BugReportListItemProps> = ({
       onClick={() => onSelect(report)}
       className="group relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-2xl bg-surface/90 hover:bg-surface border border-border/70 hover:border-primary/40 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden backdrop-blur-sm text-left"
     >
-      {/* Left section: Thumbnail + Details */}
-      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+      {/* Left section: Short ID + Details */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         
-        {/* Thumbnail Preview */}
-        {report.screenshotData ? (
-          <div 
-            onClick={(e) => {
-              e.stopPropagation();
-              onZoomScreenshot(report);
-            }}
-            className="group/thumb relative w-16 h-12 rounded-xl overflow-hidden bg-background border border-border shrink-0 flex items-center justify-center cursor-zoom-in"
-          >
-            <img src={report.screenshotData} alt="Thumb" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-              <IconZoomIn size={14} className="text-white" />
-            </div>
-          </div>
-        ) : (
-          <div className="w-16 h-12 rounded-xl bg-surface-alt/70 border border-dashed border-border flex items-center justify-center text-text-muted shrink-0">
-            <IconCode size={16} />
-          </div>
-        )}
+        {/* Short ID Badge (0 Egress scan) */}
+        <div className="w-16 h-10 rounded-xl bg-surface-alt/80 border border-border/70 flex flex-col items-center justify-center shrink-0 text-center font-mono">
+          <span className="text-[10px] font-bold text-primary tracking-tight">#bug-{report.id.slice(0, 4).toLowerCase()}</span>
+          <span className="text-[9px] text-text-muted capitalize leading-none">{report.severity}</span>
+        </div>
 
         {/* Content & Metadata */}
         <div className="flex flex-col gap-1 min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {/* Severity */}
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${severityStyle.pillClass}`}>
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${severityStyle.pillClass}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${severityStyle.dotClass}`} />
               {severityStyle.label}
             </span>
 
-            {/* Category */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-alt text-text-secondary border border-border/60">
-              <span>{categoryIcon}</span>
-              <span>{report.category}</span>
-            </span>
-
             {/* Route */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-alt text-text-primary border border-border/60">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-surface-alt text-text-primary border border-border/60">
               <span>{routeMeta.icon}</span>
               <span>{routeMeta.label}</span>
+            </span>
+
+            {/* Section Location */}
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-surface-alt text-text-secondary border border-border/60">
+              <span className="text-primary font-bold">📍</span>
+              <span className="truncate max-w-[130px]">{report.sectionName || el?.sectionName || 'General'}</span>
+            </span>
+
+            {/* Category */}
+            <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-surface-alt text-text-secondary border border-border/60">
+              <span>{categoryIcon}</span>
+              <span>{report.category}</span>
             </span>
 
             {isGroup && (

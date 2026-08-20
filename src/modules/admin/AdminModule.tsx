@@ -29,7 +29,8 @@ export default function AdminModule() {
     updateReportStatus, 
     deleteReport, 
     downloadMarkdownFile, 
-    copyMarkdownToClipboard 
+    copyMarkdownToClipboard,
+    copyFixCommandToClipboard
   } = useBugReportStore();
 
   const [activeTab, setActiveTab] = useState<'assets' | 'bugs'>('bugs');
@@ -394,6 +395,7 @@ export default function AdminModule() {
             onRefresh={handleRefreshReports}
             onDownloadMarkdown={downloadMarkdownFile}
             onCopyMarkdown={copyMarkdownToClipboard}
+            onCopyFixCommand={copyFixCommandToClipboard}
             filteredCount={filteredReports.length}
             totalCount={activeReports.length}
             onBatchResolveFiltered={handleBatchResolveFiltered}

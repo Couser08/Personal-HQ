@@ -12,6 +12,7 @@ export interface JournalSlice {
   addJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateJournalEntry: (id: string, data: Partial<JournalEntry>) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
+  fetchJournalDetail: (id: string) => Promise<void>;
 
   journalStickyNotes: JournalStickyNote[];
   addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
@@ -91,6 +92,23 @@ export const createJournalSlice: StateCreator<
       set({ journals: previous });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete journal entry'), 'error');
       throw error;
+    }
+  },
+  fetchJournalDetail: async (id) => {
+    const existing = get().journals.find((j) => j.id === id);
+    if (existing && existing.content) return;
+
+    try {
+      const detail = await journalService.fetchDetail(id);
+      if (detail) {
+        set((state) => {
+          const next = state.journals.map((j) => (j.id === id ? { ...j, ...detail } : j));
+          localStorage.setItem('phq_journals', JSON.stringify(next));
+          return { journals: next };
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to fetch journal detail on demand:', error);
     }
   },
 

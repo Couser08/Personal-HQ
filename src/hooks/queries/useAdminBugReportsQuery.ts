@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { bugReportService } from '../../lib/db';
 import type { BugReport, BugReportStatus } from '../../store/types';
@@ -8,12 +8,9 @@ export function useBugReportsQuery(isAdmin: boolean, userId: string | undefined)
   return useQuery({
     queryKey: queryKeys.admin.bugReports({ isAdmin, userId }),
     queryFn: async (): Promise<BugReport[]> => {
-      if (isAdmin) {
-        return bugReportService.fetchForAdmin();
-      }
-      return bugReportService.fetchAll(userId);
+      return bugReportService.fetchWithDeltaSync(userId, isAdmin);
     },
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes fresh window
   });
 }
 

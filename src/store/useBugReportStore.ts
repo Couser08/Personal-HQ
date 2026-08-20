@@ -78,6 +78,43 @@ export function formatReportMarkdown(report: BugReport): string {
   return md;
 }
 
+export function generateFixCommandText(reports: BugReport[]): string {
+  const unresolved = reports.filter((r) => r.status !== 'verified_done');
+  const now = new Date().toISOString();
+  
+  let cmd = `### Antigravity Task Block: Fix Pending Bugs\n`;
+  cmd += `**Generated At**: ${now}\n`;
+  cmd += `**Pending Issues Count**: ${unresolved.length} / ${reports.length} total\n\n`;
+  
+  if (unresolved.length === 0) {
+    cmd += `> No pending bug reports found! All reported bugs are verified and completed.\n`;
+    return cmd;
+  }
+  
+  cmd += `#### Pending Items to Fix:\n`;
+  unresolved.forEach((bug, idx) => {
+    cmd += `\n--- Issue #${idx + 1}: ${bug.title} ---\n`;
+    cmd += `- **ID**: \`${bug.id}\`\n`;
+    cmd += `- **Severity**: \`${bug.severity}\` | **Status**: \`${bug.status}\`\n`;
+    cmd += `- **Route**: \`${bug.pageRoute || bug.route || '/dashboard'}\`\n`;
+    cmd += `- **Section**: \`${bug.sectionName || 'General'}\`\n`;
+    if (bug.elementInfo?.selector) {
+      cmd += `- **Element Selector**: \`${bug.elementInfo.selector}\`\n`;
+    }
+    cmd += `- **Description**: ${bug.description || 'No description provided'}\n`;
+    if (bug.fixedInFiles) {
+      cmd += `- **Target Files / Previous Attempts**: \`${Array.isArray(bug.fixedInFiles) ? bug.fixedInFiles.join(', ') : bug.fixedInFiles}\`\n`;
+    }
+  });
+  
+  cmd += `\n\n#### Instructions for Antigravity:\n`;
+  cmd += `1. Fix the above bugs in their respective components/modules.\n`;
+  cmd += `2. Mark each resolved bug as \`verified_done\` in state/Supabase (do not hard-delete).\n`;
+  cmd += `3. Preserve minimal network egress and 7-minute query caching.\n`;
+  
+  return cmd;
+}
+
 export function generateAllReportsMarkdown(reports: BugReport[]): string {
   let md = `# 🛡️ Personal HQ — Application Bug Reports Ledger\n\n`;
   md += `> Automatically synced and maintained by the Visual Bug Reporting System.\n`;
@@ -130,6 +167,7 @@ interface BugReportStore {
   loadAllReports: () => Promise<void>;
   downloadMarkdownFile: () => void;
   copyMarkdownToClipboard: () => Promise<boolean>;
+  copyFixCommandToClipboard: () => Promise<boolean>;
 }
 
 export const useBugReportStore = create<BugReportStore>((set, get) => ({
@@ -311,9 +349,7 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     const user = useAuthStore.getState().user;
     const isAdmin = user?.email === 'tungariyarahul08@gmail.com';
     try {
-      const data = isAdmin
-        ? await bugReportService.fetchForAdmin()
-        : await bugReportService.fetchAll(user?.id);
+      const data = await bugReportService.fetchWithDeltaSync(user?.id, isAdmin);
       if (data && data.length > 0) {
         set({ reports: data });
         persistBugReports(data);
@@ -345,6 +381,18 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
       return true;
     } catch (err) {
       console.error('Failed to copy reports markdown:', err);
+      return false;
+    }
+  },
+
+  copyFixCommandToClipboard: async () => {
+    const cmd = generateFixCommandText(get().reports);
+    try {
+      await navigator.clipboard.writeText(cmd);
+      useToastStore.getState().addToast('Copied Fix Command', 'Antigravity bug fix command copied to clipboard!', 'success');
+      return true;
+    } catch (err) {
+      console.error('Failed to copy fix command:', err);
       return false;
     }
   },

@@ -41,6 +41,8 @@ export function getRouteMeta(route: string): RouteMeta {
   };
 }
 
+export const getRouteMetadata = getRouteMeta;
+
 export function formatRelativeTime(dateStr?: string): string {
   if (!dateStr) return 'Recently';
   try {
@@ -200,19 +202,27 @@ export const STATUS_CONFIG: Record<string, StatusStyle> = {
 };
 
 export function getStatusStyle(status: BugReportStatus): StatusStyle {
-  return STATUS_CONFIG[status] || STATUS_CONFIG['open'];
+  return STATUS_CONFIG[status] || STATUS_CONFIG.open;
+}
+
+export function getSeverityStyle(severity: BugReportSeverity): SeverityStyle {
+  return SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.Medium;
+}
+
+export function getCategoryIcon(category: string): string {
+  return CATEGORY_ICONS[category as BugReportCategory] || '🐞';
 }
 
 export function isBugResolved(status: BugReportStatus): boolean {
-  return status === 'verified_done' || status === 'Resolved' || status === 'Closed';
+  return status === 'verified_done' || status === 'fixed_pending_verification';
 }
 
 export const CATEGORY_ICONS: Record<BugReportCategory, string> = {
   'UI Glitch': '🎨',
-  Performance: '⚡',
+  'Performance': '⚡',
   'Data Sync': '🔄',
   'Crash / Error': '💥',
-  Other: '📌',
+  'Other': '📋',
 };
 
 export const LIFECYCLE_STATUSES: BugReportStatus[] = [

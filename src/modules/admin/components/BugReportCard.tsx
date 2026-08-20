@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  IconZoomIn, IconCode, IconCopy, IconCheck, IconTrash, 
-  IconArrowUpRight, IconClock, IconChevronDown,
-  IconDeviceDesktop, IconDeviceMobile, IconLayersIntersect,
-  IconFileCode, IconShieldCheck
+  IconCopy, IconCheck, IconTrash, 
+  IconShieldCheck, IconClock, IconDeviceDesktop, IconDeviceMobile,
+  IconLayersIntersect, IconArrowUpRight, IconFileCode, IconChevronDown
 } from '@tabler/icons-react';
 import { type BugReport, type BugReportStatus } from '../../../store/types';
 import { 
@@ -20,15 +19,14 @@ import { useToastStore } from '../../../store/useToastStore';
 interface BugReportCardProps {
   report: BugReport;
   onSelect: (report: BugReport) => void;
-  onZoomScreenshot: (report: BugReport) => void;
   onUpdateStatus: (id: string, status: BugReportStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onZoomScreenshot?: (report: BugReport) => void;
 }
 
 export const BugReportCard: React.FC<BugReportCardProps> = ({
   report,
   onSelect,
-  onZoomScreenshot,
   onUpdateStatus,
   onDelete,
 }) => {
@@ -195,57 +193,33 @@ export const BugReportCard: React.FC<BugReportCardProps> = ({
         {/* ── CARD BODY: MEDIA & CONTENT ── */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 mt-1 items-start">
           
-          {/* Screenshot Snapshot Container */}
+          {/* Left: Location & Technical Diagnostics Box (Zero Image Egress) */}
           <div className="sm:col-span-4 w-full">
-            {report.screenshotData ? (
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onZoomScreenshot(report);
-                }}
-                className="group/img relative w-full h-32 sm:h-36 rounded-2xl overflow-hidden bg-background border border-border/80 flex items-center justify-center cursor-zoom-in shadow-inner"
-              >
-                <img
-                  src={report.screenshotData}
-                  alt={report.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
-                  loading="lazy"
-                />
-
-                {/* Hover Overlay with Zoom Icon */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-xs">
-                  <span className="px-3 py-1.5 rounded-xl bg-surface/90 text-text-primary text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                    <IconZoomIn size={14} /> Enlarge
-                  </span>
+            <div className="w-full h-full min-h-[110px] rounded-2xl bg-surface-alt/70 border border-border/70 p-3 flex flex-col justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Target Location</span>
+                <div className="flex items-center gap-1 text-xs font-bold text-text-primary truncate">
+                  <span>{routeMeta.icon}</span>
+                  <span className="truncate">{report.sectionName || el?.sectionName || routeMeta.label}</span>
                 </div>
-
-                {/* Viewport Dimension Tag */}
-                {el?.viewport && (
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-[10px] font-mono font-bold text-white backdrop-blur-sm border border-white/10">
-                    {el.viewport.width}×{el.viewport.height}
-                  </div>
-                )}
-
-                {/* Element Box Tag */}
-                {el?.boundingRect && (
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-primary/85 text-[10px] font-mono font-bold text-text-on-accent backdrop-blur-sm shadow-xs">
-                    {Math.round(el.boundingRect.width)}×{Math.round(el.boundingRect.height)}px
-                  </div>
-                )}
+                <div className="text-[11px] font-mono text-text-muted truncate">
+                  {report.pageRoute || report.route || '/dashboard'}
+                </div>
               </div>
-            ) : (
-              <div className="w-full h-32 sm:h-36 rounded-2xl bg-surface-alt/50 border border-dashed border-border flex flex-col items-center justify-center p-3 text-text-muted gap-2">
-                <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center text-text-secondary">
-                  <IconCode size={20} />
-                </div>
-                <span className="text-[11px] font-mono font-bold">No Visual Capture</span>
+
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border/40">
                 {el?.tag && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-surface border border-border text-text-primary truncate max-w-full">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-text-primary font-bold">
                     &lt;{el.tag}&gt;
                   </span>
                 )}
+                {report.elementInfo?.boundingRect && (
+                  <span className="text-[10px] font-mono text-text-muted">
+                    {Math.round(report.elementInfo.boundingRect.width)}×{Math.round(report.elementInfo.boundingRect.height)}px
+                  </span>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Description & Technical Diagnostics */}

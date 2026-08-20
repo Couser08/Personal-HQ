@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   IconZoomIn, IconCode, IconCopy, IconCheck, IconTrash, 
   IconClipboardCopy, IconClock, IconUser,
@@ -18,6 +18,7 @@ import {
   LIFECYCLE_STATUSES 
 } from '../utils/bugReportHelpers';
 import { useToastStore } from '../../../store/useToastStore';
+import { bugReportService } from '../../../lib/db';
 
 interface BugReportDetailModalProps {
   report: BugReport | null;
@@ -28,16 +29,29 @@ interface BugReportDetailModalProps {
 }
 
 export const BugReportDetailModal: React.FC<BugReportDetailModalProps> = ({
-  report,
+  report: initialReport,
   isOpen,
   onClose,
   onUpdateStatus,
   onDelete,
 }) => {
+  const [report, setReport] = useState<BugReport | null>(initialReport);
   const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<'overview' | 'dom' | 'qa' | 'env' | 'markdown'>('overview');
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Sync initial report and fetch on-demand full details if screenshot is missing
+  useEffect(() => {
+    setReport(initialReport);
+    if (initialReport?.id && !initialReport.screenshotData) {
+      void bugReportService.fetchDetail(initialReport.id).then((full) => {
+        if (full) {
+          setReport((prev) => (prev && prev.id === full.id ? { ...prev, ...full } : prev));
+        }
+      });
+    }
+  }, [initialReport]);
 
   // QA Verification Form State
   const [fixFilesInput, setFixFilesInput] = useState('');

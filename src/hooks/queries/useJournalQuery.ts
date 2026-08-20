@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { journalService, journalStickyNoteService } from '../../lib/db';
 import type { JournalEntry, JournalStickyNote } from '../../store/types';
@@ -17,14 +17,14 @@ export function useJournalsQuery(userId: string | undefined, filters?: Record<st
         if (filters.search) {
           const q = filters.search.toLowerCase();
           const matchTitle = e.title.toLowerCase().includes(q);
-          const matchContent = e.content.toLowerCase().includes(q);
+          const matchContent = (e.content || '').toLowerCase().includes(q);
           if (!matchTitle && !matchContent) return false;
         }
         return true;
       });
     },
     enabled: Boolean(userId),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -36,7 +36,7 @@ export function useJournalStickyNotesQuery(userId: string | undefined) {
       return journalStickyNoteService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 2 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 

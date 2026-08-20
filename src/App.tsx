@@ -9,6 +9,7 @@ import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { BugReportProvider } from './components/bug-report/BugReportProvider';
 import { getEffectiveReducedMotion, applyPerformanceDOMState, pageModuleVariants } from './lib/performanceEngine';
+import { MockDataControls } from './components/dev/MockDataControls';
 
 const DashboardModule = lazy(() => import('./modules/dashboard/DashboardModule'));
 const UtilitiesModule = lazy(() => import('./modules/utilities/UtilitiesModule'));
@@ -248,6 +249,7 @@ function App() {
           )}
         </AnimatePresence>
       </MotionConfig>
+      <MockDataControls />
     </BugReportProvider>
   );
 }

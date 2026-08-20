@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { visionBoardService, visionService } from '../../lib/db';
 import { DEFAULT_SEEDED_BOARDS } from '../../store/slices/visionSlice';
@@ -43,7 +43,7 @@ export function useVisionBoardsQuery(userId: string | undefined) {
       return DEFAULT_SEEDED_BOARDS;
     },
     enabled: true,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -55,7 +55,7 @@ export function useLegacyVisionsQuery(userId: string | undefined) {
       return visionService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 

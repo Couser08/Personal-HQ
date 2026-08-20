@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import {
   snippetService,
@@ -30,7 +30,7 @@ export function useSettingsQuery(userId: string | undefined) {
       return settingsService.fetch(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -61,7 +61,7 @@ export function useSnippetsQuery(userId: string | undefined, filters?: Record<st
       });
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -74,7 +74,7 @@ export function useNotesQuery(userId: string | undefined) {
       return noteService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -87,7 +87,7 @@ export function useMindmapsQuery(userId: string | undefined) {
       return mindmapService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -100,7 +100,7 @@ export function useCountdownsQuery(userId: string | undefined) {
       return countdownService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -113,7 +113,7 @@ export function useStocksQuery(userId: string | undefined) {
       return stockService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -126,7 +126,7 @@ export function useInterestHistoryQuery(userId: string | undefined) {
       return interestService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -139,7 +139,7 @@ export function useStandardCalcHistoryQuery(userId: string | undefined) {
       return standardCalcService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -152,7 +152,7 @@ export function useDevGoalsQuery(userId: string | undefined) {
       return devGoalService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -165,7 +165,7 @@ export function useTilLogsQuery(userId: string | undefined) {
       return tilLogService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 3 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -178,7 +178,7 @@ export function useRoadmapsQuery(userId: string | undefined) {
       return roadmapService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -191,7 +191,7 @@ export function useResourcesQuery(userId: string | undefined) {
       return resourceService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -204,7 +204,7 @@ export function useStudyMaterialsQuery(userId: string | undefined) {
       return studyMaterialService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -216,7 +216,7 @@ export function useExamsQuery(userId: string | undefined) {
       return examService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -230,7 +230,7 @@ export function useExamAttemptsQuery(userId: string | undefined, examId?: string
       return all;
     },
     enabled: Boolean(userId),
-    staleTime: 2 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
@@ -243,6 +243,6 @@ export function useProjectStructuresQuery(userId: string | undefined) {
       return projectStructureService.fetchAll(userId);
     },
     enabled: Boolean(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }

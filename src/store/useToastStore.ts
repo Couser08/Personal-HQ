@@ -21,9 +21,11 @@ interface ToastStore {
 
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  position: (localStorage.getItem('toast-position') as ToastPosition) || 'bottom-center',
+  position: (typeof localStorage !== 'undefined' ? localStorage.getItem('toast-position') as ToastPosition : null) || 'bottom-center',
   setPosition: (position) => {
-    localStorage.setItem('toast-position', position);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('toast-position', position);
+    }
     set({ position });
   },
   addToast: (titleOrMessage, messageOrType, type) => {

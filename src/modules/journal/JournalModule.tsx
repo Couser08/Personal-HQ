@@ -91,6 +91,7 @@ export default function JournalModule() {
     addJournalEntry,
     updateJournalEntry,
     deleteJournalEntry,
+    fetchJournalDetail,
     showConfirm,
     theme,
     journalStickyNotes,
@@ -103,6 +104,7 @@ export default function JournalModule() {
       addJournalEntry: state.addJournalEntry,
       updateJournalEntry: state.updateJournalEntry,
       deleteJournalEntry: state.deleteJournalEntry,
+      fetchJournalDetail: state.fetchJournalDetail,
       showConfirm: state.showConfirm,
       theme: state.theme,
       journalStickyNotes: state.journalStickyNotes,
@@ -157,6 +159,12 @@ export default function JournalModule() {
     () => journals.find((entry) => entry.id === activeEntryId) || null,
     [journals, activeEntryId],
   );
+
+  useEffect(() => {
+    if (activeEntryId) {
+      void fetchJournalDetail(activeEntryId);
+    }
+  }, [activeEntryId, fetchJournalDetail]);
 
   useEffect(() => {
     if (activeEntryId && !journals.some((entry) => entry.id === activeEntryId)) {

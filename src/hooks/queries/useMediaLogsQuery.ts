@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient, SEVEN_MINUTES_MS } from '../../lib/queryClient';
 import { queryKeys } from '../../lib/queryKeys';
 import { mediaService } from '../../lib/db';
 import type { MediaLog } from '../../store/types';
@@ -14,7 +14,7 @@ export function useMediaLogsQuery(userId: string | undefined, tab?: string) {
       return logs.filter((l) => l.type === tab.toLowerCase() || l.type === tab);
     },
     enabled: Boolean(userId),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: SEVEN_MINUTES_MS, // 7 minutes
   });
 }
 
