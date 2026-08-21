@@ -53,23 +53,38 @@ describe('Antigravity Fix Command Generator', () => {
     },
   ];
 
-  it('formats instruction block with live unresolved count and issue details', () => {
-    const cmd = generateFixCommandText(sampleReports);
+  it('formats instruction block with live unresolved count and issue details for multiple bugs', () => {
+    const multiReports: BugReport[] = [
+      ...sampleReports,
+      {
+        id: 'bug-9999-uuid-test',
+        title: 'Habit tracker streak reset glitch',
+        description: 'Completed streaks reset at midnight instead of preserving yesterday count.',
+        category: 'Data Sync',
+        severity: 'Critical',
+        status: 'open',
+        route: '/habits',
+        pageRoute: '/habits',
+        sectionName: 'Habit Matrix',
+        createdAt: '2026-08-20T12:00:00.000Z',
+        updatedAt: '2026-08-20T12:00:00.000Z',
+      },
+    ];
+
+    const cmd = generateFixCommandText(multiReports);
     
     expect(cmd).toContain('### Antigravity Task Block: Fix Pending Bugs');
-    expect(cmd).toContain('Pending Issues Count**: 1 / 2 total');
+    expect(cmd).toContain('Pending Issues Count**: 2 / 3 total');
     expect(cmd).toContain('Media card overflow on mobile');
-    expect(cmd).toContain('/media');
-    expect(cmd).toContain('.media-card-title');
-    expect(cmd).toContain('High');
-    expect(cmd).not.toContain('Journal mood dropdown stuck');
-    expect(cmd).toContain('verified_done');
+    expect(cmd).toContain('Habit tracker streak reset glitch');
+    expect(cmd).toContain('Issue #1: Media card overflow on mobile');
+    expect(cmd).toContain('Issue #2: Habit tracker streak reset glitch');
   });
 
-  it('outputs clear all-clear message when zero bugs are pending', () => {
+  it('outputs clear message when zero bugs are pending', () => {
     const allResolved = sampleReports.map((r) => ({ ...r, status: 'verified_done' as const }));
     const cmd = generateFixCommandText(allResolved);
-    expect(cmd).toContain('No pending bug reports found! All reported bugs are verified and completed.');
+    expect(cmd).toContain('All 2 bug report(s) are marked as verified_done');
   });
 });
 

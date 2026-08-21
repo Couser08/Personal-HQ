@@ -79,36 +79,45 @@ export function formatReportMarkdown(report: BugReport): string {
 }
 
 export function generateFixCommandText(reports: BugReport[]): string {
-  const unresolved = reports.filter((r) => r.status !== 'verified_done');
+  if (!reports || reports.length === 0) {
+    return `### Antigravity Task Block: Fix Pending Bugs\n> No bug reports found.\n`;
+  }
+  
+  const unresolved = reports.filter((r) => r.status !== 'verified_done' && r.status !== 'Closed');
   const now = new Date().toISOString();
   
   let cmd = `### Antigravity Task Block: Fix Pending Bugs\n`;
   cmd += `**Generated At**: ${now}\n`;
   cmd += `**Pending Issues Count**: ${unresolved.length} / ${reports.length} total\n\n`;
   
+  const targetList = unresolved.length > 0 ? unresolved : reports;
+
   if (unresolved.length === 0) {
-    cmd += `> No pending bug reports found! All reported bugs are verified and completed.\n`;
-    return cmd;
+    cmd += `> Notice: All ${reports.length} bug report(s) are marked as verified_done. Listing all items for inspection/re-verification:\n\n`;
+  } else {
+    cmd += `#### Pending Items to Fix (${unresolved.length} items):\n`;
   }
   
-  cmd += `#### Pending Items to Fix:\n`;
-  unresolved.forEach((bug, idx) => {
+  targetList.forEach((bug, idx) => {
     cmd += `\n--- Issue #${idx + 1}: ${bug.title} ---\n`;
     cmd += `- **ID**: \`${bug.id}\`\n`;
     cmd += `- **Severity**: \`${bug.severity}\` | **Status**: \`${bug.status}\`\n`;
-    cmd += `- **Route**: \`${bug.pageRoute || bug.route || '/dashboard'}\`\n`;
-    cmd += `- **Section**: \`${bug.sectionName || 'General'}\`\n`;
+    cmd += `- **Route / Page**: \`${bug.pageRoute || bug.route || '/dashboard'}\`\n`;
+    cmd += `- **Section Location**: \`${bug.sectionName || bug.elementInfo?.sectionName || 'General'}\`\n`;
     if (bug.elementInfo?.selector) {
       cmd += `- **Element Selector**: \`${bug.elementInfo.selector}\`\n`;
     }
-    cmd += `- **Description**: ${bug.description || 'No description provided'}\n`;
+    if (bug.elementInfo?.tag) {
+      cmd += `- **Target Tag**: \`<${bug.elementInfo.tag}>\`\n`;
+    }
+    cmd += `- **Description / Error**: ${bug.description || 'No description provided'}\n`;
     if (bug.fixedInFiles) {
       cmd += `- **Target Files / Previous Attempts**: \`${Array.isArray(bug.fixedInFiles) ? bug.fixedInFiles.join(', ') : bug.fixedInFiles}\`\n`;
     }
   });
   
   cmd += `\n\n#### Instructions for Antigravity:\n`;
-  cmd += `1. Fix the above bugs in their respective components/modules.\n`;
+  cmd += `1. Fix ALL the above bugs in their respective components/modules.\n`;
   cmd += `2. Mark each resolved bug as \`verified_done\` in state/Supabase (do not hard-delete).\n`;
   cmd += `3. Preserve minimal network egress and 7-minute query caching.\n`;
   
@@ -165,9 +174,10 @@ interface BugReportStore {
   verifyReport: (id: string, verified: boolean, notes?: string) => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
   loadAllReports: () => Promise<void>;
-  downloadMarkdownFile: () => void;
-  copyMarkdownToClipboard: () => Promise<boolean>;
-  copyFixCommandToClipboard: () => Promise<boolean>;
+  setReports: (reports: BugReport[]) => void;
+  downloadMarkdownFile: (customReports?: BugReport[]) => void;
+  copyMarkdownToClipboard: (customReports?: BugReport[]) => Promise<boolean>;
+  copyFixCommandToClipboard: (customReports?: BugReport[]) => Promise<boolean>;
 }
 
 export const useBugReportStore = create<BugReportStore>((set, get) => ({
@@ -359,8 +369,14 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     }
   },
 
-  downloadMarkdownFile: () => {
-    const md = generateAllReportsMarkdown(get().reports);
+  setReports: (reports: BugReport[]) => {
+    set({ reports });
+    persistBugReports(reports);
+  },
+
+  downloadMarkdownFile: (customReports?: BugReport[]) => {
+    const list = customReports && customReports.length > 0 ? customReports : get().reports;
+    const md = generateAllReportsMarkdown(list);
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -370,14 +386,15 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    useToastStore.getState().addToast('Downloaded', 'Downloaded reports.md successfully.', 'success');
+    useToastStore.getState().addToast('Downloaded', `Downloaded ${list.length} reports to reports.md`, 'success');
   },
 
-  copyMarkdownToClipboard: async () => {
-    const md = generateAllReportsMarkdown(get().reports);
+  copyMarkdownToClipboard: async (customReports?: BugReport[]) => {
+    const list = customReports && customReports.length > 0 ? customReports : get().reports;
+    const md = generateAllReportsMarkdown(list);
     try {
       await navigator.clipboard.writeText(md);
-      useToastStore.getState().addToast('Copied', 'All reports copied to clipboard in Markdown.', 'success');
+      useToastStore.getState().addToast('Copied', `Copied ${list.length} reports to clipboard in Markdown.`, 'success');
       return true;
     } catch (err) {
       console.error('Failed to copy reports markdown:', err);
@@ -385,11 +402,12 @@ export const useBugReportStore = create<BugReportStore>((set, get) => ({
     }
   },
 
-  copyFixCommandToClipboard: async () => {
-    const cmd = generateFixCommandText(get().reports);
+  copyFixCommandToClipboard: async (customReports?: BugReport[]) => {
+    const list = customReports && customReports.length > 0 ? customReports : get().reports;
+    const cmd = generateFixCommandText(list);
     try {
       await navigator.clipboard.writeText(cmd);
-      useToastStore.getState().addToast('Copied Fix Command', 'Antigravity bug fix command copied to clipboard!', 'success');
+      useToastStore.getState().addToast('Copied Fix Command', `Antigravity fix command copied for ${list.length} bug report(s)!`, 'success');
       return true;
     } catch (err) {
       console.error('Failed to copy fix command:', err);

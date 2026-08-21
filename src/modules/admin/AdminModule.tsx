@@ -393,9 +393,9 @@ export default function AdminModule() {
             availableRoutes={availableRoutes}
             isRefreshing={isRefreshing}
             onRefresh={handleRefreshReports}
-            onDownloadMarkdown={downloadMarkdownFile}
-            onCopyMarkdown={copyMarkdownToClipboard}
-            onCopyFixCommand={copyFixCommandToClipboard}
+            onDownloadMarkdown={() => downloadMarkdownFile(filteredReports.length > 0 ? filteredReports : activeReports)}
+            onCopyMarkdown={() => copyMarkdownToClipboard(filteredReports.length > 0 ? filteredReports : activeReports)}
+            onCopyFixCommand={() => copyFixCommandToClipboard(filteredReports.length > 0 ? filteredReports : activeReports)}
             filteredCount={filteredReports.length}
             totalCount={activeReports.length}
             onBatchResolveFiltered={handleBatchResolveFiltered}
