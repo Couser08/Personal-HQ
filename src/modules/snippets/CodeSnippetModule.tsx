@@ -146,12 +146,17 @@ export default function CodeSnippetModule() {
       className="flex flex-col h-full gap-6 pb-4"
     >
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            Code Snippets Vault <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-          </h2>
-          <p className="text-text-secondary text-sm">Save, organize, and reuse your code snippets</p>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary leading-tight">
+              Code Snippets Vault
+            </h2>
+            <span className="w-2 h-2 rounded-full bg-primary inline-block shrink-0 animate-pulse" />
+          </div>
+          <p className="text-[13.5px] sm:text-[14px] text-text-secondary leading-relaxed mt-0.5">
+            Save, organize, and reuse your code snippets
+          </p>
         </div>
         <button
           onClick={() => handleOpenModal()}
@@ -164,18 +169,18 @@ export default function CodeSnippetModule() {
       {/* Top Bar: Search & Filters */}
       <div className="flex flex-col gap-4">
         <div className="relative w-full">
-          <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+          <IconSearch className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
           <input
             type="text"
             placeholder="Search snippets by title, language, or tag..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10 pr-4 py-3"
+            className="input-field pl-10 pr-4 py-2.5"
           />
         </div>
         
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {['All Snippets', 'Favorites', 'Recent', 'JSON', 'JavaScript', 'HTML', 'CSS', 'Python'].map(filter => {
             const isActive = activeFilter === filter;
             return (
@@ -198,7 +203,7 @@ export default function CodeSnippetModule() {
 
       {snippets.length === 0 ? (
         <EmptyState
-          icon={<IconCode className="w-9 h-9 text-text-muted" />}
+          icon={<IconCode className="w-9 h-9 text-text-tertiary" />}
           title="Your vault is empty"
           description="Store your frequently used code blocks, JSON configurations, and utility scripts."
           action={

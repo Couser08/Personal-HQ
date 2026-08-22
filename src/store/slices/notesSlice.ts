@@ -14,6 +14,7 @@ export interface NotesSlice {
   updateNote: (id: string, data: Partial<Note>, silent?: boolean) => Promise<void>;
   updateNoteLocally: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => Promise<void>;
+  fetchNoteDetail: (id: string) => Promise<void>;
 }
 
 export const createNotesSlice: StateCreator<AppStore, [], [], NotesSlice> = (set, get) => ({
@@ -49,9 +50,9 @@ export const createNotesSlice: StateCreator<AppStore, [], [], NotesSlice> = (set
   updateNote: async (id, data, silent = false) => {
     const previous = get().notes;
     const uid = useAuthStore.getState().user?.id;
-    set((state) => ({
-      notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
-    }));
+    const next = previous.map((n) => (n.id === id ? { ...n, ...data, updatedAt: new Date().toISOString() } : n));
+    safeSetItem('phq_notes', JSON.stringify(next));
+    set({ notes: next });
     try {
       await noteService.update(id, data);
       if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.notes.all(uid) });
@@ -59,6 +60,7 @@ export const createNotesSlice: StateCreator<AppStore, [], [], NotesSlice> = (set
         useToastStore.getState().addToast('Success', 'Note updated', 'success');
       }
     } catch (error) {
+      safeSetItem('phq_notes', JSON.stringify(previous));
       set({ notes: previous });
       if (!silent) {
         useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not update note'), 'error');
@@ -67,22 +69,40 @@ export const createNotesSlice: StateCreator<AppStore, [], [], NotesSlice> = (set
     }
   },
   updateNoteLocally: (id: string, data: Partial<Note>) => {
-    set((state) => ({
-      notes: state.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
-    }));
+    const next = get().notes.map((n) => (n.id === id ? { ...n, ...data } : n));
+    safeSetItem('phq_notes', JSON.stringify(next));
+    set({ notes: next });
   },
   deleteNote: async (id) => {
     const previous = get().notes;
     const uid = useAuthStore.getState().user?.id;
-    set((state) => ({ notes: state.notes.filter((n) => n.id !== id) }));
+    const next = previous.filter((n) => n.id !== id);
+    safeSetItem('phq_notes', JSON.stringify(next));
+    set({ notes: next });
     try {
       await noteService.delete(id);
       if (uid) queryClient.invalidateQueries({ queryKey: queryKeys.notes.all(uid) });
       useToastStore.getState().addToast('Success', 'Note deleted', 'success');
     } catch (error) {
+      safeSetItem('phq_notes', JSON.stringify(previous));
       set({ notes: previous });
       useToastStore.getState().addToast('Sync Failed', getStoreErrorMessage(error, 'Could not delete note'), 'error');
       throw error;
+    }
+  },
+  fetchNoteDetail: async (id: string) => {
+    const existing = get().notes.find((n) => n.id === id);
+    if (existing && existing.content) return;
+
+    try {
+      const content = await noteService.fetchDetail(id);
+      if (content !== null && content !== undefined) {
+        const next = get().notes.map((n) => (n.id === id ? { ...n, content } : n));
+        safeSetItem('phq_notes', JSON.stringify(next));
+        set({ notes: next });
+      }
+    } catch (error) {
+      console.warn('Failed to fetch note detail on demand:', error);
     }
   },
 });

@@ -236,13 +236,15 @@ export default function LinksModule() {
       />
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2.5">
-            Link Vault &amp; Saver
-            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-          </h2>
-          <p className="text-text-secondary text-sm">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary leading-tight">
+              Link Vault &amp; Saver
+            </h2>
+            <span className="w-2 h-2 rounded-full bg-primary inline-block shrink-0 animate-pulse" />
+          </div>
+          <p className="text-[13.5px] sm:text-[14px] text-text-secondary leading-relaxed mt-0.5">
             Organise resources, clipboard clips, and media bookmarks.
           </p>
         </div>
@@ -270,7 +272,7 @@ export default function LinksModule() {
       {/* Grid of Link Cards */}
       {filteredLinks.length === 0 ? (
         <EmptyState
-          icon={<IconLink className="w-9 h-9 text-text-muted" />}
+          icon={<IconLink className="w-9 h-9 text-text-tertiary" />}
           title="No links matched"
           description="Save links using the button above or copy any link to clipboard and focus back here."
           action={

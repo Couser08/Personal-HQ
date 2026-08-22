@@ -29,7 +29,7 @@ export const PomodoroTargetCard: React.FC<PomodoroTargetCardProps> = ({
   return (
     <>
       {/* Task Association Row */}
-      <Card padding="md" className="flex items-center justify-between gap-4 flex-wrap text-left">
+      <Card padding="md" className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-left">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-surface-alt text-text-primary">
             <IconTarget size={18} />
@@ -40,11 +40,11 @@ export const PomodoroTargetCard: React.FC<PomodoroTargetCardProps> = ({
           </div>
         </div>
 
-        <div>
+        <div className="w-full sm:w-auto">
           <select
             value={pomodoroAssociatedTaskId || ''}
             onChange={(e) => handleAssociatedTaskChange(e.target.value || null)}
-            className="bg-surface-alt rounded-[var(--radius-input)] px-4 py-2.5 text-[13px] font-medium text-text-primary focus:outline-none focus:ring-1 focus:ring-text-primary cursor-pointer min-w-56 border-none"
+            className="w-full sm:w-auto bg-surface-alt rounded-[var(--radius-input)] px-4 py-2.5 text-[13px] font-medium text-text-primary focus:outline-none focus:ring-1 focus:ring-text-primary cursor-pointer min-w-56 border border-border"
           >
             <option value="">No Associated Target</option>
             <optgroup label="To-Do Tasks">

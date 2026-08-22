@@ -44,7 +44,7 @@ export const AiAssistantModal = ({ isOpen, onClose, initialAction }: AiAssistant
 
   const addToast = useToastStore((s) => s.addToast);
   const apiKey = settings.geminiApiKey || '';
-  const model = settings.geminiModel || 'gemini-2.5-flash';
+  const model = settings.geminiModel || 'gemini-3.7-flash';
 
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);

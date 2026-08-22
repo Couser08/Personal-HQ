@@ -1,21 +1,10 @@
-/**
- * Personal HQ — AI Agent Engine (Native Gemini Function Calling)
- *
- * Implements the system prompt specification:
- * - Proof-first mutations (confirms only after real tool execution with row ID)
- * - Dynamic tool subsetting (3-5 tools per prompt to keep Flash models accurate)
- * - Compressed workspace context aggregation (<250 tokens)
- * - Runtime argument validation & idempotency keys
- * - Prompt-injection shielding for uploaded study content
- * - Active sliding-window rate limiting (15 RPM / 1,500 RPD) with token tracking
- */
-
+import { supabase } from './supabase';
 import { recordAiRequest, checkRateLimit } from './ai-usage-tracker';
-import { SYSTEM_PROMPT, buildCompressedWorkspaceContext } from './ai/agentSystemPrompt';
+import { SYSTEM_PROMPT, buildDynamicContext } from './ai/agentSystemPrompt';
 import { ALL_TOOL_DECLARATIONS, getScopedToolDeclarations } from './ai/agentToolsDeclarations';
 import { executeToolCall } from './ai/agentToolExecutors';
 
-export { SYSTEM_PROMPT, buildCompressedWorkspaceContext, ALL_TOOL_DECLARATIONS, getScopedToolDeclarations, executeToolCall };
+export { SYSTEM_PROMPT, buildDynamicContext as buildCompressedWorkspaceContext, ALL_TOOL_DECLARATIONS, getScopedToolDeclarations, executeToolCall };
 
 export interface AgentStepUpdate {
   stepId: string;
@@ -38,56 +27,39 @@ export interface AgentMessageHistory {
   parts: any[];
 }
 
-const DEFAULT_PRIMARY_MODEL = 'gemini-2.5-flash';
-const FALLBACK_MODEL = 'gemini-1.5-flash';
-
-// ─── API DISPATCHER (GEMINI DIRECT / PROXY) ──────────────────────────────────
+const PRIMARY_MODEL = 'gemini-3.7-flash';
 
 async function callGeminiApi(
   apiKey: string,
   model: string,
   payload: any
 ): Promise<any> {
-  // Pre-flight Rate Limit check
   const rateStatus = checkRateLimit();
   if (!rateStatus.allowed) {
-    throw new Error(rateStatus.warningMessage || 'Rate limit reached. Please wait before making more requests.');
+    throw new Error(rateStatus.warningMessage || 'Rate limit reached.');
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body: { model, action: 'generateContent', payload },
+    headers: { 'x-gemini-key': apiKey.trim() }
   });
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const status = response.status;
-    const msg = errorBody.error?.message || response.statusText;
-
-    if (status === 429) {
-      throw new Error('Gemini API rate limit exceeded (429). Please wait 30 seconds before retrying.');
-    }
-    if (status === 503 || status === 500) {
-      throw new Error(`Gemini service temporarily overloaded (${status}). Retrying with backup model.`);
-    }
-    throw new Error(`Gemini API error (${status}): ${msg}`);
+  if (error) {
+    const msg = error.message || 'Unknown error';
+    if (msg.includes('429')) throw new Error('Gemini API rate limit exceeded (429).');
+    throw new Error(`Gemini service error: ${msg}`);
   }
 
-  const data = await response.json();
+  // Handle potential nested error from proxy
+  if (data?.error) {
+    throw new Error(`Gemini API error: ${data.error.message || 'Unknown'}`);
+  }
 
-  // Track Token Usage
-  const usage = data.usageMetadata;
-  const promptTokens = usage?.promptTokenCount || 200;
-  const completionTokens = usage?.candidatesTokenCount || 100;
-  recordAiRequest(promptTokens, completionTokens);
+  const usage = data?.usageMetadata;
+  recordAiRequest(usage?.promptTokenCount || 50, usage?.candidatesTokenCount || 20);
 
   return data;
 }
-
-// ─── MULTI-TURN TOOL CALLING AGENT LOOP ───────────────────────────────────────
 
 export async function runAgentTurn(
   apiKey: string,
@@ -100,23 +72,22 @@ export async function runAgentTurn(
   } = {}
 ): Promise<AgentTurnResult> {
   if (!apiKey?.trim()) {
-    throw new Error('Gemini API key is required. Please set your key in Settings.');
+    throw new Error('Gemini API key required. Please set it in Settings.');
   }
 
-  const primaryModel = options.model || DEFAULT_PRIMARY_MODEL;
+  // Enforce new model and truncate history to save tokens
+  const primaryModel = PRIMARY_MODEL;
   const tools = getScopedToolDeclarations(userPrompt, options.activeModule);
   const executedSteps: AgentStepUpdate[] = [];
   const confirmedEntities: Array<{ type: string; id: string; title: string }> = [];
-
-  // Generate turn idempotency key
   const turnIdempotencyKey = Math.random().toString(36).substring(2, 10);
 
-  // Build working contents array
-  const contents: any[] = [...conversationHistory];
+  // Keep max 4 history messages to preserve tokens
+  const truncatedHistory = conversationHistory.slice(-4);
+  const contents: any[] = [...truncatedHistory];
 
-  // Append user message with workspace context header
-  const compressedContext = buildCompressedWorkspaceContext();
-  const userTextWithContext = `[Live App State: ${compressedContext}]\n\nUser Request: ${userPrompt}`;
+  const compressedContext = buildDynamicContext(userPrompt, options.activeModule);
+  const userTextWithContext = `[Context: ${compressedContext}]\n\nUser: ${userPrompt}`;
 
   contents.push({
     role: 'user',
@@ -124,7 +95,7 @@ export async function runAgentTurn(
   });
 
   let currentTurn = 0;
-  const maxTurns = 4; // Safety ceiling to prevent infinite loops
+  const maxTurns = 4; 
 
   while (currentTurn < maxTurns) {
     currentTurn++;
@@ -134,33 +105,24 @@ export async function runAgentTurn(
       contents,
       tools: [{ functionDeclarations: tools }],
       generationConfig: {
-        temperature: 0.25,
+        temperature: 0.1, // very low temperature for agentic precision
+        thinkingConfig: {
+          thinkingBudgetTokens: 1024, // low thinking budget as requested
+        }
       },
     };
 
-    let responseData: any;
-    try {
-      responseData = await callGeminiApi(apiKey, primaryModel, payload);
-    } catch (err: any) {
-      // Fallback if 503 or primary model fails
-      if (primaryModel !== FALLBACK_MODEL && err.message?.includes('overloaded')) {
-        console.warn(`[Agent] Falling back to ${FALLBACK_MODEL}`);
-        responseData = await callGeminiApi(apiKey, FALLBACK_MODEL, payload);
-      } else {
-        throw err;
-      }
-    }
+    const responseData = await callGeminiApi(apiKey, primaryModel, payload);
 
     const candidate = responseData.candidates?.[0];
     const candidateContent = candidate?.content;
     const parts = candidateContent?.parts || [];
 
-    // Check if model emitted function calls
+    // Filter for tool calls
     const functionCalls = parts.filter((p: any) => p.functionCall);
 
     if (functionCalls.length === 0) {
-      // Final textual response reached
-      const replyText = parts.map((p: any) => p.text || '').join('\n').trim();
+      const replyText = parts.map((p: any) => p.text || '').join('\\n').trim();
       return {
         replyText: replyText || 'Action completed successfully.',
         executedTools: executedSteps,
@@ -168,10 +130,8 @@ export async function runAgentTurn(
       };
     }
 
-    // Append model's response to history
     contents.push(candidateContent);
 
-    // Execute tool calls sequentially
     const functionResponseParts: any[] = [];
 
     for (const fcPart of functionCalls) {
@@ -193,7 +153,7 @@ export async function runAgentTurn(
 
       try {
         const { result, entity } = await executeToolCall(toolName, toolArgs, turnIdempotencyKey);
-
+        
         stepUpdate.status = 'success';
         stepUpdate.entityId = entity?.id;
         stepUpdate.label = `Completed: ${toolName.replace(/_/g, ' ')}`;
@@ -222,7 +182,6 @@ export async function runAgentTurn(
       }
     }
 
-    // Append tool execution proofs back to Gemini in the same conversation
     contents.push({
       role: 'function',
       parts: functionResponseParts,

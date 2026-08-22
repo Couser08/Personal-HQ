@@ -191,15 +191,15 @@ export default function TilModule() {
       {/* ── Title Header ── */}
       <div className="flex flex-col justify-between gap-4 pt-4 mb-8 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted mb-1">Developer Journal</p>
-          <h2 className="text-4xl font-black leading-none tracking-tight text-text-primary">Today I Learned</h2>
-          <p className="text-[15px] text-text-secondary font-medium mt-2">Log code snippets, commands, and key concepts daily.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-text-tertiary mb-1">Developer Journal</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-text-primary">Today I Learned</h2>
+          <p className="text-[13.5px] sm:text-[14px] text-text-secondary leading-relaxed mt-1">Log code snippets, commands, and key concepts daily.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex gap-2 items-center px-6 py-3 text-white rounded-full font-bold text-[14px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90 cursor-pointer bg-rose-500 hover:bg-rose-600 shadow-[0_4px_16px_rgba(244,63,94,0.3)]"
+          className="flex gap-2 items-center px-5 py-2.5 bg-primary text-text-on-accent rounded-full font-semibold text-[13px] active:scale-95 transition-all w-max shrink-0 hover:opacity-90 cursor-pointer shadow-sm"
         >
-          <IconPlus className="w-5 h-5" /> Add Log
+          <IconPlus className="w-4 h-4" /> Add Log
         </button>
       </div>
 

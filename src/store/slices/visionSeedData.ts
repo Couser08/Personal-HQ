@@ -196,8 +196,11 @@ export function loadInitialBoards(): VisionBoard[] {
     const raw = localStorage.getItem('phq_vision_boards');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.nodes) {
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0]?.id) {
+        return parsed.map((b: any) => ({
+          ...b,
+          nodes: Array.isArray(b.nodes) ? b.nodes : [],
+        }));
       }
     }
   } catch (e) {

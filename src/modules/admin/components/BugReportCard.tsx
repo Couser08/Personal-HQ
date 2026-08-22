@@ -15,6 +15,7 @@ import {
   LIFECYCLE_STATUSES
 } from '../utils/bugReportHelpers';
 import { useToastStore } from '../../../store/useToastStore';
+import { formatReportMarkdown } from '../../../store/useBugReportStore';
 
 interface BugReportCardProps {
   report: BugReport;
@@ -43,7 +44,7 @@ export const BugReportCard: React.FC<BugReportCardProps> = ({
 
   const handleCopyMarkdown = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = report.markdownContent || `# Bug: ${report.title}\n\n${report.description}`;
+    const text = formatReportMarkdown(report);
     try {
       await navigator.clipboard.writeText(text);
       setIsCopied(true);

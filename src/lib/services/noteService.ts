@@ -2,22 +2,25 @@ import { supabase } from '../supabase';
 import type { Note } from '../../store/types';
 
 export const noteService = {
-  async fetchAll(userId: string, limit = 50): Promise<Note[]> {
+  async fetchAll(userId: string, limit = 100): Promise<Note[]> {
     const { data, error } = await supabase
       .from('notes')
-      .select('id, title, tags, pinned, created_at, updated_at')
+      .select('id, title, content, tags, pinned, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation')) return [];
+      throw error;
+    }
     return (data ?? []).map((r) => ({
       id: r.id,
-      title: r.title,
-      content: '', // Metadata-first: content loaded on demand via fetchDetail
+      title: r.title || 'Untitled Note',
+      content: r.content ?? '',
       tags: r.tags ?? [],
-      pinned: r.pinned,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
+      pinned: !!r.pinned,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || new Date().toISOString(),
     }));
   },
 

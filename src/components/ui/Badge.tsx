@@ -18,7 +18,7 @@ export const Badge = ({ children, variant = 'default', onClick, className = '' }
     warning: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
     danger: "bg-red-500/10 text-red-600 dark:text-red-400",
     info: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    default: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+    default: "bg-surface-alt text-text-secondary border border-border-hairline",
   };
 
   // If clickable, Apple wraps it in a subtle active scale or background shift instead of just opacity

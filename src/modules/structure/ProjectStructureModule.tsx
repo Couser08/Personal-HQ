@@ -155,6 +155,8 @@ export default function ProjectStructureModule() {
     );
   };
 
+  const [mobileTab, setMobileTab] = useState<'tree' | 'terminal' | 'inspector'>('tree');
+
   if (showDocs) {
     return <StructureDocsView onBack={() => setShowDocs(false)} />;
   }
@@ -176,20 +178,20 @@ export default function ProjectStructureModule() {
   }
 
   return (
-    <div className="w-full flex flex-col gap-4 p-3 sm:p-5 text-zinc-100 animate-fadeIn">
+    <div className="w-full flex flex-col gap-4 p-2 sm:p-4 text-text-primary animate-fadeIn">
       {/* Top Header & Project Switcher Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border-hairline">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           {/* Project Dropdown Selector */}
-          <div className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-800 p-1.5 rounded-xl shadow-xs">
+          <div className="flex items-center gap-2 bg-surface-alt border border-border p-1.5 rounded-xl shadow-xs">
             <IconFolder size={17} className="text-primary ml-1.5 flex-shrink-0" />
             <select
               value={activeProject.id}
               onChange={(e) => setActiveProjectId(e.target.value)}
-              className="bg-transparent text-xs font-bold text-zinc-100 outline-hidden cursor-pointer pr-4"
+              className="bg-transparent text-xs font-semibold text-text-primary outline-hidden cursor-pointer pr-4"
             >
               {projectStructures.map((p) => (
-                <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-100">
+                <option key={p.id} value={p.id} className="bg-surface text-text-primary">
                   {p.name} ({p.rootName})
                 </option>
               ))}
@@ -199,7 +201,7 @@ export default function ProjectStructureModule() {
           {/* Quick Project Management Buttons */}
           <button
             onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-xs font-semibold transition-colors cursor-pointer"
             title="Create New Project Structure"
           >
             <IconPlus size={14} className="text-primary" />
@@ -208,10 +210,10 @@ export default function ProjectStructureModule() {
 
           <button
             onClick={() => setIsPresetsModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-xs font-semibold transition-colors cursor-pointer"
             title="Choose from Architecture Starter Blueprints"
           >
-            <IconSparkles size={14} className="text-amber-400" />
+            <IconSparkles size={14} className="text-accent-warning" />
             <span>Blueprints</span>
           </button>
         </div>
@@ -220,7 +222,7 @@ export default function ProjectStructureModule() {
         <div className="flex items-center gap-2 self-end lg:self-auto flex-wrap">
           <button
             onClick={() => setIsBatchModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-xs font-semibold transition-colors cursor-pointer"
           >
             <IconCode size={14} />
             <span>Batch Script</span>
@@ -228,15 +230,15 @@ export default function ProjectStructureModule() {
 
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-alt hover:bg-surface-hover text-text-primary border border-border text-xs font-semibold transition-colors cursor-pointer"
           >
             <IconDownload size={14} />
-            <span>Export & ZIP</span>
+            <span>Export &amp; ZIP</span>
           </button>
 
           <button
             onClick={() => setShowDocs(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-text-on-accent text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
           >
             <IconHelp size={14} />
             <span>CLI Docs</span>
@@ -244,7 +246,7 @@ export default function ProjectStructureModule() {
 
           <button
             onClick={handleDeleteActiveProject}
-            className="p-1.5 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 border border-zinc-800/80 transition-colors"
+            className="p-1.5 rounded-xl text-text-secondary hover:text-accent-danger hover:bg-accent-danger/10 border border-border transition-colors cursor-pointer"
             title="Delete Active Project"
           >
             <IconTrash size={15} />
@@ -252,14 +254,50 @@ export default function ProjectStructureModule() {
         </div>
       </div>
 
+      {/* Mobile Segmented Tab Switcher */}
+      <div className="lg:hidden flex items-center p-1 bg-surface-alt rounded-2xl border border-border shrink-0 gap-1">
+        <button
+          type="button"
+          onClick={() => setMobileTab('tree')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            mobileTab === 'tree' ? 'bg-surface text-text-primary shadow-xs font-black' : 'text-text-secondary'
+          }`}
+        >
+          📁 File Tree
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('terminal')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            mobileTab === 'terminal' ? 'bg-surface text-text-primary shadow-xs font-black' : 'text-text-secondary'
+          }`}
+        >
+          💻 Terminal
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('inspector')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            mobileTab === 'inspector' ? 'bg-surface text-text-primary shadow-xs font-black' : 'text-text-secondary'
+          }`}
+        >
+          📄 Inspector
+        </button>
+      </div>
+
       {/* Main Workspace Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Column: VS Code Style Tree Explorer (5 cols) */}
-        <div className="lg:col-span-5 h-[620px]">
+        <div className={`lg:col-span-5 h-[480px] lg:h-[620px] ${mobileTab === 'tree' ? 'block' : 'hidden lg:block'}`}>
           <ProjectTreeExplorer
             project={activeProject}
             selectedNodeId={selectedNodeId}
-            onSelectNode={(node) => setSelectedNodeId(node ? node.id : null)}
+            onSelectNode={(node) => {
+              setSelectedNodeId(node ? node.id : null);
+              if (node && window.innerWidth < 1024) {
+                setMobileTab('inspector');
+              }
+            }}
             onAddNode={(node) => addNodeToProject(activeProject.id, node)}
             onUpdateNode={(nodeId, updates) => updateNodeInProject(activeProject.id, nodeId, updates)}
             onDeleteNode={(nodeId) => deleteNodeFromProject(activeProject.id, nodeId)}
@@ -268,9 +306,9 @@ export default function ProjectStructureModule() {
         </div>
 
         {/* Right Column: Terminal + Inspector Split (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col gap-4 h-[620px]">
+        <div className={`lg:col-span-7 flex flex-col gap-4 min-h-[480px] lg:h-[620px] ${mobileTab !== 'tree' ? 'flex' : 'hidden lg:flex'}`}>
           {/* Top Half: Command Terminal */}
-          <div className="h-[320px]">
+          <div className={`h-[340px] lg:h-[320px] ${mobileTab === 'terminal' || window.innerWidth >= 1024 ? 'block' : 'hidden'}`}>
             <CommandTerminal
               project={activeProject}
               onUpdateNodes={(nodes) => setProjectNodes(activeProject.id, nodes)}
@@ -282,7 +320,7 @@ export default function ProjectStructureModule() {
           </div>
 
           {/* Bottom Half: File Inspector & Code Boilerplates */}
-          <div className="flex-1 min-h-[280px]">
+          <div className={`flex-1 min-h-[300px] lg:min-h-[280px] ${mobileTab === 'inspector' || window.innerWidth >= 1024 ? 'block' : 'hidden'}`}>
             <FileInspector
               node={selectedNode}
               allNodes={activeProject.nodes}

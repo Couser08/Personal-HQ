@@ -57,32 +57,52 @@ const buildJournalUpdateOptionalPayload = (data: Partial<JournalEntry>) => ({
 
 export const journalService = {
   async fetchAll(userId: string, limit = 50): Promise<JournalEntry[]> {
-    const { data, error } = await supabase
+    let queryData: any[] | null = null;
+    let queryError: any = null;
+
+    const res = await supabase
       .from('journals')
-      .select('id, title, date, mood, tags, pinned, location, reminder, style_preset, created_at, updated_at')
+      .select('id, title, content, date, mood, tags, pinned, focus_list, page_style, images, reflection, attachments, location, reminder, style_preset, created_at, updated_at')
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(limit);
-    if (error) {
-      if (error.code === '42P01' || error.message?.includes('relation')) return [];
-      throw error;
+
+    queryData = res.data;
+    queryError = res.error;
+
+    if (queryError && isMissingJournalColumnError(queryError)) {
+      const fallback = await supabase
+        .from('journals')
+        .select('id, title, content, date, mood, tags, pinned, focus_list, page_style, images, reflection, attachments, created_at, updated_at')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(limit);
+      queryData = fallback.data;
+      queryError = fallback.error;
     }
-    return (data ?? []).map((r) => ({
+
+    if (queryError) {
+      if (queryError.code === '42P01' || queryError.message?.includes('relation')) return [];
+      console.warn('Journal fetchAll warning:', queryError);
+      return [];
+    }
+
+    return (queryData ?? []).map((r: any) => ({
       id: r.id,
-      title: r.title,
-      content: '', // Metadata-first: content loaded on demand via fetchDetail
-      date: r.date,
-      mood: r.mood,
+      title: r.title || 'Untitled Entry',
+      content: r.content || '',
+      date: r.date || r.created_at || new Date().toISOString(),
+      mood: r.mood || 'neutral',
       tags: r.tags ?? [],
-      pinned: r.pinned ?? false,
-      focusList: [],
-      pageStyle: 'default',
-      images: [],
-      reflection: { whatWentWell: '', whatCanBeBetter: '' },
-      attachments: [],
-      location: r.location ?? '',
-      reminder: r.reminder ?? '',
-      stylePreset: r.style_preset ?? 'calm',
+      pinned: !!r.pinned,
+      focusList: Array.isArray(r.focus_list) ? r.focus_list : [],
+      pageStyle: r.page_style || 'default',
+      images: Array.isArray(r.images) ? r.images : [],
+      reflection: r.reflection || { whatWentWell: '', whatCanBeBetter: '' },
+      attachments: Array.isArray(r.attachments) ? r.attachments : [],
+      location: r.location || '',
+      reminder: r.reminder || '',
+      stylePreset: r.style_preset || 'calm',
     }));
   },
 

@@ -28,10 +28,10 @@ export const PreferencesSection: React.FC<PreferencesSectionProps> = ({
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-accent-warning flex items-center justify-center text-white shadow-sm">
                   <IconHourglass className="w-5 h-5" stroke={1.5} />
                 </div>
-                <p className="text-base font-medium text-zinc-900 dark:text-white">
+                <p className="text-base font-medium text-text-primary">
                   Countdown Layout
                 </p>
               </div>
@@ -41,8 +41,8 @@ export const PreferencesSection: React.FC<PreferencesSectionProps> = ({
                 options={COUNTDOWN_TEMPLATES}
               />
             </div>
-            <div className="flex flex-col gap-2 items-center sm:items-end w-full sm:w-auto p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-700/50">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 select-none">
+            <div className="flex flex-col gap-2 items-center sm:items-end w-full sm:w-auto p-4 bg-surface-alt rounded-2xl border border-border-hairline">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-text-tertiary select-none">
                 Live Preview
               </span>
               <CountdownPreview template={settings.countdownTemplate || 'default'} />
@@ -60,10 +60,10 @@ export const PreferencesSection: React.FC<PreferencesSectionProps> = ({
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div className="flex-1 w-full sm:w-auto">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center text-white shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-accent-danger flex items-center justify-center text-white shadow-sm">
                   <IconClock className="w-5 h-5" stroke={1.5} />
                 </div>
-                <p className="text-base font-medium text-zinc-900 dark:text-white">Clock Style</p>
+                <p className="text-base font-medium text-text-primary">Clock Style</p>
               </div>
               <CustomSelect
                 value={settings.clockStyle || 'digital'}
@@ -76,8 +76,8 @@ export const PreferencesSection: React.FC<PreferencesSectionProps> = ({
                 ]}
               />
             </div>
-            <div className="flex flex-col gap-2 items-center sm:items-end w-full sm:w-auto p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-700/50">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 select-none">
+            <div className="flex flex-col gap-2 items-center sm:items-end w-full sm:w-auto p-4 bg-surface-alt rounded-2xl border border-border-hairline">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-text-tertiary select-none">
                 Live Preview
               </span>
               <ClockPreview style={settings.clockStyle || 'digital'} theme={theme} />

@@ -91,7 +91,7 @@ export default function SettingsModule() {
       className="flex flex-col gap-8 w-full max-w-3xl mx-auto pb-12"
     >
       <div className="flex flex-col gap-2 mt-4 px-4 sm:px-0">
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+        <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
           Settings
         </h1>
       </div>

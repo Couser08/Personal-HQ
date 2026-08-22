@@ -13,13 +13,14 @@ import { MarkdownCatalogView } from './components/MarkdownCatalogView';
 import { CreateDocumentModal } from './components/CreateDocumentModal';
 
 export default function MarkdownModule() {
-  const { notes, addNote, updateNote, updateNoteLocally, deleteNote, showConfirm } = useAppStore(
+  const { notes, addNote, updateNote, updateNoteLocally, deleteNote, fetchNoteDetail, showConfirm } = useAppStore(
     useShallow((state) => ({
       notes: state.notes,
       addNote: state.addNote,
       updateNote: state.updateNote,
       updateNoteLocally: state.updateNoteLocally,
       deleteNote: state.deleteNote,
+      fetchNoteDetail: state.fetchNoteDetail,
       showConfirm: state.showConfirm,
     })),
   );
@@ -45,20 +46,25 @@ export default function MarkdownModule() {
     const q = workspaceSearch.toLowerCase().trim();
     if (!q) return markdownDocs;
     return markdownDocs.filter(
-      (d) => d.title.toLowerCase().includes(q) || d.content.toLowerCase().includes(q),
+      (d) => d.title.toLowerCase().includes(q) || (d.content && d.content.toLowerCase().includes(q)),
     );
   }, [markdownDocs, workspaceSearch]);
 
   useEffect(() => {
+    if (!activeDocId) {
+      setTitle('');
+      setContent('');
+      return;
+    }
     const doc = markdownDocs.find((d) => d.id === activeDocId);
     if (doc) {
       setTitle(doc.title);
-      setContent(doc.content);
-    } else {
-      setTitle('');
-      setContent('');
+      setContent(doc.content || '');
+      if (!doc.content) {
+        void fetchNoteDetail(activeDocId);
+      }
     }
-  }, [activeDocId, markdownDocs]);
+  }, [activeDocId, markdownDocs, fetchNoteDetail]);
 
   const getUniqueTitle = (rawTitle: string) => {
     const baseName = (rawTitle.trim() || 'untitled').replace(/\.md$/i, '');

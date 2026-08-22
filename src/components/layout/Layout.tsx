@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileHeader } from './MobileHeader';
+import { MobileBottomNav } from './MobileBottomNav';
 import { MobileSlideDrawer } from './MobileSlideDrawer';
 import { AppTour } from './AppTour';
 import { UpdatePopup } from '../ui/UpdatePopup';
@@ -17,6 +18,7 @@ import { WavyEffectOverlay } from '../ui/WavyEffectOverlay';
 import { AiFloatingButton } from '../ui/AiFloatingButton';
 import { AiAssistantModal } from '../ui/ai-assistant/AiAssistantModal';
 import { useAppStore } from '../../store/useAppStore';
+import { useMobileAppLifecycle } from '../../hooks/useMobileAppLifecycle';
 
 interface LayoutProps {
   children: ReactNode;
@@ -31,6 +33,14 @@ export const Layout = ({ children }: LayoutProps) => {
   const activeModule = useAppStore(state => state.activeModule);
 
   const isFullBleed = activeModule === 'vision' || activeModule === 'mindmap' || activeModule === 'drawing';
+
+  // Native mobile back gesture & app lifecycle handling
+  useMobileAppLifecycle({
+    isMobileDrawerOpen,
+    setIsMobileDrawerOpen,
+    isAiModalOpen,
+    setIsAiModalOpen,
+  });
 
   useEffect(() => {
     const checkFocusMode = () => {
@@ -65,6 +75,14 @@ export const Layout = ({ children }: LayoutProps) => {
         onOpenAi={handleOpenAi}
       />
 
+      {/* Floating Apple-Grade Mobile Bottom Navigation Dock */}
+      {!isFocusMode && !isFullBleed && (
+        <MobileBottomNav
+          onOpenAi={handleOpenAi}
+          onOpenDrawer={() => setIsMobileDrawerOpen(true)}
+        />
+      )}
+
       {/* Main Content Area */}
       <main className={`flex-1 w-full min-w-0 relative ${isFullBleed ? 'h-screen overflow-hidden flex flex-col' : ''}`}>
         {/* Focus Mode Exit Pill */}
@@ -87,7 +105,7 @@ export const Layout = ({ children }: LayoutProps) => {
           className={
             isFullBleed
               ? 'w-full h-full p-0 m-0 overflow-hidden flex flex-col flex-1'
-              : `main-content-area p-3 sm:p-6 lg:p-8 pt-3 sm:pt-4 md:pt-6 pb-8 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
+              : `main-content-area px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-28 md:pb-12 max-w-7xl mx-auto min-h-full transition-all duration-300 ${
                   isFocusMode ? 'opacity-95 max-w-4xl py-12' : ''
                 }`
           }

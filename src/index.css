@@ -405,6 +405,16 @@
 .btn-danger { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); color: var(--color-accent-danger); }
 .btn-danger:hover { background: rgba(244,63,94,0.2); color: var(--color-accent-danger); }
 
+html, body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
 /* Form Controls */
 .input-field,
 .textarea-field,
@@ -422,6 +432,19 @@ select {
   min-height: 42px;
   outline: none;
   transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+
+@media (max-width: 640px) {
+  .input-field,
+  .textarea-field,
+  .select-field,
+  select,
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="search"] {
+    font-size: 16px !important;
+  }
 }
 
 .textarea-field {
@@ -452,13 +475,13 @@ select:hover {
 .textarea-field:focus,
 .select-field:focus,
 select:focus {
-  border-color: #f43f5e;
-  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.35);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1.5px var(--border-focus);
 }
 
 .input-field::placeholder,
 .textarea-field::placeholder {
-  color: var(--text-muted);
+  color: var(--text-tertiary);
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────── */

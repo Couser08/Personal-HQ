@@ -27,6 +27,7 @@ import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
 import { clearRestCache } from '../../lib/supabase';
 import { queryClient } from '../../lib/queryClient';
 import { safeSetItem } from '../../utils/storage';
+import { loadInitialBoards } from './visionSeedData';
 
 export interface CoreSlice {
   activeModule: string;
@@ -258,9 +259,16 @@ export const createCoreSlice: StateCreator<AppStore, [], [], CoreSlice> = (set, 
           : get().projectStructures;
       const visionBoards =
         results[19].status === 'fulfilled' &&
+        Array.isArray(results[19].value) &&
         (results[19].value as any[]).length > 0
           ? (results[19].value as any[])
-          : (get() as any).visionBoards;
+          : (get() as any).visionBoards && (get() as any).visionBoards.length > 0
+          ? (get() as any).visionBoards
+          : loadInitialBoards();
+
+      if (visionBoards && visionBoards.length > 0) {
+        safeSetItem('phq_vision_boards', JSON.stringify(visionBoards));
+      }
 
       let dbSettings = get().settings;
       let dbTheme = get().theme;
@@ -382,7 +390,7 @@ export const createCoreSlice: StateCreator<AppStore, [], [], CoreSlice> = (set, 
       appTags: [],
       visions: [],
       projectStructures: [],
-      visionBoards: [],
+      visionBoards: loadInitialBoards(),
       dataLoaded: false,
       isSyncing: false,
     } as any);

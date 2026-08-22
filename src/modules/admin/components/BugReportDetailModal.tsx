@@ -18,6 +18,7 @@ import { BugDomTab } from './bug-detail/BugDomTab';
 import { BugQaTab } from './bug-detail/BugQaTab';
 import { BugEnvTab, BugMarkdownTab } from './bug-detail/BugEnvAndMarkdownTabs';
 import { BugScreenshotZoomModal } from './bug-detail/BugScreenshotZoomModal';
+import { formatReportMarkdown } from '../../../store/useBugReportStore';
 
 interface BugReportDetailModalProps {
   report: BugReport | null;
@@ -191,7 +192,7 @@ export const BugReportDetailModal: React.FC<BugReportDetailModalProps> = ({
                 type="button"
                 onClick={() =>
                   handleCopy(
-                    report.markdownContent || `# Bug: ${report.title}`,
+                    formatReportMarkdown(report),
                     'md-footer',
                     'Markdown',
                   )

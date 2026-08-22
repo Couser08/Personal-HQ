@@ -60,8 +60,10 @@ export function formatReportMarkdown(report: BugReport): string {
   }
 
   if (report.screenshotData) {
+    const rawUrl = report.screenshotData;
+    const shortUrl = rawUrl.length > 38 ? `${rawUrl.slice(0, 35)}...` : rawUrl;
     md += `#### Visual Snapshot\n`;
-    md += `![Screenshot](${report.screenshotData})\n\n`;
+    md += `![Screenshot](${shortUrl})\n\n`;
   }
 
   if (report.fixedInFiles || report.fixNotes) {

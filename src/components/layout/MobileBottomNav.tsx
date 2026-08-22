@@ -3,25 +3,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   IconLayout,
   IconChecklist,
-  IconTarget,
-  IconBook2,
+  IconFlame,
+  IconMenu2,
   IconPlus,
   IconSparkles,
   IconFileText,
   IconX,
+  IconBook2,
+  IconTarget,
+  IconBulb,
+  IconClockPlay,
 } from '@tabler/icons-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 
 interface MobileBottomNavProps {
   onOpenAi: (actionType?: string) => void;
-  onOpenCreateTask?: () => void;
-  onOpenCreateVision?: () => void;
-  onOpenCreateJournal?: () => void;
+  onOpenDrawer?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenAi,
+  onOpenDrawer,
 }) => {
   const { activeModule, setActiveModule } = useAppStore(
     useShallow((state) => ({
@@ -45,13 +48,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       },
     },
     {
-      id: 'vision',
-      label: 'New Vision',
-      desc: 'Plant goal on rope canvas',
-      icon: IconTarget,
-      color: 'from-rose-500 to-pink-600',
+      id: 'habits',
+      label: 'New Habit',
+      desc: 'Track daily streak',
+      icon: IconFlame,
+      color: 'from-orange-500 to-amber-600',
       action: () => {
-        setActiveModule('vision');
+        setActiveModule('habits');
         setIsQuickCreateOpen(false);
       },
     },
@@ -67,11 +70,44 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       },
     },
     {
+      id: 'til',
+      label: 'Today I Learned',
+      desc: 'Log quick snippet or tip',
+      icon: IconBulb,
+      color: 'from-rose-500 to-pink-600',
+      action: () => {
+        setActiveModule('til');
+        setIsQuickCreateOpen(false);
+      },
+    },
+    {
+      id: 'pomodoro',
+      label: 'Focus Session',
+      desc: 'Start 25m Pomodoro clock',
+      icon: IconClockPlay,
+      color: 'from-red-500 to-rose-600',
+      action: () => {
+        setActiveModule('pomodoro');
+        setIsQuickCreateOpen(false);
+      },
+    },
+    {
+      id: 'vision',
+      label: 'New Vision Goal',
+      desc: 'Plant ambition on canvas',
+      icon: IconTarget,
+      color: 'from-violet-600 to-purple-600',
+      action: () => {
+        setActiveModule('vision');
+        setIsQuickCreateOpen(false);
+      },
+    },
+    {
       id: 'markdown',
-      label: 'New Doc',
-      desc: 'Markdown document',
+      label: 'New Document',
+      desc: 'Markdown creator note',
       icon: IconFileText,
-      color: 'from-amber-500 to-orange-600',
+      color: 'from-sky-500 to-blue-600',
       action: () => {
         setActiveModule('markdown');
         setIsQuickCreateOpen(false);
@@ -80,7 +116,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     {
       id: 'ai',
       label: 'Ask AI Assistant',
-      desc: 'Instant answer & breakdown',
+      desc: 'Instant answer & plan breakdown',
       icon: IconSparkles,
       color: 'from-purple-600 to-indigo-600',
       action: () => {
@@ -113,11 +149,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[32px] bg-surface border-t border-border shadow-2xl p-6 md:hidden pb-10 flex flex-col gap-4 text-text-primary"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[32px] bg-surface border-t border-border shadow-2xl p-5 md:hidden pb-8 flex flex-col gap-3.5 text-text-primary max-h-[85vh] overflow-y-auto custom-scrollbar"
           >
             {/* Handle */}
-            <div className="flex justify-center -mt-2">
-              <div className="w-12 h-1.5 rounded-full bg-border-hairline" />
+            <div className="flex justify-center -mt-1">
+              <div className="w-12 h-1.5 rounded-full bg-border-alt" />
             </div>
 
             <div className="flex items-center justify-between pb-2 border-b border-border/50">
@@ -137,8 +173,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               </button>
             </div>
 
-            {/* Quick Actions List */}
-            <div className="grid grid-cols-1 gap-2.5">
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-2 gap-2">
               {quickActions.map((act) => {
                 const Icon = act.icon;
                 return (
@@ -146,18 +182,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                     key={act.id}
                     type="button"
                     onClick={act.action}
-                    className="flex items-center gap-3.5 p-3 rounded-2xl bg-surface-alt hover:bg-surface border border-border/50 text-left transition-all active:scale-98 cursor-pointer group"
+                    className="flex flex-col items-start gap-2 p-3 rounded-2xl bg-surface-alt hover:bg-surface-hover border border-border/50 text-left transition-all active:scale-95 cursor-pointer group"
                   >
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${act.color} text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform shrink-0`}
+                      className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${act.color} text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0`}
                     >
-                      <Icon size={20} />
+                      <Icon size={18} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[13.5px] font-extrabold text-text-primary leading-tight">
+                    <div className="w-full min-w-0">
+                      <h4 className="text-[12.5px] font-bold text-text-primary leading-tight truncate">
                         {act.label}
                       </h4>
-                      <p className="text-[11px] text-text-secondary font-medium truncate mt-0.5">
+                      <p className="text-[10px] text-text-secondary font-medium truncate mt-0.5">
                         {act.desc}
                       </p>
                     </div>
@@ -171,7 +207,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       {/* ── FLOATING APPLE-GRADE BOTTOM DOCK ── */}
       <div className="fixed bottom-3 left-4 right-4 max-w-md mx-auto z-40 md:hidden pointer-events-none">
-        <nav className="pointer-events-auto bg-surface/85 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.35)] rounded-full px-2 py-1.5 flex items-center justify-between">
+        <nav className="pointer-events-auto bg-surface/90 backdrop-blur-2xl border border-border/60 shadow-[var(--shadow-float)] rounded-full px-2 py-1.5 flex items-center justify-between">
           {/* Home */}
           <DockTabButton
             active={activeModule === 'dashboard'}
@@ -194,7 +230,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.05 }}
               onClick={() => setIsQuickCreateOpen(true)}
-              className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary via-rose-500 to-indigo-600 text-text-on-accent shadow-[0_10px_25px_rgba(0,0,0,0.3)] flex items-center justify-center border-2 border-surface cursor-pointer"
+              className="w-12 h-12 rounded-full bg-primary text-text-on-accent shadow-[var(--shadow-float)] flex items-center justify-center border-2 border-surface cursor-pointer"
               title="Quick Create"
               aria-label="Quick Create Action"
             >
@@ -202,20 +238,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             </motion.button>
           </div>
 
-          {/* Vision */}
+          {/* Habits */}
           <DockTabButton
-            active={activeModule === 'vision'}
-            onClick={() => setActiveModule('vision')}
-            icon={IconTarget}
-            label="Vision"
+            active={activeModule === 'habits'}
+            onClick={() => setActiveModule('habits')}
+            icon={IconFlame}
+            label="Habits"
           />
 
-          {/* Journal */}
+          {/* More / All Modules Drawer */}
           <DockTabButton
-            active={activeModule === 'journal'}
-            onClick={() => setActiveModule('journal')}
-            icon={IconBook2}
-            label="Journal"
+            active={false}
+            onClick={() => onOpenDrawer && onOpenDrawer()}
+            icon={IconMenu2}
+            label="More"
           />
         </nav>
       </div>
@@ -259,7 +295,7 @@ function DockTabButton({
       </div>
 
       <span
-        className={`relative z-10 text-[9.5px] font-extrabold tracking-tight transition-colors ${
+        className={`relative z-10 text-[9.5px] font-semibold tracking-tight transition-colors ${
           active ? 'text-primary' : 'text-text-tertiary'
         }`}
       >

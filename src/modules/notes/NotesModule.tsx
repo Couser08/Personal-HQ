@@ -38,11 +38,12 @@ function wordCount(text: string) {
 }
 
 export default function NotesModule() {
-  const { notes, addNote, updateNote, deleteNote, showConfirm } = useAppStore(useShallow(state => ({
+  const { notes, addNote, updateNote, deleteNote, fetchNoteDetail, showConfirm } = useAppStore(useShallow(state => ({
     notes: state.notes,
     addNote: state.addNote,
     updateNote: state.updateNote,
     deleteNote: state.deleteNote,
+    fetchNoteDetail: state.fetchNoteDetail,
     showConfirm: state.showConfirm
   })));
 
@@ -73,10 +74,13 @@ export default function NotesModule() {
   const selectNote = (note: Note) => {
     setActiveNoteId(note.id);
     setTitle(note.title);
-    setContent(note.content);
+    setContent(note.content || '');
     setTags(note.tags);
     setAutoSaveStatus('idle');
     setMobilePane('edit');
+    if (!note.content) {
+      void fetchNoteDetail(note.id);
+    }
   };
 
   // Start a new note draft

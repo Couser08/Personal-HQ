@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/useAppStore';
-import { buildCompressedWorkspaceContext } from './agentSystemPrompt';
+
 import type { TodoTask, Habit, Note, JournalEntry, Link, CodeSnippet, TilLog } from '../../store/types';
 
 function normalizeDate(raw?: string): string {
@@ -357,13 +357,6 @@ export async function executeToolCall(
       return {
         result: { success: true, snippet_id: snippetId, title: newSnippet.title, language },
         entity: { type: 'snippet', id: snippetId, title: newSnippet.title },
-      };
-    }
-
-    case 'get_workspace_overview': {
-      const contextJson = buildCompressedWorkspaceContext();
-      return {
-        result: { success: true, overview: JSON.parse(contextJson) },
       };
     }
 

@@ -200,16 +200,16 @@ export default function PomodoroModule() {
         </div>
 
         {/* Session Type Pill Switcher */}
-        <div className="flex items-center gap-1.5 bg-surface p-1 rounded-full shadow-sm">
+        <div className="flex items-center gap-1.5 bg-surface p-1 rounded-full shadow-xs max-w-full overflow-x-auto no-scrollbar">
           {SESSIONS.map((s) => {
             const isActive = pomodoroSessionId === s.id;
             return (
               <button
                 key={s.id}
                 onClick={() => applyTimer(s.minutes, s.id)}
-                className={`px-4 py-2 rounded-full text-[12px] font-semibold transition-all cursor-pointer border-none ${
+                className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11.5px] sm:text-[12px] font-semibold transition-all cursor-pointer whitespace-nowrap border-none ${
                   isActive
-                    ? 'bg-text-primary text-background shadow-sm'
+                    ? 'bg-text-primary text-background shadow-xs'
                     : 'bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
               >
@@ -233,17 +233,17 @@ export default function PomodoroModule() {
       />
 
       {/* Preset Duration Buttons */}
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap pb-1 no-scrollbar max-w-full">
         {PRESETS.map((m) => {
           const isActive = pomodoroTotalSeconds === m * 60 && pomodoroTimerState === 'idle';
           return (
             <button
               key={m}
               onClick={() => applyTimer(m, pomodoroSessionId)}
-              className={`px-5 py-2 rounded-full text-[12px] font-semibold transition-all border-none cursor-pointer ${
+              className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-[11.5px] sm:text-[12px] font-semibold transition-all border-none cursor-pointer whitespace-nowrap ${
                 isActive
-                  ? 'bg-text-primary text-background shadow-sm'
-                  : 'bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary shadow-sm'
+                  ? 'bg-text-primary text-background shadow-xs'
+                  : 'bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary shadow-xs'
               }`}
             >
               {m}m
@@ -252,7 +252,7 @@ export default function PomodoroModule() {
         })}
         <button
           onClick={handleCustomPreset}
-          className="px-5 py-2 rounded-full text-[12px] font-semibold bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all flex items-center gap-1.5 border-none shadow-sm cursor-pointer"
+          className="px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-[11.5px] sm:text-[12px] font-semibold bg-surface hover:bg-surface-alt text-text-secondary hover:text-text-primary transition-all flex items-center gap-1.5 border-none shadow-xs cursor-pointer whitespace-nowrap"
         >
           Custom <IconEdit size={13} />
         </button>

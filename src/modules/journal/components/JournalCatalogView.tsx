@@ -102,7 +102,7 @@ export const JournalCatalogView: React.FC<JournalCatalogViewProps> = ({
           {/* Featured Entry Section */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start w-full">
             <div className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-surface border border-rose-200/20 p-4 sm:p-6 min-h-[200px] flex flex-col justify-between hover:shadow-lifted transition-all duration-200 group">
-              <div className="absolute inset-0 opacity-[0.04] pointer-events-none select-none">
+              <div className="absolute inset-0 opacity-[0.04] pointer-events-none select-none overflow-hidden">
                 <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                   <path d="M-20 80 C40 100, 90 60, 140 90 C190 120, 220 70, 270 100 C320 130, 340 90, 380 110" fill="none" stroke="currentColor" strokeWidth="1.5" />
                   <circle cx="300" cy="50" r="70" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="3 3" />

@@ -101,39 +101,44 @@ export const Modal = ({
             className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md z-50 transition-all duration-300 pointer-events-auto"
           />
 
-          {/* Modal Centering Wrapper */}
-          <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none p-3 sm:p-6">
+          {/* Modal Centering Wrapper: Bottom Sheet on Mobile, Centered Card on Desktop */}
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none p-0 sm:p-6 pb-0 sm:pb-6">
             <motion.div
               ref={modalRef}
               key="modal-content"
               data-component="Modal"
               data-bug-target="modal-dialog"
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              initial={{ opacity: 0, scale: 0.98, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              // Apple's custom snappy spring setup
+              exit={{ opacity: 0, scale: 0.98, y: 30 }}
+              // Snappy spring setup
               transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               style={{ willChange: 'transform, opacity' }}
-              className={`bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] w-full ${maxWidthClassName || 'max-w-2xl'} max-h-[88vh] overflow-y-auto pointer-events-auto flex flex-col backdrop-blur-xl`}
+              className={`bg-surface text-text-primary border border-border/70 rounded-t-[28px] sm:rounded-[var(--radius-card)] rounded-b-none sm:rounded-b-[var(--radius-card)] shadow-[var(--shadow-float)] w-full ${maxWidthClassName || 'max-w-2xl'} max-h-[88dvh] overflow-hidden pointer-events-auto flex flex-col backdrop-blur-xl`}
             >
+              {/* Mobile Drag Indicator Handle */}
+              <div className="sm:hidden flex justify-center pt-2.5 pb-1">
+                <div className="w-10 h-1 rounded-full bg-border-alt" />
+              </div>
+
               {/* Header Grid System */}
-              <div className="flex items-center justify-between px-6 py-4.5 border-b border-zinc-100 dark:border-zinc-800/50 sticky top-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md z-10">
-                <h2 className="text-lg font-bold tracking-[-0.3px] text-zinc-900 dark:text-zinc-50">
+              <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-border/50 sticky top-0 bg-surface/95 backdrop-blur-md z-10">
+                <h2 className="text-base sm:text-lg font-semibold tracking-tight text-text-primary">
                   {title}
                 </h2>
                 
                 {/* Micro Minimal Close Pill */}
                 <button
                   onClick={onClose}
-                  className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-zinc-200/20"
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-surface-alt text-text-secondary hover:text-text-primary hover:scale-105 active:scale-95 transition-all cursor-pointer border border-border/50"
                   aria-label="Close modal"
                 >
-                  <IconX className="w-4 h-4" style={{ strokeWidth: 2.5 }} />
+                  <IconX className="w-4 h-4" style={{ strokeWidth: 2.2 }} />
                 </button>
               </div>
 
               {/* Dynamic Scroll Body Surface */}
-              <div className={`${bodyClassName} flex-1 overflow-y-auto custom-scrollbar text-[14px] leading-relaxed font-medium text-zinc-600 dark:text-zinc-300`}>
+              <div className={`${bodyClassName} flex-1 overflow-y-auto custom-scrollbar text-[14px] leading-relaxed font-medium text-text-secondary p-4 sm:p-6`}>
                 {children}
               </div>
             </motion.div>

@@ -90,6 +90,7 @@ export interface AppStore {
   updateNote: (id: string, data: Partial<Note>, silent?: boolean) => Promise<void>;
   updateNoteLocally: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => Promise<void>;
+  fetchNoteDetail: (id: string) => Promise<void>;
 
   links: Link[];
   addLink: (link: Link, userId?: string) => Promise<void>;

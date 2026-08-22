@@ -296,13 +296,13 @@ export default function HabitTrackerModule() {
         </div>
 
         {/* Actions & Progression */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start shrink-0">
           <div className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold ${progression.color}`}>
             Lv. {progression.level} {progression.title}
           </div>
           <button
             onClick={() => handleOpenAddModal()}
-            className="px-5 py-2.5 rounded-full text-[13px] font-semibold bg-text-primary text-background hover:opacity-90 transition-all flex items-center gap-2 border-none shadow-sm cursor-pointer"
+            className="px-5 py-2.5 rounded-full text-[13px] font-semibold bg-text-primary text-background hover:opacity-90 transition-all flex items-center gap-2 border-none shadow-xs cursor-pointer"
           >
             <IconPlus size={16} /> New Habit
           </button>

@@ -178,6 +178,9 @@ export class MockClient {
   public storage: {
     from: (bucket: string) => MockStorageBucket;
   };
+  public functions: {
+    invoke: (functionName: string, options?: any) => Promise<{ data: any; error: any }>;
+  };
   private storageBuckets: Map<string, MockStorageBucket> = new Map();
 
   constructor() {
@@ -189,6 +192,31 @@ export class MockClient {
         }
         return this.storageBuckets.get(bucket)!;
       },
+    };
+    this.functions = {
+      invoke: async (functionName: string, options?: any) => {
+        try {
+          const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || '';
+          const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
+          if (!supabaseUrl) throw new Error('Missing VITE_SUPABASE_URL');
+          
+          const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              ...(options?.headers || {})
+            },
+            body: options?.body ? JSON.stringify(options.body) : undefined
+          });
+          
+          const data = await res.json();
+          if (!res.ok) return { data: null, error: new Error(data.error || res.statusText) };
+          return { data, error: null };
+        } catch (error) {
+          return { data: null, error };
+        }
+      }
     };
   }
 

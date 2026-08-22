@@ -73,13 +73,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         <div className="flex items-center gap-2">
           <AppLogo className="w-7 h-7 rounded-lg shadow-xs" />
           <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px]">{currentMod.emoji}</span>
-              <h1 className="font-extrabold text-[13.5px] tracking-tight leading-none text-text-primary">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px]">{currentMod.emoji}</span>
+              <h1 className="font-semibold text-[14px] tracking-tight leading-none text-text-primary">
                 {currentMod.label}
               </h1>
             </div>
-            <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">
+            <span className="text-[9.5px] font-semibold text-text-tertiary uppercase tracking-[0.04em] mt-0.5">
               Personal HQ
             </span>
           </div>
@@ -92,7 +92,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         <button
           type="button"
           onClick={() => useBugReportStore.getState().startInspection()}
-          className="w-8 h-8 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-secondary hover:text-rose-500 transition-colors cursor-pointer active:scale-95"
+          className="w-8 h-8 rounded-xl bg-surface-alt hover:bg-surface border border-border/50 flex items-center justify-center text-text-secondary hover:text-accent-danger transition-colors cursor-pointer active:scale-95"
           title="Report Bug / Inspect Element"
           aria-label="Report Bug"
         >
@@ -104,7 +104,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           type="button"
           whileTap={{ scale: 0.94 }}
           onClick={() => onOpenAi()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 text-white text-[11px] font-black shadow-md active:scale-95 transition-all cursor-pointer border border-white/20"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-text-on-accent text-[11.5px] font-semibold shadow-xs active:scale-95 transition-all cursor-pointer border border-border-hairline"
         >
           <IconSparkles size={13} className="animate-pulse" />
           <span>Ask AI</span>

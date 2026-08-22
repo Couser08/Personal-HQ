@@ -11,7 +11,7 @@ export function HabitCalendar({
 }) {
   return (
     <Card padding="lg" className="text-left select-none font-sans flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
             Consistency Grid
@@ -20,7 +20,7 @@ export function HabitCalendar({
             Green indicators mark days with perfect habit completion
           </p>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-medium text-text-secondary">
+        <div className="flex items-center gap-3 text-[11px] font-medium text-text-secondary self-end sm:self-auto">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-surface-alt" />
             <span>None</span>

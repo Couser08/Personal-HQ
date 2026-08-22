@@ -60,8 +60,14 @@ export { DEFAULT_SEEDED_BOARDS, loadInitialBoards };
 export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (set, get) => ({
   visionBoards: loadInitialBoards(),
   activeBoardId: (() => {
-    const boards = loadInitialBoards();
-    return boards[0]?.id || 'board-aesthetic-life';
+    try {
+      const stored = localStorage.getItem('phq_active_vision_board');
+      const boards = loadInitialBoards();
+      if (stored && boards.some((b) => b.id === stored)) return stored;
+      return boards[0]?.id || 'board-aesthetic-life';
+    } catch {
+      return 'board-aesthetic-life';
+    }
   })(),
   selectedNodeId: null,
   focusMode: false,
@@ -89,6 +95,7 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
     const nextBoards = [newBoard, ...get().visionBoards];
     set({ visionBoards: nextBoards, activeBoardId: id, selectedNodeId: null });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+    localStorage.setItem('phq_active_vision_board', id);
 
     const uid = useAuthStore.getState().user?.id;
     if (uid) {
@@ -127,6 +134,7 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       selectedNodeId: null,
     });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+    localStorage.setItem('phq_active_vision_board', nextActiveId);
 
     const uid = useAuthStore.getState().user?.id;
     if (uid) {
@@ -137,6 +145,9 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
   },
 
   setActiveBoard: (id) => {
+    try {
+      localStorage.setItem('phq_active_vision_board', id);
+    } catch {}
     set({ activeBoardId: id, selectedNodeId: null });
   },
 
@@ -165,7 +176,7 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
 
     let activeId = get().activeBoardId;
     if (!boards.some((b) => b.id === activeId)) {
-      activeId = boards[0].id;
+      activeId = boards[0]?.id || 'board-aesthetic-life';
     }
 
     const id = crypto.randomUUID();
@@ -182,7 +193,7 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       position: nodeData.position || { x: 200, y: 150 },
       size: nodeData.size || { width: 300, height: 200 },
       cornerRadius: nodeData.cornerRadius !== undefined ? nodeData.cornerRadius : 20,
-      hasShadow: nodeData.hasShadow !== undefined ? nodeData.hasShadow : true,
+      hasShadow: nodeData.hasShadow !== false,
       hasBorder: !!nodeData.hasBorder,
       linkUrl: nodeData.linkUrl || '',
       progress: nodeData.progress || 0,
@@ -206,8 +217,10 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       updatedAt: new Date().toISOString(),
     };
 
+    let boardFound = false;
     const nextBoards = boards.map((b) => {
       if (b.id === activeId) {
+        boardFound = true;
         return {
           ...b,
           nodes: [...b.nodes, newNode],
@@ -217,12 +230,22 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
       return b;
     });
 
+    if (!boardFound && nextBoards.length > 0) {
+      nextBoards[0] = {
+        ...nextBoards[0],
+        nodes: [...nextBoards[0].nodes, newNode],
+        updatedAt: new Date().toISOString(),
+      };
+      activeId = nextBoards[0].id;
+    }
+
     set({
       visionBoards: nextBoards,
       activeBoardId: activeId,
       selectedNodeId: id,
     });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+    localStorage.setItem('phq_active_vision_board', activeId);
 
     const uid = useAuthStore.getState().user?.id;
     if (uid) {
@@ -234,10 +257,10 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
   },
 
   updateVisionNode: async (id, updates) => {
-    const activeId = get().activeBoardId;
     let targetNode: VisionNode | null = null;
     const nextBoards = get().visionBoards.map((b) => {
-      if (b.id === activeId) {
+      const hasNode = b.nodes.some((n) => n.id === id);
+      if (hasNode) {
         return {
           ...b,
           nodes: b.nodes.map((n) => {
@@ -265,9 +288,9 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
   },
 
   deleteVisionNode: async (id) => {
-    const activeId = get().activeBoardId;
     const nextBoards = get().visionBoards.map((b) => {
-      if (b.id === activeId) {
+      const hasNode = b.nodes.some((n) => n.id === id);
+      if (hasNode) {
         return {
           ...b,
           nodes: b.nodes.filter((n) => n.id !== id),
@@ -292,26 +315,36 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
   },
 
   duplicateVisionNode: async (id) => {
-    const activeBoard = get().visionBoards.find((b) => b.id === get().activeBoardId);
-    if (!activeBoard) return;
-    const targetNode = activeBoard.nodes.find((n) => n.id === id);
-    if (!targetNode) return;
+    let sourceNode: VisionNode | null = null;
+    let targetBoardId: string | null = null;
+
+    for (const b of get().visionBoards) {
+      const found = b.nodes.find((n) => n.id === id);
+      if (found) {
+        sourceNode = found;
+        targetBoardId = b.id;
+        break;
+      }
+    }
+
+    if (!sourceNode || !targetBoardId) return;
 
     const newId = crypto.randomUUID();
     const duplicated: VisionNode = {
-      ...targetNode,
+      ...sourceNode,
       id: newId,
-      title: `${targetNode.title} (Copy)`,
+      boardId: targetBoardId,
+      title: `${sourceNode.title} (Copy)`,
       position: {
-        x: targetNode.position.x + 30,
-        y: targetNode.position.y + 30,
+        x: sourceNode.position.x + 30,
+        y: sourceNode.position.y + 30,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     const nextBoards = get().visionBoards.map((b) => {
-      if (b.id === activeBoard.id) {
+      if (b.id === targetBoardId) {
         return {
           ...b,
           nodes: [...b.nodes, duplicated],
@@ -332,35 +365,62 @@ export const createVisionSlice: StateCreator<AppStore, [], [], VisionSlice> = (s
     }
   },
 
-
   updateVisionNodePosition: (id, position) => {
-    const activeId = get().activeBoardId;
+    let targetNode: VisionNode | null = null;
     const nextBoards = get().visionBoards.map((b) => {
-      if (b.id === activeId) {
+      const hasNode = b.nodes.some((n) => n.id === id);
+      if (hasNode) {
         return {
           ...b,
-          nodes: b.nodes.map((n) => (n.id === id ? { ...n, position } : n)),
+          nodes: b.nodes.map((n) => {
+            if (n.id === id) {
+              targetNode = { ...n, position };
+              return targetNode;
+            }
+            return n;
+          }),
         };
       }
       return b;
     });
     set({ visionBoards: nextBoards });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid && targetNode) {
+      visionBoardService.upsertNode(uid, targetNode).catch((e) =>
+        console.error('Failed to sync node position:', e)
+      );
+    }
   },
 
   updateVisionNodeSize: (id, size) => {
-    const activeId = get().activeBoardId;
+    let targetNode: VisionNode | null = null;
     const nextBoards = get().visionBoards.map((b) => {
-      if (b.id === activeId) {
+      const hasNode = b.nodes.some((n) => n.id === id);
+      if (hasNode) {
         return {
           ...b,
-          nodes: b.nodes.map((n) => (n.id === id ? { ...n, size } : n)),
+          nodes: b.nodes.map((n) => {
+            if (n.id === id) {
+              targetNode = { ...n, size };
+              return targetNode;
+            }
+            return n;
+          }),
         };
       }
       return b;
     });
     set({ visionBoards: nextBoards });
     localStorage.setItem('phq_vision_boards', JSON.stringify(nextBoards));
+
+    const uid = useAuthStore.getState().user?.id;
+    if (uid && targetNode) {
+      visionBoardService.upsertNode(uid, targetNode).catch((e) =>
+        console.error('Failed to sync node size:', e)
+      );
+    }
   },
 
   setSelectedNodeId: (id) => {

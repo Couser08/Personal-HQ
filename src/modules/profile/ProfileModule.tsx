@@ -196,7 +196,7 @@ export default function ProfileModule() {
             </div>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-surface-alt hover:bg-[#e8e8e8] dark:hover:bg-[#333] border-none flex items-center justify-center text-text-primary shadow-float cursor-pointer transition-colors"
+              className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-surface-alt hover:bg-surface-hover border border-border-hairline flex items-center justify-center text-text-primary shadow-float cursor-pointer transition-colors"
               title="Upload Photo"
             >
               {isUpdating ? <IconLoader2 size={20} className="animate-spin" /> : <IconCamera size={20} stroke={1.75} />}
@@ -213,7 +213,7 @@ export default function ProfileModule() {
             </div>
             <button 
               onClick={() => setIsEditingProfile(true)}
-              className="px-5 py-2.5 rounded-full bg-surface-alt text-text-primary text-[14px] font-semibold hover:bg-[#e8e8e8] dark:hover:bg-[#333] transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-full bg-surface-alt text-text-primary text-[14px] font-semibold hover:bg-surface-hover transition-colors cursor-pointer border border-border-hairline"
             >
               Edit Profile
             </button>

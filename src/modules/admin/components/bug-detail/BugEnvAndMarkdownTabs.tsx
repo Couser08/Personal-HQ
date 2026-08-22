@@ -85,6 +85,8 @@ export const BugEnvTab: React.FC<BugEnvTabProps> = ({ report }) => {
   );
 };
 
+import { formatReportMarkdown } from '../../../../store/useBugReportStore';
+
 interface BugMarkdownTabProps {
   report: BugReport;
   copiedKey: string | null;
@@ -96,6 +98,7 @@ export const BugMarkdownTab: React.FC<BugMarkdownTabProps> = ({
   copiedKey,
   handleCopy,
 }) => {
+  const formattedMd = formatReportMarkdown(report);
   return (
     <div className="space-y-3 animate-in fade-in duration-150 text-left">
       <div className="flex items-center justify-between">
@@ -105,7 +108,7 @@ export const BugMarkdownTab: React.FC<BugMarkdownTabProps> = ({
         <button
           type="button"
           onClick={() =>
-            handleCopy(report.markdownContent || `# Bug: ${report.title}`, 'md', 'Markdown')
+            handleCopy(formattedMd, 'md', 'Markdown')
           }
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary hover:opacity-90 text-text-on-accent text-xs font-bold transition-all cursor-pointer shadow-xs"
         >
@@ -115,7 +118,7 @@ export const BugMarkdownTab: React.FC<BugMarkdownTabProps> = ({
       </div>
 
       <pre className="p-4 rounded-3xl bg-background border border-border font-mono text-xs text-text-primary max-h-72 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap">
-        {report.markdownContent || `# Bug: ${report.title}\n\n${report.description}`}
+        {formattedMd}
       </pre>
     </div>
   );

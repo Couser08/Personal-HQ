@@ -57,7 +57,7 @@ export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
               }
               setActiveModule('pomodoro');
             }}
-            className="bg-primary text-surface px-6 py-2.5 rounded-full font-semibold text-[13px] hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2 shadow-sm"
+            className="bg-primary text-text-on-accent px-6 py-2.5 rounded-full font-semibold text-[13px] hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2 shadow-sm"
           >
             <IconRocket size={16} /> Start Focus Session
           </button>
