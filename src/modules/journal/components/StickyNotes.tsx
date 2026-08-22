@@ -9,9 +9,9 @@ export function StickyNotes({
   deleteJournalStickyNote,
 }: {
   journalStickyNotes: JournalStickyNote[];
-  addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
-  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
-  deleteJournalStickyNote: (id: string) => Promise<void>;
+  addJournalStickyNote: (note: JournalStickyNote) => Promise<void> | void;
+  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void> | void;
+  deleteJournalStickyNote: (id: string) => Promise<void> | void;
   isDark?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);

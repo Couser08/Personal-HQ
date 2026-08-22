@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
-import { type AppStore, type JournalEntry } from '../types';
-import { journalService, journalStickyNoteService, type JournalStickyNote } from '../../lib/db';
+import { type AppStore, type JournalEntry, type JournalStickyNote } from '../types';
+import { journalService, journalStickyNoteService } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { useToastStore } from '../useToastStore';
 import { getStoreErrorMessage, normalizeJournalEntry } from '../helpers';

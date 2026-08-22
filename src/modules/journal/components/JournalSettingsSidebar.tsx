@@ -91,9 +91,9 @@ export function JournalSettingsSidebar({
   forceSave: () => void;
 
   journalStickyNotes: JournalStickyNote[];
-  addJournalStickyNote: (note: JournalStickyNote) => Promise<void>;
-  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void>;
-  deleteJournalStickyNote: (id: string) => Promise<void>;
+  addJournalStickyNote: (note: JournalStickyNote) => Promise<void> | void;
+  updateJournalStickyNote: (id: string, data: Partial<JournalStickyNote>) => Promise<void> | void;
+  deleteJournalStickyNote: (id: string) => Promise<void> | void;
   resolvedTheme: string;
   isDrawer?: boolean;
 }) {

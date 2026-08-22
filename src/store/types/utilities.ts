@@ -117,6 +117,7 @@ export interface Countdown {
   label?: string;
   emoji?: string;
   color?: any;
+  style?: string;
   createdAt: string;
 }
 

@@ -1,5 +1,5 @@
 import { type StateCreator } from 'zustand';
-import { type AppStore, type Theme } from '../types';
+import { type AppStore, type Theme, type AppSettings, type TodoTask, type TilLog } from '../types';
 import {
   settingsService,
   noteService,
@@ -15,22 +15,12 @@ import {
   mindmapService,
   standardCalcService,
   habitService,
-  sprintService,
-  dsaProblemService,
   tilLogService,
-  roadmapService,
-  resourceService,
-  devGoalService,
   journalStickyNoteService,
-  linkSaverService,
   tagService,
-  studyMaterialService,
-  examService,
-  examAttemptService,
-  reflectionService,
   visionService,
   visionBoardService,
-  projectStructureService
+  projectStructureService,
 } from '../../lib/db';
 import { useAuthStore } from '../useAuthStore';
 import { sanitizeActiveModule, loadStoredSettings } from '../helpers';
@@ -45,23 +35,40 @@ export interface CoreSlice {
   theme: Theme;
   setTheme: (theme: Theme) => void;
 
-  settings: any; // AppSettings
-  updateSettings: (settings: any) => void;
+  settings: AppSettings;
+  updateSettings: (settings: Partial<AppSettings>) => void;
 
-  confirmDialog: any; // ConfirmDialogState
+  confirmDialog: {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  };
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
   closeConfirm: () => void;
 
-  mediaEntryModal: any; // MediaEntryModalState
-  openMediaEntryModal: (tab: 'ANIME' | 'GAME' | 'SERIES' | 'MOVIE', log?: any) => void;
+  mediaEntryModal: {
+    isOpen: boolean;
+    editingLog: any | null;
+    activeTab: 'ANIME' | 'MOVIE' | 'GAME' | 'SERIES';
+  };
+  openMediaEntryModal: (
+    tab: 'ANIME' | 'MOVIE' | 'GAME' | 'SERIES',
+    log?: any | null,
+  ) => void;
   closeMediaEntryModal: () => void;
 
-  todoProjectModal: { isOpen: boolean };
+  todoProjectModal: {
+    isOpen: boolean;
+  };
   openTodoProjectModal: () => void;
   closeTodoProjectModal: () => void;
 
-  todoTaskModal: any; // TodoTaskModalState
-  openTodoTaskModal: (task?: any) => void;
+  todoTaskModal: {
+    isOpen: boolean;
+    task: TodoTask | null;
+  };
+  openTodoTaskModal: (task?: TodoTask | null) => void;
   closeTodoTaskModal: () => void;
 
   dataLoaded: boolean;
@@ -74,89 +81,118 @@ export interface CoreSlice {
   drawingAppState: any;
   setDrawingData: (elements: readonly any[], appState: any) => void;
 
-  activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
-  setActiveFocusItem: (item: { type: 'todo' | 'habit'; id: string; title: string } | null) => void;
-  addTilLog: (log: any) => void;
+  addTilLog: (log: TilLog) => void;
   deleteTilLog: (id: string) => void;
-
   importData: (data: any) => void;
+
+  activeFocusItem: { type: 'todo' | 'habit'; id: string; title: string } | null;
+  setActiveFocusItem: (
+    item: { type: 'todo' | 'habit'; id: string; title: string } | null,
+  ) => void;
 }
 
-export const createCoreSlice: StateCreator<
-  AppStore,
-  [],
-  [],
-  CoreSlice
-> = (set, get) => ({
-  activeModule: sanitizeActiveModule(localStorage.getItem('activeModule') || 'dashboard'),
+export const createCoreSlice: StateCreator<AppStore, [], [], CoreSlice> = (set, get) => ({
+  activeModule: (() => {
+    try {
+      const stored = localStorage.getItem('phq_active_module');
+      return sanitizeActiveModule(stored || 'dashboard');
+    } catch {
+      return 'dashboard';
+    }
+  })(),
   setActiveModule: (module) => {
-    const nextModule = sanitizeActiveModule(module);
-    localStorage.setItem('activeModule', nextModule);
-    set({ activeModule: nextModule });
+    const validModule = sanitizeActiveModule(module);
+    try {
+      localStorage.setItem('phq_active_module', validModule);
+    } catch {
+      // Ignore
+    }
+    set({ activeModule: validModule });
   },
 
-  theme: (localStorage.getItem('theme') as Theme) || 'dark',
+  theme: (() => {
+    try {
+      const stored = localStorage.getItem('phq_theme');
+      return (stored as Theme) || 'system';
+    } catch {
+      return 'system';
+    }
+  })(),
   setTheme: (theme) => {
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('phq_theme', theme);
+    } catch {
+      // Ignore
+    }
     set({ theme });
     const uid = useAuthStore.getState().user?.id;
     if (uid) {
-      settingsService.upsert(uid, { theme }).catch((e) => console.error('Failed to sync theme:', e));
+      settingsService.upsert(uid, { theme }).catch((e: any) =>
+        console.error('Failed to sync theme to DB:', e),
+      );
     }
   },
 
   settings: loadStoredSettings(),
-  updateSettings: (newSettings) =>
-    set((state) => {
-      const settings = { ...state.settings, ...newSettings };
-      localStorage.setItem('settings', JSON.stringify(settings));
-      const uid = useAuthStore.getState().user?.id;
-      if (uid) {
-        settingsService.upsert(uid, {
-          countdown_template: settings.countdownTemplate,
-          accent_color: settings.accentColor,
-          animation_speed: settings.animationSpeed,
-          compact_mode: settings.compactMode,
-          sound_enabled: settings.soundEnabled,
-          initial_bank_balance: settings.initialBankBalance,
-          initial_cash_balance: settings.initialCashBalance,
-          currency_symbol: settings.currencySymbol || '$',
-          media_quote: settings.mediaQuote || '',
-          reduce_blur: settings.reduceBlur,
-          reduce_animations: settings.reduceAnimations,
-          gemini_api_key: settings.geminiApiKey || '',
-          gemini_model: settings.geminiModel || 'gemini-2.5-flash',
-          ai_persona: settings.aiPersona || 'Professional',
-        }).catch((e) => console.error('Failed to sync settings:', e));
-      }
-      return { settings };
-    }),
+  updateSettings: (newSettings) => {
+    const updated = { ...get().settings, ...newSettings };
+    safeSetItem('phq_settings', JSON.stringify(updated));
+    set({ settings: updated });
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      settingsService.upsert(uid, updated).catch((e: any) =>
+        console.error('Failed to sync settings to DB:', e),
+      );
+    }
+  },
 
-  confirmDialog: { isOpen: false, title: '', message: '', onConfirm: () => {} },
+  confirmDialog: {
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  },
   showConfirm: (title, message, onConfirm) =>
     set({ confirmDialog: { isOpen: true, title, message, onConfirm } }),
   closeConfirm: () =>
-    set((state) => ({ confirmDialog: { ...state.confirmDialog, isOpen: false } })),
+    set({
+      confirmDialog: {
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+      },
+    }),
 
-  mediaEntryModal: { isOpen: false, editingLog: null, activeTab: 'ANIME' },
-  openMediaEntryModal: (tab, log) =>
-    set({ mediaEntryModal: { isOpen: true, editingLog: log || null, activeTab: tab } }),
+  mediaEntryModal: {
+    isOpen: false,
+    editingLog: null,
+    activeTab: 'ANIME',
+  },
+  openMediaEntryModal: (tab, log = null) =>
+    set({ mediaEntryModal: { isOpen: true, activeTab: tab, editingLog: log } }),
   closeMediaEntryModal: () =>
-    set((state) => ({ mediaEntryModal: { ...state.mediaEntryModal, isOpen: false } })),
+    set({ mediaEntryModal: { isOpen: false, editingLog: null, activeTab: 'ANIME' } }),
 
-  todoProjectModal: { isOpen: false },
+  todoProjectModal: {
+    isOpen: false,
+  },
   openTodoProjectModal: () => set({ todoProjectModal: { isOpen: true } }),
   closeTodoProjectModal: () => set({ todoProjectModal: { isOpen: false } }),
 
-  todoTaskModal: { isOpen: false, task: null },
-  openTodoTaskModal: (task) => set({ todoTaskModal: { isOpen: true, task: task || null } }),
-  closeTodoTaskModal: () => set({ todoTaskModal: { isOpen: false, task: null } }),
+  todoTaskModal: {
+    isOpen: false,
+    task: null,
+  },
+  openTodoTaskModal: (task = null) =>
+    set({ todoTaskModal: { isOpen: true, task: task || null } }),
+  closeTodoTaskModal: () =>
+    set({ todoTaskModal: { isOpen: false, task: null } }),
 
   dataLoaded: false,
   isSyncing: false,
 
   loadAllData: async (userId: string) => {
-    if (get().isSyncing) return;
     set({ isSyncing: true });
 
     try {
@@ -175,76 +211,56 @@ export const createCoreSlice: StateCreator<
         standardCalcService.fetchAll(userId),
         habitService.fetchAll(userId),
         settingsService.fetch(userId),
-        sprintService.fetchAll(userId),
-        dsaProblemService.fetchAll(userId),
         tilLogService.fetchAll(userId),
-        roadmapService.fetchAll(userId),
-        resourceService.fetchAll(userId),
-        devGoalService.fetchAll(userId),
         journalStickyNoteService.fetchAll(userId),
-        linkSaverService.fetchAll(userId),
         tagService.fetchAll(userId),
-        studyMaterialService.fetchAll(userId),
-        examService.fetchAll(userId),
-        examAttemptService.fetchAll(userId),
-        reflectionService.fetchAll(userId),
         visionService.fetchAll(userId),
         projectStructureService.fetchAll(userId),
-        visionBoardService.fetchAll(userId)
+        visionBoardService.fetchAll(userId),
       ]);
-
-      const serviceNames = [
-        'notes', 'links', 'stocks', 'interest history', 'media logs',
-        'countdowns', 'code snippets', 'todo projects', 'todo tasks', 'journals', 'mindmaps', 'standard calculations history',
-        'habits', 'user settings', 'sprints', 'dsa problems', 'til logs', 'roadmaps',
-        'resources', 'dev goals', 'journal sticky notes', 'link saver links', 'tags',
-        'study materials', 'exams', 'exam attempts', 'daily reflections', 'visions',
-        'project structures', 'vision boards'
-      ];
-
-      const failedServices = results
-        .map((result, index) => (result.status === 'rejected' ? serviceNames[index] : null))
-        .filter((name): name is string => Boolean(name));
 
       const notes = results[0].status === 'fulfilled' ? results[0].value : [];
       const links = results[1].status === 'fulfilled' ? results[1].value : [];
       const stocks = results[2].status === 'fulfilled' ? results[2].value : [];
-      const interestHistory = results[3].status === 'fulfilled' ? results[3].value : [];
-      const mediaLogs = results[4].status === 'fulfilled' ? results[4].value : [];
-      const countdowns = results[5].status === 'fulfilled' ? results[5].value : [];
+      const interestHistory =
+        results[3].status === 'fulfilled' ? results[3].value : [];
+      const mediaLogs =
+        results[4].status === 'fulfilled' ? results[4].value : [];
+      const countdowns =
+        results[5].status === 'fulfilled' ? results[5].value : [];
       const snippets = results[6].status === 'fulfilled' ? results[6].value : [];
-      const todoProjects = results[7].status === 'fulfilled' ? results[7].value : [];
-      const todoTasks = results[8].status === 'fulfilled' ? results[8].value : [];
-      const journals = results[9].status === 'fulfilled' ? results[9].value as any[] : [];
-      const mindmaps = results[10].status === 'fulfilled' ? results[10].value as any[] : [];
-      const standardHistory = results[11].status === 'fulfilled' ? results[11].value as any[] : [];
-      const habits = results[12].status === 'fulfilled' ? results[12].value as any[] : [];
-      const settingsResult = results[13].status === 'fulfilled' ? results[13].value : null;
-      const sprints = results[14].status === 'fulfilled' ? results[14].value as any[] : [];
-      const dsaProblems = results[15].status === 'fulfilled' ? results[15].value as any[] : [];
-      const tilLogs = results[16].status === 'fulfilled' ? results[16].value as any[] : [];
-      const roadmaps = results[17].status === 'fulfilled' ? results[17].value as any[] : [];
-      const resources = results[18].status === 'fulfilled' ? results[18].value as any[] : [];
-      const devGoals = results[19].status === 'fulfilled' ? results[19].value as any[] : [];
-      const journalStickyNotes = results[20].status === 'fulfilled' ? results[20].value as any[] : [];
-      const savedLinks = results[21].status === 'fulfilled' ? results[21].value as any[] : [];
-      const appTags = results[22].status === 'fulfilled' ? results[22].value as any[] : [];
-      const studyMaterials = results[23].status === 'fulfilled' ? results[23].value as any[] : [];
-      const exams = results[24].status === 'fulfilled' ? results[24].value as any[] : [];
-      const examAttempts = results[25].status === 'fulfilled' ? results[25].value as any[] : [];
-      const dailyReflections = results[26].status === 'fulfilled' ? results[26].value as any[] : [];
-      const visions = results[27].status === 'fulfilled' ? results[27].value as any[] : [];
-      const projectStructures = results[28].status === 'fulfilled' && (results[28].value as any[]).length > 0
-        ? results[28].value as any[]
-        : get().projectStructures;
-      const visionBoards = results[29].status === 'fulfilled' && (results[29].value as any[]).length > 0
-        ? results[29].value as any[]
-        : (get() as any).visionBoards;
-
-
-      if (failedServices.length > 0) {
-        console.warn('Supabase sync skipped some modules:', failedServices);
-      }
+      const todoProjects =
+        results[7].status === 'fulfilled' ? results[7].value : [];
+      const todoTasks =
+        results[8].status === 'fulfilled' ? results[8].value : [];
+      const journals =
+        results[9].status === 'fulfilled' ? (results[9].value as any[]) : [];
+      const mindmaps =
+        results[10].status === 'fulfilled' ? (results[10].value as any[]) : [];
+      const standardHistory =
+        results[11].status === 'fulfilled' ? (results[11].value as any[]) : [];
+      const habits =
+        results[12].status === 'fulfilled' ? (results[12].value as any[]) : [];
+      const settingsResult =
+        results[13].status === 'fulfilled' ? results[13].value : null;
+      const tilLogs =
+        results[14].status === 'fulfilled' ? (results[14].value as any[]) : [];
+      const journalStickyNotes =
+        results[15].status === 'fulfilled' ? (results[15].value as any[]) : [];
+      const appTags =
+        results[16].status === 'fulfilled' ? (results[16].value as any[]) : [];
+      const visions =
+        results[17].status === 'fulfilled' ? (results[17].value as any[]) : [];
+      const projectStructures =
+        results[18].status === 'fulfilled' &&
+        (results[18].value as any[]).length > 0
+          ? (results[18].value as any[])
+          : get().projectStructures;
+      const visionBoards =
+        results[19].status === 'fulfilled' &&
+        (results[19].value as any[]).length > 0
+          ? (results[19].value as any[])
+          : (get() as any).visionBoards;
 
       let dbSettings = get().settings;
       let dbTheme = get().theme;
@@ -253,66 +269,83 @@ export const createCoreSlice: StateCreator<
       if (settingsResult) {
         dbTheme = (settingsResult.theme as Theme) || dbTheme;
         dbSettings = {
-          countdownTemplate: settingsResult.countdown_template || dbSettings.countdownTemplate,
+          ...dbSettings,
+          countdownTemplate:
+            settingsResult.countdown_template || dbSettings.countdownTemplate,
           accentColor: settingsResult.accent_color || dbSettings.accentColor,
-          animationSpeed: settingsResult.animation_speed || dbSettings.animationSpeed,
-          compactMode: settingsResult.compact_mode !== undefined ? settingsResult.compact_mode : dbSettings.compactMode,
-          soundEnabled: settingsResult.sound_enabled !== undefined ? settingsResult.sound_enabled : dbSettings.soundEnabled,
-          initialBankBalance: settingsResult.initial_bank_balance !== undefined ? Number(settingsResult.initial_bank_balance) : dbSettings.initialBankBalance,
-          initialCashBalance: settingsResult.initial_cash_balance !== undefined ? Number(settingsResult.initial_cash_balance) : dbSettings.initialCashBalance,
-          currencySymbol: settingsResult.currency_symbol || dbSettings.currencySymbol || '$',
-          mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote || 'Outdo your yesterday.',
-          reduceBlur: settingsResult.reduce_blur !== undefined ? settingsResult.reduce_blur : dbSettings.reduceBlur,
-          reduceAnimations: settingsResult.reduce_animations !== undefined ? settingsResult.reduce_animations : dbSettings.reduceAnimations,
-          geminiApiKey: settingsResult.gemini_api_key || dbSettings.geminiApiKey || '',
-          geminiModel: settingsResult.gemini_model || dbSettings.geminiModel || 'gemini-2.5-flash',
-          aiPersona: settingsResult.ai_persona || dbSettings.aiPersona || 'Professional',
+          animationSpeed:
+            settingsResult.animation_speed || dbSettings.animationSpeed,
+          compactMode:
+            settingsResult.compact_mode !== undefined
+              ? settingsResult.compact_mode
+              : dbSettings.compactMode,
+          soundEnabled:
+            settingsResult.sound_enabled !== undefined
+              ? settingsResult.sound_enabled
+              : dbSettings.soundEnabled,
+          initialBankBalance:
+            settingsResult.initial_bank_balance !== undefined
+              ? settingsResult.initial_bank_balance
+              : dbSettings.initialBankBalance,
+          initialCashBalance:
+            settingsResult.initial_cash_balance !== undefined
+              ? settingsResult.initial_cash_balance
+              : dbSettings.initialCashBalance,
+          currencySymbol:
+            settingsResult.currency_symbol || dbSettings.currencySymbol,
+          mediaQuote: settingsResult.media_quote || dbSettings.mediaQuote,
+          clockStyle: settingsResult.clock_style || dbSettings.clockStyle,
+          performanceMode:
+            settingsResult.performance_mode || dbSettings.performanceMode,
+          reduceBlur:
+            settingsResult.reduce_blur !== undefined
+              ? settingsResult.reduce_blur
+              : dbSettings.reduceBlur,
+          reduceAnimations:
+            settingsResult.reduce_animations !== undefined
+              ? settingsResult.reduce_animations
+              : dbSettings.reduceAnimations,
+          wavyEffectEnabled:
+            settingsResult.wavy_effect_enabled !== undefined
+              ? settingsResult.wavy_effect_enabled
+              : dbSettings.wavyEffectEnabled,
+          geminiApiKey:
+            settingsResult.gemini_api_key || dbSettings.geminiApiKey,
+          geminiModel:
+            settingsResult.gemini_model || dbSettings.geminiModel,
+          aiPersona: settingsResult.ai_persona || dbSettings.aiPersona,
         };
-
-        if (settingsResult.active_focus_item !== undefined) {
+        if (settingsResult.active_focus_item) {
           dbActiveFocusItem = settingsResult.active_focus_item;
-          if (dbActiveFocusItem) {
-            localStorage.setItem('phq_active_focus_item', JSON.stringify(dbActiveFocusItem));
-          } else {
-            localStorage.removeItem('phq_active_focus_item');
-          }
         }
-
-        localStorage.setItem('theme', dbTheme);
-        localStorage.setItem('settings', JSON.stringify(dbSettings));
-      } else {
-        settingsService.upsert(userId, {
-          theme: dbTheme,
-          countdown_template: dbSettings.countdownTemplate,
-          accent_color: dbSettings.accentColor,
-          animation_speed: dbSettings.animationSpeed,
-          compact_mode: dbSettings.compactMode,
-          sound_enabled: dbSettings.soundEnabled,
-          initial_bank_balance: dbSettings.initialBankBalance,
-          initial_cash_balance: dbSettings.initialCashBalance,
-          currency_symbol: dbSettings.currencySymbol || '$',
-          media_quote: dbSettings.mediaQuote || 'Outdo your yesterday.',
-          reduce_blur: dbSettings.reduceBlur,
-          reduce_animations: dbSettings.reduceAnimations,
-          gemini_api_key: dbSettings.geminiApiKey || '',
-          gemini_model: dbSettings.geminiModel || 'gemini-2.5-flash',
-          ai_persona: dbSettings.aiPersona || 'Professional',
-          active_focus_item: dbActiveFocusItem,
-        }).catch((e) => console.error('Failed to initialize settings:', e));
       }
 
       set({
-        notes, links, stocks, interestHistory, mediaLogs, countdowns, snippets,
-        todoProjects, todoTasks, journals, mindmaps, standardHistory, habits,
-        sprints, dsaProblems, tilLogs, roadmaps, resources, devGoals, journalStickyNotes,
-        savedLinks, appTags, studyMaterials, exams, examAttempts, dailyReflections, visions, projectStructures, visionBoards,
+        notes,
+        links,
+        stocks,
+        interestHistory,
+        mediaLogs,
+        countdowns,
+        snippets,
+        todoProjects,
+        todoTasks,
+        journals,
+        mindmaps,
+        standardHistory,
+        habits,
+        tilLogs,
+        journalStickyNotes,
+        appTags,
+        visions,
+        projectStructures,
+        visionBoards,
         theme: dbTheme,
         settings: dbSettings,
         activeFocusItem: dbActiveFocusItem,
         dataLoaded: true,
-        isSyncing: false
+        isSyncing: false,
       } as any);
-
     } catch (err) {
       console.error('Error loading data:', err);
       set({ isSyncing: false });
@@ -326,23 +359,82 @@ export const createCoreSlice: StateCreator<
 
   clearAllData: () => {
     localStorage.removeItem('phq_active_focus_item');
-    clearRestCache().catch((e) => console.error('[Cache] Failed to clear rest cache:', e));
+    clearRestCache().catch((e: any) =>
+      console.error('[Cache] Failed to clear rest cache:', e),
+    );
     queryClient.clear();
     set({
-      notes: [], links: [], stocks: [], interestHistory: [], mediaLogs: [], countdowns: [], snippets: [],
-      todoProjects: [], todoTasks: [],
-      journals: [], mindmaps: [], standardHistory: [], habits: [],
-      sprints: [], dsaProblems: [], tilLogs: [], roadmaps: [], resources: [], devGoals: [], journalStickyNotes: [],
-      savedLinks: [], appTags: [], studyMaterials: [], exams: [], examAttempts: [], dailyReflections: [], visions: [], projectStructures: [], visionBoards: [],
+      notes: [],
+      links: [],
+      stocks: [],
+      interestHistory: [],
+      mediaLogs: [],
+      countdowns: [],
+      snippets: [],
+      todoProjects: [],
+      todoTasks: [],
+      journals: [],
+      mindmaps: [],
+      standardHistory: [],
+      habits: [],
+      tilLogs: [],
+      journalStickyNotes: [],
+      appTags: [],
+      visions: [],
+      projectStructures: [],
+      visionBoards: [],
       dataLoaded: false,
-      isSyncing: false
+      isSyncing: false,
     } as any);
   },
 
-
   drawingElements: [],
   drawingAppState: {},
-  setDrawingData: (elements, appState) => set({ drawingElements: elements, drawingAppState: appState }),
+  setDrawingData: (elements, appState) =>
+    set({ drawingElements: elements, drawingAppState: appState }),
+
+  addTilLog: async (log: TilLog) => {
+    const current = (get() as any).tilLogs || [];
+    set({ tilLogs: [log, ...current] } as any);
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      tilLogService.create(uid, log).catch((e: any) =>
+        console.error('Failed to create tilLog in db:', e),
+      );
+    }
+  },
+
+  deleteTilLog: async (id: string) => {
+    const current = ((get() as any).tilLogs || []).filter(
+      (l: TilLog) => l.id !== id,
+    );
+    set({ tilLogs: current } as any);
+    tilLogService.delete(id).catch((e: any) =>
+      console.error('Failed to delete tilLog in db:', e),
+    );
+  },
+
+  importData: (imported: any) => {
+    if (!imported) return;
+    set({
+      ...(imported.notes && { notes: imported.notes }),
+      ...(imported.links && { links: imported.links }),
+      ...(imported.stocks && { stocks: imported.stocks }),
+      ...(imported.interestHistory && { interestHistory: imported.interestHistory }),
+      ...(imported.mediaLogs && { mediaLogs: imported.mediaLogs }),
+      ...(imported.countdowns && { countdowns: imported.countdowns }),
+      ...(imported.snippets && { snippets: imported.snippets }),
+      ...(imported.todoProjects && { todoProjects: imported.todoProjects }),
+      ...(imported.todoTasks && { todoTasks: imported.todoTasks }),
+      ...(imported.journals && { journals: imported.journals }),
+      ...(imported.mindmaps && { mindmaps: imported.mindmaps }),
+      ...(imported.standardHistory && { standardHistory: imported.standardHistory }),
+      ...(imported.habits && { habits: imported.habits }),
+      ...(imported.tilLogs && { tilLogs: imported.tilLogs }),
+      ...(imported.settings && { settings: imported.settings }),
+      ...(imported.theme && { theme: imported.theme }),
+    } as any);
+  },
 
   activeFocusItem: null,
   setActiveFocusItem: (item) => {
@@ -352,19 +444,11 @@ export const createCoreSlice: StateCreator<
       localStorage.removeItem('phq_active_focus_item');
     }
     set({ activeFocusItem: item });
+    const uid = useAuthStore.getState().user?.id;
+    if (uid) {
+      settingsService
+        .upsert(uid, { active_focus_item: item })
+        .catch((e: any) => console.error('Failed to sync activeFocusItem:', e));
+    }
   },
-
-  addTilLog: (log) => set((s: any) => ({ tilLogs: [log, ...(s.tilLogs || [])] })),
-  deleteTilLog: (id) => set((s: any) => ({ tilLogs: (s.tilLogs || []).filter((l: any) => l.id !== id) })),
-
-  importData: (data) => {
-    if (data.notes) {
-      set({ notes: data.notes });
-      safeSetItem('phq_notes', JSON.stringify(data.notes));
-    }
-    if (data.todoTasks) {
-      set({ todoTasks: data.todoTasks });
-      safeSetItem('phq_todo_tasks', JSON.stringify(data.todoTasks));
-    }
-  }
 });

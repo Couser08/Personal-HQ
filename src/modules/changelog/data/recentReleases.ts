@@ -1,0 +1,256 @@
+import {
+  IconPackage,
+  IconSitemap,
+  IconBolt,
+  IconDatabase,
+  IconCpu,
+  IconWifiOff,
+  IconDeviceMobile,
+  IconBug,
+  IconBrain,
+  IconEye,
+  IconShieldLock,
+  IconLayoutGrid,
+  IconClockPlay,
+  IconPalette,
+} from '@tabler/icons-react';
+import type { Release } from './types';
+
+export const RECENT_RELEASES: Release[] = [
+  {
+    version: 'v4.6.7 (Beta)',
+    codename: 'Project Modularization',
+    date: 'August 21, 2026',
+    headline: 'Massive Codebase Modularization & Refactor.',
+    sub: 'Initiated a sweeping 5-Phase architectural refactoring strategy to break down 31 massive files (>500 LOC) into focused, domain-organized sub-components, custom hooks, and service layers (Target: All Files <= 400 LOC).',
+    type: 'major',
+    features: [
+      {
+        Icon: IconPackage,
+        title: 'Component Extraction',
+        desc: 'Splitting massive 2,000+ LOC components (like NotebookEditor and MindmapCanvas) into smaller, reusable UI pieces.',
+        badge: 'Architecture',
+      },
+      {
+        Icon: IconSitemap,
+        title: 'Domain Services & Types',
+        desc: 'Extracting centralized types and DB logic (e.g., 2,500+ LOC db.ts) into organized domain-specific files under src/lib/services/.',
+        badge: 'Phase 1',
+      },
+      {
+        Icon: IconBolt,
+        title: 'Strict Quality Constraints',
+        desc: 'Ensuring 100% backward compatibility, zero state regressions, seamless UI design token adherence, and flawless TypeScript compilation across the entire project.',
+        badge: 'Stability',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.6 (Beta)',
+    codename: 'Zero Egress & Mock DB',
+    date: 'August 20, 2026',
+    headline: '99% Egress Reduction, Delta Sync, and Local Dev Mode.',
+    sub: 'Massive architecture overhaul to solve unbounded queries and tab-switching data spikes. Introduced a local Mock Supabase Client for true 0-egress offline development.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconDatabase,
+        title: '↓ 99.7% Egress on Lists',
+        desc: 'Implemented strict .limit(50) bounds and metadata-first scanning across 30+ tables. Heavy JSON and base64 blobs are now fetched entirely on-demand.',
+        badge: '4.9 MB → 12 KB',
+      },
+      {
+        Icon: IconCpu,
+        title: '↓ 99.9% Egress on Refresh',
+        desc: 'Admin panel now fetches 50-byte lightweight signatures to diff against local IndexedDB caches. Admin panel refresh egress reduced from 1.8 MB to 0.5 KB.',
+        badge: 'Delta Sync',
+      },
+      {
+        Icon: IconWifiOff,
+        title: 'Local Mock Database Engine',
+        desc: 'Added zero-network local development mode with instant seed generators, mock real-time broadcasts, and offline test data sets.',
+        badge: 'Offline Mode',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.5 (Beta)',
+    codename: 'Stability & Fixes',
+    date: 'August 19, 2026',
+    headline: 'Critical bug fixes across books, media, and UI components.',
+    sub: 'Addressed key issues reported via the new Bug Reporter tool. Improved performance across high-frequency renders.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconBug,
+        title: 'Notebook Sticky Note Fixes',
+        desc: 'Fixed layout collisions when placing multiple sticky notes on the same notebook page.',
+        badge: 'Fixed',
+      },
+      {
+        Icon: IconBolt,
+        title: 'Optimized Media Grid Render',
+        desc: 'Refactored media card items to prevent unnecessary re-renders when updating progress.',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.4 (Beta)',
+    codename: 'Cloud Backup & Sync',
+    date: 'August 18, 2026',
+    headline: 'Automated cloud backups, conflict resolution, and sync status indicator.',
+    sub: 'Enhanced Supabase synchronization pipeline with instant retry strategies, conflict detection, and real-time connectivity status in the sidebar.',
+    type: 'minor',
+    features: [
+      {
+        Icon: IconDatabase,
+        title: 'Automatic Sync Engine',
+        desc: 'Background synchronization with Supabase now runs every 60 seconds with exponential backoff on offline reconnects.',
+        badge: 'Sync',
+      },
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile Viewport Fixes',
+        desc: 'Resolved drawer clipping and viewport height issues on iOS Safari and mobile Chrome browsers.',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.3 (Beta)',
+    codename: 'Vision & Canvas',
+    date: 'August 17, 2026',
+    headline: 'Vision Board spatial node improvements and Mindmap layout engine.',
+    sub: 'Polished spatial canvas gestures, auto-layout algorithms for complex diagrams, and restored legacy node compatibility.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconEye,
+        title: 'Vision Board Gestures',
+        desc: 'Pinch-to-zoom and multi-touch pan support added for modern touchpads and touchscreen devices.',
+      },
+      {
+        Icon: IconSitemap,
+        title: 'Restored Spatial Structures',
+        desc: 'Fixed underlying store typing issues and restored the Vision Board spatial positioning data structures.',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.2 (Beta)',
+    codename: 'Engine & Diagnostics',
+    date: 'August 17, 2026',
+    headline: 'Performance engine refinement, fully released Bug Reporter, and AI limits.',
+    sub: 'Deep refinements to the new Performance Modes from the ground up. The Bug Reporter is now fully released with multi-element group reporting and cross-page navigation.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconCpu,
+        title: 'Performance Engine Refinement',
+        desc: 'Ground-up refinements to the performance modes (Potato/Balanced/Performance) to ensure absolute stability and correct CSS application.',
+      },
+      {
+        Icon: IconBug,
+        title: 'Bug Reporter v1.0',
+        desc: 'Fully released! You can now report a "group report" of multiple elements and seamlessly navigate between different pages while in bug reporter mode.',
+        badge: 'Released',
+      },
+      {
+        Icon: IconBrain,
+        title: 'AI Usage Limit Adjusted',
+        desc: 'Daily AI usage limit has been reduced from 1500 to 500 requests to maintain service stability and speed.',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.1 (Beta)',
+    codename: 'Mobile Iteration',
+    date: 'August 16, 2026',
+    headline: 'Mobile layout improvements, massive AI tuning, and mobile Bug Reporter.',
+    sub: 'Continuing the mobile foundation rollout with refinements across several modules. Plus, significant improvements to the AI assistant and mobile bug reporting capabilities.',
+    type: 'patch',
+    features: [
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile Responsiveness Tweaks',
+        desc: 'Layout improvements across the Journal, Markdown Editor, Library, and Daily Planner to better support smaller screens. Still under active development.',
+        badge: 'Beta',
+      },
+      {
+        Icon: IconBrain,
+        title: 'Massive AI Tuning',
+        desc: 'Deep optimizations and tuning to the AI system for better context awareness and faster responses.',
+      },
+      {
+        Icon: IconBug,
+        title: 'Bug Reporter on Mobile',
+        desc: 'The interactive Bug Reporter is now functional on mobile devices (in beta), making it easier to capture UI layout issues directly from your phone.',
+        badge: 'Beta',
+      },
+    ],
+  },
+  {
+    version: 'v4.6.0 (Beta)',
+    codename: 'Mobile Foundation',
+    date: 'August 15, 2026',
+    headline: 'Massive mobile responsiveness update is under development!',
+    sub: 'We are completely overhauling the app for mobile devices. Some changes are live now. This is a beta patch — please use the Interactive Bug Reporter (Ctrl+Shift+B) to report any UI glitches and help us develop faster.',
+    type: 'minor',
+    features: [
+      {
+        Icon: IconDeviceMobile,
+        title: 'Mobile UI — Work in Progress',
+        desc: 'New bottom navigation, mobile slide drawers, and responsive headers are being rolled out. Expect layout shifts as we perfect the mobile experience.',
+        badge: 'Beta',
+      },
+      {
+        Icon: IconBug,
+        title: 'Report Bugs for Fast Development',
+        desc: 'Encountered a weird layout on your screen size? Use the new Bug Reporter to snap a visual report instantly so we can fix it.',
+      },
+    ],
+  },
+  {
+    version: 'v4.5.0',
+    codename: 'Velocity & Quality',
+    date: 'August 15, 2026',
+    headline: 'Performance Engine, Bug Reporter, and Deep UI Polish.',
+    sub: 'Massive combined update. Features the new Potato/Balanced/Performance rendering engine, an Interactive Bug Reporter (Ctrl+Shift+B), massive Admin module expansion, and a unified minimal-premium redesign across Dashboards, Habits, and Pomodoro.',
+    type: 'major',
+    features: [
+      {
+        Icon: IconCpu,
+        title: 'Performance & Rendering Engine',
+        desc: 'Toggle between Performance (120 FPS), Balanced (Fluid physics & blur), and Potato (Zero idle CPU, instant snap) modes. Deeply integrated CSS overrides.',
+        badge: 'New',
+      },
+      {
+        Icon: IconBug,
+        title: 'Interactive Bug Reporter',
+        desc: 'New built-in diagnostics tool (Ctrl+Shift+B). Point at any element to instantly capture its ID, styles, position, and visual snapshot.',
+        badge: 'New',
+      },
+      {
+        Icon: IconShieldLock,
+        title: 'Admin Module — Massive Expansion',
+        desc: 'Admin dashboard heavily expanded (+808 lines) to review incoming bug reports, monitor system telemetry, and manage users.',
+        badge: 'Expanded',
+      },
+      {
+        Icon: IconLayoutGrid,
+        title: 'Dashboard & Habits — Deep Redesign',
+        desc: 'Dashboard widgets, HabitCard, HabitModal, and HabitTrackerModule fully updated. Replaced glassmorphism with crisp borders and solid contrasting colours.',
+        badge: 'Redesigned',
+      },
+      {
+        Icon: IconClockPlay,
+        title: 'Pomodoro Module — Streamlined',
+        desc: 'Massive code reduction and visual refresh in the Pomodoro module to ensure it aligns with the clean, flat UI language.',
+      },
+      {
+        Icon: IconPalette,
+        title: 'Theme Contrast & Shared Components',
+        desc: 'Added new --text-on-accent variables for perfect contrast. Introduced standard ListRow and StatCard components to unify the application.',
+      },
+    ],
+  },
+];
